@@ -14,6 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Class for submit selected courses from form.
+ *
+ * @package    tool_dataprivacy
+ * @copyright  2021 The Open University.
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 namespace tool_dataprivacy\external;
 
 defined('MOODLE_INTERNAL') || die();
@@ -30,7 +37,7 @@ use external_warnings;
 use core\notification;
 
 /**
- * Class for exporting field data.
+ * Class for submit selected courses from form.
  *
  * @copyright  2021 The Open University.
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -75,7 +82,6 @@ class submit_selected_courses_form extends external_api {
         $serialiseddata = json_decode($params['jsonformdata']);
         $data = array();
         parse_str($serialiseddata, $data);
-
 
         $mform = new \tool_dataprivacy\form\exportfilter_form(null, ['requestid' => $requestid], 'post', '', null, true, $data);
 
