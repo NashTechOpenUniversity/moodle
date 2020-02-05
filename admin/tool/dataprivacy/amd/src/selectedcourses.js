@@ -148,7 +148,7 @@ export default class SelectedCourses {
             getString('errornoselectedcourse', 'tool_dataprivacy').then(value => {
                 invalidText.empty().append(value);
                 return;
-            });
+            }).catch(Notification.exception);
             return;
         }
 
