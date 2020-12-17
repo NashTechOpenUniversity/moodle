@@ -85,6 +85,10 @@ div.editor_atto_toolbar div.atto_group {
     overflow: auto;
 }
 
+.editor_atto_content img:not([alt]) {
+    box-shadow: 0 0 10px 3px #800;
+}
+
 .atto_hasmenu {
     /* IE8 places the images on top of each other if that is not set. */
     white-space: nowrap;
