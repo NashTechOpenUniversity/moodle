@@ -32,6 +32,8 @@ require_once($CFG->dirroot.'/lib/filelib.php');
 require_once($CFG->dirroot.'/repository/lib.php');
 require_once('templatable_form_element.php');
 
+HTML_QuickForm::registerRule('editorimagevalidate', 'callback', 'validate_image_in_editor', 'MoodleQuickForm_editor');
+
 /**
  * Editor element
  *
@@ -48,6 +50,9 @@ class MoodleQuickForm_editor extends HTML_QuickForm_element implements templatab
     use templatable_form_element {
         export_for_template as export_for_template_base;
     }
+
+    /** Check image without alt attribute regular expression. */
+    const IMAGE_WITHOUT_ALT_REGEX = '/(<img(?![^>]*?\salt=([\'"])[^\2]*\2)[^>]*)(>)/';
 
     /** @var string html for help button, if empty then no help will icon will be dispalyed. */
     public $_helpbutton = '';
@@ -127,6 +132,10 @@ class MoodleQuickForm_editor extends HTML_QuickForm_element implements templatab
                 $caller->setType($arg[0] . '[format]', PARAM_ALPHANUM);
                 $caller->setType($arg[0] . '[itemid]', PARAM_INT);
                 break;
+        }
+        $name = $this->getName();
+        if ($name && $caller->elementExists($name)) {
+            $caller->addRule($name, get_string('missingalttag'), 'editorimagevalidate', null, 'client');
         }
         return parent::onQuickFormEvent($event, $arg, $caller);
     }
@@ -481,10 +490,35 @@ class MoodleQuickForm_editor extends HTML_QuickForm_element implements templatab
         return $str;
     }
 
+    /**
+     * Validate image from html.
+     *
+     * @param array $elementvalue
+     * @param null $attributes
+     * @return bool
+     */
+    public static function validate_image_in_editor($elementvalue, $attributes = null) {
+        return self::do_all_img_tags_have_alt($elementvalue['text']);
+    }
+
     public function export_for_template(renderer_base $output) {
         $context = $this->export_for_template_base($output);
         $context['html'] = $this->toHtml();
         return $context;
+    }
+
+    /**
+     * Check the image have alt tag.
+     *
+     * @param string $imagestring
+     * @return bool
+     */
+    public static function do_all_img_tags_have_alt(string $imagestring): bool {
+        $regexp = self::IMAGE_WITHOUT_ALT_REGEX;
+        if (!empty($imagestring) && preg_match($regexp, $imagestring, $matches)) {
+            return false;
+        }
+        return true;
     }
 
     /**
