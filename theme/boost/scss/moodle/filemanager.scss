@@ -851,7 +851,8 @@ a.ygtvspacer:hover {
     display: none;
 }
 
-.dndupload-progressbars {
+.dndupload-progressbars,
+.fpupload-progressbars {
     padding: 10px;
     display: none;
 }
@@ -873,6 +874,12 @@ a.ygtvspacer:hover {
 }
 
 .filepicker-filelist.dndupload-inprogress a {
+    display: none;
+}
+.fpupload-progressbars.fpupload-inprogress {
+    display: block;
+}
+.fpupload-progressbars.fpupload-inprogress + .fm-empty-container {
     display: none;
 }
 // Select Dialogue (File Manager only)

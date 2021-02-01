@@ -616,6 +616,8 @@ M.core_filepicker.init = function(Y, options) {
         api: M.cfg.wwwroot+'/repository/repository_ajax.php',
         cached_responses: {},
         waitinterval : null, // When the loading template is being displayed and its animation is running this will be an interval instance.
+        progressbars: {}, // Holds the progress bar elements for selected file.
+        fpuploadprogressbars: null,  // Holds the node which uploads progress events.
         initializer: function(options) {
             this.options = options;
             if (!this.options.savepath) {
@@ -627,98 +629,111 @@ M.core_filepicker.init = function(Y, options) {
         },
 
         request: function(args, redraw) {
-            var api = (args.api ? args.api : this.api) + '?action='+args.action;
-            var params = {};
+            var api = (args.api ? args.api : this.api) + '?action=' + args.action;
             var scope = args['scope'] ? args['scope'] : this;
-            params['repo_id']=args.repository_id;
-            params['p'] = args.path?args.path:'';
-            params['page'] = args.page?args.page:'';
-            params['env']=this.options.env;
-            // the form element only accept certain file types
-            params['accepted_types']=this.options.accepted_types;
-            params['sesskey'] = M.cfg.sesskey;
-            params['client_id'] = args.client_id;
-            params['itemid'] = this.options.itemid?this.options.itemid:0;
-            params['maxbytes'] = this.options.maxbytes?this.options.maxbytes:-1;
-            // The unlimited value of areamaxbytes is -1, it is defined by FILE_AREA_MAX_BYTES_UNLIMITED.
-            params['areamaxbytes'] = this.options.areamaxbytes ? this.options.areamaxbytes : -1;
-            if (this.options.context && this.options.context.id) {
-                params['ctx_id'] = this.options.context.id;
+            var filename = '';
+
+            if (args.file) {
+                filename = args.file.name;
             }
+            // Prepare the data to send
+            var formdata = new FormData();
+            formdata.append('repo_upload_file', args.file ? args.file : '');
+            formdata.append('repo_id', args.repository_id);
+            formdata.append('p', args.path ? args.path : '');
+            formdata.append('page', args.page ? args.page : '');
+            formdata.append('env', this.options.env);
+            formdata.append('accepted_types', this.options.accepted_types);
+            formdata.append('sesskey', M.cfg.sesskey);
+            formdata.append('client_id', args.client_id);
+            formdata.append('itemid', this.options.itemid ? this.options.itemid : 0);
+            formdata.append('maxbytes', this.options.maxbytes ? this.options.maxbytes : -1);
+            formdata.append('areamaxbytes', this.options.areamaxbytes ? this.options.areamaxbytes : -1);
+            formdata.append('ctx_id', this.options.context.id);
+            formdata.append('license', this.get_preference('recentlicense'));
+
+            if (args.content) {
+                formdata.append('author', args.content.author ? args.content.author : this.options.author);
+                formdata.append('title', args.content.title ? args.content.title : filename);
+            }
+
             if (args['params']) {
                 for (i in args['params']) {
-                    params[i] = args['params'][i];
+                    formdata.append(i, args['params'][i]);
                 }
             }
-            if (args.action == 'upload') {
-                var list = [];
-                for(var k in params) {
-                    var value = params[k];
-                    if(value instanceof Array) {
-                        for(var i in value) {
-                            list.push(k+'[]='+value[i]);
-                        }
-                    } else {
-                        list.push(k+'='+value);
-                    }
+            var datastring = [...formdata.entries()].map(x => `${encodeURIComponent(x[0])}=${encodeURIComponent(x[1])}`).join('&');
+            var fpcontent = Y.one('#filemanager-' + scope.options.client_id).one('.fp-content');
+            var filemanager = scope.options.magicscope.filemanager;
+            this.fpuploadprogressbars = Y.one('#filemanager-' + scope.options.client_id).one('.fpupload-progressbars');
+
+            var xhr = new XMLHttpRequest();
+
+            // Update the progress bar
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable && args.file !== undefined && args.action === 'upload') {
+                    var percentage = Math.round((e.loaded * 100) / e.total);
+                    scope.hide();
+                    fpcontent.hide();
+                    scope.update_progress(filename, percentage);
                 }
-                params = list.join('&');
-            } else {
-                params = build_querystring(params);
-            }
-            var cfg = {
-                method: 'POST',
-                on: {
-                    complete: function(id,o,p) {
-                        var data = null;
+
+            }, false);
+
+            xhr.onreadystatechange = function() { // Process the server response
+                var data = null;
+                if (xhr.readyState == 1) {
+                    // Trigger form upload start events.
+                    require(['core_form/events'], function(FormEvent) {
+                        FormEvent.triggerUploadStarted(filemanager.get('id'));
+                    });
+                }
+                if (xhr.readyState == 4) {
+                    if (xhr.status == 200) {
                         try {
-                            data = Y.JSON.parse(o.responseText);
-                        } catch(e) {
-                            if (o && o.status && o.status > 0) {
-                                Y.use('moodle-core-notification-exception', function() {
-                                    return new M.core.exception(e);
-                                });
-                                return;
-                            }
+                            data = JSON.parse(xhr.responseText);
+                        } catch (e) {
+                            Y.use('moodle-core-notification-exception', function() {
+                                return new M.core.exception(e);
+                            });
                         }
-                        // error checking
                         if (data && data.error) {
                             Y.use('moodle-core-notification-ajaxexception', function () {
                                 return new M.core.ajaxException(data);
                             });
-                            this.fpnode.one('.fp-content').setContent('');
-                            return;
                         } else {
                             if (data.msg) {
                                 scope.print_msg(data.msg, 'info');
                             }
-                            // cache result if applicable
+                            // Cache result if applicable.
                             if (args.action != 'upload' && data.allowcaching) {
-                                scope.cached_responses[params] = data;
+                                scope.cached_responses[datastring] = data;
                             }
-                            // invoke callback
-                            args.callback(id,data,p);
+
+                            // Invoke callback.
+                            args.callback(null, data, {scope: scope});
                         }
+                    } else {
+                        scope.print_msg(M.util.get_string('serverconnection', 'error'), 'error');
                     }
-                },
-                arguments: {
-                    scope: scope
-                },
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-                },
-                data: params,
-                context: this
+
+                    // Clear progress.
+                    scope.clear_progress();
+                    fpcontent.show();
+                    // Trigger form upload complete events.
+                    require(['core_form/events'], function(FormEvent) {
+                        FormEvent.triggerUploadCompleted(filemanager.get('id'));
+                    });
+                }
             };
-            if (args.form) {
-                cfg.form = args.form;
-            }
-            // check if result of the same request has been already cached. If not, request it
+
+            // check if result of the same request has been already cached. If not, request it.
             // (never applicable in case of form submission and/or upload action):
-            if (!args.form && args.action != 'upload' && scope.cached_responses[params]) {
-                args.callback(null, scope.cached_responses[params], {scope: scope})
+            if (!args.file && args.action != 'upload' && scope.cached_responses[datastring]) {
+                args.callback(null, scope.cached_responses[datastring], {scope: scope});
             } else {
-                Y.io(api, cfg);
+                xhr.open("POST", api, true);
+                xhr.send(formdata);
                 if (redraw) {
                     this.wait();
                 }
@@ -1840,9 +1855,17 @@ M.core_filepicker.init = function(Y, options) {
             }
 
             var scope = this;
+            var file = '';
+            content.one('.fp-file input[type="file"]').on('change', function(e) {
+                if (e._event.target.files.length) {
+                    file = e._event.target.files[0];
+                }
+            });
             content.one('.fp-upload-btn').on('click', function(e) {
                 e.preventDefault();
                 var license = content.one('.fp-setlicense select');
+                var title = content.one('.fp-saveas input').get('value');
+                var author = content.one('.fp-setauthor input').get('value');
 
                 if (this.options.rememberuserlicensepref) {
                     this.set_preference('recentlicense', license.get('value'));
@@ -1852,6 +1875,7 @@ M.core_filepicker.init = function(Y, options) {
                     return false;
                 }
                 this.hide_header();
+                scope.clear_progress();
                 scope.request({
                         scope: scope,
                         action:'upload',
@@ -1859,6 +1883,8 @@ M.core_filepicker.init = function(Y, options) {
                         params: {'savepath':scope.options.savepath},
                         repository_id: scope.active_repo.id,
                         form: {id: id, upload:true},
+                        content: {title: title, author: author},
+                        file: file,
                         onerror: function(id, o, args) {
                             scope.create_upload_form(data);
                         },
@@ -1879,6 +1905,48 @@ M.core_filepicker.init = function(Y, options) {
                         }
                 }, true);
             }, this);
+        },
+        clear_progress: function() {
+            var filename;
+            for (filename in this.progressbars) {
+                if (this.progressbars.hasOwnProperty(filename)) {
+                    this.progressbars[filename].progressouter.remove(true);
+                    delete this.progressbars[filename];
+                }
+            }
+
+            if (this.fpuploadprogressbars) {
+                this.fpuploadprogressbars.removeClass('fpupload-inprogress');
+                this.fpuploadprogressbars.setContent('');
+            }
+        },
+        update_progress: function(filename, percent) {
+            if (this.progressbars[filename] === undefined) {
+                var dispfilename = filename;
+                if (dispfilename.length > 50) {
+                    dispfilename = dispfilename.substr(0, 49) + '&hellip;';
+                }
+                var progressouter = Y.Node.create('<div>' + dispfilename +
+                    '<div class="progress">' +
+                    '   <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">' +
+                    '       <span class="sr-only"></span>' +
+                    '   </div>' +
+                    '</div></div>');
+                var progressinner = progressouter.one('.progress-bar');
+                var progressinnertext = progressinner.one('.sr-only');
+                this.fpuploadprogressbars.addClass('fpupload-inprogress');
+                this.fpuploadprogressbars.setContent(progressouter);
+
+                this.progressbars[filename] = {
+                    progressouter: progressouter,
+                    progressinner: progressinner,
+                    progressinnertext: progressinnertext
+                };
+            }
+
+            this.progressbars[filename].progressinner.setStyle('width', percent + '%');
+            this.progressbars[filename].progressinner.setAttribute('aria-valuenow', percent);
+            this.progressbars[filename].progressinnertext.setContent(percent + '% ' + M.util.get_string('complete', 'moodle'));
         },
         /** setting handlers and labels for elements in toolbar. Called once during the initial render of filepicker */
         setup_toolbar: function() {
