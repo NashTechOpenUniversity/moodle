@@ -163,7 +163,7 @@ abstract class question_edit_form extends question_wizard_form {
             $mform->setConstant('usecurrentcat', 1);
         } else {
             // Editing question with permission to move from category or save as new q.
-            $currentgrp = array();
+            $currentgrp = [];
             $currentgrp[0] = $mform->createElement('questioncategory', 'category',
                     get_string('categorycurrent', 'question'),
                     array('contexts' => array($this->categorycontext)));
