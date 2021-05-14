@@ -2532,6 +2532,18 @@ require(["core/event", "jquery"], function(Event, $) {
             // Fix for bug displaying errors for elements in a group
             //unset($element);
             list($jsArr,$element)=$jsandelement;
+            // Add image validation client-side rule for editor element.
+            $editorimagejsrule = '';
+            if ($element instanceof MoodleQuickForm_editor) {
+                // For custom rule with callback, to use client-side validation we need to add js function with the same name.
+                $editorimagejsrule = 'function validate_image_in_editor(element, escapedName) {
+                  var regexp = new RegExp(' . MoodleQuickForm_editor::IMAGE_WITHOUT_ALT_REGEX . ');
+                  if (!regexp.test(element)) {
+                     return true;
+                  }
+                  return false;
+                }';
+            }
             //end of fix
             $escapedElementName = preg_replace_callback(
                 '/[_\[\]-]/',
@@ -2568,6 +2580,7 @@ require(["core/event", "jquery"], function(Event, $) {
         return true;
       }
     }
+    ' . $editorimagejsrule . '
 
     document.getElementById(\'' . $elem->_attributes['id'] . '\').addEventListener(\'blur\', function(ev) {
         ' . $valFunc . '
