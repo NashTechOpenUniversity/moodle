@@ -168,6 +168,14 @@ M.mod_quiz.nav.init = function(Y) {
     Y.all('#quiznojswarning').remove();
 
     var form = Y.one('#responseform');
+    var quizNavigationBlock = document.getElementById('mod_quiz_navblock');
+    var quizNavigationButtons = quizNavigationBlock.getElementsByClassName('qnbutton');
+    var quizNavigationEndLink = quizNavigationBlock.getElementsByClassName('endtestlink');
+    var quizBlockSingleButton = quizNavigationBlock.getElementsByClassName('singlebutton');
+    var quizNavigationSingleButton;
+    if (quizBlockSingleButton.length) {
+        quizNavigationSingleButton = quizBlockSingleButton[0].getElementsByTagName('button');
+    }
     if (form) {
         function nav_to_page(pageno) {
             Y.one('#followingpage').set('value', pageno);
@@ -175,11 +183,6 @@ M.mod_quiz.nav.init = function(Y) {
             // Automatically submit the form. We do it this strange way because just
             // calling form.submit() does not run the form's submit event handlers.
             var submit = form.one('input[name="next"]');
-
-            // Navigation when button enable.
-            if (submit.get('disabled')) {
-                return;
-            }
 
             submit.set('name', '');
             submit.getDOMNode().click();
@@ -215,6 +218,39 @@ M.mod_quiz.nav.init = function(Y) {
             nav_to_page(-1);
         }, 'a.endtestlink');
     }
+
+    // Navigation buttons should be disabled when the files are uploading.
+    require(['core_form/events'], function(coreEvent) {
+        document.addEventListener(coreEvent.eventTypes.uploadStarted, function(e) {
+            e.preventDefault();
+            if (quizNavigationButtons) {
+                Array.from(quizNavigationButtons).forEach(function(button) {
+                    button.classList.add('disabled');
+                });
+            }
+            if (quizNavigationEndLink) {
+                quizNavigationEndLink[0].classList.add('disabled');
+            }
+            if (quizNavigationSingleButton) {
+                quizNavigationSingleButton[0].setAttribute('disabled', true);
+            }
+        });
+
+        document.addEventListener(coreEvent.eventTypes.uploadCompleted, function(e) {
+            e.preventDefault();
+            if (quizNavigationButtons) {
+                Array.from(quizNavigationButtons).forEach(function(button) {
+                    button.classList.remove('disabled');
+                });
+            }
+            if (quizNavigationEndLink) {
+                quizNavigationEndLink[0].classList.remove('disabled');
+            }
+            if (quizNavigationSingleButton) {
+                quizNavigationSingleButton[0].removeAttribute('disabled');
+            }
+        });
+    });
 
     if (M.core_question_flags) {
         M.core_question_flags.add_listener(M.mod_quiz.nav.update_flag_state);
