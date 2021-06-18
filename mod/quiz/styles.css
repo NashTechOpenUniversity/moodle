@@ -129,6 +129,12 @@
 .path-mod-quiz .qnbutton:link:hover {
     text-decoration: underline;
 }
+.path-mod-quiz #mod_quiz_navblock .qnbutton.disabled,
+.path-mod-quiz #mod_quiz_navblock a.endtestlink.disabled,
+.path-mod-quiz #mod_quiz_navblock .singlebutton button:disabled {
+    opacity: .65;
+    cursor: not-allowed;
+}
 
 .path-mod-quiz .qnbutton .trafficlight,
 .path-mod-quiz .qnbutton .thispageholder {
