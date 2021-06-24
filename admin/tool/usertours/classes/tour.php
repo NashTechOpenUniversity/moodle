@@ -115,6 +115,11 @@ class tour {
     protected $steps = [];
 
     /**
+     * @var boolean $displaystepnumbers Display the step numbers in this tour.
+     */
+    protected $displaystepnumbers = true;
+
+    /**
      * Create an instance of the specified tour.
      *
      * @param   int         $id         The ID of the tour to load.
@@ -190,6 +195,7 @@ class tour {
         $this->config       = json_decode($record->configdata);
         $this->dirty        = false;
         $this->steps        = [];
+        $this->displaystepnumbers = $record->displaystepnumbers ? true : false;
 
         return $this;
     }
@@ -383,13 +389,14 @@ class tour {
      */
     public function to_record() {
         return (object) array(
-            'id'            => $this->id,
-            'name'          => $this->name,
-            'description'   => $this->description,
-            'pathmatch'     => $this->pathmatch,
-            'enabled'       => $this->enabled,
-            'sortorder'     => $this->sortorder,
-            'configdata'    => json_encode($this->config),
+            'id'                 => $this->id,
+            'name'               => $this->name,
+            'description'        => $this->description,
+            'pathmatch'          => $this->pathmatch,
+            'enabled'            => $this->enabled,
+            'sortorder'          => $this->sortorder,
+            'configdata'         => json_encode($this->config),
+            'displaystepnumbers' => (int)$this->displaystepnumbers,
         );
     }
 
@@ -805,5 +812,26 @@ class tour {
         }
 
         return $results;
+    }
+
+    /**
+     * Set the configure display step numbers setting.
+     *
+     * @param bool $value The new state.
+     * @return tour
+     */
+    public function set_display_step_numbers(bool $value): tour {
+        $this->displaystepnumbers = $value;
+
+        return $this;
+    }
+
+    /**
+     * Get the configure display step numbers setting.
+     *
+     * @return bool
+     */
+    public function get_display_step_numbers(): bool {
+        return $this->displaystepnumbers;
     }
 }

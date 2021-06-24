@@ -35,7 +35,7 @@ use tool_usertours\tour;
  */
 function xmldb_tool_usertours_upgrade($oldversion) {
     global $CFG, $DB;
-
+    $dbman = $DB->get_manager();
     // Automatically generated Moodle v3.6.0 release upgrade line.
     // Put any upgrade step following this.
 
@@ -81,6 +81,19 @@ function xmldb_tool_usertours_upgrade($oldversion) {
         manager::update_shipped_tours();
 
         upgrade_plugin_savepoint(true, 2021052508, 'tool', 'usertours');
+    }
+
+    if ($oldversion < 2021072200) {
+        // Define field displaystepnumbers to be added to tool_usertours_tours.
+        $table = new xmldb_table('tool_usertours_tours');
+        $field = new xmldb_field('displaystepnumbers', XMLDB_TYPE_INTEGER, '1', null, true, null, '0', 'configdata');
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Assignment savepoint reached.
+        upgrade_plugin_savepoint(true, 2021072200, 'tool', 'usertours');
     }
 
     return true;

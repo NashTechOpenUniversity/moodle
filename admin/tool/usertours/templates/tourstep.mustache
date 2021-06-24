@@ -36,6 +36,7 @@
     * data-role=end
     * data-placeholder=body
     * data-placeholder=title
+    * data-placeholder=step
 
     Context variables required for this template:
     * None
@@ -66,6 +67,9 @@
     <div class="modal-body" data-placeholder="body">
     </div>
     <div class="modal-footer">
+      {{#displaystepnumbers}}
+          <span class="number-of-steps" data-placeholder="step"></span>
+      {{/displaystepnumbers}}
       <button type="button" class="btn btn-secondary" data-role="previous">{{# str }} previousstep, tool_usertours {{/ str }}</button>
       <button type="button" class="btn btn-primary" data-role="next">{{# str }} nextstep, tool_usertours {{/ str }}</button>
       {{#onesteptour}}
