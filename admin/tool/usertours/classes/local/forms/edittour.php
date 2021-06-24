@@ -79,6 +79,8 @@ class edittour extends \moodleform {
 
         $mform->addElement('checkbox', 'enabled', get_string('tourisenabled', 'tool_usertours'));
 
+        $mform->addElement('checkbox', 'displaystepnumbers', get_string('displaystepnumbers', 'tool_usertours'));
+
         // Configuration.
         $this->tour->add_config_to_form($mform);
 
