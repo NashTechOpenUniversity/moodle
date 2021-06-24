@@ -24,6 +24,7 @@
 import $ from 'jquery';
 import * as Aria from 'core/aria';
 import Popper from 'core/popper';
+import {get_string as getString} from 'core/str';
 
 /**
  * A Tour.
@@ -348,6 +349,29 @@ export default class Tour {
     }
 
     /**
+     * Get potentially visible steps in a tour.
+     *
+     * @method  getPotentiallyVisibleSteps
+     * @return  {array} Step id and position for all potentially visible steps.
+     */
+    getPotentiallyVisibleSteps() {
+        let position = 1,
+            stepNumber = 0,
+            result = [];
+        // Checking the total steps.
+        while (stepNumber <= this.steps.length) {
+            let stepConfig = this.getStepConfig(stepNumber);
+            if (this.isStepPotentiallyVisible(stepConfig)) {
+                result[stepNumber] = {stepId: stepConfig.stepid, position: position};
+                position++;
+            }
+            stepNumber++;
+        }
+
+        return result;
+    }
+
+    /**
      * Is this step actually visible?
      *
      * @method  isStepActuallyVisible
@@ -664,6 +688,22 @@ export default class Tour {
         template.find('[data-role="previous"]').attr('role', 'button');
         template.find('[data-role="next"]').attr('role', 'button');
         template.find('[data-role="end"]').attr('role', 'button');
+
+        if (template.find('[data-placeholder="step"]').length) {
+            const stepsPotentiallyVisible = this.getPotentiallyVisibleSteps(),
+                totalStepsPotentiallyVisible = stepsPotentiallyVisible.filter(x => x !== 'empty').length,
+                position = stepsPotentiallyVisible[stepConfig.stepNumber].position;
+            if (totalStepsPotentiallyVisible == 1) {
+                template.find('[data-placeholder="step"]').hide();
+            } else {
+                // Add 'position of total potentially visible steps' to template.
+                getString('numberofsteps', 'tool_usertours',
+                    {position: position, total: totalStepsPotentiallyVisible}).then(value => {
+                    template.find('[data-placeholder="step"]').html(value);
+                    return;
+                }).catch();
+            }
+        }
 
         // Replace the template with the updated version.
         stepConfig.template = template;
