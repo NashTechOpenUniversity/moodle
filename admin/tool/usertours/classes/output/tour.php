@@ -61,6 +61,7 @@ class tour implements \renderable {
             'name'  => $this->tour->get_tour_key(),
             'steps' => [],
             'onesteptour' => false,
+            'displaystepnumbers' => $this->tour->get_display_step_numbers(),
         ];
 
         foreach ($this->tour->get_steps() as $step) {

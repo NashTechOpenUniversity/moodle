@@ -105,6 +105,7 @@ class tour extends external_api {
                 'name'          => new external_value(PARAM_RAW, 'Tour Name'),
                 'steps'         => new external_multiple_structure(self::step_structure_returns()),
                 'onesteptour'   => new external_value(PARAM_BOOL, 'Is a one step tour', VALUE_DEFAULT, false),
+                'displaystepnumbers' => new external_value(PARAM_INT, 'display step number'),
             ], 'Tour config', VALUE_OPTIONAL)
         ]);
     }
