@@ -50,6 +50,7 @@ function atto_image_strings_for_js() {
         'size',
         'width',
         'uploading',
+        'missingalttag'
     );
 
     $PAGE->requires->strings_for_js($strings, 'atto_image');

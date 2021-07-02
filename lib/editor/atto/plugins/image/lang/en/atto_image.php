@@ -45,3 +45,4 @@ $string['size'] = 'Size';
 $string['uploading'] = 'Uploading, please wait...';
 $string['width'] = 'Width';
 $string['privacy:metadata'] = 'The atto_image plugin does not store any personal data.';
+$string['missingalttag'] = 'Some images in this content (highlighted) are lacking proper alt text. Please edit the image properties to fix this.';
