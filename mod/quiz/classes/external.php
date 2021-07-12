@@ -463,6 +463,8 @@ class mod_quiz_external extends external_api {
                 'timecheckstate' => new external_value(PARAM_INT, 'Next time quiz cron should check attempt for
                                                         state changes.  NULL means never check.', VALUE_OPTIONAL),
                 'sumgrades' => new external_value(PARAM_FLOAT, 'Total marks for this attempt.', VALUE_OPTIONAL),
+                'gradednotificationsenttime' => new external_value(PARAM_INT,
+                    'The timestamp when the graded notification was sent.', VALUE_OPTIONAL),
             )
         );
     }
