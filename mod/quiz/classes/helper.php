@@ -14,16 +14,30 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Quiz activity version information.
- *
- * @package   mod_quiz
- * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+namespace mod_quiz;
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2021071515;
-$plugin->requires  = 2021052500;
-$plugin->component = 'mod_quiz';
+/**
+ * Helper class.
+ *
+ * @package    mod_quiz
+ * @copyright  2021 The Open University
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ *
+ */
+class helper {
+    /**
+     * Gets the current time for notify attempts graded task functionality. This wrapper makes it easier to unit-test
+     * the notify attempts graded task behaviour.
+     *
+     * @return int Current time
+     */
+    public static function get_time(): int {
+        if (PHPUNIT_TEST) {
+            return time() + 1;
+        }
+
+        return time();
+    }
+}
