@@ -15,18 +15,33 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Atto text editor recordrtc version file.
+ * Atto text editor recordrtc upgrade script.
  *
  * @package    atto_recordrtc
- * @author     Jesus Federico (jesus [at] blindsidenetworks [dt] com)
- * @author     Jacob Prud'homme (jacob [dt] prudhomme [at] blindsidenetworks [dt] com)
- * @copyright  2017 Blindside Networks Inc.
+ * @copyright  2021 The Open University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2021071500;
-$plugin->requires  = 2021052500;
-$plugin->component = 'atto_recordrtc';
-$plugin->maturity = MATURITY_STABLE;
+/**
+ * Upgrade code for the recordrtc atto text editor.
+ *
+ * @param int $oldversion the version we are upgrading from.
+ * @return bool
+ */
+function xmldb_atto_recordrtc_upgrade($oldversion) {
+    global $CFG;
+
+    // Change settings from timelimit to audiotimelimit and videotimelimit.
+    if ($oldversion < 2021071500) {
+        $timelimit = get_config('atto_recordrtc', 'timelimit');
+        set_config('audiotimelimit', $timelimit ?? 120, 'atto_recordrtc');
+        set_config('videotimelimit', $timelimit ?? 120, 'atto_recordrtc');
+
+        // Recordrtc savepoint reached.
+        upgrade_plugin_savepoint(true, 2021071500, 'atto', 'recordrtc');
+    }
+
+    return true;
+}

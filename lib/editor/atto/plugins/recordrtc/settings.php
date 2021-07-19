@@ -55,10 +55,21 @@ if ($ADMIN->fulltree) {
     $setting = new admin_setting_configtext('atto_recordrtc/videobitrate', $name, $desc, $default, PARAM_INT, 8);
     $settings->add($setting);
 
-    // Recording time limit.
-    $name = get_string('timelimit', 'atto_recordrtc');
-    $desc = get_string('timelimit_desc', 'atto_recordrtc');
+    // Audio recording time limit.
+    $name = get_string('audiotimelimit', 'atto_recordrtc');
+    $desc = get_string('audiotimelimit_desc', 'atto_recordrtc');
     $default = '120';
-    $setting = new admin_setting_configtext('atto_recordrtc/timelimit', $name, $desc, $default, PARAM_INT, 8);
+    // Validate audiotimelimit greater than 0.
+    $setting = new admin_setting_configtext('atto_recordrtc/audiotimelimit',
+            $name, $desc, $default, '/^[1-9]\d*$/', 8);
+    $settings->add($setting);
+
+    // Video recording time limit.
+    $name = get_string('videotimelimit', 'atto_recordrtc');
+    $desc = get_string('videotimelimit_desc', 'atto_recordrtc');
+    $default = '120';
+    // Validate videotimelimit greater than 0.
+    $setting = new admin_setting_configtext('atto_recordrtc/videotimelimit',
+            $name, $desc, $default, '/^[1-9]\d*$/', 8);
     $settings->add($setting);
 }
