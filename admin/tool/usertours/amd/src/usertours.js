@@ -45,6 +45,17 @@ function(ajax, BootstrapTour, $, templates, str, log, notification) {
                 e.preventDefault();
                 usertours.resetTourState(usertours.tourId);
             });
+
+            var viewportWidth = window.innerWidth;
+            window.onresize = function() {
+                if (viewportWidth != window.innerWidth) {
+                    viewportWidth = window.innerWidth;
+                    if (usertours.currentTour && usertours.currentTour.currentStepNode) {
+                        usertours.currentTour.hide();
+                        usertours.currentTour.startTour(usertours.currentTour.currentStepNumber);
+                    }
+                }
+            };
         },
 
         /**
