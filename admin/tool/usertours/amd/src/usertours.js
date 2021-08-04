@@ -75,6 +75,17 @@ export const init = async(tourDetails, filters) => {
             resetTourState(tourId);
         }
     });
+
+    let viewportWidth = window.innerWidth;
+    window.onresize = function() {
+        if (viewportWidth != window.innerWidth) {
+            viewportWidth = window.innerWidth;
+            if (currentTour && currentTour.tourRunning) {
+                currentTour.hide();
+                currentTour.startTour(currentTour.currentStepNumber);
+            }
+        }
+    };
 };
 
 /**
