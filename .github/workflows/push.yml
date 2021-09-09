@@ -120,15 +120,15 @@ jobs:
           sudo locale-gen en_AU.UTF-8
           echo "NVM_DIR=$HOME/.nvm" >> $GITHUB_ENV
 
-      - name: Setting up Behat
-        env:
-          dbtype: ${{ matrix.db }}
-        run: |
-          echo "pathtophp=$(which php)" >> $GITHUB_ENV # Inject installed pathtophp to env. The template config needs it.
-          cp .github/workflows/config-template.php config.php
-          mkdir ../moodledata
-          sudo locale-gen en_AU.UTF-8
-          php admin/tool/behat/cli/init.php --no-composer-self-update
+      # - name: Setting up Behat
+      #   env:
+      #     dbtype: ${{ matrix.db }}
+      #   run: |
+      #     echo "pathtophp=$(which php)" >> $GITHUB_ENV # Inject installed pathtophp to env. The template config needs it.
+      #     cp .github/workflows/config-template.php config.php
+      #     mkdir ../moodledata
+      #     sudo locale-gen en_AU.UTF-8
+      #     php admin/tool/behat/cli/init.php --no-composer-self-update
 
       - name: Install moodle-plugin-ci
         run: |
@@ -136,6 +136,7 @@ jobs:
         env:
           DB: ${{ matrix.database }}
           MOODLE_BRANCH: ${{ matrix.moodle-branch }}
+          
       - name: Behat features
         if: ${{ always() }}
         run: moodle-plugin-ci behat --profile chrome
