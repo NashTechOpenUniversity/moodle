@@ -132,10 +132,22 @@ jobs:
 
       - name: Install moodle-plugin-ci
         run: |
-          moodle-plugin-ci install --plugin plugin --db-host=127.0.0.1
+          cp .github/workflows/config-template.php config.php
+          mkdir ../moodledata
+          moodle-plugin-ci install --plugin /plugin --db-host=127.0.0.1
         env:
-          DB: ${{ matrix.database }}
+          DB: ${{ matrix.db }}
           MOODLE_BRANCH: ${{ matrix.moodle-branch }}
+
+      - name: Setting up Behat
+        env:
+          dbtype: ${{ matrix.db }}
+        run: |
+          echo "pathtophp=$(which php)" >> $GITHUB_ENV # Inject installed pathtophp to env. The template config needs it.
+          cp .github/workflows/config-template.php config.php
+          mkdir ../moodledata
+          sudo locale-gen en_AU.UTF-8
+          php admin/tool/behat/cli/init.php --no-composer-self-update 
           
       - name: Behat features
         if: ${{ always() }}
