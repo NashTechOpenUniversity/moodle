@@ -12,31 +12,31 @@ env:
   php: 8.0
 
 jobs:
-  Grunt:
-    runs-on: ubuntu-18.04
+  # Grunt:
+  #   runs-on: ubuntu-18.04
 
-    steps:
-      - name: Checking out code
-        uses: actions/checkout@v2
+  #   steps:
+  #     - name: Checking out code
+  #       uses: actions/checkout@v2
 
-      - name: Configuring node & npm
-        shell: bash -l {0}
-        run: nvm install
+  #     - name: Configuring node & npm
+  #       shell: bash -l {0}
+  #       run: nvm install
 
-      - name: Installing node stuff
-        run: npm install
+  #     - name: Installing node stuff
+  #       run: npm install
 
-      - name: Running grunt
-        run: npx grunt
+  #     - name: Running grunt
+  #       run: npx grunt
 
-      - name: Looking for uncommitted changes
-        # Add all files to the git index and then run diff --cached to see all changes.
-        # This ensures that we get the status of all files, including new files.
-        # We ignore npm-shrinkwrap.json to make the tasks immune to npm changes.
-        run: |
-          git add .
-          git reset -- npm-shrinkwrap.json
-          git diff --cached --exit-code
+  #     - name: Looking for uncommitted changes
+  #       # Add all files to the git index and then run diff --cached to see all changes.
+  #       # This ensures that we get the status of all files, including new files.
+  #       # We ignore npm-shrinkwrap.json to make the tasks immune to npm changes.
+  #       run: |
+  #         git add .
+  #         git reset -- npm-shrinkwrap.json
+  #         git diff --cached --exit-code
 
   PHPUnit:
     runs-on: ${{ matrix.os }}
@@ -111,3 +111,21 @@ jobs:
       #   env:
       #     dbtype: ${{ matrix.db }}
       #   run: vendor/bin/phpunit -v
+
+      - name: Setting up Behat
+        env:
+          dbtype: ${{ matrix.db }}
+        run: |
+          echo "pathtophp=$(which php)" >> $GITHUB_ENV # Inject installed pathtophp to env. The template config needs it.
+          cp .github/workflows/config-template.php config.php
+          mkdir ../moodledata
+          sudo locale-gen en_AU.UTF-8
+          php admin/tool/behat/cli/init.php --no-composer-self-update
+
+      # - name: Running PHPUnit tests
+      #   env:
+      #     dbtype: ${{ matrix.db }}
+      #   run: vendor/bin/phpunit -v
+      - name: Behat features
+        if: ${{ always() }}
+        run: moodle-plugin-ci behat --profile chrome
