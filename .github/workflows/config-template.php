@@ -58,7 +58,7 @@ $CFG->pathtophp = getenv('pathtophp');
 $CFG->phpunit_dataroot  = realpath(dirname(__DIR__)) . '/phpunitdata';
 $CFG->phpunit_prefix = 't_';
 
-$CFG->behat_wwwroot =  "http://{$host}";
+$CFG->behat_wwwroot =  "http://${behathostname}";
 $CFG->behat_dataroot = realpath(dirname(__DIR__)) . '/behatdata';
 $CFG->behat_prefix = 'bh_';
 // $CFG->behat_profiles = [
