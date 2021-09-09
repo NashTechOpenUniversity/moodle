@@ -58,6 +58,22 @@ $CFG->pathtophp = getenv('pathtophp');
 $CFG->phpunit_dataroot  = realpath(dirname(__DIR__)) . '/phpunitdata';
 $CFG->phpunit_prefix = 't_';
 
+$CFG->behat_wwwroot =  "http://{$host}";
+$CFG->behat_dataroot = realpath(dirname(__DIR__)) . '/behatdata';
+$CFG->behat_prefix = 'bh_';
+// $CFG->behat_profiles = [
+//     'chrome' => [
+//         'browser' => 'chrome',
+//         'extensions' => [
+//             'Behat\MinkExtension' => [
+//                 'selenium2' => [
+//                         'browser' => 'chrome',
+//                 ]
+//             ]
+//         ]
+//     ]
+// ];
+
 define('TEST_EXTERNAL_FILES_HTTP_URL', 'http://localhost:8080');
 define('TEST_EXTERNAL_FILES_HTTPS_URL', 'http://localhost:8080');
 

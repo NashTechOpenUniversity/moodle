@@ -134,7 +134,7 @@ jobs:
         run: |
           cp .github/workflows/config-template.php config.php
           mkdir ../moodledata
-          moodle-plugin-ci install --plugin /plugin --db-host=127.0.0.1
+          moodle-plugin-ci install --plugin ../plugin --db-host=127.0.0.1
         env:
           dbtype: ${{ matrix.db }}
           MOODLE_BRANCH: ${{ matrix.moodle-branch }}
