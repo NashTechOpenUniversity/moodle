@@ -301,6 +301,10 @@ class behat_general extends behat_base {
             return;
         }
 
+        var_dump(self::get_timeout() * 1000);
+        global $CFG;
+        var_dump($CFG->behat_increasetimeout);die;
+
         $this->getSession()->wait(self::get_timeout() * 1000, self::PAGE_READY_JS);
     }
 
