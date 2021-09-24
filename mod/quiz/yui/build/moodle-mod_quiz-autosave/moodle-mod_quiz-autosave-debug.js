@@ -205,9 +205,24 @@ M.mod_quiz.autosave = {
         this.form.on('submit', this.stop_autosaving, this);
 
         this.init_tinymce(this.TINYMCE_DETECTION_REPEATS);
+        this.detectChangesAttachmentFile();
 
         this.save_hidden_field_values();
         this.watch_hidden_fields();
+    },
+
+    /**
+     * Detect changes of the attachment file.
+     *
+     * @method detectChangesAttachmentFile
+     */
+    detectChangesAttachmentFile: function() {
+        require(['core_form/events'], function(FormEvent) {
+            window.addEventListener(FormEvent.eventTypes.notifyAttachmentChange, function(e) {
+                e.preventDefault();
+                this.start_save_timer_if_necessary();
+            }.bind(this));
+        }.bind(this));
     },
 
     save_hidden_field_values: function() {
