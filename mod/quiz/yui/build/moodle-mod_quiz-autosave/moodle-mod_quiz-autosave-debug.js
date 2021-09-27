@@ -200,8 +200,17 @@ M.mod_quiz.autosave = {
 
         this.delay = delay * 1000;
 
-        this.form.delegate('valuechange', this.value_changed, this.SELECTORS.VALUE_CHANGE_ELEMENTS, this);
-        this.form.delegate('change', this.value_changed, this.SELECTORS.CHANGE_ELEMENTS, this);
+        // this.form.delegate('valuechange', this.value_changed, this.SELECTORS.VALUE_CHANGE_ELEMENTS, this);
+        // this.form.delegate('change', this.value_changed, this.SELECTORS.CHANGE_ELEMENTS, this);
+        require(['core_form/changechecker'], function(FormChangeChecker) {
+            FormChangeChecker.watchFormById('responseform');
+            let nodeform = document.getElementById('responseform');
+            setInterval(() => {
+                if (FormChangeChecker.isDirtyNode(nodeform.closest('form'))) {
+                    this.start_save_timer_if_necessary();
+                }
+            }, this.delay);
+        }.bind(this));
         this.form.on('submit', this.stop_autosaving, this);
 
         this.init_tinymce(this.TINYMCE_DETECTION_REPEATS);
@@ -314,6 +323,7 @@ M.mod_quiz.autosave = {
     },
 
     start_save_timer_if_necessary: function() {
+        console.log("start_save_timer_if_necessary")
         this.dirty = true;
 
         if (this.delay_timer || this.save_transaction) {
