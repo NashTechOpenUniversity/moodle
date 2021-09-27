@@ -331,15 +331,13 @@ $string['emailnotifybody'] = 'Hi {$a->username},
 You can review this attempt at {$a->quizreviewurl}.';
 $string['emailnotifysmall'] = '{$a->studentname} has completed {$a->quizname}. See {$a->quizreviewurl}';
 $string['emailnotifysubject'] = '{$a->studentname} has completed {$a->quizname}';
-$string['emailmanualgradedsubject'] = 'Attempt submission on {$a->quizname} has been marked';
-$string['emailmanualgradedbody'] = 'Dear {$a->studentname},
+$string['emailmanualgradedbody'] = 'Hi {$a->studentname},
 
-Thank you for submitting your answers to \'{$a->quizname}\' in module \'{$a->coursename}\' at {$a->attempttimefinish}.
+Your answers to \'{$a->quizname}\' in course \'{$a->coursename}\' at {$a->attempttimefinish} have now been graded.
 
-Your attempt has now been graded.
+You will be able to view your score and feedback by visiting \'{$a->quizurl}\' and reviewing your attempt.';
 
-You will be able to view your score and any additional feedback by revisiting \'{$a->quizurl}\' and reviewing your attempt.';
-
+$string['emailmanualgradedsubject'] = 'You attempt at {$a->quizname} has been graded';
 $string['emailoverduebody'] = 'Hi {$a->studentname},
 
 You started an attempt at \'{$a->quizname}\' in course \'{$a->coursename}\', but you never submitted it. It should have been submitted by {$a->attemptduedate}.
@@ -359,7 +357,7 @@ $string['essay'] = 'Essay';
 $string['essayquestions'] = 'Questions';
 $string['eventattemptautosaved'] = 'Quiz attempt auto-saved';
 $string['eventattemptdeleted'] = 'Quiz attempt deleted';
-$string['eventattemptnotifymanualgraded'] = 'Quiz attempt notify when attempt is graded manually';
+$string['eventattemptmanualgradingcomplete'] = 'Quiz attempt manual grading complete';
 $string['eventattemptpreviewstarted'] = 'Quiz attempt preview started';
 $string['eventattemptquestionrestarted'] = 'Quiz attempt question restarted';
 $string['eventattemptreviewed'] = 'Quiz attempt reviewed';
@@ -597,6 +595,7 @@ $string['noscript'] = 'JavaScript must be enabled to continue!';
 $string['notavailabletostudents'] = 'Note: This quiz is not currently available to your students';
 $string['notenoughrandomquestions'] = 'There are not enough questions in category {$a->category} to create the question {$a->name} ({$a->id}).';
 $string['notenoughsubquestions'] = 'Not enough sub-questions have been defined!<br />Do you want to go back and fix this question?';
+$string['notifyattemptsgradedtask'] = 'Send notifications about quiz attempts that are now fully graded';
 $string['notimedependentitems'] = 'Time dependent items are not currently supported by the quiz module. As a work around, set a time limit for the whole quiz. Do you wish to choose a different item (or use the current item regardless)?';
 $string['notyetgraded'] = 'Not yet graded';
 $string['notyetviewed'] = 'Not yet viewed';
@@ -687,7 +686,7 @@ $string['privacy:metadata:quiz'] = 'The quiz activity makes use of quiz reports.
 $string['privacy:metadata:quiz_attempts'] = 'Details about each attempt on a quiz.';
 $string['privacy:metadata:quiz_attempts:attempt'] = 'The attempt number.';
 $string['privacy:metadata:quiz_attempts:currentpage'] = 'The current page that the user is on.';
-$string['privacy:metadata:quiz_attempts:gradednotificationsenttime'] = 'The time that user received notification when attempt is graded manually';
+$string['privacy:metadata:quiz_attempts:gradednotificationsenttime'] = 'The time the user was notified that manual grading of their attempt was complete';
 $string['privacy:metadata:quiz_attempts:preview'] = 'Whether this is a preview of the quiz.';
 $string['privacy:metadata:quiz_attempts:state'] = 'The current state of the attempt.';
 $string['privacy:metadata:quiz_attempts:sumgrades'] = 'The sum of grades in the attempt.';
@@ -765,7 +764,6 @@ $string['quizisclosedwillopen'] = 'Quiz closed (opens {$a})';
 $string['quizisopenwillclose'] = 'Quiz open (closes {$a})';
 $string['quiz:manage'] = 'Manage quizzes';
 $string['quiz:manageoverrides'] = 'Manage quiz settings overrides';
-$string['quiznotifyattemptgradedcron'] = 'Send quiz attempt graded notifications';
 $string['quiz:viewoverrides'] = 'View quiz settings overrides';
 $string['quiznavigation'] = 'Quiz navigation';
 $string['quizopen'] = 'Open the quiz';

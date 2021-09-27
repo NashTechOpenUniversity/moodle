@@ -461,7 +461,9 @@ class restore_quiz_activity_structure_step extends restore_questions_activity_st
             $data->timecheckstate = 0;
         }
 
-        if (!isset($data->gradednotificationsenttime) && isset($data->sumgrades)) {
+        if (!isset($data->gradednotificationsenttime)) {
+            // For attempts restored from old Moodle sites before this field
+            // existed, we never want to send emails.
             $data->gradednotificationsenttime = $data->timefinish;
         }
 

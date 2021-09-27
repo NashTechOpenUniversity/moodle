@@ -66,13 +66,6 @@ if ($ADMIN->fulltree) {
     $setting->set_advanced_flag_options(admin_setting_flag::ENABLED, false);
     $quizsettings->add($setting);
 
-    // Delay to notify graded attempts.
-    $setting = new admin_setting_configduration('quiz/notifyattemptgradeddelay',
-            get_string('attemptgradeddelay', 'quiz'), get_string('attemptgradeddelay_desc', 'quiz'),
-        5 * HOURSECS, HOURSECS);
-    $setting->set_advanced_flag_options(admin_setting_flag::ENABLED, false);
-    $quizsettings->add($setting);
-
     // What to do with overdue attempts.
     $quizsettings->add(new mod_quiz_admin_setting_overduehandling('quiz/overduehandling',
             get_string('overduehandling', 'quiz'), get_string('overduehandling_desc', 'quiz'),
@@ -89,6 +82,11 @@ if ($ADMIN->fulltree) {
     $quizsettings->add(new admin_setting_configduration('quiz/graceperiodmin',
             get_string('graceperiodmin', 'quiz'), get_string('graceperiodmin_desc', 'quiz'),
             60, 1));
+
+    // Delay to notify graded attempts.
+    $quizsettings->add(new admin_setting_configduration('quiz/notifyattemptgradeddelay',
+            get_string('attemptgradeddelay', 'quiz'), get_string('attemptgradeddelay_desc', 'quiz'),
+            5 * HOURSECS, HOURSECS));
 
     // Number of attempts.
     $options = array(get_string('unlimited'));

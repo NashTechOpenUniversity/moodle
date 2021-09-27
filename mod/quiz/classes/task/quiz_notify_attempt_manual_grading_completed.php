@@ -20,7 +20,6 @@ defined('MOODLE_INTERNAL') || die();
 
 use context_course;
 use core_user;
-use mod_quiz\helper;
 use moodle_recordset;
 use question_display_options;
 use mod_quiz_display_options;
@@ -37,6 +36,10 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
  *
  */
 class quiz_notify_attempt_manual_grading_completed extends \core\task\scheduled_task {
+    /**
+     * @var int|null for use in unit testing only. Override the time we consider as now.
+     */
+    protected $forcedtime = null;
 
     /**
      * Get name of schedule task.
@@ -44,7 +47,31 @@ class quiz_notify_attempt_manual_grading_completed extends \core\task\scheduled_
      * @return string
      */
     public function get_name(): string {
-        return get_string('quiznotifyattemptgradedcron', 'mod_quiz');
+        return get_string('notifyattemptsgradedtask', 'mod_quiz');
+    }
+
+    /**
+     * To let this class be unit tested, we wrap all accesses to the current time in this method.
+     *
+     * @return int the current time.
+     */
+    protected function get_time(): int {
+        if (PHPUNIT_TEST && $this->forcedtime !== null) {
+            return $this->forcedtime;
+        }
+        return time();
+    }
+
+    /**
+     * For testing only, pretend the current time is different.
+     *
+     * @param int $time the time to set as the current time.
+     */
+    public function set_time_for_testing(int $time): void {
+        if (!PHPUNIT_TEST) {
+            throw new \coding_exception('set_time_for_testing should only be used in unit tests.');
+        }
+        $this->forcedtime = $time;
     }
 
     /**
@@ -69,19 +96,28 @@ class quiz_notify_attempt_manual_grading_completed extends \core\task\scheduled_
                 $coursecontext = context_course::instance($quiz->course);
             }
 
-            $user = core_user::get_user($attempt->userid);
             $quiz = quiz_update_effective_access($quiz, $attempt->userid);
             $attemptobj = new quiz_attempt($attempt, $quiz, $cm, $course, false);
             $options = mod_quiz_display_options::make_from_quiz($quiz, quiz_attempt_state($quiz, $attempt));
 
-            if ($options->manualcomment == question_display_options::HIDDEN ||
-                    !has_capability('mod/quiz:emailnotifyattemptgraded', $coursecontext, $user, false)) {
-                $DB->set_field('quiz_attempts', 'gradednotificationsenttime', $attempt->timefinish, ['id' => $attempt->id]);
-            } else if (quiz_send_notify_manual_graded_message($attemptobj, $user)) {
-                $attempt->gradednotificationsenttime = helper::get_time();
-                $DB->set_field('quiz_attempts', 'gradednotificationsenttime', $attempt->gradednotificationsenttime,
-                    ['id' => $attempt->id]);
+            if ($options->manualcomment == question_display_options::HIDDEN) {
+                // User cannot currently see the feedback, so don't message them.
+                // However, this may change in future, so leave them on the list.
+                continue;
+            }
 
+            if (!has_capability('mod/quiz:emailnotifyattemptgraded', $coursecontext, $attempt->userid, false)) {
+                // User not eligible to get a notification. Mark them done while doing nothing.
+                $DB->set_field('quiz_attempts', 'gradednotificationsenttime', $attempt->timefinish, ['id' => $attempt->id]);
+                continue;
+            }
+
+            // OK, send notification.
+            $ok = quiz_send_notify_manual_graded_message($attemptobj, core_user::get_user($attempt->userid));
+            if ($ok) {
+                $attempt->gradednotificationsenttime = $this->get_time();
+                $DB->set_field('quiz_attempts', 'gradednotificationsenttime', $attempt->gradednotificationsenttime,
+                        ['id' => $attempt->id]);
                 $attemptobj->fire_attempt_manual_grading_completed_event();
             }
         }
@@ -93,12 +129,11 @@ class quiz_notify_attempt_manual_grading_completed extends \core\task\scheduled_
      * Get a number of records as an array of quiz_attempts using a SQL statement.
      *
      * @return moodle_recordset of quiz_attempts that need to be processed.
-     * The array is sorted by timemodified.
      */
     public function get_list_of_attempts(): moodle_recordset {
         global $DB;
 
-        $delaytime = helper::get_time() - get_config('quiz', 'notifyattemptgradeddelay');
+        $delaytime = $this->get_time() - get_config('quiz', 'notifyattemptgradeddelay');
 
         $sql = "SELECT qa.*
                   FROM {quiz_attempts} qa
