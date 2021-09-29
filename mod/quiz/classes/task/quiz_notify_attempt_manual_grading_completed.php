@@ -37,7 +37,7 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
  */
 class quiz_notify_attempt_manual_grading_completed extends \core\task\scheduled_task {
     /**
-     * @var int|null for use in unit testing only. Override the time we consider as now.
+     * @var int|null For use in unit testing only. Override the time we consider as now.
      */
     protected $forcedtime = null;
 
@@ -59,6 +59,7 @@ class quiz_notify_attempt_manual_grading_completed extends \core\task\scheduled_
         if (PHPUNIT_TEST && $this->forcedtime !== null) {
             return $this->forcedtime;
         }
+        
         return time();
     }
 
@@ -80,10 +81,14 @@ class quiz_notify_attempt_manual_grading_completed extends \core\task\scheduled_
     public function execute() {
         global $DB;
 
+        mtrace('Looking for quiz attempts have graded in the conditions...');
+
         $attempts = $this->get_list_of_attempts();
         $course = null;
         $quiz = null;
         $cm = null;
+
+        mtrace('Considered ' . iterator_count($attempts) . 'attempts in the conditions');
 
         foreach ($attempts as $attempt) {
             if (!$quiz || $attempt->quiz != $quiz->id) {
@@ -113,6 +118,7 @@ class quiz_notify_attempt_manual_grading_completed extends \core\task\scheduled_
             }
 
             // OK, send notification.
+            mtrace('Sending email to user...');
             $ok = quiz_send_notify_manual_graded_message($attemptobj, core_user::get_user($attempt->userid));
             if ($ok) {
                 $attempt->gradednotificationsenttime = $this->get_time();

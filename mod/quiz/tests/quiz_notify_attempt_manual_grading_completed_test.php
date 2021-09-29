@@ -176,7 +176,7 @@ class quiz_notify_attempt_manual_grading_completed_test extends advanced_testcas
     }
 
     /**
-     * Test notify manual grading completed cron which the user attempt has not capability.
+     * Test notify manual grading completed task which the user attempt has not capability.
      */
     public function test_notify_manual_grading_completed_task_without_capability() {
         global $DB;
@@ -213,9 +213,9 @@ class quiz_notify_attempt_manual_grading_completed_test extends advanced_testcas
     }
 
     /**
-     * Test notify manual grading completed cron which the user attempt has capability.
+     * Test notify manual grading completed task which the user attempt has capability.
      */
-    public function test_notify_manual_grading_completed_cron_with_capability() {
+    public function test_notify_manual_grading_completed_task_with_capability() {
         global $DB;
 
         // Create an attempt with capability.

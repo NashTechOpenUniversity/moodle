@@ -765,7 +765,6 @@ $string['quizisclosedwillopen'] = 'Quiz closed (opens {$a})';
 $string['quizisopenwillclose'] = 'Quiz open (closes {$a})';
 $string['quiz:manage'] = 'Manage quizzes';
 $string['quiz:manageoverrides'] = 'Manage quiz settings overrides';
-$string['quiznotifyattemptgradedcron'] = 'Send quiz attempt graded notifications';
 $string['quiz:viewoverrides'] = 'View quiz settings overrides';
 $string['quiznavigation'] = 'Quiz navigation';
 $string['quizopen'] = 'Open the quiz';
