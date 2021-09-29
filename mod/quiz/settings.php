@@ -90,6 +90,11 @@ if ($ADMIN->fulltree) {
             get_string('graceperiodmin', 'quiz'), get_string('graceperiodmin_desc', 'quiz'),
             60, 1));
 
+    // Delay to notify graded attempts.
+    $quizsettings->add(new admin_setting_configduration('quiz/notifyattemptgradeddelay',
+            get_string('attemptgradeddelay', 'quiz'), get_string('attemptgradeddelay_desc', 'quiz'),
+            5 * HOURSECS, HOURSECS));
+
     // Number of attempts.
     $options = array(get_string('unlimited'));
     for ($i = 1; $i <= QUIZ_MAX_ATTEMPT_OPTION; $i++) {

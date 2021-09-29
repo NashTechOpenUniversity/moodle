@@ -1008,9 +1008,9 @@ class quiz_attempt {
     }
 
     /**
-     * Check manually grade question in the attempt.
+     * Do any questions in this attempt need to be graded manually?
      *
-     * @return bool True if we have at least one manual grade question.
+     * @return bool True if we have at least one question still needs manual grading.
      */
     public function requires_manual_grading(): bool {
         return $this->quba->get_total_mark() === null;
@@ -2213,9 +2213,9 @@ class quiz_attempt {
         $this->attempt->timecheckstate = null;
         $this->attempt->gradednotificationsenttime = null;
 
-        $context = $this->get_quizobj()->get_context();
-        $user = core_user::get_user($this->get_userid());
-        if (!$this->requires_manual_grading() || !has_capability('mod/quiz:emailnotifyattemptgraded', $context, $user)) {
+        if (!$this->requires_manual_grading() ||
+                !has_capability('mod/quiz:emailnotifyattemptgraded', $this->get_quizobj()->get_context(),
+                        $this->get_userid())) {
             $this->attempt->gradednotificationsenttime = $this->attempt->timefinish;
         }
 
@@ -2669,24 +2669,6 @@ class quiz_attempt {
     }
 
     /**
-     * Update the timemodifiedoffline attempt field.
-     *
-     * This function should be used only when web services are being used.
-     *
-     * @param int $time time stamp.
-     * @return boolean false if the field is not updated because web services aren't being used.
-     * @since Moodle 3.2
-     */
-    public function set_offline_modified_time($time) {
-        // Update the timemodifiedoffline field only if web services are being used.
-        if (WS_SERVER) {
-            $this->attempt->timemodifiedoffline = $time;
-            return true;
-        }
-        return false;
-    }
-
-    /**
      * Trigger the attempt manual grading completed event.
      */
     public function fire_attempt_manual_grading_completed_event() {
@@ -2703,6 +2685,24 @@ class quiz_attempt {
         $event = \mod_quiz\event\attempt_manual_grading_completed::create($params);
         $event->add_record_snapshot('quiz_attempts', $this->get_attempt());
         $event->trigger();
+    }
+
+    /**
+     * Update the timemodifiedoffline attempt field.
+     *
+     * This function should be used only when web services are being used.
+     *
+     * @param int $time time stamp.
+     * @return boolean false if the field is not updated because web services aren't being used.
+     * @since Moodle 3.2
+     */
+    public function set_offline_modified_time($time) {
+        // Update the timemodifiedoffline field only if web services are being used.
+        if (WS_SERVER) {
+            $this->attempt->timemodifiedoffline = $time;
+            return true;
+        }
+        return false;
     }
 }
 

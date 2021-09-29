@@ -22,7 +22,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace core\task;
+namespace mod_quiz;
 
 use advanced_testcase;
 use context_course;
@@ -35,8 +35,6 @@ use stdClass;
 
 defined('MOODLE_INTERNAL') || die();
 
-global $CFG;
-require_once($CFG->dirroot.'/group/lib.php');
 /**
  * Class containing unit tests for the quiz notify attempt manual grading completed cron task.
  *
@@ -44,9 +42,23 @@ require_once($CFG->dirroot.'/group/lib.php');
  * @copyright 2021 The Open University
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class quiz_notify_attempt_manual_grading_completed_testcase extends advanced_testcase {
+class quiz_notify_attempt_manual_grading_completed_test extends advanced_testcase {
+    protected $course;
+    protected $quiz;
+    protected $context;
+    protected $cm;
+    protected $student;
+    protected $teacher;
+    protected $quizobj;
+    protected $quba;
+
     /**
-     * Set up for every test
+     * Standard test setup.
+     *
+     * Create a course with a quiz and a student and a(n editing) teacher.
+     * the quiz has a truefalse question and an essay question.
+     *
+     * Also create some bits of a quiz attempt to be used later.
      */
     public function setUp(): void {
         global $DB;
@@ -65,22 +77,22 @@ class quiz_notify_attempt_manual_grading_completed_testcase extends advanced_tes
         $this->teacher = self::getDataGenerator()->create_user();
 
         // Users enrolments.
-        $this->studentrole = $DB->get_record('role', array('shortname' => 'student'));
-        $this->teacherrole = $DB->get_record('role', array('shortname' => 'editingteacher'));
+        $studentrole = $DB->get_record('role', array('shortname' => 'student'));
+        $teacherrole = $DB->get_record('role', array('shortname' => 'editingteacher'));
 
         // Allow student to receive messages.
         $coursecontext = context_course::instance($this->course->id);
-        assign_capability('mod/quiz:emailnotifyattemptgraded', CAP_ALLOW, $this->studentrole->id, $coursecontext, true);
+        assign_capability('mod/quiz:emailnotifyattemptgraded', CAP_ALLOW, $studentrole->id, $coursecontext, true);
 
-        $this->getDataGenerator()->enrol_user($this->student->id, $this->course->id, $this->studentrole->id, 'manual');
-        $this->getDataGenerator()->enrol_user($this->teacher->id, $this->course->id, $this->teacherrole->id, 'manual');
+        $this->getDataGenerator()->enrol_user($this->student->id, $this->course->id, $studentrole->id);
+        $this->getDataGenerator()->enrol_user($this->teacher->id, $this->course->id, $teacherrole->id);
 
         // Make a quiz.
         $quizgenerator = $this->getDataGenerator()->get_plugin_generator('mod_quiz');
         $this->quiz = $quizgenerator->create_instance(['course' => $this->course->id, 'questionsperpage' => 0,
             'grade' => 100.0, 'sumgrades' => 2]);
 
-        // Create a question.
+        // Create a truefalse question and an essay question.
         $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
         $cat = $questiongenerator->create_question_category();
         $truefalse = $questiongenerator->create_question('truefalse', null, array('category' => $cat->id));
@@ -101,20 +113,21 @@ class quiz_notify_attempt_manual_grading_completed_testcase extends advanced_tes
     public function test_get_list_of_attempts_within_conditions() {
         global $DB;
 
-        // Create an attempt with completely graded.
         $timenow = time();
-        $attempt1 = quiz_create_attempt($this->quizobj, 1, null, $timenow, false, $this->student->id);
-        quiz_start_new_attempt($this->quizobj, $this->quba, $attempt1, 1, $timenow);
+
+        // Create an attempt to be completely graded (one hour ago).
+        $attempt1 = quiz_create_attempt($this->quizobj, 1, null, $timenow - HOURSECS, false, $this->student->id);
+        quiz_start_new_attempt($this->quizobj, $this->quba, $attempt1, 1, $timenow - HOURSECS);
         quiz_attempt_save_started($this->quizobj, $this->quba, $attempt1);
 
-        // Process some responses from the student.
+        // Process some responses from the student (30 mins ago) and submit (20 mins ago).
         $attemptobj1 = quiz_attempt::create($attempt1->id);
         $tosubmit = [2 => ['answer' => 'Student 1 answer', 'answerformat' => FORMAT_HTML]];
-        $attemptobj1->process_submitted_actions($timenow, false, $tosubmit);
-        $attemptobj1->process_finish($timenow, false);
+        $attemptobj1->process_submitted_actions($timenow - 30 * MINSECS, false, $tosubmit);
+        $attemptobj1->process_finish($timenow - 20 * MINSECS, false);
 
-        // Finish the attempt of student.
-        $attemptobj1->get_question_usage()->manual_grade(2, 'Good!', 1, FORMAT_HTML, $timenow);
+        // Finish the attempt of student (now).
+        $attemptobj1->get_question_usage()->manual_grade(2, 'Good!', 1, FORMAT_HTML);
         question_engine::save_questions_usage_by_activity($attemptobj1->get_question_usage());
 
         $update = new stdClass();
@@ -124,33 +137,39 @@ class quiz_notify_attempt_manual_grading_completed_testcase extends advanced_tes
         $DB->update_record('quiz_attempts', $update);
         quiz_save_best_grade($attemptobj1->get_quiz(), $this->student->id);
 
-        set_config('notifyattemptgradeddelay', 0, 'quiz');
-
+        // Not quite time to send yet.
         $task = new quiz_notify_attempt_manual_grading_completed();
+        $task->set_time_for_testing($timenow + 5 * HOURSECS - 1);
         $attempts = $task->get_list_of_attempts();
+        $this->assertEquals(0, iterator_count($attempts));
 
+        // After time to send.
+        $task->set_time_for_testing($timenow + 5 * HOURSECS + 1);
+        $attempts = $task->get_list_of_attempts();
         $this->assertEquals(1, iterator_count($attempts));
     }
 
     /**
-     * Test SQL querry get list attempt which attempt has not completely graded.
+     * Test SQL query does not return attempts if the grading is not complete yet.
      */
     public function test_get_list_of_attempts_without_manual_graded() {
-        // Create an attempt without grading.
+
         $timenow = time();
-        $attempt2 = quiz_create_attempt($this->quizobj, 2, null, $timenow, false, $this->student->id);
-        quiz_start_new_attempt($this->quizobj, $this->quba, $attempt2, 2, $timenow);
+
+        // Create an attempt which won't be graded (1 hour ago).
+        $attempt2 = quiz_create_attempt($this->quizobj, 2, null, $timenow - HOURSECS, false, $this->student->id);
+        quiz_start_new_attempt($this->quizobj, $this->quba, $attempt2, 2, $timenow - HOURSECS);
         quiz_attempt_save_started($this->quizobj, $this->quba, $attempt2);
 
-        // Process some responses from the student.
+        // Process some responses from the student (30 mins ago) and submit (now).
         $attemptobj2 = quiz_attempt::create($attempt2->id);
         $tosubmit = [2 => ['answer' => 'Answer of student 2.', 'answerformat' => FORMAT_HTML]];
-        $attemptobj2->process_submitted_actions($timenow, false, $tosubmit);
+        $attemptobj2->process_submitted_actions($timenow - 30 * MINSECS, false, $tosubmit);
         $attemptobj2->process_finish($timenow, false);
 
-        set_config('notifyattemptgradeddelay', 0, 'quiz');
-
+        // After time to notify, except attempt not graded, so it won't appear.
         $task = new quiz_notify_attempt_manual_grading_completed();
+        $task->set_time_for_testing($timenow + 5 * HOURSECS + 1);
         $attempts = $task->get_list_of_attempts();
 
         $this->assertEquals(0, iterator_count($attempts));
@@ -159,23 +178,23 @@ class quiz_notify_attempt_manual_grading_completed_testcase extends advanced_tes
     /**
      * Test notify manual grading completed cron which the user attempt has not capability.
      */
-    public function test_notify_manual_grading_completed_cron_without_capability() {
+    public function test_notify_manual_grading_completed_task_without_capability() {
         global $DB;
 
-        // Create an attempt without capability.
+        // Create an attempt for a user without the capability.
         $timenow = time();
         $attempt = quiz_create_attempt($this->quizobj, 3, null, $timenow, false, $this->teacher->id);
-        quiz_start_new_attempt($this->quizobj, $this->quba, $attempt, 3, $timenow);
+        quiz_start_new_attempt($this->quizobj, $this->quba, $attempt, 3, $timenow - HOURSECS);
         quiz_attempt_save_started($this->quizobj, $this->quba, $attempt);
 
-        // Process some responses.
+        // Process some responses and submit.
         $attemptobj = quiz_attempt::create($attempt->id);
         $tosubmit = [2 => ['answer' => 'Answer of teacher.', 'answerformat' => FORMAT_HTML]];
-        $attemptobj->process_submitted_actions($timenow, false, $tosubmit);
-        $attemptobj->process_finish($timenow, false);
+        $attemptobj->process_submitted_actions($timenow - 30 * MINSECS, false, $tosubmit);
+        $attemptobj->process_finish($timenow - 20 * MINSECS, false);
 
-        // Finish the attempt.
-        $attemptobj->get_question_usage()->manual_grade(2, 'Good!', 1, FORMAT_HTML, $timenow);
+        // Grade the attempt.
+        $attemptobj->get_question_usage()->manual_grade(2, 'Good!', 1, FORMAT_HTML);
         question_engine::save_questions_usage_by_activity($attemptobj->get_question_usage());
 
         $update = new stdClass();
@@ -185,16 +204,11 @@ class quiz_notify_attempt_manual_grading_completed_testcase extends advanced_tes
         $DB->update_record('quiz_attempts', $update);
         quiz_save_best_grade($attemptobj->get_quiz(), $this->student->id);
 
-        set_config('notifyattemptgradeddelay', 0, 'quiz');
-
         // Run the quiz notify attempt manual graded task.
-        ob_start();
         $task = new quiz_notify_attempt_manual_grading_completed();
         $task->execute();
-        ob_end_clean();
 
         $attemptobj = quiz_attempt::create($attempt->id);
-
         $this->assertEquals($attemptobj->get_attempt()->timefinish, $attemptobj->get_attempt()->gradednotificationsenttime);
     }
 
@@ -217,7 +231,7 @@ class quiz_notify_attempt_manual_grading_completed_testcase extends advanced_tes
         $attemptobj->process_finish($timenow, false);
 
         // Finish the attempt of student.
-        $attemptobj->get_question_usage()->manual_grade(2, 'Good!', 1, FORMAT_HTML, $timenow);
+        $attemptobj->get_question_usage()->manual_grade(2, 'Good!', 1, FORMAT_HTML);
         question_engine::save_questions_usage_by_activity($attemptobj->get_question_usage());
 
         $update = new stdClass();
@@ -230,10 +244,8 @@ class quiz_notify_attempt_manual_grading_completed_testcase extends advanced_tes
         set_config('notifyattemptgradeddelay', 0, 'quiz');
 
         // Run the quiz notify attempt manual graded task.
-        ob_start();
         $task = new quiz_notify_attempt_manual_grading_completed();
         $task->execute();
-        ob_end_clean();
 
         $attemptobj = quiz_attempt::create($attempt->id);
 
