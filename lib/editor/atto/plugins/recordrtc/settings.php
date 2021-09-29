@@ -61,4 +61,10 @@ if ($ADMIN->fulltree) {
     $default = '120';
     $setting = new admin_setting_configtext('atto_recordrtc/timelimit', $name, $desc, $default, PARAM_INT, 8);
     $settings->add($setting);
+
+    // Records audio in the MP3 format.
+    $name = get_string('audiortcmp3', 'atto_recordrtc');
+    $desc = get_string('audiortcmp3_desc', 'atto_recordrtc');
+    $setting = new admin_setting_configcheckbox('atto_recordrtc/audiortcmp3', $name, $desc, 0);
+    $settings->add($setting);
 }

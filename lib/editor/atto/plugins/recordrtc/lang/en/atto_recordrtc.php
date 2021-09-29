@@ -29,8 +29,11 @@ $string['allowedtypes_desc'] = 'Which recording buttons should appear in Atto. I
 $string['attachrecording'] = 'Attach recording';
 $string['audioandvideo'] = 'Audio and video';
 $string['audiobitrate'] = 'Audio bitrate';
-$string['audiobitrate_desc'] = 'Quality of audio recording (larger number means higher quality)';
+$string['audiobitrate_desc'] = 'Quality of audio recording (larger number means higher quality). Applies to the default OGG format only.
+<br />This setting changes the quality, and therefore file size, of the audio recording. It applies when using the default OGG format only.';
 $string['audiortc'] = 'Record audio';
+$string['audiortcmp3'] = 'Record using MP3';
+$string['audiortcmp3_desc'] = 'Records audio in the MP3 format instead of OGG. The audio bitrate setting does not apply to MP3 recording.';
 $string['gumabort'] = 'Something strange happened which prevented the webcam/microphone from being used';
 $string['gumabort_title'] = 'Something happened';
 $string['gumnotallowed'] = 'The user must allow the browser access to the webcam/microphone';

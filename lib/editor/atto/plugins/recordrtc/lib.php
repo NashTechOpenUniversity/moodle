@@ -44,6 +44,7 @@ function atto_recordrtc_params_for_js($elementid, $options, $fpoptions) {
     $audiobitrate = get_config('atto_recordrtc', 'audiobitrate');
     $videobitrate = get_config('atto_recordrtc', 'videobitrate');
     $timelimit = get_config('atto_recordrtc', 'timelimit');
+    $audiortcmp3 = (bool)get_config('atto_recordrtc', 'audiortcmp3');
 
     // Update $allowedtypes to account for capabilities.
     $audioallowed = $allowedtypes === 'audio' || $allowedtypes === 'both';
@@ -74,7 +75,8 @@ function atto_recordrtc_params_for_js($elementid, $options, $fpoptions) {
                     'timelimit' => $timelimit,
                     'audiortcicon' => $audiortcicon,
                     'videortcicon' => $videortcicon,
-                    'maxrecsize' => $maxrecsize
+                    'maxrecsize' => $maxrecsize,
+                    'audiortcmp3' => $audiortcmp3
               );
 
     return $params;

@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<libraries>
+  <library>
+    <location>amd/src/local/mp3-mediarecorder/*.*</location>
+    <name>mp3-mediarecorder</name>
+    <license>MIT</license>
+    <version>4.0.5</version>
+    <licenseversion></licenseversion>
+  </library>
+</libraries>
