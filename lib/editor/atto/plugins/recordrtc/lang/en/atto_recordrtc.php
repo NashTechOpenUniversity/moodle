@@ -78,6 +78,7 @@ $string['uploadprogress'] = 'completed';
 $string['videobitrate'] = 'Video bitrate';
 $string['videobitrate_desc'] = 'Quality of video recording (larger number means higher quality)';
 $string['videortc'] = 'Record video';
+$string['downloadrtc'] = 'Download {$a}';
 
 // Deprecated since Moodle 4.0.
 $string['timelimit'] = 'Time limit in seconds';

@@ -37,3 +37,12 @@
 .atto_recordrtc #upload {
     white-space: normal;
 }
+
+audio[controls],
+.atto_recordrtc_download_audio {
+    vertical-align: middle;
+}
+
+.atto_recordrtc_download_video {
+    display: block;
+}
