@@ -84,7 +84,7 @@ class quiz_notify_attempt_manual_grading_completed_test extends advanced_testcas
 
         // Setup test data.
         $this->course = $this->getDataGenerator()->create_course();
-        $this->quiz = $this->getDataGenerator()->create_module('quiz', array('course' => $this->course->id));
+        $this->quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $this->course->id]);
         $this->context = context_module::instance($this->quiz->cmid);
         $this->cm = get_coursemodule_from_instance('quiz', $this->quiz->id);
 
@@ -93,8 +93,8 @@ class quiz_notify_attempt_manual_grading_completed_test extends advanced_testcas
         $this->teacher = self::getDataGenerator()->create_user();
 
         // Users enrolments.
-        $studentrole = $DB->get_record('role', array('shortname' => 'student'));
-        $teacherrole = $DB->get_record('role', array('shortname' => 'editingteacher'));
+        $studentrole = $DB->get_record('role', ['shortname' => 'student']);
+        $teacherrole = $DB->get_record('role', ['shortname' => 'editingteacher']);
 
         // Allow student to receive messages.
         $coursecontext = context_course::instance($this->course->id);
@@ -111,8 +111,8 @@ class quiz_notify_attempt_manual_grading_completed_test extends advanced_testcas
         // Create a truefalse question and an essay question.
         $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
         $cat = $questiongenerator->create_question_category();
-        $truefalse = $questiongenerator->create_question('truefalse', null, array('category' => $cat->id));
-        $essay = $questiongenerator->create_question('essay', null, array('category' => $cat->id));
+        $truefalse = $questiongenerator->create_question('truefalse', null, ['category' => $cat->id]);
+        $essay = $questiongenerator->create_question('essay', null, ['category' => $cat->id]);
 
         // Add them to the quiz.
         quiz_add_quiz_question($truefalse->id, $this->quiz);

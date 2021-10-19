@@ -1889,10 +1889,10 @@ function quiz_attempt_submitted_handler($event) {
  * Send the notification message when a quiz attempt has been manual graded.
  *
  * @param quiz_attempt $attemptobj Some data about the quiz attempt.
- * @param object $touser
- * @return int|false as for message_send.
+ * @param object $userto
+ * @return int|false As for message_send.
  */
-function quiz_send_notify_manual_graded_message(quiz_attempt $attemptobj, object $touser) {
+function quiz_send_notify_manual_graded_message(quiz_attempt $attemptobj, object $userto): ?int {
     global $CFG;
 
     $quizname = format_string($attemptobj->get_quiz_name());
@@ -1908,14 +1908,14 @@ function quiz_send_notify_manual_graded_message(quiz_attempt $attemptobj, object
     // Attempt info.
     $a->attempttimefinish  = userdate($attemptobj->get_attempt()->timefinish);
     // Student's info.
-    $a->studentidnumber    = $touser->idnumber;
-    $a->studentname        = fullname($touser);
+    $a->studentidnumber    = $userto->idnumber;
+    $a->studentname        = fullname($userto);
 
     $eventdata = new \core\message\message();
     $eventdata->component = 'mod_quiz';
     $eventdata->name = 'attempt_grading_complete';
     $eventdata->userfrom = core_user::get_noreply_user();
-    $eventdata->userto = $touser;
+    $eventdata->userto = $userto;
 
     $eventdata->subject = get_string('emailmanualgradedsubject', 'quiz', $a);
     $eventdata->fullmessage = get_string('emailmanualgradedbody', 'quiz', $a);
