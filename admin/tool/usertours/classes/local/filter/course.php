@@ -49,11 +49,12 @@ class course extends base {
      * Overrides the base add form element with a course selector.
      *
      * @param \MoodleQuickForm $mform
+     * @throws \coding_exception
      */
     public static function add_filter_to_form(\MoodleQuickForm &$mform) {
         $options = ['multiple' => true];
 
-        $filtername = self::get_filter_name();
+        $filtername = static::get_filter_name();
         $key = "filter_{$filtername}";
 
         $mform->addElement('course', $key, get_string($key, 'tool_usertours'), $options);
