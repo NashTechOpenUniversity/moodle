@@ -4651,6 +4651,7 @@ class restore_userscompletion_structure_step extends restore_structure_step {
         $paths = array();
 
         $paths[] = new restore_path_element('completion', '/completions/completion');
+        $paths[] = new restore_path_element('completion_viewed', '/completions/completion_viewed');
 
         return $paths;
     }
@@ -4679,6 +4680,48 @@ class restore_userscompletion_structure_step extends restore_structure_step {
         } else {
             // Normal entry where it doesn't exist already
             $DB->insert_record('course_modules_completion', $data);
+        }
+        // After MDL-58266 changes.
+        // For legacy backup.
+        if (isset($data->viewed)) {
+            $existingview = $DB->get_record('course_modules_completion_v', [
+                'coursemoduleid' => $data->coursemoduleid,
+                'userid' => $data->userid]
+                , 'id');
+            $dataview = new stdClass();
+            $dataview->viewed = $data->viewed;
+            $dataview->coursemoduleid = $data->coursemoduleid;
+            $dataview->userid = $data->userid;
+            if ($existingview) {
+                $dataview->id = $existingview->id;
+                $DB->update_record('course_modules_completion_v', $dataview);
+            } else {
+                $DB->insert_record('course_modules_completion_v', $dataview);
+            }
+        }
+    }
+
+    /**
+     * Process completion viewed row.
+     *
+     * @param stdClass $data
+     */
+    protected function process_completion_viewed($data) {
+         global $DB;
+        $data = (object)$data;
+
+        $data->coursemoduleid = $this->task->get_moduleid();
+        $data->userid = $this->get_mappingid('user', $data->userid);
+
+        $existingview = $DB->get_record('course_modules_completion_v', array(
+            'coursemoduleid' => $data->coursemoduleid,
+            'userid' => $data->userid), 'id');
+
+        if ($existingview) {
+            $data->id = $existingview->id;
+            $DB->update_record('course_modules_completion_v', $data);
+        } else {
+            $DB->insert_record('course_modules_completion_v', $data);
         }
     }
 }

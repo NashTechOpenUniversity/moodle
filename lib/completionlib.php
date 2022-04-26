@@ -1091,13 +1091,15 @@ class completion_info {
         // If we're not caching the completion data, then just fetch the completion data for the user in this course module.
         if ($usecache && $wholecourse) {
             // Get whole course data for cache.
-            $alldatabycmc = $DB->get_records_sql("SELECT cm.id AS cmid, cmc.*
-                                                    FROM {course_modules} cm
-                                               LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id
-                                                         AND cmc.userid = ?
-                                              INNER JOIN {modules} m ON m.id = cm.module
-                                                   WHERE m.visible = 1 AND cm.course = ?", [$userid, $this->course->id]);
-
+            $alldatabycmc = $DB->get_records_sql("SELECT cm.id AS cmid, cmc.*, cmcv.viewed AS viewed
+                                                         FROM {course_modules} cm
+                                                    LEFT JOIN {course_modules_completion} cmc
+                                                           ON cmc.coursemoduleid = cm.id  AND cmc.userid = ?
+                                                    LEFT JOIN {course_modules_completion_v} cmcv
+                                                           ON cmcv.coursemoduleid = cm.id  AND cmcv.userid = ?
+                                                   INNER JOIN {modules} m ON m.id = cm.module
+                                                        WHERE m.visible = 1 AND cm.course = ?",
+                [$userid, $userid, $this->course->id]);
             $cminfos = get_fast_modinfo($cm->course, $userid)->get_cms();
 
             // Reindex by course module id.
@@ -1110,6 +1112,7 @@ class completion_info {
 
                 if (empty($data->coursemoduleid)) {
                     $cacheddata[$data->cmid] = $defaultdata;
+                    $cacheddata[$data->cmid]['viewed'] = isset($data->viewed) ? $data->viewed : $cacheddata[$data->cmid]['viewed'];
                     $cacheddata[$data->cmid]['coursemoduleid'] = $data->cmid;
                 } else {
                     unset($data->cmid);
@@ -1125,14 +1128,18 @@ class completion_info {
             $data = $cacheddata[$cminfo->id];
         } else {
             // Get single record
-            $data = $DB->get_record('course_modules_completion', array('coursemoduleid' => $cminfo->id, 'userid' => $userid));
+            $data = $DB->get_record('course_modules_completion', ['coursemoduleid' => $cminfo->id, 'userid' => $userid]);
+            $vieweddata = $DB->get_field('course_modules_completion_v', 'viewed',
+                ['coursemoduleid' => $cminfo->id, 'userid' => $userid]);
             if ($data) {
                 $data = (array)$data;
             } else {
                 // Row not present counts as 'not complete'.
                 $data = $defaultdata;
             }
-
+            if (isset($vieweddata)) {
+                $data['viewed'] = $vieweddata;
+            }
             // Put in cache.
             $cacheddata[$cminfo->id] = $data;
         }
@@ -1188,7 +1195,7 @@ class completion_info {
         // If view is required, try and fetch from the db. In some cases, cache can be invalid.
         if ($cm->completionview == COMPLETION_VIEW_REQUIRED) {
             $data['viewed'] = COMPLETION_INCOMPLETE;
-            $record = $DB->get_record('course_modules_completion', array('coursemoduleid' => $cm->id, 'userid' => $userid));
+            $record = $DB->get_record('course_modules_completion_v', ['coursemoduleid' => $cm->id, 'userid' => $userid]);
             if ($record) {
                 $data['viewed'] = ($record->viewed == COMPLETION_VIEWED ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE);
             }
@@ -1264,6 +1271,22 @@ class completion_info {
         } else {
             // Has real (nonzero) id meaning that a database row exists, update
             $DB->update_record('course_modules_completion', $data);
+        }
+        $dataview = new stdClass();
+        $dataview->coursemoduleid = $data->coursemoduleid;
+        $dataview->userid = $data->userid;
+        $dataview->viewed = isset($data->viewed) ? $data->viewed : null;
+        if (empty($dataview->id)) {
+            // Check there isn't really a row.
+            $dataview->id = $DB->get_field('course_modules_completion_v', 'id',
+                ['coursemoduleid' => $dataview->coursemoduleid, 'userid' => $dataview->userid]);
+        }
+        if (empty($dataview->id)) {
+            // Didn't exist before, needs creating.
+            $dataview->id = $DB->insert_record('course_modules_completion_v', $dataview);
+        } else {
+            // Has real (nonzero) id meaning that a database row exists, update.
+            $DB->update_record('course_modules_completion_v', $dataview);
         }
         $transaction->allow_commit();
 

@@ -1281,20 +1281,22 @@ class backup_userscompletion_structure_step extends backup_structure_step {
 
         $completions = new backup_nested_element('completions');
 
-        $completion = new backup_nested_element('completion', array('id'), array(
-            'userid', 'completionstate', 'viewed', 'timemodified'));
-
+        $completion = new backup_nested_element('completion', ['id'], ['userid', 'completionstate', 'timemodified']);
+        $completionview = new backup_nested_element('completion_viewed', ['id'], ['userid', 'viewed']);
         // Build the tree
 
         $completions->add_child($completion);
+        $completions->add_child($completionview);
 
         // Define sources
 
-        $completion->set_source_table('course_modules_completion', array('coursemoduleid' => backup::VAR_MODID));
+        $completion->set_source_table('course_modules_completion', ['coursemoduleid' => backup::VAR_MODID]);
+        $completionview->set_source_table('course_modules_completion_v', ['coursemoduleid' => backup::VAR_MODID]);
 
         // Define id annotations
 
         $completion->annotate_ids('user', 'userid');
+        $completionview->annotate_ids('user', 'userid');
 
         // Return the root element (completions)
         return $completions;

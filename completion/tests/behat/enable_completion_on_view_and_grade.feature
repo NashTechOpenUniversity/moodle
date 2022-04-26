@@ -41,8 +41,7 @@ Feature: Students will be marked as completed and pass/fail
     And I log out
 
   Scenario: Confirm completion (incomplete/pass/fail) are set correctly
-    Given I log in as "teacher1"
-    And I am on "Course 1" course homepage
+    Given I am on the "Course 1" course page logged in as teacher1
     And I navigate to "View > Grader report" in the course gradebook
     And I turn editing mode on
     And I give the grade "21" to the user "Student First" for the grade item "Test assignment name"
@@ -50,20 +49,42 @@ Feature: Students will be marked as completed and pass/fail
     And I give the grade "30" to the user "Student Third" for the grade item "Test assignment name"
     And I press "Save changes"
     And I log out
-    When I log in as "student1"
-    And I am on "Course 1" course homepage
+    When I am on the "Course 1" course page logged in as student1
     And the "View" completion condition of "Test assignment name" is displayed as "done"
     And the "Receive a grade" completion condition of "Test assignment name" is displayed as "done"
     And the "Receive a passing grade" completion condition of "Test assignment name" is displayed as "failed"
     And I log out
-    And I log in as "student2"
-    And I am on "Course 1" course homepage
+    When I am on the "Course 1" course page logged in as student2
     And the "View" completion condition of "Test assignment name" is displayed as "done"
     And the "Receive a grade" completion condition of "Test assignment name" is displayed as "done"
     And the "Receive a passing grade" completion condition of "Test assignment name" is displayed as "done"
     And I log out
-    And I log in as "student3"
-    And I am on "Course 1" course homepage
+    When I am on the "Course 1" course page logged in as student3
     And the "View" completion condition of "Test assignment name" is displayed as "todo"
     And the "Receive a grade" completion condition of "Test assignment name" is displayed as "done"
     And the "Receive a passing grade" completion condition of "Test assignment name" is displayed as "failed"
+    When I am on the "Test assignment name" "assign activity" page logged in as student1
+    And the "View" completion condition of "Test assignment name" is displayed as "done"
+    And I log out
+    When I am on the "Test assignment name" "assign activity" page logged in as student2
+    And the "View" completion condition of "Test assignment name" is displayed as "done"
+    And I log out
+    When I am on the "Test assignment name" "assign activity" page logged in as student3
+    And the "View" completion condition of "Test assignment name" is displayed as "done"
+    And I log out
+    When I am on the "Test assignment name" "assign activity" page logged in as teacher1
+    And I navigate to "Settings" in current page administration
+    And I expand all fieldsets
+    And I press "Unlock completion options"
+    And I expand all fieldsets
+    Then I should see "Completion options unlocked"
+    And I click on "Save and display" "button"
+    And I log out
+    When I am on the "Course 1" course page logged in as student1
+    Then the "View" completion condition of "Test assignment name" is displayed as "done"
+    And I log out
+    When I am on the "Course 1" course page logged in as student2
+    Then the "View" completion condition of "Test assignment name" is displayed as "done"
+    And I log out
+    When I am on the "Course 1" course page logged in as student3
+    Then the "View" completion condition of "Test assignment name" is displayed as "done"
