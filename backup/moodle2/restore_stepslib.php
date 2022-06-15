@@ -4670,7 +4670,6 @@ class restore_userscompletion_structure_step extends restore_structure_step {
         $paths = array();
 
         $paths[] = new restore_path_element('completion', '/completions/completion');
-        $paths[] = new restore_path_element('completion_viewed', '/completions/completion_viewed');
 
         return $paths;
     }
@@ -4703,51 +4702,76 @@ class restore_userscompletion_structure_step extends restore_structure_step {
         // After MDL-58266 changes.
         // For legacy backup.
         if (isset($data->viewed)) {
-            $existingview = $DB->get_record('course_modules_completion_v', [
-                'coursemoduleid' => $data->coursemoduleid,
-                'userid' => $data->userid]
-                , 'id');
-            $dataview = (object)[];
-            $dataview->viewed = $data->viewed;
-            $dataview->coursemoduleid = $data->coursemoduleid;
-            $dataview->userid = $data->userid;
-            $this->process_completion_viewer_data($existingview, $dataview);
+            $dataview = clone($data);
+            unset($dataview->id);
+            $dataview->timecreated = $data->timemodified;
+
+            $DB->insert_record('course_modules_viewed', $dataview);
         }
+    }
+}
+
+/**
+ * Structure step that will process the user activity completion viewed.
+ */
+class restore_userscompletionview_structure_step extends restore_structure_step {
+    /**
+     * To conditionally decide if this step must be executed
+     * Note the "settings" conditions are evaluated in the
+     * corresponding task. Here we check for other conditions
+     * not being restore settings (files, site settings...)
+     */
+    protected function execute_condition() {
+        global $CFG;
+
+        // Completion disabled in this site, don't execute.
+        if (empty($CFG->enablecompletion)) {
+            return false;
+        }
+
+        // No completion on the front page.
+        if ($this->get_courseid() == SITEID) {
+            return false;
+        }
+
+        // No user completion info found, don't execute.
+        $fullpath = $this->task->get_taskbasepath();
+        $fullpath = rtrim($fullpath, '/') . '/' . $this->filename;
+        if (!file_exists($fullpath)) {
+            return false;
+        }
+
+        // Arrived here, execute the step.
+        return true;
     }
 
     /**
-     * Process completion viewed row.
+     * Define structure for completionview.
      *
-     * @param stdClass $data
+     * @return array
      */
-    protected function process_completion_viewed($data) {
-        global $DB;
-        $data = (object)$data;
+    protected function define_structure(): array {
 
+        $paths = array();
+
+        $paths[] = new restore_path_element('completionview', '/completionviews/completionview');
+
+        return $paths;
+    }
+
+    /**
+     * Process completion structure in the xml.
+     *
+     * @param array $data
+     */
+    protected function process_completionview(array $data) {
+        global $DB;
+
+        $data = (object)$data;
         $data->coursemoduleid = $this->task->get_moduleid();
         $data->userid = $this->get_mappingid('user', $data->userid);
 
-        $existingview = $DB->get_record('course_modules_completion_v', [
-            'coursemoduleid' => $data->coursemoduleid,
-            'userid' => $data->userid], 'id');
-        $this->process_completion_viewer_data($existingview, $data);
-    }
-
-    /**
-     * Process completion viewer data.
-     *
-     * @param mixed $existingview Existing record or false.
-     * @param object $data
-     *
-     */
-    private function process_completion_viewer_data($existingview, $data): void {
-        global $DB;
-        if ($existingview) {
-            $data->id = $existingview->id;
-            $DB->update_record('course_modules_completion_v', $data);
-        } else {
-            $DB->insert_record('course_modules_completion_v', $data);
-        }
+        $DB->insert_record('course_modules_viewed', $data);
     }
 }
 

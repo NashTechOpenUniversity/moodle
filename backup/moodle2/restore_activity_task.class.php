@@ -178,6 +178,7 @@ abstract class restore_activity_task extends restore_task {
         // Userscompletion (conditionally)
         if ($this->get_setting_value('userscompletion')) {
             $this->add_step(new restore_userscompletion_structure_step('activity_userscompletion', 'completion.xml'));
+            $this->add_step(new restore_userscompletionview_structure_step('activity_userscompletionview', 'completionview.xml'));
         }
 
         // Logs (conditionally)

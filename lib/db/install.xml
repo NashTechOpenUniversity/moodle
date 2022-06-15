@@ -161,7 +161,7 @@
         <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="criteriatype" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Type of criteria"/>
         <FIELD NAME="module" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false" COMMENT="Type of module (if using module criteria type)"/>
-        <FIELD NAME="moduleinstance" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Module instance id (if using module criteria type)"/>
+        <FIELD NAME="moduleinstance" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Course module id (if using module criteria type)"/>
         <FIELD NAME="courseinstance" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Course instance id (if using course criteria type)"/>
         <FIELD NAME="enrolperiod" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Number of days after enrolment the course is completed (if using enrolperiod criteria type)"/>
         <FIELD NAME="timeend" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Timestamp of the date for course completion (if using date criteria type)"/>
@@ -339,12 +339,13 @@
         <INDEX NAME="userid-coursemoduleid" UNIQUE="true" FIELDS="userid, coursemoduleid"/>
       </INDEXES>
     </TABLE>
-    <TABLE NAME="course_modules_completion_v" COMMENT="Stores the completion viewed (viewed or not viewed) of each user on each activity.">
+    <TABLE NAME="course_modules_viewed" COMMENT="Stores the completion viewed (viewed or not viewed) of each user on each activity.">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="coursemoduleid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Activity that has been completed (or not)."/>
-        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID of user who has (or hasn't) completed the activity."/>
+        <FIELD NAME="coursemoduleid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Activity that has been viewed (or not)."/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID of user who has (or hasn't) viewed the activity."/>
         <FIELD NAME="viewed" TYPE="int" LENGTH="1" NOTNULL="false" SEQUENCE="false" COMMENT="Tracks whether or not this activity has been viewed. NULL = we are not tracking viewed for this activity 0 = not viewed 1 = viewed"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Time at which the completion viewed created."/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>

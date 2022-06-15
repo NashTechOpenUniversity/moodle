@@ -1287,25 +1287,62 @@ class backup_userscompletion_structure_step extends backup_structure_step {
 
         $completions = new backup_nested_element('completions');
 
-        $completion = new backup_nested_element('completion', ['id'], ['userid', 'completionstate', 'timemodified']);
-        $completionview = new backup_nested_element('completion_viewed', ['id'], ['userid', 'viewed']);
+        $completion = new backup_nested_element('completion', array('id'), array(
+            'userid', 'completionstate', 'viewed', 'timemodified'));
+
         // Build the tree
 
         $completions->add_child($completion);
-        $completions->add_child($completionview);
 
         // Define sources
 
-        $completion->set_source_table('course_modules_completion', ['coursemoduleid' => backup::VAR_MODID]);
-        $completionview->set_source_table('course_modules_completion_v', ['coursemoduleid' => backup::VAR_MODID]);
+        $completion->set_source_table('course_modules_completion', array('coursemoduleid' => backup::VAR_MODID));
 
         // Define id annotations
 
         $completion->annotate_ids('user', 'userid');
-        $completionview->annotate_ids('user', 'userid');
 
         // Return the root element (completions)
         return $completions;
+    }
+}
+
+/**
+ * Structure step in charge if constructing the completion.xml file for all the users completion information in a given activity.
+ */
+class backup_userscompletionview_structure_step extends backup_structure_step {
+
+    /**
+     * Skip completion on the front page.
+     * @return bool
+     */
+    protected function execute_condition() {
+        return ($this->get_courseid() != SITEID);
+    }
+
+    /**
+     * Define structure of xml file.
+     *
+     * @return backup_nested_element
+     */
+    protected function define_structure() {
+
+        // Define each element separated.
+        $completionviews = new backup_nested_element('completionviews');
+
+        $completionview = new backup_nested_element('completionview', ['id'], ['userid', 'viewed', 'timecreated']);
+
+        // Build the tree.
+        $completionviews->add_child($completionview);
+
+        // Define sources.
+        $completionview->set_source_table('course_modules_viewed', ['coursemoduleid' => backup::VAR_MODID]);
+
+        // Define id annotations.
+        $completionview->annotate_ids('user', 'userid');
+
+        // Return the root element (completionviews).
+        return $completionviews;
     }
 }
 

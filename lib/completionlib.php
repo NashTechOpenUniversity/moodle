@@ -1091,12 +1091,12 @@ class completion_info {
         // If we're not caching the completion data, then just fetch the completion data for the user in this course module.
         if ($usecache && $wholecourse) {
             // Get whole course data for cache.
-            $alldatabycmc = $DB->get_records_sql("SELECT cm.id AS cmid, cmc.*, cmcv.viewed AS viewed
+            $alldatabycmc = $DB->get_records_sql("SELECT cm.id AS cmid, cmc.*, cmv.viewed AS viewed
                                                     FROM {course_modules} cm
                                                LEFT JOIN {course_modules_completion} cmc
                                                          ON cmc.coursemoduleid = cm.id  AND cmc.userid = ?
-                                               LEFT JOIN {course_modules_completion_v} cmcv
-                                                         ON cmcv.coursemoduleid = cm.id  AND cmcv.userid = ?
+                                               LEFT JOIN {course_modules_viewed} cmv
+                                                         ON cmv.coursemoduleid = cm.id  AND cmv.userid = ?
                                               INNER JOIN {modules} m ON m.id = cm.module
                                                    WHERE m.visible = 1 AND cm.course = ?",
                 [$userid, $userid, $this->course->id]);
@@ -1128,16 +1128,13 @@ class completion_info {
             $data = $cacheddata[$cminfo->id];
         } else {
             // Get single record
-            $data = $DB->get_record('course_modules_completion', ['coursemoduleid' => $cminfo->id, 'userid' => $userid]);
-            $vieweddata = $DB->get_field('course_modules_completion_v', 'viewed',
-                ['coursemoduleid' => $cminfo->id, 'userid' => $userid]);
+            $data = $this->get_completion_data($cminfo->id, $userid);
             if ($data) {
                 $data = (array)$data;
             } else {
                 // Row not present counts as 'not complete'.
                 $data = $defaultdata;
             }
-            $data['viewed'] = $vieweddata ?? null;
             // Put in cache.
             $cacheddata[$cminfo->id] = $data;
         }
@@ -1193,7 +1190,7 @@ class completion_info {
         // If view is required, try and fetch from the db. In some cases, cache can be invalid.
         if ($cm->completionview == COMPLETION_VIEW_REQUIRED) {
             $data['viewed'] = COMPLETION_INCOMPLETE;
-            $record = $DB->get_record('course_modules_completion_v', ['coursemoduleid' => $cm->id, 'userid' => $userid]);
+            $record = $DB->get_record('course_modules_viewed', ['coursemoduleid' => $cm->id, 'userid' => $userid]);
             if ($record) {
                 $data['viewed'] = ($record->viewed == COMPLETION_VIEWED ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE);
             }
@@ -1276,15 +1273,16 @@ class completion_info {
         $dataview->viewed = $data->viewed ?? null;
         if (empty($dataview->id)) {
             // Check there isn't really a row.
-            $dataview->id = $DB->get_field('course_modules_completion_v', 'id',
+            $dataview->id = $DB->get_field('course_modules_viewed', 'id',
                 ['coursemoduleid' => $dataview->coursemoduleid, 'userid' => $dataview->userid]);
         }
         if (empty($dataview->id)) {
             // Didn't exist before, needs creating.
-            $dataview->id = $DB->insert_record('course_modules_completion_v', $dataview);
+            $dataview->timecreated = time();
+            $dataview->id = $DB->insert_record('course_modules_viewed', $dataview);
         } else {
             // Has real (nonzero) id meaning that a database row exists, update.
-            $DB->update_record('course_modules_completion_v', $dataview);
+            $DB->update_record('course_modules_viewed', $dataview);
         }
         $transaction->allow_commit();
 
@@ -1622,6 +1620,22 @@ class completion_info {
         global $CFG;
         throw new moodle_exception('err_system','completion',
             $CFG->wwwroot.'/course/view.php?id='.$this->course->id,null,$error);
+    }
+
+    /**
+     * Get completion data include viewed field.
+     *
+     * @param int $coursemoduleid
+     * @param int $userid
+     * @return mixed
+     */
+    public function get_completion_data(int $coursemoduleid, int $userid) {
+        global $DB;
+        $sql = "SELECT cmc.*, cmv.viewed
+                  FROM {course_modules_completion} cmc
+             LEFT JOIN {course_modules_viewed} cmv ON cmc.coursemoduleid = cmv.coursemoduleid AND cmc.userid = cmv.userid
+                 WHERE cmc.coursemoduleid = :coursemoduleid AND cmc.userid = :userid";
+        return $DB->get_record_sql($sql, ['coursemoduleid' => $coursemoduleid, 'userid' => $userid]);
     }
 }
 

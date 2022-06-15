@@ -776,7 +776,7 @@ class completionlib_test extends advanced_testcase {
                 'viewed' => 0,
             ];
             $DB->insert_record('course_modules_completion', $cmcompletionrecord);
-            $DB->insert_record('course_modules_completion_v', $cmcompletionviewrecord);
+            $DB->insert_record('course_modules_viewed', $cmcompletionviewrecord);
         }
 
         // Whether we expect for the returned completion data to be stored in the cache.
@@ -844,9 +844,10 @@ class completionlib_test extends advanced_testcase {
             'coursemoduleid' => $cm->id,
             'userid' => $this->user->id,
             'viewed' => 0,
+            'timecreated' => 0
         ];
         $DB->insert_record('course_modules_completion', $cmcompletionrecord);
-        $DB->insert_record('course_modules_completion_v', $cmcompletionviewrecord);
+        $DB->insert_record('course_modules_viewed', $cmcompletionviewrecord);
 
         // Mock other completion data.
         $completioninfo = new completion_info($this->course);
