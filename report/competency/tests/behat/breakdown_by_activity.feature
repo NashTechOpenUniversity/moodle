@@ -32,7 +32,7 @@ Feature: See the competencies for an activity
     And I log in as "admin"
     And I am on site homepage
     And I follow "Course 1"
-    And I follow "Competencies"
+    And I navigate to "Competencies" in current page administration
     And I press "Add competencies to course"
     And "Competency picker" "dialogue" should be visible
     And I select "Test-Comp1" of the competency tree
@@ -48,7 +48,8 @@ Feature: See the competencies for an activity
 
   @javascript
   Scenario: Go to the competency breakdown report
-    When I navigate to "Reports > Competency breakdown" in current page administration
+    When I navigate to "Reports" in current page administration
+    And I click on "Competency breakdown" "link"
     And I set the field "Filter competencies by resource or activity" to "PageName1"
     Then I should see "Test-Comp1"
     And I should not see "Test-Comp2"
@@ -60,7 +61,7 @@ Feature: See the competencies for an activity
     And I click on "Rate" "button"
     And I set the field "Rating" to "A"
     And I click on "Rate" "button" in the ".competency-grader" "css_element"
-    And I click on "Close" "button"
+    And I click on "Close" "button" in the "User competency summary" "dialogue"
     And I click on "PageName1" "autocomplete_selection"
     And I should see "Test-Comp1"
     And I should see "Test-Comp2"

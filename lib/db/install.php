@@ -310,6 +310,13 @@ function xmldb_main_install() {
     $mypage->private = 1;
     $DB->insert_record('my_pages', $mypage);
 
+    $mycoursespage = new stdClass();
+    $mycoursespage->userid = null;
+    $mycoursespage->name = '__courses';
+    $mycoursespage->private = 0;
+    $mycoursespage->sortorder  = 0;
+    $DB->insert_record('my_pages', $mycoursespage);
+
     // Set a sensible default sort order for the most-used question types.
     set_config('multichoice_sortorder', 1, 'question');
     set_config('truefalse_sortorder', 2, 'question');
@@ -324,4 +331,8 @@ function xmldb_main_install() {
 
     require_once($CFG->dirroot . '/badges/upgradelib.php'); // Core install and upgrade related functions only for badges.
     badges_install_default_backpacks();
+
+    // Create default core site admin presets.
+    require_once($CFG->dirroot . '/admin/presets/classes/helper.php');
+    \core_adminpresets\helper::create_default_presets();
 }

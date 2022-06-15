@@ -111,14 +111,15 @@ class stateupdates implements JsonSerializable {
         }
         $course = $this->format->get_course();
         $modinfo = course_modinfo::instance($course);
+        $format = $this->format;
 
         $section = $modinfo->get_section_info_by_id($sectionid, MUST_EXIST);
 
-        if (!$section->uservisible) {
+        if (!$format->is_section_visible($section)) {
             return;
         }
 
-        $sectionclass = $this->format->get_output_classname('state\\section');
+        $sectionclass = $format->get_output_classname('state\\section');
         $currentstate = new $sectionclass($this->format, $section);
 
         $this->add_update('section', $action, $currentstate->export_for_template($this->output));
@@ -130,7 +131,7 @@ class stateupdates implements JsonSerializable {
      * @param int $sectionid The affected section id.
      */
     public function add_section_delete(int $sectionid): void {
-        $this->add_update('section', 'delete', (object)['id' => $sectionid]);
+        $this->add_update('section', 'remove', (object)['id' => $sectionid]);
     }
 
     /**
@@ -162,12 +163,13 @@ class stateupdates implements JsonSerializable {
 
         $cm = $modinfo->get_cm($cmid);
         $section = $modinfo->get_section_info_by_id($cm->section);
+        $format = $this->format;
 
         if (!$section->uservisible || !$cm->is_visible_on_course_page()) {
             return;
         }
 
-        $cmclass = $this->format->get_output_classname('state\\cm');
+        $cmclass = $format->get_output_classname('state\\cm');
         $currentstate = new $cmclass($this->format, $section, $cm);
 
         $this->add_update('cm', $action, $currentstate->export_for_template($this->output));
@@ -179,7 +181,7 @@ class stateupdates implements JsonSerializable {
      * @param int $cmid the affected course module id
      */
     public function add_cm_delete(int $cmid): void {
-        $this->add_update('cm', 'delete', (object)['id' => $cmid]);
+        $this->add_update('cm', 'remove', (object)['id' => $cmid]);
     }
 
     /**

@@ -53,13 +53,13 @@ Feature: Non anonymous feedback
     And I set the following fields to these values:
       | Yes of course | 1 |
     And I press "Submit your answers"
-    And I should not see "Submitted answers"
+    And I should not see "Analysis"
     And I press "Continue"
 
   @javascript
   Scenario: Complete non anonymous feedback and view analysis on the front page as an authenticated user
     And I log in as "admin"
-    And I set the following system permissions of "Authenticated user on frontpage" role:
+    And I set the following system permissions of "Authenticated user on site home" role:
       | capability                   | permission |
       | mod/feedback:viewanalysepage | Allow      |
     And I log out
@@ -75,7 +75,7 @@ Feature: Non anonymous feedback
     And I set the following fields to these values:
       | Not at all | 1 |
     And I press "Submit your answers"
-    And I follow "Submitted answers"
+    And I follow "Analysis"
     And I should see "Submitted answers: 2"
     And I should see "Questions: 1"
     # And I should not see "multichoice2" # TODO MDL-29303 do not show labels to users who can not edit feedback
@@ -83,17 +83,15 @@ Feature: Non anonymous feedback
     And I should see "Do you like our site?"
     And I should see "1 (50.00 %)" in the "Yes of course" "table_row"
     And I should see "1 (50.00 %)" in the "Not at all" "table_row"
-    And I should not see "Show responses"
     And I log out
     And I am on the "Site feedback" "feedback activity" page logged in as manager
-    And I navigate to "Show responses" in current page administration
+    And I navigate to "Responses" in current page administration
     And I should see "Username"
     And I should see "Non anonymous entries (2)"
     And I should not see "Anonymous entries"
     And I click on "," "link" in the "Username 1" "table_row"
     And I should see "(Username 1)"
     And I should see "Yes of course"
-    And I follow "Back"
     And I log out
 
   @javascript
@@ -120,7 +118,7 @@ Feature: Non anonymous feedback
     And I set the following fields to these values:
       | Not at all | 1 |
     And I press "Submit your answers"
-    And I follow "Submitted answers"
+    And I follow "Analysis"
     And I should see "Submitted answers: 2"
     And I should see "Questions: 1"
     # And I should not see "multichoice2" # TODO MDL-29303
@@ -134,7 +132,7 @@ Feature: Non anonymous feedback
     And I should see "Do you like this course?"
     And I press "Continue"
     And I should not see "Answer the questions"
-    And I navigate to "Show responses" in current page administration
+    And I navigate to "Responses" in current page administration
     And I should see "Non anonymous entries (2)"
     And I should not see "Anonymous"
     And I click on "," "link" in the "Username 1" "table_row"

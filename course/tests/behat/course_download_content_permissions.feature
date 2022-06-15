@@ -27,7 +27,7 @@ Feature: Access to downloading course content can be controlled
     And I navigate to "Settings" in current page administration
     And I set the field "Enable download course content" to "Yes"
     And I press "Save and display"
-    And "Download course content" "link" should exist in current page administration
+    Then "Download course content" "link" should exist in current page administration
     When the following config values are set as admin:
       | downloadcoursecontentallowed | 0 |
     And I am on "Hockey 101" course homepage
@@ -57,7 +57,7 @@ Feature: Access to downloading course content can be controlled
     And I navigate to "Settings" in current page administration
     And I set the field "Enable download course content" to "No"
     And I press "Save and display"
-    And "Download course content" "link" should not exist in current page administration
+    Then "Download course content" "link" should not exist in current page administration
 
   Scenario: Teachers require a capability to access the download course content feature or modify its availability in a course
     Given I log in as "admin"
@@ -68,7 +68,7 @@ Feature: Access to downloading course content can be controlled
     # Check teacher can see download option and enable dropdown.
     And I log in as "teacher1"
     And I am on "Hockey 101" course homepage
-    And "Download course content" "link" should exist in current page administration
+    Then "Download course content" "link" should exist in current page administration
     And I navigate to "Settings" in current page administration
     And "Enable download course content" "select" should exist
     And I log out
@@ -95,10 +95,10 @@ Feature: Access to downloading course content can be controlled
     And I set the field "Enable download course content" to "Yes"
     And I press "Save and display"
     And I log out
-    # Check student can see download button.
+    # Check student can see the download link.
     And I log in as "student1"
     And I am on "Hockey 101" course homepage
-    And "Download course content" "button" should exist
+    And "Download course content" "link" should exist in current page administration
     And I log out
     And I log in as "admin"
     # Remove student's capability for download course content.
@@ -106,7 +106,7 @@ Feature: Access to downloading course content can be controlled
       | capability                             | permission |
       | moodle/course:downloadcoursecontent    | Prohibit   |
     And I log out
-    # Check student can no longer see download button.
+    # Check student can no longer see the download link.
     And I log in as "student1"
     And I am on "Hockey 101" course homepage
     Then "Download course content" "link" should not exist in current page administration

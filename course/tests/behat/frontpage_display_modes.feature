@@ -1,5 +1,5 @@
 @core @core_course
-Feature: Front page displays items in different modes
+Feature: Site home displays items in different modes
   In order to show a clean and clear list of the site categories and course
   As an admin
   I need to set different frontpage display modes
@@ -27,7 +27,7 @@ Feature: Front page displays items in different modes
   @javascript
   Scenario: Displays a list of categories
     When I set the following administration settings values:
-      | Front page items when logged in | List of categories |
+      | Site home items when logged in | List of categories |
       | Maximum category depth | 2 |
     And I am on site homepage
     Then I should see "Category A" in the "region-main" "region"
@@ -43,7 +43,7 @@ Feature: Front page displays items in different modes
   @javascript
   Scenario: Displays a combo list
     When I set the following administration settings values:
-      | Front page items when logged in | Combo list |
+      | Site home items when logged in | Combo list |
       | Maximum category depth | 2 |
     And I am on site homepage
     Then I should see "Category A" in the "region-main" "region"
@@ -60,3 +60,20 @@ Feature: Front page displays items in different modes
     And I should not see "Category A child" in the "region-main" "region"
     And I toggle "Category A" category children visibility in frontpage
     And I should see "Course 11 1" in the "region-main" "region"
+
+  Scenario: Displays Enrolled users in frontpage
+    Given the following "users" exist:
+      | username | firstname | lastname | email           | profile_field_frog |
+      | user1    | User      | One      | one@example.com | Kermit             |
+    And the following "course enrolments" exist:
+      | user  | course       | role    |
+      | admin | COURSE1_1    | student |
+      | admin | COURSE2_1    | student |
+      | admin | COURSE2_2    | student |
+    And I set the following administration settings values:
+      | Site home items when logged in | Enrolled courses |
+      | frontpagecourselimit           | 2                |
+    And I log in as "admin"
+    And I am on site homepage
+    When I click on "My courses" "link" in the "frontpage-course-list" "region"
+    Then I should see "My courses" in the "page-header" "region"

@@ -31,6 +31,11 @@ export default class {
      */
     constructor(reactive) {
         this.reactive = reactive;
+
+        // Completions states are defined in lib/completionlib.php. There are 4 different completion
+        // state values, however, the course index uses the same state for complete and complete_pass.
+        // This is the reason why completed appears twice in the array.
+        this.COMPLETIONS = ['incomplete', 'complete', 'complete', 'fail'];
     }
 
     /**
@@ -67,8 +72,8 @@ export default class {
     section(state, sectioninfo) {
         const section = {
             ...sectioninfo,
+            highlighted: state.course.highlighted ?? '',
             cms: [],
-            isactive: true,
         };
         const cmlist = sectioninfo.cmlist ?? [];
         cmlist.forEach(cmid => {
@@ -124,6 +129,7 @@ export default class {
             type: 'cm',
             id: cminfo.id,
             name: cminfo.name,
+            sectionid: cminfo.sectionid,
             nextcmid,
         };
     }
@@ -149,5 +155,49 @@ export default class {
             name: sectioninfo.name,
             number: sectioninfo.number,
         };
+    }
+
+    /**
+     * Generate a compoetion export data from the cm element.
+     *
+     * @param {Object} state the current state.
+     * @param {Object} cminfo the course module state data.
+     * @returns {Object}
+     */
+    cmCompletion(state, cminfo) {
+        const data = {
+            statename: '',
+            state: 'NaN',
+        };
+        if (cminfo.completionstate !== undefined) {
+            data.state = cminfo.completionstate;
+            data.hasstate = true;
+            const statename = this.COMPLETIONS[cminfo.completionstate] ?? 'NaN';
+            data[`is${statename}`] = true;
+        }
+        return data;
+    }
+
+    /**
+     * Return a sorted list of all sections and cms items in the state.
+     *
+     * @param {Object} state the current state.
+     * @returns {Array} all sections and cms items in the state.
+     */
+    allItemsArray(state) {
+        const items = [];
+        const sectionlist = state.course.sectionlist ?? [];
+        // Add sections.
+        sectionlist.forEach(sectionid => {
+            const sectioninfo = state.section.get(sectionid);
+            items.push({type: 'section', id: sectioninfo.id, url: sectioninfo.sectionurl});
+            // Add cms.
+            const cmlist = sectioninfo.cmlist ?? [];
+            cmlist.forEach(cmid => {
+                const cminfo = state.cm.get(cmid);
+                items.push({type: 'cm', id: cminfo.id, url: cminfo.url});
+            });
+        });
+        return items;
     }
 }

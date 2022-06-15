@@ -24,6 +24,8 @@
 
 declare(strict_types=1);
 
+use core\output\inplace_editable;
+use core_reportbuilder\form\audience;
 use core_reportbuilder\form\filter;
 
 /**
@@ -41,4 +43,65 @@ function core_reportbuilder_output_fragment_filters_form(array $params): string 
     $filtersform->set_data_for_dynamic_submission();
 
     return $filtersform->render();
+}
+
+/**
+ * Return the audience form fragment
+ *
+ * @param array $params
+ * @return string
+ */
+function core_reportbuilder_output_fragment_audience_form(array $params): string {
+    global $PAGE;
+
+    $audienceform = new audience(null, null, 'post', '', [], true, [
+        'reportid' => $params['reportid'],
+        'classname' => $params['classname'],
+    ]);
+    $audienceform->set_data_for_dynamic_submission();
+
+    $context = [
+        'instanceid' => 0,
+        'heading' => $params['title'],
+        'headingeditable' => $params['title'],
+        'form' => $audienceform->render(),
+        'canedit' => true,
+        'candelete' => true,
+        'showormessage' => $params['showormessage'],
+    ];
+
+    $renderer = $PAGE->get_renderer('core_reportbuilder');
+    return $renderer->render_from_template('core_reportbuilder/local/audience/form', $context);
+}
+
+/**
+ * Plugin inplace editable implementation
+ *
+ * @param string $itemtype
+ * @param int $itemid
+ * @param string $newvalue
+ * @return inplace_editable|null
+ */
+function core_reportbuilder_inplace_editable(string $itemtype, int $itemid, string $newvalue): ?inplace_editable {
+    switch ($itemtype) {
+        case 'reportname':
+            return \core_reportbuilder\output\report_name_editable::update($itemid, $newvalue);
+
+        case 'columnheading':
+            return \core_reportbuilder\output\column_heading_editable::update($itemid, $newvalue);
+
+        case 'columnaggregation':
+            return \core_reportbuilder\output\column_aggregation_editable::update($itemid, $newvalue);
+
+        case 'filterheading':
+            return \core_reportbuilder\output\filter_heading_editable::update($itemid, $newvalue);
+
+        case 'audienceheading':
+            return \core_reportbuilder\output\audience_heading_editable::update($itemid, $newvalue);
+
+        case 'schedulename':
+            return \core_reportbuilder\output\schedule_name_editable::update($itemid, $newvalue);
+    }
+
+    return null;
 }

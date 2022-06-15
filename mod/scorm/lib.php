@@ -1011,6 +1011,9 @@ function scorm_pluginfile($course, $cm, $context, $filearea, $args, $forcedownlo
         return false;
     }
 
+    // Allow SVG files to be loaded within SCORM content, instead of forcing download.
+    $options['dontforcesvgdownload'] = true;
+
     // Finally send the file.
     send_stored_file($file, $lifetime, 0, false, $options);
 }
@@ -1024,7 +1027,7 @@ function scorm_pluginfile($course, $cm, $context, $filearea, $args, $forcedownlo
  * @uses FEATURE_GRADE_HAS_GRADE
  * @uses FEATURE_GRADE_OUTCOMES
  * @param string $feature FEATURE_xx constant for requested feature
- * @return mixed True if module supports feature, false if not, null if doesn't know
+ * @return mixed True if module supports feature, false if not, null if doesn't know or string for the module purpose.
  */
 function scorm_supports($feature) {
     switch($feature) {
@@ -1037,6 +1040,7 @@ function scorm_supports($feature) {
         case FEATURE_GRADE_OUTCOMES:          return true;
         case FEATURE_BACKUP_MOODLE2:          return true;
         case FEATURE_SHOW_DESCRIPTION:        return true;
+        case FEATURE_MOD_PURPOSE:             return MOD_PURPOSE_CONTENT;
 
         default: return null;
     }
@@ -1824,4 +1828,21 @@ function mod_scorm_core_calendar_get_event_action_string(string $eventtype): str
     }
 
     return get_string($identifier, 'scorm', $modulename);
+}
+
+/**
+ * This function extends the settings navigation block for the site.
+ *
+ * It is safe to rely on PAGE here as we will only ever be within the module
+ * context when this is called
+ *
+ * @param settings_navigation $settings navigation_node object.
+ * @param navigation_node $scormnode navigation_node object.
+ * @return void
+ */
+function scorm_extend_settings_navigation(settings_navigation $settings, navigation_node $scormnode): void {
+    if (has_capability('mod/scorm:viewreport', $settings->get_page()->cm->context)) {
+        $url = new moodle_url('/mod/scorm/report.php', ['id' => $settings->get_page()->cm->id]);
+        $scormnode->add(get_string("reports", "scorm"), $url, navigation_node::TYPE_CUSTOM, null, 'scormreport');
+    }
 }

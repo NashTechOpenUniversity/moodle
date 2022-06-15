@@ -27,9 +27,8 @@ Feature: Course activity controls works as expected
       | user | course | role |
       | teacher1 | C1 | editingteacher |
     And I log in as "teacher1"
-    And I am on "Course 1" course homepage
-    When I follow <targetpage>
-    And I turn editing mode on
+    And I am on "Course 1" course homepage with editing mode on
+    When I click on <targetpage> "link" in the "region-main" "region"
     And I add the "Recent activity" block
     And I open the action menu in "Recent activity" "block"
     And I click on "Delete Recent activity block" "link"
@@ -69,6 +68,8 @@ Feature: Course activity controls works as expected
     And I show section "1"
     And <belowpage> "section" <should_see_other_sections> exist
     And section "1" should be visible
+    And the following config values are set as admin:
+      | unaddableblocks | | theme_boost|
     And I add the "Section links" block
     And <belowpage> "section" <should_see_other_sections> exist
     And I should see "1 2 3 4 5" in the "Section links" "block"
@@ -77,12 +78,12 @@ Feature: Course activity controls works as expected
 
     Examples:
       | courseformat | coursedisplay | targetpage              | should_see_other_sections | should_see_other_sections_following_block_sections_links | belowpage                |
-      | topics       | 0             | "C1"                    | should                    | should                                                   | "Topic 2"                |
+      | topics       | 0             | "General"               | should                    | should                                                   | "Topic 2"                |
       | topics       | 1             | "Topic 1"               | should not                | should not                                               | "Topic 2"                |
-      | topics       | 1             | "C1"                    | should                    | should not                                               | "Topic 2"                |
-      | weeks        | 0             | "C1"                    | should                    | should                                                   | "8 January - 14 January" |
+      | topics       | 1             | "General"               | should                    | should not                                               | "Topic 2"                |
+      | weeks        | 0             | "General"               | should                    | should                                                   | "8 January - 14 January" |
       | weeks        | 1             | "1 January - 7 January" | should not                | should not                                               | "8 January - 14 January" |
-      | weeks        | 1             | "C1"                    | should                    | should not                                               | "8 January - 14 January" |
+      | weeks        | 1             | "General"               | should                    | should not                                               | "8 January - 14 January" |
 
   Scenario Outline: General activities course controls using topics and weeks formats, and paged mode and not paged mode works as expected
     Given the following "users" exist:
@@ -99,9 +100,8 @@ Feature: Course activity controls works as expected
       | forum     | Test forum name 1      | Test forum description 1      | C1     | 0001         | 1       |
       | forum     | Test forum name 2      | Test forum description 2      | C1     | 0002         | 1       |
     And I log in as "teacher1"
-    And I am on "Course 1" course homepage
-    When I follow <targetpage>
-    And I turn editing mode on
+    And I am on "Course 1" course homepage with editing mode on
+    When I click on <targetpage> "link" in the "region-main" "region"
     And I add the "Recent activity" block
     And I open the action menu in "Recent activity" "block"
     And I click on "Delete Recent activity block" "link"
@@ -129,6 +129,8 @@ Feature: Course activity controls works as expected
     And I show section "1"
     And <belowpage> "section" <should_see_other_sections> exist
     And section "1" should be visible
+    And the following config values are set as admin:
+      | unaddableblocks | | theme_boost|
     And I add the "Section links" block
     And <belowpage> "section" <should_see_other_sections> exist
     And I should see "1 2 3 4 5" in the "Section links" "block"
@@ -137,9 +139,9 @@ Feature: Course activity controls works as expected
 
     Examples:
       | courseformat | coursedisplay | targetpage              | should_see_other_sections | should_see_other_sections_following_block_sections_links | belowpage                |
-      | topics       | 0             | "C1"                    | should                    | should                                                   | "Topic 2"                |
+      | topics       | 0             | "General"               | should                    | should                                                   | "Topic 2"                |
       | topics       | 1             | "Topic 1"               | should not                | should not                                               | "Topic 2"                |
-      | topics       | 1             | "C1"                    | should                    | should not                                               | "Topic 2"                |
-      | weeks        | 0             | "C1"                    | should                    | should                                                   | "8 January - 14 January" |
+      | topics       | 1             | "General"               | should                    | should not                                               | "Topic 2"                |
+      | weeks        | 0             | "General"               | should                    | should                                                   | "8 January - 14 January" |
       | weeks        | 1             | "1 January - 7 January" | should not                | should not                                               | "8 January - 14 January" |
-      | weeks        | 1             | "C1"                    | should                    | should not                                               | "8 January - 14 January" |
+      | weeks        | 1             | "General"               | should                    | should not                                               | "8 January - 14 January" |

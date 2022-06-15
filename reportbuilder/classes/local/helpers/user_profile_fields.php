@@ -23,6 +23,7 @@ use core_reportbuilder\local\filters\boolean_select;
 use core_reportbuilder\local\filters\date;
 use core_reportbuilder\local\filters\select;
 use core_reportbuilder\local\filters\text;
+use core_reportbuilder\local\helpers\database;
 use core_reportbuilder\local\report\column;
 use core_reportbuilder\local\report\filter;
 use lang_string;
@@ -122,6 +123,8 @@ class user_profile_fields {
         foreach ($this->userprofilefields as $profilefield) {
             $userinfotablealias = database::generate_alias();
 
+            $columntype = $this->get_user_field_type($profilefield->field->datatype);
+
             $column = (new column(
                 'profilefield_' . $profilefield->field->shortname,
                 new lang_string('customfieldcolumn', 'core_reportbuilder',
@@ -133,8 +136,9 @@ class user_profile_fields {
                 ->add_join("LEFT JOIN {user_info_data} {$userinfotablealias} " .
                     "ON {$userinfotablealias}.userid = {$this->usertablefieldalias} " .
                     "AND {$userinfotablealias}.fieldid = {$profilefield->fieldid}")
-                ->add_field("{$userinfotablealias}.data", 'profilefield_' . $profilefield->field->shortname)
-                ->set_type($this->get_user_field_type($profilefield->field->datatype))
+                ->add_field("{$userinfotablealias}.data")
+                ->set_type($columntype)
+                ->set_is_sortable($columntype !== column::TYPE_LONGTEXT)
                 ->add_callback([$this, 'format_profile_field'], $profilefield);
 
             $columns[] = $column;
@@ -155,24 +159,34 @@ class user_profile_fields {
         foreach ($this->userprofilefields as $profilefield) {
             $userinfotablealias = database::generate_alias();
             $field = "{$userinfotablealias}.data";
+            $params = [];
 
             switch ($profilefield->field->datatype) {
                 case 'checkbox':
                     $classname = boolean_select::class;
-                    $field = $DB->sql_cast_char2int($field);
+                    $fieldsql = "COALESCE(" . $DB->sql_cast_char2int($field, true) . ", 0)";
                     break;
                 case 'datetime':
                     $classname = date::class;
-                    $field = $DB->sql_cast_char2int($field);
+                    $fieldsql = $DB->sql_cast_char2int($field);
                     break;
                 case 'menu':
                     $classname = select::class;
+
+                    $emptyparam = database::generate_param_name();
+                    $fieldsql = "COALESCE(" . $DB->sql_compare_text($field, 255) . ", :{$emptyparam})";
+                    $params[$emptyparam] = '';
+
                     break;
                 case 'text':
                 case 'textarea':
                 default:
-                    $field = $DB->sql_compare_text($field, 255);
                     $classname = text::class;
+
+                    $emptyparam = database::generate_param_name();
+                    $fieldsql = "COALESCE(" . $DB->sql_compare_text($field, 255) . ", :{$emptyparam})";
+                    $params[$emptyparam] = '';
+
                     break;
             }
 
@@ -183,7 +197,8 @@ class user_profile_fields {
                     format_string($profilefield->field->name, true,
                         ['escape' => false, 'context' => context_system::instance()])),
                 $this->entityname,
-                $field
+                $fieldsql,
+                $params
             ))
                 ->add_joins($this->get_joins())
                 ->add_join("LEFT JOIN {user_info_data} {$userinfotablealias} " .
@@ -236,7 +251,12 @@ class user_profile_fields {
      * @return string
      */
     public static function format_profile_field($value, stdClass $row, profile_field_base $field): string {
+        // Special handling of checkboxes, we want to display their boolean state rather than the input element itself.
+        if (is_a($field, 'profile_field_checkbox')) {
+            return format::boolean_as_text($value);
+        }
+
         $field->data = $value;
-        return $field->display_data();
+        return (string) $field->display_data();
     }
 }

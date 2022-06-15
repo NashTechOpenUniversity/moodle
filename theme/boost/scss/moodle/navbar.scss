@@ -1,5 +1,6 @@
 @mixin hover-navbar {
-    background-color: $gray-200;
+    border-color: transparent;
+    background-color: $gray-100;
 }
 
 .navbar.fixed-top {
@@ -8,7 +9,7 @@
     box-shadow: none;
     border-bottom: $gray-300 1px solid;
     align-items: stretch;
-    height: $navbar-height;
+    height: $navbar-height + 1px;
 
     .navbar-brand {
         .logo {
@@ -122,6 +123,11 @@
                 }
             }
         }
+        @include media-breakpoint-down(sm) {
+            .langbutton {
+                display: none;
+            }
+        }
     }
     .moodle-actionmenu .menubar,
     .action-menu-trigger .dropdown {
@@ -158,4 +164,7 @@
 }
 #page {
     margin-top: $navbar-height;
+}
+.pagelayout-embedded #page {
+    margin-top: 0;
 }

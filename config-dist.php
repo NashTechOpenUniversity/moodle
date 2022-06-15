@@ -105,8 +105,9 @@ $CFG->dboptions = array(
       'latency' => 0.5,      // Set read-only slave sync latency in seconds.
                              // When 'latency' seconds have lapsed after an update to a table
                              // it is deemed safe to use readonly slave for reading from the table.
-                             // It is optional. If omitted once written to a table it will always
-                             // use master handle for reading.
+                             // It is optional, defaults to 1 second. If you want once written to a table
+                             // to always use master handle for reading set it to something ridiculosly big,
+                             // eg 10.
                              // Lower values increase the performance, but setting it too low means
                              // missing the master-slave sync.
       'exclude_tables' => [  // Tables to exclude from read-only slave feature.
@@ -316,20 +317,22 @@ $CFG->admin = 'admin';
 //   Redis session handler (requires redis server and redis extension):
 //      $CFG->session_handler_class = '\core\session\redis';
 //      $CFG->session_redis_host = '127.0.0.1';
-//      $CFG->session_redis_port = 6379;  // Optional.
-//      $CFG->session_redis_database = 0;  // Optional, default is db 0.
-//      $CFG->session_redis_auth = ''; // Optional, default is don't set one.
-//      $CFG->session_redis_prefix = ''; // Optional, default is don't set one.
-//      $CFG->session_redis_acquire_lock_timeout = 120;
-//      $CFG->session_redis_lock_expire = 7200;
-//      $CFG->session_redis_lock_retry = 100; // Optional wait between lock attempts in ms, default is 100.
-//                                            // After 5 seconds it will throttle down to once per second.
+//      $CFG->session_redis_port = 6379;                     // Optional.
+//      $CFG->session_redis_database = 0;                    // Optional, default is db 0.
+//      $CFG->session_redis_auth = '';                       // Optional, default is don't set one.
+//      $CFG->session_redis_prefix = '';                     // Optional, default is don't set one.
+//      $CFG->session_redis_acquire_lock_timeout = 120;      // Default is 2 minutes.
+//      $CFG->session_redis_acquire_lock_warn = 0;           // If set logs early warning if a lock has not been acquried.
+//      $CFG->session_redis_lock_expire = 7200;              // Optional, defaults to session timeout.
+//      $CFG->session_redis_lock_retry = 100;                // Optional wait between lock attempts in ms, default is 100.
+//                                                           // After 5 seconds it will throttle down to once per second.
+//
 //      Use the igbinary serializer instead of the php default one. Note that phpredis must be compiled with
 //      igbinary support to make the setting to work. Also, if you change the serializer you have to flush the database!
 //      $CFG->session_redis_serializer_use_igbinary = false; // Optional, default is PHP builtin serializer.
-//      $CFG->session_redis_compressor = 'none'; // Optional, possible values are:
-//                                               // 'gzip' - PHP GZip compression
-//                                               // 'zstd' - PHP Zstandard compression
+//      $CFG->session_redis_compressor = 'none';             // Optional, possible values are:
+//                                                           // 'gzip' - PHP GZip compression
+//                                                           // 'zstd' - PHP Zstandard compression
 //
 // Please be aware that when selecting Memcached for sessions that it is advised to use a dedicated
 // memcache server. The memcached extension does not provide isolated environments for individual uses.
@@ -733,6 +736,25 @@ $CFG->admin = 'admin';
 // automatically generating them. This is only needed if you want to ensure that keys are consistent
 // across a cluster when not using shared storage. If you stop the server generating keys, you will
 // need to manually generate them by running 'php admin/cli/generate_key.php'.
+//
+// H5P crossorigin
+//
+//      $CFG->h5pcrossorigin = 'anonymous';
+//
+// Settings this to anonymous will enable CORS requests for media elements to have the credentials
+// flag set to 'same-origin'. This may be needed when using tool_objectfs as an alternative file
+// system with CloudFront configured.
+//
+// Enrolments sync interval
+//
+// The minimum time in seconds between re-synchronization of enrollment via enrol_check_plugins which is
+// a potentially expensive operation and otherwise happens every time a user is authenticated. This only
+// applies to web requests without a session such as webservice calls, tokenpluginfile.php and rss links
+// where the user is re-authenticated on every request. Set it to 0 to force enrollment checking constantly
+// and increase this number to improve performance at the cost of adding a latency for enrollment updates.
+// Defaults to 60 minutes.
+//
+//      $CFG->enrolments_sync_interval = 3600
 
 //=========================================================================
 // 7. SETTINGS FOR DEVELOPMENT SERVERS - not intended for production use!!!
@@ -944,6 +966,12 @@ $CFG->admin = 'admin';
 // Example:
 //   $CFG->behat_increasetimeout = 3;
 //
+// Yon can specify a window size modifier for Behat, which is applied to any window szie changes.
+// For example, if a window size of 640x768 is specified, with a modifier of 2, then the final size is 1280x1536.
+// This is particularly useful for behat reruns to eliminate issues with window sizing.
+// Example:
+//   $CFG->behat_window_size_modifier = 1;
+//
 // Including feature files from directories outside the dirroot is possible if required. The setting
 // requires that the running user has executable permissions on all parent directories in the paths.
 // Example:
@@ -1115,7 +1143,7 @@ $CFG->admin = 'admin';
 //          ],
 //      ];
 //
-// The format for the schedule definition is: '{minute} {hour} {day} {dayofweek} {month}'.
+// The format for the schedule definition is: '{minute} {hour} {day} {month} {dayofweek}'.
 //
 // The classname of the task also supports wildcards:
 //
@@ -1136,6 +1164,31 @@ $CFG->admin = 'admin';
 // applied to all tasks, except for tasks within '\local_plugin\'.
 //
 // When the full classname is used, this rule always takes priority over any wildcard rules.
+//
+//=========================================================================
+// 18. SITE ADMIN PRESETS
+//=========================================================================
+//
+// The site admin presets plugin has been integrated in Moodle LMS. You can use a setting in case you
+// want to apply a preset during the installation:
+//
+//      $CFG->setsitepresetduringinstall = 'starter';
+//
+// This setting accepts the following values:
+// - One of the core preset names (i.e "starter" or "full").
+// - The path of a valid XML preset file, that will be imported and applied. Absolute paths are recommended, to
+//   guarantee the file is found: i.e."MOODLEPATH/admin/presets/tests/fixtures/import_settings_plugins.xml".
+//
+// This setting is only used during the installation process. So once the Moodle site is installed, it is ignored.
+//
+//=========================================================================
+// 19. SERVICES AND SUPPORT CONTENT
+//=========================================================================
+//
+// We have added services and support content to the notifications page, in case you want to hide that from your site
+// you just need to set showservicesandsupportcontent setting to false.
+//
+//      $CFG->showservicesandsupportcontent = false;
 //
 //=========================================================================
 // ALL DONE!  To continue installation, visit your main page with a browser

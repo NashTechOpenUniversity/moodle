@@ -21,7 +21,19 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['jquery', 'core/dragdrop', 'qtype_ddmarker/shapes', 'core/key_codes'], function($, dragDrop, Shapes, keys) {
+define([
+    'jquery',
+    'core/dragdrop',
+    'qtype_ddmarker/shapes',
+    'core/key_codes',
+    'core_form/changechecker'
+], function(
+    $,
+    dragDrop,
+    Shapes,
+    keys,
+    FormChangeChecker
+) {
 
     "use strict";
 
@@ -41,6 +53,7 @@ define(['jquery', 'core/dragdrop', 'qtype_ddmarker/shapes', 'core/key_codes'], f
         this.shapes = [];
         this.shapeSVGs = [];
         this.isPrinting = false;
+        this.questionAnswer = {};
         if (readOnly) {
             this.getRoot().addClass('qtype_ddmarker-readonly');
         }
@@ -141,12 +154,57 @@ define(['jquery', 'core/dragdrop', 'qtype_ddmarker/shapes', 'core/key_codes'], f
                 for (var i = 0; i < coords.length; i++) {
                     var dragInDrop = drag.clone();
                     dragInDrop.data('pagex', coords[i].x).data('pagey', coords[i].y);
-                    thisQ.sendDragToDrop(dragInDrop, false);
+                    // We always save the coordinates in the 1:1 ratio.
+                    // So we need to set the scale ratio to 1 for the initial load.
+                    dragInDrop.data('scaleRatio', 1);
+                    thisQ.sendDragToDrop(dragInDrop, false, true);
                 }
                 thisQ.getDragClone(drag).addClass('active');
                 thisQ.cloneDragIfNeeded(drag);
             }
         });
+
+        // Save the question answer.
+        thisQ.questionAnswer = thisQ.getQuestionAnsweredValues();
+    };
+
+    /**
+     * Get the question answered values.
+     *
+     * @return {Object} Contain key-value with key is the input id and value is the input value.
+     */
+    DragDropMarkersQuestion.prototype.getQuestionAnsweredValues = function() {
+        let result = {};
+        this.getRoot().find('input.choices').each((i, inputNode) => {
+            result[inputNode.id] = inputNode.value;
+        });
+
+        return result;
+    };
+
+    /**
+     * Check if the question is being interacted or not.
+     *
+     * @return {boolean} Return true if the user has changed the question-answer.
+     */
+    DragDropMarkersQuestion.prototype.isQuestionInteracted = function() {
+        const oldAnswer = this.questionAnswer;
+        const newAnswer = this.getQuestionAnsweredValues();
+        let isInteracted = false;
+
+        // First, check both answers have the same structure or not.
+        if (JSON.stringify(newAnswer) !== JSON.stringify(oldAnswer)) {
+            isInteracted = true;
+            return isInteracted;
+        }
+        // Check the values.
+        Object.keys(newAnswer).forEach(key => {
+            if (newAnswer[key] !== oldAnswer[key]) {
+                isInteracted = true;
+            }
+        });
+
+        return isInteracted;
     };
 
     /**
@@ -317,6 +375,12 @@ define(['jquery', 'core/dragdrop', 'qtype_ddmarker/shapes', 'core/key_codes'], f
         }
 
         this.getRoot().find('input.choice' + choiceNo).val(coords.join(';'));
+        if (this.isQuestionInteracted()) {
+            // The user has interacted with the draggable items. We need to mark the form as dirty.
+            questionManager.handleFormDirty();
+            // Save the new answered value.
+            this.questionAnswer = this.getQuestionAnsweredValues();
+        }
     };
 
     /**
@@ -553,9 +617,10 @@ define(['jquery', 'core/dragdrop', 'qtype_ddmarker/shapes', 'core/key_codes'], f
      * Animate a drag item into a given place.
      *
      * @param {jQuery} drag the item to place.
-     * @param {boolean} isScaling Scaling or not
+     * @param {boolean} isScaling Scaling or not.
+     * @param {boolean} initialLoad Whether it is the initial load or not.
      */
-    DragDropMarkersQuestion.prototype.sendDragToDrop = function(drag, isScaling) {
+    DragDropMarkersQuestion.prototype.sendDragToDrop = function(drag, isScaling, initialLoad = false) {
         var dropArea = this.dropArea(),
             bgRatio = this.bgRatio();
         drag.removeClass('beingdragged').removeClass('unneeded');
@@ -568,7 +633,10 @@ define(['jquery', 'core/dragdrop', 'qtype_ddmarker/shapes', 'core/key_codes'], f
             drag.css('left', dragXY.x * bgRatio).css('top', dragXY.y * bgRatio);
         }
         // We need to save the original scale ratio for each draggable item.
-        drag.data('scaleRatio', bgRatio);
+        if (!initialLoad) {
+            // Only set the scale ratio for a current being-dragged item, not for the initial loading.
+            drag.data('scaleRatio', bgRatio);
+        }
         dropArea.append(drag);
         this.handleElementScale(drag, 'left top');
     };
@@ -837,6 +905,14 @@ define(['jquery', 'core/dragdrop', 'qtype_ddmarker/shapes', 'core/key_codes'], f
         getQuestionForEvent: function(e) {
             var containerId = $(e.currentTarget).closest('.que.ddmarker').attr('id');
             return questionManager.questions[containerId];
+        },
+
+        /**
+         * Handle when the form is dirty.
+         */
+        handleFormDirty: function() {
+            const responseForm = document.getElementById('responseform');
+            FormChangeChecker.markFormAsDirty(responseForm);
         }
     };
 

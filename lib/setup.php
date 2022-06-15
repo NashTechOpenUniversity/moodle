@@ -666,6 +666,12 @@ $bootstrapcachefile = $CFG->localcachedir . '/bootstrap.php';
 if (is_readable($bootstrapcachefile)) {
     try {
         require_once($bootstrapcachefile);
+        // Verify the file is not stale.
+        if (!isset($CFG->bootstraphash) || $CFG->bootstraphash !== hash_local_config_cache()) {
+            // Something has changed, the bootstrap.php file is stale.
+            unset($CFG->siteidentifier);
+            @unlink($bootstrapcachefile);
+        }
     } catch (Throwable $e) {
         // If it is corrupted then attempt to delete it and it will be rebuilt.
         @unlink($bootstrapcachefile);
@@ -748,11 +754,6 @@ ini_set('arg_separator.output', '&amp;');
 
 // Work around for a PHP bug   see MDL-11237
 ini_set('pcre.backtrack_limit', 20971520);  // 20 MB
-
-// Work around for PHP7 bug #70110. See MDL-52475 .
-if (ini_get('pcre.jit')) {
-    ini_set('pcre.jit', 0);
-}
 
 // Set PHP default timezone to server timezone.
 core_date::set_default_server_timezone();

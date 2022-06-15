@@ -1,5 +1,5 @@
 @enrol @enrol_cohort
-Feature: Enrol multiple cohorts
+Feature: Cohort enrolment management
 
   Background:
     Given the following "users" exist:
@@ -19,9 +19,7 @@ Feature: Enrol multiple cohorts
   @javascript
   Scenario: Add multiple cohorts to the course
     When I log in as "teacher001"
-    And I am on "Course 001" course homepage
-    And I navigate to course participants
-    And I navigate to "Users > Enrolment methods" in current page administration
+    And I am on the "Course 001" "enrolment methods" page
     And I select "Cohort sync" from the "Add method" singleselect
     And I open the autocomplete suggestions list
     And I click on "Alpha1" item in the autocomplete list
@@ -32,3 +30,14 @@ Feature: Enrol multiple cohorts
     And I press "Add method"
     Then I should see "Cohort sync (Beta2 - Student)"
     And I should see "Cohort sync (Alpha1 - Student)"
+
+  @javascript
+  Scenario: Edit cohort enrolment
+    When I log in as "teacher001"
+    And I add "Cohort sync" enrolment method in "Course 001" with:
+      | Cohort | Alpha1 |
+    And I should see "Cohort sync (Alpha1 - Student)"
+    And I click on "Edit" "link" in the "Alpha1" "table_row"
+    And I set the field "Assign role" to "Non-editing teacher"
+    And I click on "Save" "button"
+    And I should see "Cohort sync (Alpha1 - Non-editing teacher)"

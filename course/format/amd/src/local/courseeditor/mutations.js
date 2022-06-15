@@ -132,6 +132,33 @@ export default class {
     }
 
     /**
+     * Add a new section to a specific course location.
+     *
+     * @param {StateManager} stateManager the current state manager
+     * @param {number} targetSectionId optional the target section id
+     */
+    async addSection(stateManager, targetSectionId) {
+        if (!targetSectionId) {
+            targetSectionId = 0;
+        }
+        const course = stateManager.get('course');
+        const updates = await this._callEditWebservice('section_add', course.id, [], targetSectionId);
+        stateManager.processUpdates(updates);
+    }
+
+    /**
+     * Delete sections.
+     *
+     * @param {StateManager} stateManager the current state manager
+     * @param {array} sectionIds the list of course modules ids
+     */
+    async sectionDelete(stateManager, sectionIds) {
+        const course = stateManager.get('course');
+        const updates = await this._callEditWebservice('section_delete', course.id, sectionIds);
+        stateManager.processUpdates(updates);
+    }
+
+    /**
      * Mark or unmark course modules as dragging.
      *
      * @param {StateManager} stateManager the current state manager
@@ -139,6 +166,7 @@ export default class {
      * @param {bool} dragValue the new dragging value
      */
     cmDrag(stateManager, cmIds, dragValue) {
+        this.setPageItem(stateManager);
         this._setElementsValue(stateManager, 'cm', cmIds, 'dragging', dragValue);
     }
 
@@ -150,7 +178,20 @@ export default class {
      * @param {bool} dragValue the new dragging value
      */
     sectionDrag(stateManager, sectionIds, dragValue) {
+        this.setPageItem(stateManager);
         this._setElementsValue(stateManager, 'section', sectionIds, 'dragging', dragValue);
+    }
+
+    /**
+     * Mark or unmark course modules as complete.
+     *
+     * @param {StateManager} stateManager the current state manager
+     * @param {array} cmIds the list of course modules ids
+     * @param {bool} complete the new completion value
+     */
+    cmCompletion(stateManager, cmIds, complete) {
+        const newValue = (complete) ? 1 : 0;
+        this._setElementsValue(stateManager, 'cm', cmIds, 'completionstate', newValue);
     }
 
     /**
@@ -187,6 +228,48 @@ export default class {
     }
 
     /**
+     * Set the page current item.
+     *
+     * Only one element of the course state can be the page item at a time.
+     *
+     * There are several actions that can alter the page current item. For example, when the user is in an activity
+     * page, the page item is always the activity one. However, in a course page, when the user scrolls to an element,
+     * this element get the page item.
+     *
+     * If the page item is static means that it is not meant to change. This is important because
+     * static page items has some special logic. For example, if a cm is the static page item
+     * and it is inside a collapsed section, the course index will expand the section to make it visible.
+     *
+     * @param {StateManager} stateManager the current state manager
+     * @param {String|undefined} type the element type (section or cm). Undefined will remove the current page item.
+     * @param {Number|undefined} id the element id
+     * @param {boolean|undefined} isStatic if the page item is static
+     */
+    setPageItem(stateManager, type, id, isStatic) {
+        let newPageItem;
+        if (type !== undefined) {
+            newPageItem = stateManager.get(type, id);
+            if (!newPageItem) {
+                return;
+            }
+        }
+        stateManager.setReadOnly(false);
+        // Remove the current page item.
+        const course = stateManager.get('course');
+        course.pageItem = null;
+        // Save the new page item.
+        if (newPageItem) {
+            course.pageItem = {
+                id,
+                type,
+                sectionId: (type == 'section') ? newPageItem.id : newPageItem.sectionid,
+                isStatic,
+            };
+        }
+        stateManager.setReadOnly(true);
+    }
+
+    /**
      * Unlock all course elements.
      *
      * @param {StateManager} stateManager the current state manager
@@ -201,6 +284,71 @@ export default class {
             cm.locked = false;
         });
         stateManager.setReadOnly(true);
+    }
+
+    /**
+     * Update the course index collapsed attribute of some sections.
+     *
+     * @param {StateManager} stateManager the current state manager
+     * @param {array} sectionIds the affected section ids
+     * @param {boolean} collapsed the new collapsed value
+     */
+    async sectionIndexCollapsed(stateManager, sectionIds, collapsed) {
+        const collapsedIds = this._updateStateSectionPreference(stateManager, 'indexcollapsed', sectionIds, collapsed);
+        const course = stateManager.get('course');
+        await this._callEditWebservice('section_index_collapsed', course.id, collapsedIds);
+    }
+
+    /**
+     * Update the course content collapsed attribute of some sections.
+     *
+     * @param {StateManager} stateManager the current state manager
+     * @param {array} sectionIds the affected section ids
+     * @param {boolean} collapsed the new collapsed value
+     */
+    async sectionContentCollapsed(stateManager, sectionIds, collapsed) {
+        const collapsedIds = this._updateStateSectionPreference(stateManager, 'contentcollapsed', sectionIds, collapsed);
+        const course = stateManager.get('course');
+        await this._callEditWebservice('section_content_collapsed', course.id, collapsedIds);
+    }
+
+    /**
+     * Private batch update for a section preference attribute.
+     *
+     * @param {StateManager} stateManager the current state manager
+     * @param {string} preferenceName the preference name
+     * @param {array} sectionIds the affected section ids
+     * @param {boolean} preferenceValue the new preferenceValue value
+     * @return {array} the list of all sections with that preference set to true
+     */
+    _updateStateSectionPreference(stateManager, preferenceName, sectionIds, preferenceValue) {
+        stateManager.setReadOnly(false);
+        const affectedSections = new Set();
+        // Check if we need to update preferences.
+        sectionIds.forEach(sectionId => {
+            const section = stateManager.get('section', sectionId);
+            if (section === undefined) {
+                return;
+            }
+            const newValue = preferenceValue ?? section[preferenceName];
+            if (section[preferenceName] != newValue) {
+                section[preferenceName] = newValue;
+                affectedSections.add(section.id);
+            }
+        });
+        stateManager.setReadOnly(true);
+        if (affectedSections.size == 0) {
+            return [];
+        }
+        // Get all collapsed section ids.
+        const collapsedSectionIds = [];
+        const state = stateManager.state;
+        state.section.forEach(section => {
+            if (section[preferenceName]) {
+                collapsedSectionIds.push(section.id);
+            }
+        });
+        return collapsedSectionIds;
     }
 
     /**
@@ -234,10 +382,10 @@ export default class {
     }
 
     /**
-    * Get the full updated state data of the course.
-    *
-    * @param {StateManager} stateManager the current state
-    */
+     * Get the full updated state data of the course.
+     *
+     * @param {StateManager} stateManager the current state
+     */
     async courseState(stateManager) {
         const course = stateManager.get('course');
         const updates = await this._callEditWebservice('course_state', course.id);

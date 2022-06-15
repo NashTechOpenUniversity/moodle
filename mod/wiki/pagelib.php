@@ -114,6 +114,7 @@ abstract class page_wiki {
         if ($activesecondarytab) {
             $PAGE->set_secondary_active_tab($activesecondarytab);
         }
+        $PAGE->add_body_class('limitedwidth');
         // the search box
         if (!empty($subwiki->id)) {
             $search = optional_param('searchstring', null, PARAM_TEXT);
@@ -125,7 +126,7 @@ abstract class page_wiki {
      * This method prints the top of the page.
      */
     function print_header() {
-        global $OUTPUT, $PAGE, $CFG, $USER, $SESSION;
+        global $OUTPUT, $PAGE, $SESSION;
 
         $PAGE->set_heading($PAGE->course->fullname);
 
@@ -138,12 +139,6 @@ abstract class page_wiki {
         $this->create_navbar();
 
         echo $OUTPUT->header();
-        $wiki = $PAGE->activityrecord;
-        if (!$PAGE->has_secondary_navigation()) {
-            echo $OUTPUT->heading(format_string($wiki->name));
-        }
-
-        echo $this->wikioutput->wiki_info();
 
         if (!empty($this->page)) {
             echo $this->action_bar($this->page->id, $PAGE->url);
@@ -2266,6 +2261,7 @@ class page_wiki_prettyview extends page_wiki {
     function __construct($wiki, $subwiki, $cm) {
         global $PAGE;
         $PAGE->set_pagelayout('embedded');
+        $PAGE->activityheader->disable();
         parent::__construct($wiki, $subwiki, $cm);
     }
 

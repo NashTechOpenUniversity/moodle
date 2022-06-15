@@ -53,7 +53,7 @@ class core_renderer extends \core_renderer {
      * @return string the HTML for the navbar.
      */
     public function navbar(): string {
-        $newnav = new \theme_boost\boostnavbar($this->page->navbar);
+        $newnav = new \theme_boost\boostnavbar($this->page);
         return $this->render_from_template('core/navbar', $newnav);
     }
 
@@ -81,7 +81,7 @@ class core_renderer extends \core_renderer {
         }
 
         // The user context currently has images and buttons. Other contexts may follow.
-        if (isset($headerinfo['user']) || $context->contextlevel == CONTEXT_USER) {
+        if ((isset($headerinfo['user']) || $context->contextlevel == CONTEXT_USER) && $this->page->pagetype !== 'my-index') {
             if (isset($headerinfo['user'])) {
                 $user = $headerinfo['user'];
             } else {
@@ -150,30 +150,19 @@ class core_renderer extends \core_renderer {
 
         $prefix = null;
         if ($context->contextlevel == CONTEXT_MODULE) {
-            $heading = $this->page->cm->get_formatted_name();
-            $imagedata = $this->pix_icon('icon', '', $this->page->activityname);
-            $prefix = get_string('modulename', $this->page->activityname);
+            if ($this->page->course->format === 'singleactivity') {
+                $heading = $this->page->course->fullname;
+            } else {
+                $heading = $this->page->cm->get_formatted_name();
+                $imagedata = $this->pix_icon('monologo', '', $this->page->activityname, ['class' => 'activityicon']);
+                $purposeclass = plugin_supports('mod', $this->page->activityname, FEATURE_MOD_PURPOSE);
+                $purposeclass .= ' activityiconcontainer';
+                $purposeclass .= ' modicon_' . $this->page->activityname;
+                $imagedata = html_writer::tag('div', $imagedata, ['class' => $purposeclass]);
+                $prefix = get_string('modulename', $this->page->activityname);
+            }
         }
 
-        if ($this->should_display_main_logo($headinglevel)) {
-            $sitename = format_string($SITE->fullname, true, ['context' => \context_course::instance(SITEID)]);
-            // Logo.
-            $html = html_writer::div(
-                html_writer::empty_tag('img', [
-                    'src' => $this->get_logo_url(null, 150),
-                    'alt' => get_string('logoof', '', $sitename),
-                    'class' => 'img-fluid'
-                ]),
-                'logo'
-            );
-            // Heading.
-            if (!isset($heading)) {
-                $html .= $this->heading($this->page->heading, $headinglevel, 'sr-only');
-            } else {
-                $html .= $this->heading($heading, $headinglevel, 'sr-only');
-            }
-            return $html;
-        }
 
         $contextheader = new \context_header($heading, $headinglevel, $imagedata, $userbuttons, $prefix);
         return $this->render_context_header($contextheader);
@@ -194,24 +183,18 @@ class core_renderer extends \core_renderer {
             $heading = $this->heading($contextheader->heading, $contextheader->headinglevel, 'h2');
         }
 
-        $showheader = empty($this->page->layout_options['nocontextheader']);
-        if (!$showheader) {
-            // Return the heading wrapped in an sr-only element so it is only visible to screen-readers.
-            return html_writer::div($heading, 'sr-only');
-        }
-
         // All the html stuff goes here.
         $html = html_writer::start_div('page-context-header');
 
         // Image data.
         if (isset($contextheader->imagedata)) {
             // Header specific image.
-            $html .= html_writer::div($contextheader->imagedata, 'page-header-image icon-size-6');
+            $html .= html_writer::div($contextheader->imagedata, 'page-header-image mr-2');
         }
 
         // Headings.
         if (isset($contextheader->prefix)) {
-            $prefix = html_writer::div($contextheader->prefix, 'text-muted text-uppercase');
+            $prefix = html_writer::div($contextheader->prefix, 'text-muted text-uppercase small line-height-3');
             $heading = $prefix . $heading;
         }
         $html .= html_writer::tag('div', $heading, array('class' => 'page-header-headings'));

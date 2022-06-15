@@ -253,6 +253,9 @@ if ($mode == 'asearch') {
 $PAGE->set_title($title);
 $PAGE->set_heading($course->fullname);
 $PAGE->force_settings_menu(true);
+if ($delete && confirm_sesskey() && (data_user_can_manage_entry($delete, $data, $context))) {
+    $PAGE->activityheader->disable();
+}
 
 // Check to see if groups are being used here.
 // We need the most up to date current group value. Make sure it is updated at this point.
@@ -261,20 +264,10 @@ $groupmode = groups_get_activity_groupmode($cm);
 $canmanageentries = has_capability('mod/data:manageentries', $context);
 echo $OUTPUT->header();
 
-
 // Detect entries not approved yet and show hint instead of not found error.
 if ($record and !data_can_view_record($data, $record, $currentgroup, $canmanageentries)) {
     print_error('notapproved', 'data');
 }
-
-if (!$PAGE->has_secondary_navigation()) {
-    echo $OUTPUT->heading(format_string($data->name), 2);
-}
-
-// Render the activity information.
-$completiondetails = \core_completion\cm_completion_details::get_instance($cm, $USER->id);
-$activitydates = \core\activity_dates::get_dates_for_module($cm, $USER->id);
-echo $OUTPUT->activity_information($cm, $completiondetails, $activitydates);
 
 // Do we need to show a link to the RSS feed for the records?
 //this links has been Settings (database activity administration) block
@@ -289,10 +282,6 @@ if ($data->intro and empty($page) and empty($record) and $mode != 'single') {
     $options = new stdClass();
     $options->noclean = true;
 }
-echo $OUTPUT->box(format_module_intro('data', $data, $cm->id), 'generalbox', 'intro');
-
-$returnurl = $CFG->wwwroot . '/mod/data/view.php?d='.$data->id.'&amp;search='.s($search).'&amp;sort='.s($sort).'&amp;order='.s($order).'&amp;';
-groups_print_activity_menu($cm, $returnurl);
 
 /// Delete any requested records
 
@@ -310,6 +299,7 @@ if ($delete && confirm_sesskey() && (data_user_can_manage_entry($delete, $data, 
                                                         JOIN {user} u ON dr.userid = u.id
                                                   WHERE dr.id = ?", $dbparams, MUST_EXIST)) { // Need to check this is valid.
             if ($deleterecord->dataid == $data->id) {                       // Must be from this database
+                echo $OUTPUT->heading(get_string('deleteentry', 'mod_data'), 2, 'mb-4');
                 $deletebutton = new single_button(new moodle_url('/mod/data/view.php?d='.$data->id.'&delete='.$delete.'&confirm=1'), get_string('delete'), 'post');
                 echo $OUTPUT->confirm(get_string('confirmdeleterecord','data'),
                         $deletebutton, 'view.php?d='.$data->id);
@@ -412,6 +402,18 @@ if ($showactivity) {
 
         $actionbar = new \mod_data\output\action_bar($data->id, $pageurl);
         echo $actionbar->get_view_action_bar($hasrecords);
+
+        if ($mode === 'single') {
+            echo $OUTPUT->heading(get_string('singleview', 'mod_data'), 2, 'mb-4');
+        } else {
+            echo $OUTPUT->heading(get_string('listview', 'mod_data'), 2, 'mb-4');
+        }
+
+        if ($groupmode) {
+            $returnurl = new moodle_url('/mod/data/view.php', ['d' => $data->id, 'mode' => $mode, 'search' => s($search),
+                'sort' => s($sort), 'order' => s($order)]);
+            echo html_writer::div(groups_print_activity_menu($cm, $returnurl, true), 'mb-3');
+        }
 
         // Advanced search form doesn't make sense for single (redirects list view).
         if ($maxcount && $mode != 'single') {

@@ -37,10 +37,12 @@ export default class extends DndSection {
         this.selectors = {
             SECTION_ITEM: `[data-for='section_title']`,
             CM: `[data-for="cmitem"]`,
+            SECTIONINFO: `[data-for="sectioninfo"]`,
         };
         // Most classes will be loaded later by DndCmItem.
         this.classes = {
             LOCKED: 'editinprogress',
+            HASDESCRIPTION: 'description',
         };
 
         // We need our id to watch specific events.
@@ -82,6 +84,20 @@ export default class extends DndSection {
     }
 
     /**
+     * Validate if the drop data can be dropped over the component.
+     *
+     * @param {Object} dropdata the exported drop data.
+     * @returns {boolean}
+     */
+    validateDropData(dropdata) {
+        // If the format uses one section per page sections dropping in the content is ignored.
+       if (dropdata?.type === 'section' && this.reactive.sectionReturn != 0) {
+            return false;
+        }
+        return super.validateDropData(dropdata);
+    }
+
+    /**
      * Get the last CM element of that section.
      *
      * @returns {element|null}
@@ -98,12 +114,18 @@ export default class extends DndSection {
     /**
      * Update a course index section using the state information.
      *
-     * @param {Object} details the update details.
+     * @param {object} param
+     * @param {Object} param.element details the update details.
      */
     _refreshSection({element}) {
         // Update classes.
         this.element.classList.toggle(this.classes.DRAGGING, element.dragging ?? false);
         this.element.classList.toggle(this.classes.LOCKED, element.locked ?? false);
         this.locked = element.locked;
+        // The description box classes depends on the section state.
+        const sectioninfo = this.getElement(this.selectors.SECTIONINFO);
+        if (sectioninfo) {
+            sectioninfo.classList.toggle(this.classes.HASDESCRIPTION, element.hasrestrictions);
+        }
     }
 }

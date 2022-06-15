@@ -21,7 +21,7 @@ namespace core_reportbuilder\local\helpers;
 use stdClass;
 
 /**
- * Class containing helper methods for format columns data as callbacks.
+ * Class containing helper methods for formatting column data via callbacks
  *
  * @package     core_reportbuilder
  * @copyright   2021 Sara Arjona <sara@moodle.com> based on Alberto Lara Hernández <albertolara@moodle.com> code.
@@ -49,5 +49,15 @@ class format {
      */
     public static function boolean_as_text(bool $value): string {
         return $value ? get_string('yes') : get_string('no');
+    }
+
+    /**
+     * Returns float value as a percentage
+     *
+     * @param float $value
+     * @return string
+     */
+    public static function percent(float $value): string {
+        return format_float($value, 1) . '%';
     }
 }

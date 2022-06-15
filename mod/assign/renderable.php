@@ -525,6 +525,8 @@ class assign_grading_summary implements renderable {
     public $duedate = 0;
     /** @var int cutoffdate - The assignment cut off date (if one is set) */
     public $cutoffdate = 0;
+    /** @var int timelimit - The assignment time limit (if one is set) */
+    public $timelimit = 0;
     /** @var int coursemoduleid - The assignment course module id */
     public $coursemoduleid = 0;
     /** @var boolean teamsubmission - Are team submissions enabled for this assignment */
@@ -539,6 +541,8 @@ class assign_grading_summary implements renderable {
     public $cangrade = false;
     /** @var boolean isvisible - Is the assignment's context module visible to students? */
     public $isvisible = true;
+    /** @var cm_info $cm - The course module object. */
+    public $cm = null;
 
     /** @var string no warning needed about group submissions */
     const WARN_GROUPS_NO = false;
@@ -557,6 +561,7 @@ class assign_grading_summary implements renderable {
      * @param int $submissionssubmittedcount
      * @param int $cutoffdate
      * @param int $duedate
+     * @param int $timelimit
      * @param int $coursemoduleid
      * @param int $submissionsneedgradingcount
      * @param bool $teamsubmission
@@ -565,6 +570,7 @@ class assign_grading_summary implements renderable {
      * @param int $coursestartdate unix timestamp representation of the course start date.
      * @param bool $cangrade
      * @param bool $isvisible
+     * @param cm_info|null $cm The course module object.
      */
     public function __construct($participantcount,
                                 $submissiondraftsenabled,
@@ -573,6 +579,7 @@ class assign_grading_summary implements renderable {
                                 $submissionssubmittedcount,
                                 $cutoffdate,
                                 $duedate,
+                                $timelimit,
                                 $coursemoduleid,
                                 $submissionsneedgradingcount,
                                 $teamsubmission,
@@ -580,7 +587,8 @@ class assign_grading_summary implements renderable {
                                 $courserelativedatesmode,
                                 $coursestartdate,
                                 $cangrade = true,
-                                $isvisible = true) {
+                                $isvisible = true,
+                                cm_info $cm = null) {
         $this->participantcount = $participantcount;
         $this->submissiondraftsenabled = $submissiondraftsenabled;
         $this->submissiondraftscount = $submissiondraftscount;
@@ -588,6 +596,7 @@ class assign_grading_summary implements renderable {
         $this->submissionssubmittedcount = $submissionssubmittedcount;
         $this->duedate = $duedate;
         $this->cutoffdate = $cutoffdate;
+        $this->timelimit = $timelimit;
         $this->coursemoduleid = $coursemoduleid;
         $this->submissionsneedgradingcount = $submissionsneedgradingcount;
         $this->teamsubmission = $teamsubmission;
@@ -596,6 +605,7 @@ class assign_grading_summary implements renderable {
         $this->coursestartdate = $coursestartdate;
         $this->cangrade = $cangrade;
         $this->isvisible = $isvisible;
+        $this->cm = $cm;
     }
 }
 
@@ -634,14 +644,16 @@ class assign_course_index_summary implements renderable {
      * @param string $submissioninfo - A string with either the number of submitted assignments, or the
      *                                 status of the current users submission depending on capabilities.
      * @param string $gradeinfo - The current users grade if they have been graded and it is not hidden.
+     * @param bool cangrade - Does this user have grade capability?
      */
-    public function add_assign_info($cmid, $cmname, $sectionname, $timedue, $submissioninfo, $gradeinfo) {
-        $this->assignments[] = array('cmid'=>$cmid,
-                               'cmname'=>$cmname,
-                               'sectionname'=>$sectionname,
-                               'timedue'=>$timedue,
-                               'submissioninfo'=>$submissioninfo,
-                               'gradeinfo'=>$gradeinfo);
+    public function add_assign_info($cmid, $cmname, $sectionname, $timedue, $submissioninfo, $gradeinfo, $cangrade = false) {
+        $this->assignments[] = ['cmid' => $cmid,
+                               'cmname' => $cmname,
+                               'sectionname' => $sectionname,
+                               'timedue' => $timedue,
+                               'submissioninfo' => $submissioninfo,
+                               'gradeinfo' => $gradeinfo,
+                               'cangrade' => $cangrade];
     }
 
 

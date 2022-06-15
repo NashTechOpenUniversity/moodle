@@ -27,6 +27,7 @@ require_once($CFG->libdir.'/completionlib.php');
 require_once($CFG->libdir.'/gradelib.php');
 require_once($CFG->libdir.'/plagiarismlib.php');
 
+use core\content\export\exporters\component_exporter;
 use core_grades\component_gradeitems;
 
 /**
@@ -629,6 +630,22 @@ abstract class moodleform_mod extends moodleform {
             $mform->addHelpButton('cmidnumber', 'idnumbermod');
         }
 
+        if ($CFG->downloadcoursecontentallowed) {
+                $choices = [
+                    DOWNLOAD_COURSE_CONTENT_DISABLED => get_string('no'),
+                    DOWNLOAD_COURSE_CONTENT_ENABLED => get_string('yes'),
+                ];
+                $mform->addElement('select', 'downloadcontent', get_string('downloadcontent', 'course'), $choices);
+                $downloadcontentdefault = $this->_cm->downloadcontent ?? DOWNLOAD_COURSE_CONTENT_ENABLED;
+                $mform->addHelpButton('downloadcontent', 'downloadcontent', 'course');
+                if (has_capability('moodle/course:configuredownloadcontent', $this->get_context())) {
+                    $mform->setDefault('downloadcontent', $downloadcontentdefault);
+                } else {
+                    $mform->hardFreeze('downloadcontent');
+                    $mform->setConstant('downloadcontent', $downloadcontentdefault);
+                }
+        }
+
         if ($this->_features->groups) {
             $options = array(NOGROUPS       => get_string('groupsnone'),
                              SEPARATEGROUPS => get_string('groupsseparate'),
@@ -1190,6 +1207,10 @@ abstract class moodleform_mod extends moodleform {
 
         $mform = $this->_form;
 
+        $mform->addElement('checkbox', 'coursecontentnotification', get_string('coursecontentnotification', 'course'));
+        $mform->addHelpButton('coursecontentnotification', 'coursecontentnotification', 'course');
+        $mform->closeHeaderBefore('coursecontentnotification');
+
         // elements in a row need a group
         $buttonarray = array();
 
@@ -1209,7 +1230,6 @@ abstract class moodleform_mod extends moodleform {
 
         $mform->addGroup($buttonarray, 'buttonar', '', array(' '), false);
         $mform->setType('buttonar', PARAM_RAW);
-        $mform->closeHeaderBefore('buttonar');
     }
 
     /**

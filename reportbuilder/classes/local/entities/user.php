@@ -18,7 +18,9 @@ declare(strict_types=1);
 
 namespace core_reportbuilder\local\entities;
 
+use context_helper;
 use context_system;
+use context_user;
 use html_writer;
 use lang_string;
 use moodle_url;
@@ -28,6 +30,7 @@ use core_reportbuilder\local\filters\boolean_select;
 use core_reportbuilder\local\filters\date;
 use core_reportbuilder\local\filters\select;
 use core_reportbuilder\local\filters\text;
+use core_reportbuilder\local\filters\user as user_filter;
 use core_reportbuilder\local\helpers\user_profile_fields;
 use core_reportbuilder\local\helpers\format;
 use core_reportbuilder\local\report\column;
@@ -50,7 +53,10 @@ class user extends base {
      * @return array
      */
     protected function get_default_table_aliases(): array {
-        return ['user' => 'u'];
+        return [
+            'user' => 'u',
+            'context' => 'uctx',
+        ];
     }
 
     /**
@@ -80,6 +86,11 @@ class user extends base {
             $this->add_filter($filter);
         }
 
+        $conditions = array_merge($this->get_all_filters(), $userprofilefields->get_filters());
+        foreach ($conditions as $condition) {
+            $this->add_condition($condition);
+        }
+
         return $this;
     }
 
@@ -103,8 +114,11 @@ class user extends base {
      */
     protected function get_all_columns(): array {
         $usertablealias = $this->get_table_alias('user');
+        $contexttablealias = $this->get_table_alias('context');
 
         $fullnameselect = self::get_name_fields_select($usertablealias);
+        $fullnamesort = explode(', ', $fullnameselect);
+
         $userpictureselect = fields::for_userpic()->get_sql($usertablealias, false, '', '', false)->selects;
         $viewfullnames = has_capability('moodle/site:viewfullnames', context_system::instance());
 
@@ -117,10 +131,16 @@ class user extends base {
             ->add_joins($this->get_joins())
             ->add_fields($fullnameselect)
             ->set_type(column::TYPE_TEXT)
-            ->set_is_sortable($this->is_sortable('fullname'))
+            ->set_is_sortable($this->is_sortable('fullname'), $fullnamesort)
             ->add_callback(static function(?string $value, stdClass $row) use ($viewfullnames): string {
                 if ($value === null) {
                     return '';
+                }
+
+                // Ensure we populate all required name properties.
+                $namefields = fields::get_name_fields();
+                foreach ($namefields as $namefield) {
+                    $row->{$namefield} = $row->{$namefield} ?? '';
                 }
 
                 return fullname($row, $viewfullnames);
@@ -142,12 +162,18 @@ class user extends base {
                 ->add_fields($fullnameselect)
                 ->add_field("{$usertablealias}.id")
                 ->set_type(column::TYPE_TEXT)
-                ->set_is_sortable($this->is_sortable($fullnamefield))
+                ->set_is_sortable($this->is_sortable($fullnamefield), $fullnamesort)
                 ->add_callback(static function(?string $value, stdClass $row) use ($fullnamefield, $viewfullnames): string {
                     global $OUTPUT;
 
                     if ($value === null) {
                         return '';
+                    }
+
+                    // Ensure we populate all required name properties.
+                    $namefields = fields::get_name_fields();
+                    foreach ($namefields as $namefield) {
+                        $row->{$namefield} = $row->{$namefield} ?? '';
                     }
 
                     if ($fullnamefield === 'fullnamewithlink') {
@@ -185,7 +211,9 @@ class user extends base {
             ->add_fields($userpictureselect)
             ->set_type(column::TYPE_INTEGER)
             ->set_is_sortable($this->is_sortable('picture'))
-            ->add_callback(static function (int $value, stdClass $row): string {
+            // It doesn't make sense to offer integer aggregation methods for this column.
+            ->set_disabled_aggregation(['avg', 'max', 'min', 'sum'])
+            ->add_callback(static function ($value, stdClass $row): string {
                 global $OUTPUT;
 
                 return !empty($row->id) ? $OUTPUT->user_picture($row, ['link' => false, 'alttext' => false]) : '';
@@ -213,6 +241,14 @@ class user extends base {
                     $countries = get_string_manager()->get_list_of_countries(true);
                     return $countries[$country] ?? '';
                 });
+            } else if ($userfield === 'description') {
+                // Select enough fields in order to format the column.
+                $column
+                    ->add_join("LEFT JOIN {context} {$contexttablealias}
+                           ON {$contexttablealias}.contextlevel = " . CONTEXT_USER . "
+                          AND {$contexttablealias}.instanceid = {$usertablealias}.id")
+                    ->add_fields("{$usertablealias}.descriptionformat, {$usertablealias}.id")
+                    ->add_fields(context_helper::get_preload_record_columns_sql($contexttablealias));
             }
 
             $columns[] = $column;
@@ -230,6 +266,7 @@ class user extends base {
     protected function is_sortable(string $fieldname): bool {
         // Some columns can't be sorted, like longtext or images.
         $nonsortable = [
+            'description',
             'picture',
         ];
 
@@ -245,6 +282,8 @@ class user extends base {
      * @return string
      */
     public function format($value, stdClass $row, string $fieldname): string {
+        global $CFG;
+
         if ($this->get_user_field_type($fieldname) === column::TYPE_BOOLEAN) {
             return format::boolean_as_text($value);
         }
@@ -253,23 +292,49 @@ class user extends base {
             return format::userdate($value, $row);
         }
 
+        if ($fieldname === 'description') {
+            if (empty($row->id)) {
+                return '';
+            }
+
+            require_once("{$CFG->libdir}/filelib.php");
+
+            context_helper::preload_from_record($row);
+            $context = context_user::instance($row->id);
+
+            $description = file_rewrite_pluginfile_urls($value, 'pluginfile.php', $context->id, 'user', 'profile', null);
+            return format_text($description, $row->descriptionformat, ['context' => $context->id]);
+        }
+
         return s($value);
     }
 
     /**
      * Returns a SQL statement to select all user fields necessary for fullname() function
      *
+     * Note the implementation here is similar to {@see fields::get_sql_fullname} but without concatenation
+     *
      * @param string $usertablealias
      * @return string
      */
     public static function get_name_fields_select(string $usertablealias = 'u'): string {
+
+        $namefields = fields::get_name_fields(true);
+
+        // Create a dummy user object containing all name fields.
+        $dummyuser = (object) array_combine($namefields, $namefields);
+        $dummyfullname = fullname($dummyuser, true);
+
+        // Extract any name fields from the fullname format in the order that they appear.
+        $matchednames = array_values(order_in_string($namefields, $dummyfullname));
+
         $userfields = array_map(static function(string $userfield) use ($usertablealias): string {
             if (!empty($usertablealias)) {
                 $userfield = "{$usertablealias}.{$userfield}";
             }
 
             return $userfield;
-        }, fields::get_name_fields(true));
+        }, $matchednames);
 
         return implode(', ', $userfields);
     }
@@ -286,6 +351,7 @@ class user extends base {
             'email' => new lang_string('email'),
             'city' => new lang_string('city'),
             'country' => new lang_string('country'),
+            'description' => new lang_string('description'),
             'firstnamephonetic' => new lang_string('firstnamephonetic'),
             'lastnamephonetic' => new lang_string('lastnamephonetic'),
             'middlename' => new lang_string('middlename'),
@@ -301,6 +367,7 @@ class user extends base {
             'confirmed' => new lang_string('confirmed', 'admin'),
             'username' => new lang_string('username'),
             'moodlenetprofile' => new lang_string('moodlenetprofile', 'user'),
+            'timecreated' => new lang_string('timecreated', 'core_reportbuilder'),
         ];
     }
 
@@ -312,11 +379,15 @@ class user extends base {
      */
     protected function get_user_field_type(string $userfield): int {
         switch ($userfield) {
+            case 'description':
+                $fieldtype = column::TYPE_LONGTEXT;
+                break;
             case 'confirmed':
             case 'suspended':
                 $fieldtype = column::TYPE_BOOLEAN;
                 break;
             case 'lastaccess':
+            case 'timecreated':
                 $fieldtype = column::TYPE_TIMESTAMP;
                 break;
             default:
@@ -354,6 +425,13 @@ class user extends base {
         // User fields filters.
         $fields = $this->get_user_fields();
         foreach ($fields as $field => $name) {
+            // Filtering isn't supported for LONGTEXT fields on Oracle.
+            if ($this->get_user_field_type($field) === column::TYPE_LONGTEXT &&
+                    $DB->get_dbfamily() === 'oracle') {
+
+                continue;
+            }
+
             $optionscallback = [static::class, 'get_options_for_' . $field];
             if (is_callable($optionscallback)) {
                 $classname = select::class;
@@ -381,6 +459,16 @@ class user extends base {
 
             $filters[] = $filter;
         }
+
+        // User select filter.
+        $filters[] = (new filter(
+            user_filter::class,
+            'userselect',
+            new lang_string('userselect', 'core_reportbuilder'),
+            $this->get_entity_name(),
+            "{$tablealias}.id"
+        ))
+            ->add_joins($this->get_joins());
 
         return $filters;
     }

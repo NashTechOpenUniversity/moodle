@@ -49,7 +49,7 @@ class core_question_bank_view_testcase extends advanced_testcase {
         $context = context_course::instance($course->id);
 
         // Create a question in the default category.
-        $contexts = new question_edit_contexts($context);
+        $contexts = new core_question\local\bank\question_edit_contexts($context);
         $cat = question_make_default_categories($contexts->all());
         $questiondata = $questiongenerator->create_question('numerical', null,
                 ['name' => 'Example question', 'category' => $cat->id]);
@@ -63,7 +63,7 @@ class core_question_bank_view_testcase extends advanced_testcase {
         ob_start();
         $pagevars = [
             'qpage' => 0,
-            'qperpage' => 20,
+            'qperpage' => DEFAULT_QUESTIONS_PER_PAGE,
             'cat' => $cat->id . ',' . $context->id,
             'recurse' => false,
             'showhidden' => false,
@@ -93,7 +93,7 @@ class core_question_bank_view_testcase extends advanced_testcase {
         $context = context_course::instance($course->id);
 
         // Create a question in the default category.
-        $contexts = new question_edit_contexts($context);
+        $contexts = new core_question\local\bank\question_edit_contexts($context);
         $cat = question_make_default_categories($contexts->all());
         $questiondata = $questiongenerator->create_question('numerical', null,
                 ['name' => 'Example question', 'category' => $cat->id]);
@@ -104,7 +104,7 @@ class core_question_bank_view_testcase extends advanced_testcase {
         ob_start();
         $pagevars = [
             'qpage' => 0,
-            'qperpage' => 20,
+            'qperpage' => DEFAULT_QUESTIONS_PER_PAGE,
             'cat' => $cat->id . ',' . $context->id,
             'recurse' => false,
             'showhidden' => false,

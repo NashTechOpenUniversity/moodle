@@ -57,11 +57,10 @@ Feature: Set up contextual data for tests
       | Grouping 1 | C1 | GG1 |
       | Grouping 2 | C1 | GG2 |
     When I log in as "admin"
-    And I am on "Course 1" course homepage
-    And I navigate to "Users > Groups" in current page administration
+    And I am on the "Course 1" "groups" page
     Then I should see "Group 1"
     And I should see "Group 2"
-    And I follow "Groupings"
+    And I select "Groupings" from the "jump" singleselect
     And I should see "Grouping 1"
     And I should see "Grouping 2"
 
@@ -86,8 +85,7 @@ Feature: Set up contextual data for tests
       | mod/forum:editanypost | Allow | student | Course | C1 |
       | mod/forum:replynews | Prevent | editingteacher | Course | C1 |
     When I log in as "admin"
-    And I am on "Course 1" course homepage
-    And I navigate to "Users > Permissions" in current page administration
+    And I am on the "Course 1" "permissions" page
     And I set the field "Advanced role override" to "Student (1)"
     Then "mod/forum:editanypost" capability has "Allow" permission
     And I press "Cancel"
@@ -254,8 +252,7 @@ Feature: Set up contextual data for tests
       | grouping | group |
       | GG1 | G1 |
     When I log in as "admin"
-    And I am on "Course 1" course homepage
-    And I navigate to "Users > Groups" in current page administration
+    And I am on the "Course 1" "groups" page
     Then the "groups" select box should contain "Group 1 (1)"
     And the "groups" select box should contain "Group 2 (1)"
     And I set the field "groups" to "Group 1 (1)"
@@ -385,10 +382,10 @@ Feature: Set up contextual data for tests
       | enableoutcomes | 1 |
     When I log in as "admin"
     And I am on "Course 1" course homepage
-    And I follow "Outcomes"
+    And I navigate to "More > Outcomes" in the course gradebook
     Then I should see "Grade outcome 1" in the "#addoutcomes" "css_element"
     And I should see "Grade outcome 2" in the "#removeoutcomes" "css_element"
-    And I follow "Edit outcomes"
+    And I press "Manage outcomes"
     And the following should exist in the "generaltable" table:
       | Full name       | Short name | Scale        |
       | Grade outcome 2 | OT2        | Test Scale 1 |

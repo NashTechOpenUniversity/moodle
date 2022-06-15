@@ -214,13 +214,14 @@ function enrol_is_enabled($enrol) {
 /**
  * Check all the login enrolment information for the given user object
  * by querying the enrolment plugins
- *
  * This function may be very slow, use only once after log-in or login-as.
  *
- * @param stdClass $user
+ * @param stdClass $user User object.
+ * @param bool $ignoreintervalcheck Force to ignore checking configured sync intervals.
+ *
  * @return void
  */
-function enrol_check_plugins($user) {
+function enrol_check_plugins($user, bool $ignoreintervalcheck = true) {
     global $CFG;
 
     if (empty($user->id) or isguestuser($user)) {
@@ -237,12 +238,26 @@ function enrol_check_plugins($user) {
         return;
     }
 
+    $syncinterval = isset($CFG->enrolments_sync_interval) ? (int)$CFG->enrolments_sync_interval : HOURSECS;
+    $needintervalchecking = !$ignoreintervalcheck && !empty($syncinterval);
+
+    if ($needintervalchecking) {
+        $lastsync = get_user_preferences('last_time_enrolments_synced', 0, $user);
+        if (time() - $lastsync < $syncinterval) {
+            return;
+        }
+    }
+
     $inprogress[$user->id] = true;  // Set the flag
 
     $enabled = enrol_get_plugins(true);
 
     foreach($enabled as $enrol) {
         $enrol->sync_user_enrolments($user);
+    }
+
+    if ($needintervalchecking) {
+        set_user_preference('last_time_enrolments_synced', time(), $user);
     }
 
     unset($inprogress[$user->id]);  // Unset the flag
@@ -433,13 +448,15 @@ function enrol_add_course_navigation(navigation_node $coursenode, $course) {
 
     $usersnode = $coursenode->add(get_string('users'), null, navigation_node::TYPE_CONTAINER, null, 'users');
 
-    if ($course->id != SITEID) {
-        // list all participants - allows assigning roles, groups, etc.
-        if (has_capability('moodle/course:enrolreview', $coursecontext)) {
-            $url = new moodle_url('/user/index.php', array('id'=>$course->id));
-            $usersnode->add(get_string('enrolledusers', 'enrol'), $url, navigation_node::TYPE_SETTING, null, 'review', new pix_icon('i/enrolusers', ''));
-        }
+    // List all participants - allows assigning roles, groups, etc.
+    // Have this available even in the site context as the page is still accessible from the frontpage.
+    if (has_capability('moodle/course:enrolreview', $coursecontext)) {
+        $url = new moodle_url('/user/index.php', array('id' => $course->id));
+        $usersnode->add(get_string('enrolledusers', 'enrol'), $url, navigation_node::TYPE_SETTING,
+            null, 'review', new pix_icon('i/enrolusers', ''));
+    }
 
+    if ($course->id != SITEID) {
         // manage enrol plugin instances
         if (has_capability('moodle/course:enrolconfig', $coursecontext) or has_capability('moodle/course:enrolreview', $coursecontext)) {
             $url = new moodle_url('/enrol/instances.php', array('id'=>$course->id));
@@ -515,6 +532,7 @@ function enrol_add_course_navigation(navigation_node $coursenode, $course) {
                 if ($unenrollink = $plugin->get_unenrolself_link($instance)) {
                     $shortname = format_string($course->shortname, true, array('context' => $coursecontext));
                     $coursenode->add(get_string('unenrolme', 'core_enrol', $shortname), $unenrollink, navigation_node::TYPE_SETTING, null, 'unenrolself', new pix_icon('i/user', ''));
+                    $coursenode->get('unenrolself')->set_force_into_more_menu(true);
                     break;
                     //TODO. deal with multiple unenrol links - not likely case, but still...
                 }
@@ -1649,7 +1667,7 @@ function get_enrolled_users(context $context, $withcapability = '', $groupid = 0
  * @param string $withcapability
  * @param int $groupid 0 means ignore groups, any other value limits the result by group id
  * @param bool $onlyactive consider only active enrolments in enabled plugins and time restrictions
- * @return array of user records
+ * @return int number of users enrolled into course
  */
 function count_enrolled_users(context $context, $withcapability = '', $groupid = 0, $onlyactive = false) {
     global $DB;

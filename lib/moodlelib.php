@@ -460,6 +460,23 @@ define('MOD_ARCHETYPE_ASSIGNMENT', 2);
 /** System (not user-addable) module archetype */
 define('MOD_ARCHETYPE_SYSTEM', 3);
 
+/** Type of module */
+define('FEATURE_MOD_PURPOSE', 'mod_purpose');
+/** Module purpose administration */
+define('MOD_PURPOSE_ADMINISTRATION', 'administration');
+/** Module purpose assessment */
+define('MOD_PURPOSE_ASSESSMENT', 'assessment');
+/** Module purpose communication */
+define('MOD_PURPOSE_COLLABORATION', 'collaboration');
+/** Module purpose communication */
+define('MOD_PURPOSE_COMMUNICATION', 'communication');
+/** Module purpose content */
+define('MOD_PURPOSE_CONTENT', 'content');
+/** Module purpose interface */
+define('MOD_PURPOSE_INTERFACE', 'interface');
+/** Module purpose other */
+define('MOD_PURPOSE_OTHER', 'other');
+
 /**
  * Security token used for allowing access
  * from external application such as web services.
@@ -489,11 +506,20 @@ define('HOMEPAGE_MY', 1);
  * The home page can be chosen by the user
  */
 define('HOMEPAGE_USER', 2);
+/**
+ * The home page should be the users my courses page
+ */
+define('HOMEPAGE_MYCOURSES', 3);
 
 /**
  * URL of the Moodle sites registration portal.
  */
 defined('HUB_MOODLEORGHUBURL') || define('HUB_MOODLEORGHUBURL', 'https://stats.moodle.org');
+
+/**
+ * URL of the statistic server public key.
+ */
+defined('HUB_STATSPUBLICKEY') || define('HUB_STATSPUBLICKEY', 'https://moodle.org/static/statspubkey.pem');
 
 /**
  * Moodle mobile app service name
@@ -1382,64 +1408,67 @@ function html_is_blank($string) {
  * @param string $plugin (optional) the plugin scope, default null
  * @return bool true or exception
  */
-function set_config($name, $value, $plugin=null) {
+function set_config($name, $value, $plugin = null) {
     global $CFG, $DB;
 
-    if (empty($plugin)) {
-        if (!array_key_exists($name, $CFG->config_php_settings)) {
-            // So it's defined for this invocation at least.
-            if (is_null($value)) {
-                unset($CFG->$name);
-            } else {
-                // Settings from db are always strings.
-                $CFG->$name = (string)$value;
-            }
-        }
+    // Redirect to appropriate handler when value is null.
+    if ($value === null) {
+        return unset_config($name, $plugin);
+    }
 
-        if ($DB->get_field('config', 'name', array('name' => $name))) {
-            if ($value === null) {
-                $DB->delete_records('config', array('name' => $name));
-            } else {
-                $DB->set_field('config', 'value', $value, array('name' => $name));
-            }
-        } else {
-            if ($value !== null) {
-                $config = new stdClass();
-                $config->name  = $name;
-                $config->value = $value;
-                $DB->insert_record('config', $config, false);
-            }
-            // When setting config during a Behat test (in the CLI script, not in the web browser
-            // requests), remember which ones are set so that we can clear them later.
-            if (defined('BEHAT_TEST')) {
-                if (!property_exists($CFG, 'behat_cli_added_config')) {
-                    $CFG->behat_cli_added_config = [];
-                }
-                $CFG->behat_cli_added_config[$name] = true;
-            }
-        }
-        if ($name === 'siteidentifier') {
-            cache_helper::update_site_identifier($value);
-        }
-        cache_helper::invalidate_by_definition('core', 'config', array(), 'core');
+    // Set variables determining conditions and where to store the new config.
+    // Plugin config goes to {config_plugins}, core config goes to {config}.
+    $iscore = empty($plugin);
+    if ($iscore) {
+        // If it's for core config.
+        $table = 'config';
+        $conditions = ['name' => $name];
+        $invalidatecachekey = 'core';
     } else {
-        // Plugin scope.
-        if ($id = $DB->get_field('config_plugins', 'id', array('name' => $name, 'plugin' => $plugin))) {
-            if ($value===null) {
-                $DB->delete_records('config_plugins', array('name' => $name, 'plugin' => $plugin));
-            } else {
-                $DB->set_field('config_plugins', 'value', $value, array('id' => $id));
-            }
-        } else {
-            if ($value !== null) {
-                $config = new stdClass();
-                $config->plugin = $plugin;
-                $config->name   = $name;
-                $config->value  = $value;
-                $DB->insert_record('config_plugins', $config, false);
-            }
+        // If it's a plugin.
+        $table = 'config_plugins';
+        $conditions = ['name' => $name, 'plugin' => $plugin];
+        $invalidatecachekey = $plugin;
+    }
+
+    // DB handling - checks for existing config, updating or inserting only if necessary.
+    $invalidatecache = true;
+    $inserted = false;
+    $record = $DB->get_record($table, $conditions, 'id, value');
+    if ($record === false) {
+        // Inserts a new config record.
+        $config = new stdClass();
+        $config->name  = $name;
+        $config->value = $value;
+        if (!$iscore) {
+            $config->plugin = $plugin;
         }
-        cache_helper::invalidate_by_definition('core', 'config', array(), $plugin);
+        $inserted = $DB->insert_record($table, $config, false);
+    } else if ($invalidatecache = ($record->value !== $value)) {
+        // Record exists - Check and only set new value if it has changed.
+        $DB->set_field($table, 'value', $value, ['id' => $record->id]);
+    }
+
+    if ($iscore && !isset($CFG->config_php_settings[$name])) {
+        // So it's defined for this invocation at least.
+        // Settings from db are always strings.
+        $CFG->$name = (string) $value;
+    }
+
+    // When setting config during a Behat test (in the CLI script, not in the web browser
+    // requests), remember which ones are set so that we can clear them later.
+    if ($iscore && $inserted && defined('BEHAT_TEST')) {
+        $CFG->behat_cli_added_config[$name] = true;
+    }
+
+    // Update siteidentifier cache, if required.
+    if ($iscore && $name === 'siteidentifier') {
+        cache_helper::update_site_identifier($value);
+    }
+
+    // Invalidate cache, if required.
+    if ($invalidatecache) {
+        cache_helper::invalidate_by_definition('core', 'config', [], $invalidatecachekey);
     }
 
     return true;
@@ -2721,11 +2750,6 @@ function require_login($courseorid = null, $autologinguest = true, $cm = null, $
                 $SESSION->wantsurl = qualified_me();
             }
 
-            $referer = get_local_referer(false);
-            if (!empty($referer)) {
-                $SESSION->fromurl = $referer;
-            }
-
             // Give auth plugins an opportunity to authenticate or redirect to an external login page
             $authsequence = get_enabled_auth_plugins(); // Auths, in sequence.
             foreach($authsequence as $authname) {
@@ -3267,7 +3291,7 @@ function require_user_key_login($script, $instance = null, $keyvalue = null) {
     core_user::require_active_user($user, true, true);
 
     // Emulate normal session.
-    enrol_check_plugins($user);
+    enrol_check_plugins($user, false);
     \core\session\manager::set_user($user);
 
     // Note we are not using normal login.
@@ -3351,7 +3375,7 @@ function get_user_key($script, $userid, $instance=null, $iprestriction=null, $va
  * @return bool Always returns true
  */
 function update_user_login_times() {
-    global $USER, $DB;
+    global $USER, $DB, $SESSION;
 
     if (isguestuser()) {
         // Do not update guest access times/ips for performance.
@@ -3375,6 +3399,7 @@ function update_user_login_times() {
 
     // Function user_accesstime_log() may not update immediately, better do it here.
     $USER->lastaccess = $user->lastaccess = $now;
+    $SESSION->userpreviousip = $USER->lastip;
     $USER->lastip = $user->lastip = getremoteaddr();
 
     // Note: do not call user_update_user() here because this is part of the login process,
@@ -3878,10 +3903,6 @@ function create_user_record($username, $password, $auth = 'manual') {
         if (email_is_not_allowed($newuser->email)) {
             unset($newuser->email);
         }
-    }
-
-    if (!isset($newuser->city)) {
-        $newuser->city = '';
     }
 
     $newuser->auth = $auth;
@@ -4545,6 +4566,27 @@ function complete_user_login($user) {
     );
     $event->trigger();
 
+    // Check if the user is using a new browser or session (a new MoodleSession cookie is set in that case).
+    // If the user is accessing from the same IP, ignore everything (most of the time will be a new session in the same browser).
+    // Skip Web Service requests, CLI scripts, AJAX scripts, and request from the mobile app itself.
+    $loginip = getremoteaddr();
+    $isnewip = isset($SESSION->userpreviousip) && $SESSION->userpreviousip != $loginip;
+    $isvalidenv = (!WS_SERVER && !CLI_SCRIPT && !NO_MOODLE_COOKIES) || PHPUNIT_TEST;
+
+    if (!empty($SESSION->isnewsessioncookie) && $isnewip && $isvalidenv && !\core_useragent::is_moodle_app()) {
+
+        $logintime = time();
+        $ismoodleapp = false;
+        $useragent = \core_useragent::get_user_agent_string();
+
+        // Schedule adhoc task to sent a login notification to the user.
+        $task = new \core\task\send_login_notifications();
+        $task->set_userid($USER->id);
+        $task->set_custom_data(compact('ismoodleapp', 'useragent', 'loginip', 'logintime'));
+        $task->set_component('core');
+        \core\task\manager::queue_adhoc_task($task);
+    }
+
     // Queue migrating the messaging data, if we need to.
     if (!get_user_preferences('core_message_migrate_data', false, $USER->id)) {
         // Check if there are any legacy messages to migrate.
@@ -5146,6 +5188,7 @@ function remove_course_contents($courseid, $showfeedback = true, array $options 
                         // Delete cm and its context - orphaned contexts are purged in cron in case of any race condition.
                         context_helper::delete_instance(CONTEXT_MODULE, $cm->id);
                         $DB->delete_records('course_modules_completion', ['coursemoduleid' => $cm->id]);
+                        $DB->delete_records('course_modules_viewed', ['coursemoduleid' => $cm->id]);
                         $DB->delete_records('course_modules', array('id' => $cm->id));
                         rebuild_course_cache($cm->course, true);
                     }
@@ -5169,6 +5212,8 @@ function remove_course_contents($courseid, $showfeedback = true, array $options 
     // features are not enabled now, in case they were enabled previously.
     $DB->delete_records_subquery('course_modules_completion', 'coursemoduleid', 'id',
             'SELECT id from {course_modules} WHERE course = ?', [$courseid]);
+    $DB->delete_records_subquery('course_modules_viewed', 'coursemoduleid', 'id',
+        'SELECT id from {course_modules} WHERE course = ?', [$courseid]);
 
     // Remove course-module data that has not been removed in modules' _delete_instance callbacks.
     $cms = $DB->get_records('course_modules', array('course' => $course->id));
@@ -5247,6 +5292,10 @@ function remove_course_contents($courseid, $showfeedback = true, array $options 
     // Delete course tags.
     core_tag_tag::remove_all_item_tags('core', 'course', $course->id);
 
+    // Give the course format the opportunity to remove its obscure data.
+    $format = course_get_format($course);
+    $format->delete_format_data();
+
     // Notify the competency subsystem.
     \core_competency\api::hook_course_deleted($course);
 
@@ -5300,8 +5349,7 @@ function remove_course_contents($courseid, $showfeedback = true, array $options 
     fulldelete($CFG->dataroot.'/'.$course->id);
 
     // Delete from cache to reduce the cache size especially makes sense in case of bulk course deletion.
-    $cachemodinfo = cache::make('core', 'coursemodinfo');
-    $cachemodinfo->delete($courseid);
+    course_modinfo::purge_course_cache($courseid);
 
     // Trigger a course content deleted event.
     $event = \core\event\course_content_deleted::create(array(
@@ -8721,8 +8769,9 @@ function format_float($float, $decimalpoints=1, $localized=true, $stripzeros=fal
     }
 
     $result = number_format($float, $decimalpoints, $separator, '');
-    if ($stripzeros) {
+    if ($stripzeros && $decimalpoints > 0) {
         // Remove zeros and final dot if not needed.
+        // However, only do this if there is a decimal point!
         $result = preg_replace('~(' . preg_quote($separator, '~') . ')?0+$~', '', $result);
     }
     return $result;
@@ -9562,9 +9611,9 @@ function get_performance_info() {
 
         $table = new html_table();
         $table->attributes['class'] = 'cachesused table table-dark table-sm w-auto table-bordered';
-        $table->head = ['Mode', 'Cache item', 'Static', 'H', 'M', get_string('mappingprimary', 'cache'), 'H', 'M', 'S'];
+        $table->head = ['Mode', 'Cache item', 'Static', 'H', 'M', get_string('mappingprimary', 'cache'), 'H', 'M', 'S', 'I/O'];
         $table->data = [];
-        $table->align = ['left', 'left', 'left', 'right', 'right', 'left', 'right', 'right', 'right'];
+        $table->align = ['left', 'left', 'left', 'right', 'right', 'left', 'right', 'right', 'right', 'right'];
 
         $text = 'Caches used (hits/misses/sets): ';
         $hits = 0;
@@ -9595,9 +9644,11 @@ function get_performance_info() {
             $table->align[] = 'right';
             $table->align[] = 'right';
             $table->align[] = 'right';
+            $table->align[] = 'right';
             $table->head[] = 'H';
             $table->head[] = 'M';
             $table->head[] = 'S';
+            $table->head[] = 'I/O';
         }
 
         ksort($stats);
@@ -9657,10 +9708,27 @@ function get_performance_info() {
                     $cell = new html_table_cell($data['sets']);
                     $cell->attributes = ['class' => $cachestoreclass];
                     $row[] = $cell;
+
+                    if ($data['hits'] || $data['sets']) {
+                        if ($data['iobytes'] === cache_store::IO_BYTES_NOT_SUPPORTED) {
+                            $size = '-';
+                        } else {
+                            $size = display_size($data['iobytes'], 1, 'KB');
+                            if ($data['iobytes'] >= 10 * 1024) {
+                                $cachestoreclass = ' bg-warning text-dark';
+                            }
+                        }
+                    } else {
+                        $size = '';
+                    }
+                    $cell = new html_table_cell($size);
+                    $cell->attributes = ['class' => $cachestoreclass];
+                    $row[] = $cell;
                 }
                 $storec++;
             }
             while ($storec++ < $maxstores) {
+                $row[] = '';
                 $row[] = '';
                 $row[] = '';
                 $row[] = '';
@@ -9675,11 +9743,11 @@ function get_performance_info() {
 
         // Now lets also show sub totals for each cache store.
         $storetotals = [];
-        $storetotal = ['hits' => 0, 'misses' => 0, 'sets' => 0];
+        $storetotal = ['hits' => 0, 'misses' => 0, 'sets' => 0, 'iobytes' => 0];
         foreach ($stats as $definition => $details) {
             foreach ($details['stores'] as $store => $data) {
                 if (!array_key_exists($store, $storetotals)) {
-                    $storetotals[$store] = ['hits' => 0, 'misses' => 0, 'sets' => 0];
+                    $storetotals[$store] = ['hits' => 0, 'misses' => 0, 'sets' => 0, 'iobytes' => 0];
                 }
                 $storetotals[$store]['class']   = $data['class'];
                 $storetotals[$store]['hits']   += $data['hits'];
@@ -9688,14 +9756,18 @@ function get_performance_info() {
                 $storetotal['hits']   += $data['hits'];
                 $storetotal['misses'] += $data['misses'];
                 $storetotal['sets']   += $data['sets'];
+                if ($data['iobytes'] !== cache_store::IO_BYTES_NOT_SUPPORTED) {
+                    $storetotals[$store]['iobytes'] += $data['iobytes'];
+                    $storetotal['iobytes'] += $data['iobytes'];
+                }
             }
         }
 
         $table = new html_table();
         $table->attributes['class'] = 'cachesused table table-dark table-sm w-auto table-bordered';
-        $table->head = [get_string('storename', 'cache'), get_string('type_cachestore', 'plugin'), 'H', 'M', 'S'];
+        $table->head = [get_string('storename', 'cache'), get_string('type_cachestore', 'plugin'), 'H', 'M', 'S', 'I/O'];
         $table->data = [];
-        $table->align = ['left', 'left', 'right', 'right', 'right'];
+        $table->align = ['left', 'left', 'right', 'right', 'right', 'right'];
 
         ksort($storetotals);
 
@@ -9723,7 +9795,26 @@ function get_performance_info() {
             $cell = new html_table_cell($data['sets']);
             $cell->attributes = ['class' => $cachestoreclass];
             $row[] = $cell;
+            if ($data['hits'] || $data['sets']) {
+                if ($data['iobytes']) {
+                    $size = display_size($data['iobytes'], 1, 'KB');
+                } else {
+                    $size = '-';
+                }
+            } else {
+                $size = '';
+            }
+            $cell = new html_table_cell($size);
+            $cell->attributes = ['class' => $cachestoreclass];
+            $row[] = $cell;
             $table->data[] = $row;
+        }
+        if (!empty($storetotal['iobytes'])) {
+            $size = display_size($storetotal['iobytes'], 1, 'KB');
+        } else if (!empty($storetotal['hits']) || !empty($storetotal['sets'])) {
+            $size = '-';
+        } else {
+            $size = '';
         }
         $row = [
             get_string('total'),
@@ -9731,6 +9822,7 @@ function get_performance_info() {
             $storetotal['hits'],
             $storetotal['misses'],
             $storetotal['sets'],
+            $size,
         ];
         $table->data[] = $row;
 
@@ -9745,7 +9837,7 @@ function get_performance_info() {
         $info['txt'] .= 'Caches used (hits/misses/sets): 0/0/0 ';
     }
 
-    $info['html'] = '<div class="performanceinfo siteinfo container-fluid px-md-0 overflow-auto mt-3">'.$info['html'].'</div>';
+    $info['html'] = '<div class="performanceinfo siteinfo container-fluid px-md-0 overflow-auto pt-3">'.$info['html'].'</div>';
     return $info;
 }
 
@@ -10277,13 +10369,38 @@ function get_home_page() {
     global $CFG;
 
     if (isloggedin() && !isguestuser() && !empty($CFG->defaulthomepage)) {
+        // If dashboard is disabled, home will be set to default page.
+        $defaultpage = get_default_home_page();
         if ($CFG->defaulthomepage == HOMEPAGE_MY) {
-            return HOMEPAGE_MY;
+            if (!empty($CFG->enabledashboard)) {
+                return HOMEPAGE_MY;
+            } else {
+                return $defaultpage;
+            }
+        } else if ($CFG->defaulthomepage == HOMEPAGE_MYCOURSES) {
+            return HOMEPAGE_MYCOURSES;
         } else {
-            return (int)get_user_preferences('user_home_page_preference', HOMEPAGE_MY);
+            $userhomepage = (int) get_user_preferences('user_home_page_preference', $defaultpage);
+            if (empty($CFG->enabledashboard) && $userhomepage == HOMEPAGE_MY) {
+                // If the user was using the dashboard but it's disabled, return the default home page.
+                $userhomepage = $defaultpage;
+            }
+            return $userhomepage;
         }
     }
     return HOMEPAGE_SITE;
+}
+
+/**
+ * Returns the default home page to display if current one is not defined or can't be applied.
+ * The default behaviour is to return Dashboard if it's enabled or My courses page if it isn't.
+ *
+ * @return int The default home page.
+ */
+function get_default_home_page(): int {
+    global $CFG;
+
+    return !empty($CFG->enabledashboard) ? HOMEPAGE_MY : HOMEPAGE_MYCOURSES;
 }
 
 /**
@@ -10355,6 +10472,21 @@ function unserialize_array($expression) {
         $value[$parts[$i]] = $parts[$i+1];
     }
     return $value;
+}
+
+/**
+ * Safe method for unserializing given input that is expected to contain only a serialized instance of an stdClass object
+ *
+ * If any class type other than stdClass is included in the input string, it will not be instantiated and will be cast to an
+ * stdClass object. The initial cast to array, then back to object is to ensure we are always returning the correct type,
+ * otherwise we would return an instances of {@see __PHP_Incomplete_class} for malformed strings
+ *
+ * @param string $input
+ * @return stdClass
+ */
+function unserialize_object(string $input): stdClass {
+    $instance = (array) unserialize($input, ['allowed_classes' => [stdClass::class]]);
+    return (object) $instance;
 }
 
 /**

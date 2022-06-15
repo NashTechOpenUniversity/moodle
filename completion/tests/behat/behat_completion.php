@@ -87,7 +87,8 @@ class behat_completion extends behat_base {
         $reportsnode = get_string('reports');
 
         $this->execute("behat_navigation::i_navigate_to_in_current_page_administration",
-                $reportsnode . ' > ' . $completionnode);
+                $reportsnode);
+        $this->execute("behat_general::i_click_on_in_the", [$completionnode, "link", "region-main", "region"]);
     }
 
     /**

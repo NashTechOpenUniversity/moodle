@@ -42,9 +42,9 @@ define(['jquery',
     var SELECTORS = {
         DISABLE_NOTIFICATIONS: '[data-region="disable-notification-container"] [data-disable-notifications]',
         DISABLE_NOTIFICATIONS_CONTAINER: '[data-region="disable-notification-container"]',
-        PREFERENCE: '[data-state]',
+        PREFERENCE: '.preference-state',
         PREFERENCE_ROW: '[data-region="preference-row"]',
-        PREFERENCE_INPUT: '[data-state] input',
+        PREFERENCE_INPUT: '.preference-state input',
         PROCESSOR_SETTING: '[data-processor-setting]',
     };
 
@@ -92,12 +92,12 @@ define(['jquery',
     };
 
     /**
-      * Update the disable all notifications user property in the DOM and
-      * send a request to update on the server.
-      *
-      * @method toggleDisableAllStatus
-      * @return {Promise}
-      */
+     * Update the disable all notifications user property in the DOM and
+     * send a request to update on the server.
+     *
+     * @method toggleDisableAllStatus
+     * @return {Promise}
+     */
     PreferencesController.prototype.toggleDisableAllStatus = function() {
         var checkbox = $(SELECTORS.DISABLE_NOTIFICATIONS);
         var container = $(SELECTORS.DISABLE_NOTIFICATIONS_CONTAINER);
@@ -132,10 +132,10 @@ define(['jquery',
     };
 
     /**
-      * Set up all of the event listeners for the PreferencesController.
-      *
-      * @method registerEventListeners
-      */
+     * Set up all of the event listeners for the PreferencesController.
+     *
+     * @method registerEventListeners
+     */
     PreferencesController.prototype.registerEventListeners = function() {
         var disabledNotificationsElement = $(SELECTORS.DISABLE_NOTIFICATIONS);
 

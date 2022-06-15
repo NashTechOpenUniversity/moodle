@@ -17,11 +17,16 @@
 namespace core_courseformat\output\local\state;
 
 use core_courseformat\base as course_format;
+use completion_info;
 use section_info;
 use cm_info;
 use renderable;
 use stdClass;
 use core_availability\info_module;
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->libdir . '/completionlib.php');
 
 /**
  * Contains the ajax update course module structure.
@@ -66,18 +71,22 @@ class cm implements renderable {
      * @return stdClass data context for a mustache template
      */
     public function export_for_template(\renderer_base $output): stdClass {
+        global $USER, $CFG;
 
         $format = $this->format;
         $section = $this->section;
         $cm = $this->cm;
+        $course = $format->get_course();
 
         $data = (object)[
             'id' => $cm->id,
-            'name' => $cm->name,
+            'anchor' => "module-{$cm->id}",
+            'name' => external_format_string($cm->name, $cm->context, true),
             'visible' => !empty($cm->visible),
             'sectionid' => $section->id,
             'sectionnumber' => $section->section,
             'uservisible' => $cm->uservisible,
+            'hascmrestrictions' => $this->get_has_restrictions(),
         ];
 
         // Check the user access type to this cm.
@@ -94,6 +103,43 @@ class cm implements renderable {
             $data->content = $output->course_section_updated_cm_item($format, $section, $cm);
         }
 
+        // Completion status.
+        $completioninfo = new completion_info($course);
+        $data->istrackeduser = $completioninfo->is_tracked_user($USER->id);
+        if ($data->istrackeduser && $completioninfo->is_enabled($cm)) {
+            $completiondata = $completioninfo->get_data($cm);
+            $data->completionstate = $completiondata->completionstate;
+        }
+
         return $data;
+    }
+
+    /**
+     * Return if the activity has a restrictions icon displayed or not.
+     *
+     * @return bool if the activity has visible restrictions for the user.
+     */
+    protected function get_has_restrictions(): bool {
+        global $CFG;
+        $cm = $this->cm;
+
+        if (empty($cm->visible) || empty($CFG->enableavailability)) {
+            return false;
+        }
+        // Nothing to be displayed to the user.
+        if (!$cm->is_visible_on_course_page()) {
+            return false;
+        }
+        // Not allowed to see the module but might be allowed to see some availability.
+        if (!$cm->uservisible) {
+            return !empty($cm->availableinfo);
+        }
+        // Content editors can see all restrictions if the activity is visible.
+        if (has_capability('moodle/course:viewhiddenactivities', $cm->context)) {
+            $ci = new info_module($cm);
+            return !empty($ci->get_full_information());
+        }
+        // Regular users can only see restrictions if apply to them.
+        return false;
     }
 }

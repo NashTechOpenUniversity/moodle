@@ -22,7 +22,6 @@ use advanced_testcase;
 use coding_exception;
 use context_system;
 use lang_string;
-use ReflectionClass;
 use core_reportbuilder\course_entity_report;
 use core_reportbuilder\manager;
 use core_reportbuilder\testable_system_report_table;
@@ -44,7 +43,7 @@ use core_reportbuilder\local\helpers\user_filter_manager;
  * @copyright   2021 David Matamoros <davidmc@moodle.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class course_testcase extends advanced_testcase {
+class course_test extends advanced_testcase {
 
     /**
      * Load required classes
@@ -142,7 +141,6 @@ class course_testcase extends advanced_testcase {
         });
         $courserow = reset($courserows);
 
-        $this->assertEquals($coursecategory1->name, $courserow['category']);
         $this->assertEquals('Course 1', $courserow['fullname']);
         $this->assertEquals('C1', $courserow['shortname']);
         $this->assertEquals('IDNumber1', $courserow['idnumber']);
@@ -221,16 +219,6 @@ class course_testcase extends advanced_testcase {
             'course:startdate_operator' => date::DATE_RANGE,
             'course:startdate_from' => 289135800,
             'course:startdate_to' => 289740600,
-        ];
-        $tablerows = $this->get_report_table_rows($filtervalues);
-        $this->assertEquals([
-            'Course 1',
-        ], array_column($tablerows, 'fullname'));
-
-        // Filter by category field.
-        $filtervalues = [
-            'course:category_operator' => select::EQUAL_TO,
-            'course:category_value' => $coursecategory1->id,
         ];
         $tablerows = $this->get_report_table_rows($filtervalues);
         $this->assertEquals([
@@ -426,13 +414,11 @@ class course_testcase extends advanced_testcase {
         $tablejoin = "JOIN {course} c2 ON c2.id = c1.id";
         $courseentity->add_join($tablejoin);
 
-        $method = (new ReflectionClass(course::class))->getMethod('get_joins');
-        $method->setAccessible(true);
-        $this->assertEquals([$tablejoin], $method->invoke($courseentity));
+        $this->assertEquals([$tablejoin], $courseentity->get_joins());
     }
 
     /**
-     * Test adding multiple join
+     * Test adding multiple joins
      */
     public function test_add_joins(): void {
         $courseentity = (new course())
@@ -444,9 +430,25 @@ class course_testcase extends advanced_testcase {
         ];
         $courseentity->add_joins($tablejoins);
 
-        $method = (new ReflectionClass(course::class))->getMethod('get_joins');
-        $method->setAccessible(true);
-        $this->assertEquals($tablejoins, $method->invoke($courseentity));
+        $this->assertEquals($tablejoins, $courseentity->get_joins());
+    }
+
+    /**
+     * Test adding duplicate joins
+     */
+    public function test_add_duplicate_joins(): void {
+        $courseentity = (new course())
+            ->set_table_alias('course', 'c1');
+
+        $tablejoins = [
+            "JOIN {course} c2 ON c2.id = c1.id",
+            "JOIN {course} c3 ON c3.id = c1.id",
+        ];
+        $courseentity
+            ->add_joins($tablejoins)
+            ->add_joins($tablejoins);
+
+        $this->assertEquals($tablejoins, $courseentity->get_joins());
     }
 
     /**

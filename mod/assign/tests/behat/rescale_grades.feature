@@ -28,13 +28,11 @@ Feature: Check that the assignment grade can be rescaled when the max grade is c
       | submissiondrafts | 0                           |
 
     And I am on the "Test assignment name" Activity page logged in as teacher1
-    And I navigate to "View all submissions" in current page administration
+    And I follow "View all submissions"
     And I click on "Grade" "link" in the "Student 1" "table_row"
     And I set the field "Grade out of 100" to "40"
     And I press "Save changes"
-    And I follow "Edit settings"
-    And I follow "Test assignment name"
-    And I navigate to "View all submissions" in current page administration
+    And I follow "View all submissions"
     And "Student 1" row "Grade" column of "generaltable" table should contain "40.00"
     And I am on the "Test assignment name" "assign activity" page
 
@@ -44,7 +42,7 @@ Feature: Check that the assignment grade can be rescaled when the max grade is c
     And I set the field "Rescale existing grades" to "No"
     And I set the field "Maximum grade" to "80"
     When I press "Save and display"
-    And I navigate to "View all submissions" in current page administration
+    And I follow "View all submissions"
     Then "Student 1" row "Grade" column of "generaltable" table should contain "40.00"
 
   Scenario: Update an assignment without touching the max grades
@@ -60,7 +58,7 @@ Feature: Check that the assignment grade can be rescaled when the max grade is c
     And I set the field "Rescale existing grades" to "Yes"
     And I set the field "Maximum grade" to "80"
     When I press "Save and display"
-    And I navigate to "View all submissions" in current page administration
+    And I follow "View all submissions"
     Then "Student 1" row "Grade" column of "generaltable" table should contain "40.00"
 
   Scenario: Update the max grade for an assignment rescaling existing grades
@@ -69,19 +67,19 @@ Feature: Check that the assignment grade can be rescaled when the max grade is c
     And I set the field "Rescale existing grades" to "Yes"
     And I set the field "Maximum grade" to "50"
     When I press "Save and display"
-    And I navigate to "View all submissions" in current page administration
+    And I follow "View all submissions"
     Then "Student 1" row "Grade" column of "generaltable" table should contain "20.00"
 
   Scenario: Rescaling should not produce negative grades
-    Given I navigate to "View all submissions" in current page administration
+    Given I follow "View all submissions"
     And I click on "Grade" "link" in the "Student 2" "table_row"
     And I wait until the page is ready
-    And I follow "Assignment: Test assignment name"
+    And I am on the "Test assignment name" "assign activity" page
     And I navigate to "Settings" in current page administration
     And I expand all fieldsets
     And I set the field "Rescale existing grades" to "Yes"
     And I set the field "Maximum grade" to "50"
     When I press "Save and display"
-    And I navigate to "View all submissions" in current page administration
+    And I follow "View all submissions"
     # Make sure the student did not receive a negative grade.
     Then "Student 2" row "Grade" column of "generaltable" table should not contain "-0.50"

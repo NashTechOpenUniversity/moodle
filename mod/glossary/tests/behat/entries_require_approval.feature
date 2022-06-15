@@ -40,7 +40,7 @@ Feature: A teacher can choose whether glossary entries require approval
     And I log out
     # Approve the entry.
     And I am on the "Test glossary name" "glossary activity" page logged in as teacher1
-    And I follow "Waiting approval"
+    And I follow "Pending approval"
     Then I should see "(this entry is currently hidden)"
     And I follow "Approve"
     And I am on the "Test glossary name" "glossary activity" page
@@ -69,6 +69,8 @@ Feature: A teacher can choose whether glossary entries require approval
     And I log out
     And I log in as "teacher1"
     And I turn editing mode on
+    And the following config values are set as admin:
+      | unaddableblocks | | theme_boost|
     And I add the "Navigation" block if not present
     And I expand "Site pages" node
     And I click on "Tags" "link" in the "Navigation" "block"

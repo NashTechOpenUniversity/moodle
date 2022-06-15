@@ -38,13 +38,13 @@ class viewquestionname_column_helper extends column_base {
         return 'questionname';
     }
 
-    protected function get_title(): string {
+    public function get_title(): string {
         return get_string('question');
     }
 
     protected function label_for($question): string {
         if (is_null($this->checkboxespresent)) {
-            $this->checkboxespresent = $this->qbank->has_column('core_question\local\bank\checkbox_column');
+            $this->checkboxespresent = $this->qbank->has_column('checkbox_column');
         }
         if ($this->checkboxespresent) {
             return 'checkq' . $question->id;

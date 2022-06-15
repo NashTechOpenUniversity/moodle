@@ -97,6 +97,7 @@ abstract class column_base {
      */
     public function display_header(): void {
         global $PAGE;
+        $renderer = $PAGE->get_renderer('core_question', 'bank');
 
         $data = [];
         $data['sortable'] = true;
@@ -125,15 +126,18 @@ abstract class column_base {
                 $data['tip'] = $tip;
             }
         }
+        $help = $this->help_icon();
+        if ($help) {
+            $data['help'] = $help->export_for_template($renderer);
+        }
 
-        $renderer = $PAGE->get_renderer('core_question', 'bank');
         echo $renderer->render_column_header($data);
     }
 
     /**
      * Title for this column. Not used if is_sortable returns an array.
      */
-    abstract protected function get_title();
+    abstract public function get_title();
 
     /**
      * Use this when get_title() returns
@@ -141,8 +145,17 @@ abstract class column_base {
      *
      * @return string a fuller version of the name.
      */
-    protected function get_title_tip() {
+    public function get_title_tip() {
         return '';
+    }
+
+    /**
+     * If you return a help icon here, it is shown in the column header after the title.
+     *
+     * @return \help_icon|null help icon to show, if required.
+     */
+    public function help_icon(): ?\help_icon {
+        return null;
     }
 
     /**
@@ -242,6 +255,17 @@ abstract class column_base {
      * @return string column name.
      */
     abstract public function get_name();
+
+    /**
+     * Get the name of this column. This must be unique.
+     * When using the inherited class to make many columns from one parent,
+     * ensure each instance returns a unique value.
+     *
+     * @return string The unique name;
+     */
+    public function get_column_name() {
+        return (new \ReflectionClass($this))->getShortName();
+    }
 
     /**
      * Any extra class names you would like applied to every cell in this column.

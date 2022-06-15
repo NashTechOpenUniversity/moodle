@@ -73,7 +73,7 @@ abstract class view extends navigation_node {
         foreach ($nodes as $type => $leaves) {
             foreach ($leaves as $leaf => $location) {
                 if ($node = $source->find($leaf, $type)) {
-                    $nodesordered["$location"] = $node;
+                    $nodesordered["$location"] = $nodesordered["$location"] ?? $node;
                 }
             }
         }
@@ -131,7 +131,6 @@ abstract class view extends navigation_node {
                 // If node is one of the new views then set the active node to the child.
                 if (!$node instanceof view) {
                     $node->make_active();
-                    $child->make_inactive();
                     $result = $node;
                 } else {
                     $child->make_active();

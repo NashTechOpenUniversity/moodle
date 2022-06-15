@@ -69,6 +69,7 @@ if (!calendar_user_can_add_event($course)) {
 $heading = get_string('importcalendar', 'calendar');
 $pagetitle = $course->shortname . ': ' . get_string('calendar', 'calendar') . ': ' . $heading;
 
+$PAGE->set_secondary_navigation(false);
 $PAGE->set_title($pagetitle);
 $PAGE->set_heading($heading);
 $PAGE->set_url($pageurl);
@@ -90,6 +91,24 @@ if (!empty($groupcourseid)) {
     $data['eventtype'] = 'group';
     $pageurl->param('groupcourseid', $groupcourseid);
 }
+if (!empty($category)) {
+    $pageurl->param('category', $category);
+    $managesubscriptionsurl->param('category', $category);
+    $data['category'] = $category;
+    $data['eventtype'] = 'category';
+}
+
+$heading = get_string('importcalendar', 'calendar');
+$headingstr = get_string('calendar', 'core_calendar');
+$headingstr = ($courseid != SITEID && !empty($courseid)) ? "{$headingstr}: {$COURSE->shortname}" : $headingstr;
+$pagetitle = $course->shortname . ': ' . get_string('calendar', 'calendar') . ': ' . $heading;
+
+$PAGE->set_title($pagetitle);
+$PAGE->set_heading($headingstr);
+$PAGE->set_url($pageurl);
+$PAGE->set_pagelayout('admin');
+$PAGE->navbar->add($heading, $pageurl);
+$renderer = $PAGE->get_renderer('core_calendar');
 
 $customdata = [
     'courseid' => $course->id,
@@ -109,7 +128,7 @@ if (!empty($formdata)) {
         $calendar = $form->get_file_content('importfile');
         $ical = new iCalendar();
         $ical->unserialize($calendar);
-        $importresults = calendar_import_icalendar_events($ical, null, $subscriptionid);
+        $importresults = calendar_import_events_from_ical($ical, $subscriptionid);
     } else {
         try {
             $importresults = calendar_update_subscription_events($subscriptionid);
@@ -125,10 +144,8 @@ if (!empty($formdata)) {
     if (!empty($formdata->categoryid)) {
         $managesubscriptionsurl->param('category', $formdata->categoryid);
     }
-    redirect($managesubscriptionsurl, $importresults);
+    redirect($managesubscriptionsurl, $renderer->render_import_result($importresults));
 }
-
-$renderer = $PAGE->get_renderer('core_calendar');
 
 echo $OUTPUT->header();
 echo $renderer->start_layout();

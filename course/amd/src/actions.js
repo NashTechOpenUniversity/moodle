@@ -21,11 +21,50 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since      3.3
  */
-define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str', 'core/url', 'core/yui',
-        'core/modal_factory', 'core/modal_events', 'core/key_codes', 'core/log', 'core_courseformat/courseeditor'],
-    function($, ajax, templates, notification, str, url, Y, ModalFactory, ModalEvents, KeyCodes, log, editor) {
+define(
+    [
+        'jquery',
+        'core/ajax',
+        'core/templates',
+        'core/notification',
+        'core/str',
+        'core/url',
+        'core/yui',
+        'core/modal_factory',
+        'core/modal_events',
+        'core/key_codes',
+        'core/log',
+        'core_courseformat/courseeditor',
+        'core/event_dispatcher',
+        'core_course/events'
+    ],
+    function(
+        $,
+        ajax,
+        templates,
+        notification,
+        str,
+        url,
+        Y,
+        ModalFactory,
+        ModalEvents,
+        KeyCodes,
+        log,
+        editor,
+        EventDispatcher,
+        CourseEvents
+    ) {
 
+        // Eventually, core_courseformat/local/content/actions will handle all actions for
+        // component compatible formats and the default actions.js won't be necessary anymore.
+        // Meanwhile, we filter the migrated actions.
+        const componentActions = ['moveSection', 'moveCm', 'addSection', 'deleteSection'];
+
+        // The course reactive instance.
         const courseeditor = editor.getCurrentCourseEditor();
+
+        // The current course format name (loaded on init).
+        let formatname;
 
         var CSS = {
             EDITINPROGRESS: 'editinprogress',
@@ -40,7 +79,8 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
             TOGGLE: '.toggle-display,.dropdown-toggle',
             SECTIONLI: 'li.section',
             SECTIONACTIONMENU: '.section_action_menu',
-            ADDSECTIONS: '#changenumsections [data-add-sections]'
+            ADDSECTIONS: '.changenumsections [data-add-sections]',
+            SECTIONBADGES: '[data-region="sectionbadges"]',
         };
 
         Y.use('moodle-course-coursebase', function() {
@@ -49,6 +89,29 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
                 SELECTOR.SECTIONLI = courseformatselector;
             }
         });
+
+        /**
+         * Dispatch event wrapper.
+         *
+         * Old jQuery events will be replaced by native events gradually.
+         *
+         * @method dispatchEvent
+         * @param {String} eventName The name of the event
+         * @param {Object} detail Any additional details to pass into the eveent
+         * @param {Node|HTMLElement} container The point at which to dispatch the event
+         * @param {Object} options
+         * @param {Boolean} options.bubbles Whether to bubble up the DOM
+         * @param {Boolean} options.cancelable Whether preventDefault() can be called
+         * @param {Boolean} options.composed Whether the event can bubble across the ShadowDOM boundary
+         * @returns {CustomEvent}
+         */
+        const dispatchEvent = function(eventName, detail, container, options) {
+            // Most actions still uses jQuery node instead of regular HTMLElement.
+            if (!(container instanceof Element) && container.get !== undefined) {
+                container = container.get(0);
+            }
+            return EventDispatcher.dispatchEvent(eventName, detail, container, options);
+        };
 
         /**
          * Wrapper for Y.Moodle.core_course.util.cm.getId
@@ -139,7 +202,13 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
          * @returns {Node}
          */
         var addSectionLightbox = function(sectionelement) {
-            var lightbox = M.util.add_lightbox(Y, Y.Node(sectionelement.get(0)));
+            const item = sectionelement.get(0);
+            var lightbox = M.util.add_lightbox(Y, Y.Node(item));
+            if (item.dataset.for == 'section' && item.dataset.id) {
+                courseeditor.dispatch('sectionLock', [item.dataset.id], true);
+                lightbox.setAttribute('data-state', 'section');
+                lightbox.setAttribute('data-state-id', item.dataset.id);
+            }
             lightbox.show();
             return lightbox;
         };
@@ -175,6 +244,14 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
             if (lightbox) {
                 window.setTimeout(function() {
                     lightbox.hide();
+                    // Unlock state if necessary.
+                    if (lightbox.getAttribute('data-state')) {
+                        courseeditor.dispatch(
+                            `${lightbox.getAttribute('data-state')}Lock`,
+                            [lightbox.getAttribute('data-state-id')],
+                            false
+                        );
+                    }
                 }, delay);
             }
         };
@@ -232,6 +309,7 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
                     foundElement = this;
                     return false; // Returning false in .each() is equivalent to "break;" inside the loop in php.
                 }
+                return true;
             });
             return foundElement;
         };
@@ -310,6 +388,11 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
          * @return {Promise} the refresh promise
          */
         var refreshModule = function(element, cmid, sectionreturn) {
+
+            if (sectionreturn === undefined) {
+                sectionreturn = courseeditor.sectionReturn;
+            }
+
             const activityElement = $(element);
             var spinner = addActivitySpinner(activityElement);
             var promises = ajax.call([{
@@ -331,6 +414,80 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
         };
 
         /**
+         * Requests html for the section via WS core_course_edit_section and updates the section on the course page
+         *
+         * @param {JQuery|Element} element
+         * @param {Number} sectionid
+         * @param {Number} sectionreturn
+         * @return {Promise} the refresh promise
+         */
+        var refreshSection = function(element, sectionid, sectionreturn) {
+
+            if (sectionreturn === undefined) {
+                sectionreturn = courseeditor.sectionReturn;
+            }
+
+            const sectionElement = $(element);
+            const action = 'refresh';
+            const promises = ajax.call([{
+                methodname: 'core_course_edit_section',
+                args: {id: sectionid, action, sectionreturn},
+            }], true);
+
+            var spinner = addSectionSpinner(sectionElement);
+            return new Promise((resolve, reject) => {
+                $.when.apply($, promises)
+                    .done(dataencoded => {
+
+                        removeSpinner(sectionElement, spinner);
+                        const data = $.parseJSON(dataencoded);
+
+                        const newSectionElement = $(data.content);
+                        sectionElement.replaceWith(newSectionElement);
+
+                        // Init modules menus.
+                        $(`${SELECTOR.SECTIONLI}#${sectionid} ${SELECTOR.ACTIVITYLI}`).each(
+                            (index, activity) => {
+                                initActionMenu(activity.data('id'));
+                            }
+                        );
+
+                        // Trigger event that can be observed by course formats.
+                        const event = dispatchEvent(
+                            CourseEvents.sectionRefreshed,
+                            {
+                                ajaxreturn: data,
+                                action: action,
+                                newSectionElement: newSectionElement.get(0),
+                            },
+                            newSectionElement
+                        );
+
+                        if (!event.defaultPrevented) {
+                            defaultEditSectionHandler(
+                                newSectionElement, $(SELECTOR.SECTIONLI + '#' + sectionid),
+                                data,
+                                formatname,
+                                sectionid
+                            );
+                        }
+                        resolve(data);
+                    }).fail(ex => {
+                        // Trigger event that can be observed by course formats.
+                        const event = dispatchEvent(
+                            'coursesectionrefreshfailed',
+                            {exception: ex, action: action},
+                            sectionElement
+                        );
+                        if (!event.defaultPrevented) {
+                            notification.exception(ex);
+                        }
+                        reject();
+                    });
+            });
+        };
+
+        /**
          * Displays the delete confirmation to delete a module
          *
          * @param {JQuery} mainelement activity element we perform action on
@@ -346,7 +503,7 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
                     name: modulename
                 };
                 str.get_strings([
-                    {key: 'confirm'},
+                    {key: 'confirm', component: 'core'},
                     {key: modulename === null ? 'deletechecktype' : 'deletechecktypename', param: plugindata},
                     {key: 'yes'},
                     {key: 'no'}
@@ -425,9 +582,11 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
             if (action === 'hide' || action === 'show') {
                 if (action === 'hide') {
                     sectionElement.addClass('hidden');
+                    setSectionBadge(sectionElement[0], 'hiddenfromstudents', true);
                     replaceActionItem(actionItem, 'i/show',
                         'showfromothers', 'format_' + courseformat, 'show');
                 } else {
+                    setSectionBadge(sectionElement[0], 'hiddenfromstudents', false);
                     sectionElement.removeClass('hidden');
                     replaceActionItem(actionItem, 'i/hide',
                         'hidefromothers', 'format_' + courseformat, 'hide');
@@ -457,12 +616,40 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
                 replaceActionItem(actionItem, 'i/marked',
                     'highlightoff', 'core', 'removemarker');
                 courseeditor.dispatch('legacySectionAction', action, sectionid);
+                setSectionBadge(sectionElement[0], 'iscurrent', true);
             } else if (action === 'removemarker') {
                 sectionElement.removeClass('current');
                 replaceActionItem(actionItem, 'i/marker',
                     'highlight', 'core', 'setmarker');
                 courseeditor.dispatch('legacySectionAction', action, sectionid);
+                setSectionBadge(sectionElement[0], 'iscurrent', false);
             }
+        };
+
+        /**
+         * Get the focused element path in an activity if any.
+         *
+         * This method is used to restore focus when the activity HTML is refreshed.
+         * Only the main course editor elements can be refocused as they are always present
+         * even if the activity content changes.
+         *
+         * @param {String} id the element id the activity element
+         * @return {String|undefined} the inner path of the focused element or undefined
+         */
+        const getActivityFocusedElement = function(id) {
+            const element = document.getElementById(id);
+            if (!element || !element.contains(document.activeElement)) {
+                return undefined;
+            }
+            // Check if the actions menu toggler is focused.
+            if (element.querySelector(SELECTOR.ACTIONAREA).contains(document.activeElement)) {
+                return `${SELECTOR.ACTIONAREA} [tabindex="0"]`;
+            }
+            // Return the current element id if any.
+            if (document.activeElement.id) {
+                return `#${document.activeElement.id}`;
+            }
+            return undefined;
         };
 
         /**
@@ -474,10 +661,18 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
             $('<div>' + activityHTML + '</div>').find(SELECTOR.ACTIVITYLI).each(function() {
                 // Extract id from the new activity html.
                 var id = $(this).attr('id');
+                // Check if the current focused element is inside the activity.
+                let focusedPath = getActivityFocusedElement(id);
                 // Find the existing element with the same id and replace its contents with new html.
                 $(SELECTOR.ACTIVITYLI + '#' + id).replaceWith(activityHTML);
                 // Initialise action menu.
                 initActionMenu(id);
+                // Re-focus the previous elements.
+                if (focusedPath) {
+                    const newItem = document.getElementById(id);
+                    newItem.querySelector(focusedPath)?.focus();
+                }
+
             });
         };
 
@@ -488,10 +683,17 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
          * @param {Nunmber} sectionid
          * @param {JQuery} target the element (menu item) that was clicked
          * @param {String} courseformat
+         * @return {boolean} true the action call is sent to the server or false if it is ignored.
          */
         var editSection = function(sectionElement, sectionid, target, courseformat) {
             var action = target.attr('data-action'),
                 sectionreturn = target.attr('data-sectionreturn') ? target.attr('data-sectionreturn') : 0;
+
+            // Filter direct component handled actions.
+            if (courseeditor.supportComponents && componentActions.includes(action)) {
+                return false;
+            }
+
             var spinner = addSectionSpinner(sectionElement);
             var promises = ajax.call([{
                 methodname: 'core_course_edit_section',
@@ -522,6 +724,33 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
                         notification.exception(ex);
                     }
                 });
+            return true;
+        };
+
+        /**
+         * Sets the section badge in the section header.
+         *
+         * @param {JQuery} sectionElement section element we perform action on
+         * @param {String} badgetype the type of badge this is for
+         * @param {bool} add true to add, false to remove
+         */
+        var setSectionBadge = function(sectionElement, badgetype, add) {
+            const sectionbadges = sectionElement.querySelector(SELECTOR.SECTIONBADGES);
+            if (!sectionbadges) {
+                return;
+            }
+            const badge = sectionbadges.querySelector('[data-type="' + badgetype + '"]');
+            if (!badge) {
+                return;
+            }
+            if (add) {
+                document.querySelectorAll('[data-type="' + badgetype + '"]').forEach((b) => {
+                    b.classList.add('d-none');
+                });
+                badge.classList.remove('d-none');
+            } else {
+                badge.classList.add('d-none');
+            }
         };
 
         // Register a function to be executed after D&D of an activity.
@@ -592,18 +821,13 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
                     return;
                 }
 
-                // Send the element is locked. Reactive events are only triggered when the state
-                // read only mode is restored. We want to notify the interface the element is
-                // locked so we need to do a quick lock operation before performing the rest
-                // of the mutation.
-                statemanager.setReadOnly(false);
-                cm.locked = true;
-                statemanager.setReadOnly(true);
+                // Send the element is locked.
+                courseeditor.dispatch('cmLock', [cm.id], true);
 
                 // Now we do the real mutation.
                 statemanager.setReadOnly(false);
 
-                // This locked will take effect when the read only is restored.
+                // This unlocked will take effect when the read only is restored.
                 cm.locked = false;
 
                 switch (action) {
@@ -624,11 +848,7 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
 
                     case 'hide':
                     case 'show':
-                        cm.visible = (action === 'show') ? true : false;
-                        break;
-
                     case 'duplicate':
-                        // Duplicate requires to get extra data from the server.
                         courseeditor.dispatch('cmState', affectedids);
                         break;
                 }
@@ -685,6 +905,8 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
              */
             initCoursePage: function(courseformat) {
 
+                formatname = courseformat;
+
                 // Add a handler for course module actions.
                 $('body').on('click keypress', SELECTOR.ACTIVITYLI + ' ' +
                         SELECTOR.ACTIVITYACTION + '[data-action]', function(e) {
@@ -735,14 +957,19 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
                     var actionItem = $(this),
                         sectionElement = actionItem.closest(SELECTOR.SECTIONLI),
                         sectionId = actionItem.closest(SELECTOR.SECTIONACTIONMENU).attr('data-sectionid');
-                    e.preventDefault();
+
+                    let isExecuted = true;
                     if (actionItem.attr('data-confirm')) {
                         // Action requires confirmation.
                         confirmEditSection(actionItem.attr('data-confirm'), function() {
-                            editSection(sectionElement, sectionId, actionItem, courseformat);
+                            isExecuted = editSection(sectionElement, sectionId, actionItem, courseformat);
                         });
                     } else {
-                        editSection(sectionElement, sectionId, actionItem, courseformat);
+                        isExecuted = editSection(sectionElement, sectionId, actionItem, courseformat);
+                    }
+                    // Prevent any other module from capturing the action if it is already in execution.
+                    if (isExecuted) {
+                        e.preventDefault();
                     }
                 });
 
@@ -762,6 +989,11 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
                         courseeditor.dispatch('cmState', [e.ajaxreturn.itemid]);
                     }
                 });
+
+                // Component-based formats don't use modals to create sections.
+                if (courseeditor.supportComponents && componentActions.includes('addSection')) {
+                    return;
+                }
 
                 // Add a handler for "Add sections" link to ask for a number of sections to add.
                 str.get_string('numberweeks').done(function(strNumberSections) {
@@ -824,5 +1056,6 @@ define(['jquery', 'core/ajax', 'core/templates', 'core/notification', 'core/str'
             },
             // Method to refresh a module.
             refreshModule,
+            refreshSection,
         };
     });

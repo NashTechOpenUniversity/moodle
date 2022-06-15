@@ -27,28 +27,31 @@
         "visible": 1,
         "isactive": 1,
         "uniqid": "0",
-        "isactive": 1,
         "accessvisible": 1,
+        "hascmrestrictions": 0
     }
 }}
 <li class="courseindex-item
         {{#isactive}}active{{/isactive}}
+        {{#hascmrestrictions}}restrictions{{/hascmrestrictions}}
         {{^accessvisible}}dimmed{{/accessvisible}}
         {{#url}} d-flex {{/url}} {{^url}} d-flex-noedit {{/url}}"
     id="{{uniqid}}-course-index-cm-{{id}}"
     data-for="cm"
     data-id="{{id}}"
+    role="treeitem"
 >
+    <span class="completioninfo" data-for="cm_completion" data-value="NaN"></span>
     {{#url}}
         {{#uservisible}}
-            <a class="courseindex-link text-truncate" href="{{{url}}}" data-for="cm_name">
+            <a class="courseindex-link text-truncate" href="{{{url}}}" data-for="cm_name" tabindex="-1">
                 {{{name}}}
             </a>
         {{/uservisible}}
         {{^uservisible}}
-            <span class="courseindex-name text-truncate" data-for="cm_name">
+            <a class="courseindex-link text-truncate" href="#{{{anchor}}}" data-for="cm_name" tabindex="-1" data-anchor="true">
                 {{{name}}}
-            </span>
+            </a>
         {{/uservisible}}
     {{/url}}
     {{^url}}
@@ -56,6 +59,9 @@
         {{{name}}}
     </span>
     {{/url}}
+    <span class="courseindex-locked ml-1" data-for="cm_name">
+        {{#pix}} t/locked, core {{/pix}}
+    </span>
     <span class="dragicon ml-auto">{{#pix}}i/dragdrop{{/pix}}</span>
 </li>
 {{#js}}

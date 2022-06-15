@@ -113,6 +113,13 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
     protected $compressor = self::COMPRESSOR_NONE;
 
     /**
+     * Bytes read or written by last call to set()/get() or set_many()/get_many().
+     *
+     * @var int
+     */
+    protected $lastiobytes = 0;
+
+    /**
      * Determines if the requirements for this type of store are met.
      *
      * @return bool
@@ -290,6 +297,9 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
             return $value;
         }
 
+        // When using compression, values are always strings, so strlen will work.
+        $this->lastiobytes = strlen($value);
+
         return $this->uncompress($value);
     }
 
@@ -306,11 +316,32 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
             return $values;
         }
 
+        $this->lastiobytes = 0;
         foreach ($values as &$value) {
+            $this->lastiobytes += strlen($value);
             $value = $this->uncompress($value);
         }
 
         return $values;
+    }
+
+    /**
+     * Gets the number of bytes read from or written to cache as a result of the last action.
+     *
+     * If compression is not enabled, this function always returns IO_BYTES_NOT_SUPPORTED. The reason is that
+     * when compression is not enabled, data sent to the cache is not serialized, and we would
+     * need to serialize it to compute the size, which would have a significant performance cost.
+     *
+     * @return int Bytes read or written
+     * @since Moodle 4.0
+     */
+    public function get_last_io_bytes(): int {
+        if ($this->compressor != self::COMPRESSOR_NONE) {
+            return $this->lastiobytes;
+        } else {
+            // Not supported unless compression is on.
+            return parent::get_last_io_bytes();
+        }
     }
 
     /**
@@ -323,6 +354,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
     public function set($key, $value) {
         if ($this->compressor != self::COMPRESSOR_NONE) {
             $value = $this->compress($value);
+            $this->lastiobytes = strlen($value);
         }
 
         if ($this->redis->hSet($this->hash, $key, $value) === false) {
@@ -354,10 +386,12 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
             $now = self::get_time();
         }
 
+        $this->lastiobytes = 0;
         foreach ($keyvaluearray as $pair) {
             $key = $pair['key'];
             if ($this->compressor != self::COMPRESSOR_NONE) {
                 $pairs[$key] = $this->compress($pair['value']);
+                $this->lastiobytes += strlen($pairs[$key]);
             } else {
                 $pairs[$key] = $pair['value'];
             }
@@ -434,7 +468,6 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * Cleans up after an instance of the store.
      */
     public function instance_deleted() {
-        $this->purge();
         $this->redis->close();
         unset($this->redis);
     }
@@ -572,7 +605,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
         $count = 0;
         $batches = 0;
         $timebefore = microtime(true);
-        $memorybefore = $this->get_used_memory();
+        $memorybefore = $this->store_total_size();
         do {
             $keys = $this->redis->zRangeByScore($this->hash . self::TTL_SUFFIX, 0, $limit,
                     ['limit' => [0, self::TTL_EXPIRE_BATCH]]);
@@ -580,7 +613,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
             $count += count($keys);
             $batches++;
         } while (count($keys) === self::TTL_EXPIRE_BATCH);
-        $memoryafter = $this->get_used_memory();
+        $memoryafter = $this->store_total_size();
         $timeafter = microtime(true);
 
         $result = ['keys' => $count, 'batches' => $batches, 'time' => $timeafter - $timebefore];
@@ -624,12 +657,33 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
     }
 
     /**
+     * Estimates the stored size, taking into account whether compression is turned on.
+     *
+     * @param mixed $key Key name
+     * @param mixed $value Value
+     * @return int Approximate stored size
+     */
+    public function estimate_stored_size($key, $value): int {
+        if ($this->compressor == self::COMPRESSOR_NONE) {
+            // If uncompressed, use default estimate.
+            return parent::estimate_stored_size($key, $value);
+        } else {
+            // If compressed, compress value.
+            return strlen($this->serialize($key)) + strlen($this->compress($value));
+        }
+    }
+
+    /**
      * Gets Redis reported memory usage.
      *
      * @return int|null Memory used by Redis or null if we don't know
      */
-    protected function get_used_memory(): ?int {
-        $details = $this->redis->info('MEMORY');
+    public function store_total_size(): ?int {
+        try {
+            $details = $this->redis->info('MEMORY');
+        } catch (\RedisException $e) {
+            return null;
+        }
         if (empty($details['used_memory'])) {
             return null;
         } else {

@@ -156,9 +156,8 @@ define(['jquery',
     /**
      * Opens the picker.
      *
-     * @param {Number} competencyId The competency ID of the competency to work on.
      * @method display
-     * @return {Promise}
+     * @returns {Promise}
      */
     RuleConfig.prototype.display = function() {
         var self = this;
@@ -170,7 +169,10 @@ define(['jquery',
             self._popup = new Dialogue(
                 title,
                 render[0],
-                self._afterRender.bind(self)
+                self._afterRender.bind(self),
+                null,
+                false,
+                '515px'
             );
             return;
         }).fail(Notification.exception);

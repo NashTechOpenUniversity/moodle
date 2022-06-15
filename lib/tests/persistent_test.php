@@ -22,8 +22,15 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace core;
+
+use advanced_testcase;
+use coding_exception;
+use dml_missing_record_exception;
+use lang_string;
+use xmldb_table;
+
 defined('MOODLE_INTERNAL') || die();
-global $CFG;
 
 /**
  * Persistent testcase.
@@ -31,8 +38,9 @@ global $CFG;
  * @package    core
  * @copyright  2015 Frédéric Massart - FMCorz.net
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \core\persistent
  */
-class core_persistent_testcase extends advanced_testcase {
+class persistent_test extends advanced_testcase {
 
     public function setUp(): void {
         $this->make_persistent_table();
@@ -165,6 +173,29 @@ class core_persistent_testcase extends advanced_testcase {
         $this->assertEquals($expected, core_testable_persistent::properties_definition());
     }
 
+    /**
+     * Test creating persistent instance by specifying record ID in constructor
+     */
+    public function test_constructor() : void {
+        $persistent = (new core_testable_persistent(0, (object) [
+            'idnumber' => '123',
+            'sortorder' => 1,
+        ]))->create();
+
+        // Now create a new instance, passing the original instance ID in the constructor.
+        $another = new core_testable_persistent($persistent->get('id'));
+        $this->assertEquals($another->to_record(), $persistent->to_record());
+    }
+
+    /**
+     * Test creating persistent instance by specifying non-existing record ID in constructor throws appropriate exception
+     */
+    public function test_constructor_invalid(): void {
+        $this->expectException(dml_missing_record_exception::class);
+        $this->expectExceptionMessage('Can\'t find data record in database table phpunit_persistent.');
+        new core_testable_persistent(42);
+    }
+
     public function test_to_record() {
         $p = new core_testable_persistent();
         $expected = (object) array(
@@ -207,11 +238,26 @@ class core_persistent_testcase extends advanced_testcase {
     public function test_from_record_invalid_param() {
         $p = new core_testable_persistent();
         $data = (object) array(
+            'shortname' => 'ddd',
+            'idnumber' => 'abc',
+            'description' => 'xyz',
+            'descriptionformat' => FORMAT_PLAIN,
+            'parentid' => 999,
+            'path' => '/a/b/c',
+            'sortorder' => 12,
+            'id' => 1,
+            'timecreated' => 2,
+            'timemodified' => 3,
+            'usermodified' => 4,
+            'scaleid' => null,
             'invalidparam' => 'abc'
         );
 
-        $this->expectException(coding_exception::class);
         $p->from_record($data);
+
+        // Previous call should succeed, assert we get back all data except invalid param.
+        unset($data->invalidparam);
+        $this->assertEquals($data, $p->to_record());
     }
 
     public function test_validate() {
@@ -353,6 +399,29 @@ class core_persistent_testcase extends advanced_testcase {
         $this->assertTrue($p->is_valid()); // Should always be valid after an update.
     }
 
+    /**
+     * Test set_many prior to updating the persistent
+     */
+    public function test_set_many_update(): void {
+        global $DB;
+
+        $persistent = (new core_testable_persistent(0, (object) [
+            'idnumber' => 'test',
+            'sortorder' => 2
+        ]))->create();
+
+        // Set multiple properties, and update.
+        $persistent->set_many([
+            'idnumber' => 'test2',
+            'sortorder' => 1,
+        ])->update();
+
+        // Confirm our persistent was updated.
+        $record = $DB->get_record(core_testable_persistent::TABLE, ['id' => $persistent->get('id')], '*', MUST_EXIST);
+        $this->assertEquals('test2', $record->idnumber);
+        $this->assertEquals(1, $record->sortorder);
+    }
+
     public function test_save() {
         global $DB;
         $p = new core_testable_persistent(0, (object) array('sortorder' => 123, 'idnumber' => 'abc'));
@@ -382,6 +451,77 @@ class core_persistent_testcase extends advanced_testcase {
         $this->assertEquals($expected->idnumber, $record->idnumber);
         $this->assertEquals($expected->id, $record->id);
         $this->assertTrue($p->is_valid()); // Should always be valid after a save/update.
+    }
+
+    /**
+     * Test set_many prior to saving the persistent
+     */
+    public function test_set_many_save(): void {
+        global $DB;
+
+        $persistent = (new core_testable_persistent(0, (object) [
+            'idnumber' => 'test',
+            'sortorder' => 2
+        ]));
+
+        // Set multiple properties, and save.
+        $persistent->set_many([
+            'idnumber' => 'test2',
+            'sortorder' => 1,
+        ])->save();
+
+        // Confirm our persistent was saved.
+        $record = $DB->get_record(core_testable_persistent::TABLE, ['id' => $persistent->get('id')], '*', MUST_EXIST);
+        $this->assertEquals('test2', $record->idnumber);
+        $this->assertEquals(1, $record->sortorder);
+    }
+
+    /**
+     * Test set_many with empty array should not modify the persistent
+     */
+    public function test_set_many_empty(): void {
+        global $DB;
+
+        $persistent = (new core_testable_persistent(0, (object) [
+            'idnumber' => 'test',
+            'sortorder' => 2
+        ]))->create();
+
+        // Set empty properties, and update.
+        $persistent->set_many([])->update();
+
+        // Confirm our persistent was not updated.
+        $record = $DB->get_record(core_testable_persistent::TABLE, ['id' => $persistent->get('id')], '*', MUST_EXIST);
+        $this->assertEquals('test', $record->idnumber);
+        $this->assertEquals(2, $record->sortorder);
+    }
+
+    /**
+     * Test set with invalid property
+     */
+    public function test_set_invalid_property(): void {
+        $persistent = (new core_testable_persistent(0, (object) [
+            'idnumber' => 'test',
+            'sortorder' => 2
+        ]));
+
+        $this->expectException(coding_exception::class);
+        $this->expectExceptionMessage('Unexpected property \'invalid\' requested');
+        $persistent->set('invalid', 'stuff');
+    }
+
+    /**
+     * Test set_many with invalid property
+     */
+    public function test_set_many_invalid_property(): void {
+        $persistent = (new core_testable_persistent(0, (object) [
+            'idnumber' => 'test',
+            'sortorder' => 2
+        ]));
+
+        $this->expectException(coding_exception::class);
+        $this->expectExceptionMessage('Unexpected property \'invalid\' requested');
+        $persistent->set_many(['invalid' => 'stuff']);
     }
 
     public function test_read() {
@@ -436,6 +576,39 @@ class core_persistent_testcase extends advanced_testcase {
         $p->create();
         $record = $DB->get_record(core_testable_persistent::TABLE, array('id' => $p->get('id')), 'id, path', MUST_EXIST);
         $this->assertEquals($json, $record->path);
+    }
+
+    /**
+     * Test get_record method for creating persistent instance
+     */
+    public function test_get_record(): void {
+        $persistent = (new core_testable_persistent(0, (object) [
+            'idnumber' => '123',
+            'sortorder' => 1,
+        ]))->create();
+
+        $another = core_testable_persistent::get_record(['id' => $persistent->get('id')]);
+
+        // Assert we got back a persistent instance, and it matches original.
+        $this->assertInstanceOf(core_testable_persistent::class, $another);
+        $this->assertEquals($another->to_record(), $persistent->to_record());
+    }
+
+    /**
+     * Test get_record method for creating persistent instance, ignoring a non-existing record
+     */
+    public function test_get_record_ignore_missing(): void {
+        $persistent = core_testable_persistent::get_record(['id' => 42]);
+        $this->assertFalse($persistent);
+    }
+
+    /**
+     * Test get_record method for creating persistent instance, throws appropriate exception for non-existing record
+     */
+    public function test_get_record_must_exist(): void {
+        $this->expectException(dml_missing_record_exception::class);
+        $this->expectExceptionMessage('Can\'t find data record in database table phpunit_persistent.');
+        core_testable_persistent::get_record(['id' => 42], MUST_EXIST);
     }
 
     public function test_record_exists() {
@@ -516,7 +689,7 @@ class core_persistent_testcase extends advanced_testcase {
  * @copyright  2015 Frédéric Massart - FMCorz.net
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class core_testable_persistent extends \core\persistent {
+class core_testable_persistent extends persistent {
 
     const TABLE = 'phpunit_persistent';
 
@@ -617,7 +790,7 @@ class core_testable_persistent extends \core\persistent {
  * @copyright  2021 David Matamoros <davidmc@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class core_testable_second_persistent extends \core\persistent {
+class core_testable_second_persistent extends persistent {
 
     /** Table name for the persistent. */
     const TABLE = 'phpunit_second_persistent';

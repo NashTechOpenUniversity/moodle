@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace core_reportbuilder\local\helpers;
 
 use coding_exception;
+use core_text;
 
 /**
  * Helper functions for DB manipulations
@@ -45,6 +46,19 @@ class database {
 
         return static::GENERATE_ALIAS_PREFIX . ($aliascount++);
     }
+
+    /**
+     * Generate multiple unique table/column aliases, see {@see generate_alias} for info
+     *
+     * @param int $count
+     * @return string[]
+     */
+    public static function generate_aliases(int $count): array {
+        return array_map([
+            static::class, 'generate_alias'
+        ], array_fill(0, $count, null));
+    }
+
     /**
      * Generates unique parameter name that must be used in generated SQL
      *
@@ -54,6 +68,18 @@ class database {
         static $paramcount = 0;
 
         return static::GENERATE_PARAM_PREFIX . ($paramcount++);
+    }
+
+    /**
+     * Generate multiple unique parameter names, see {@see generate_param_name} for info
+     *
+     * @param int $count
+     * @return string[]
+     */
+    public static function generate_param_names(int $count): array {
+        return array_map([
+            static::class, 'generate_param_name'
+        ], array_fill(0, $count, null));
     }
 
     /**
@@ -73,5 +99,44 @@ class database {
         }
 
         return true;
+    }
+
+    /**
+     * Generate SQL expression for sorting group concatenated fields
+     *
+     * @param string $field The original field or SQL expression
+     * @param string|null $sort A valid SQL ORDER BY to sort the concatenated fields, if omitted then $field will be used
+     * @return string
+     */
+    public static function sql_group_concat_sort(string $field, string $sort = null): string {
+        global $DB;
+
+        // Fallback to sorting by the specified field, unless it contains parameters which would be duplicated.
+        if ($sort === null && !preg_match('/[:?$]/', $field)) {
+            $fieldsort = $field;
+        } else {
+            $fieldsort = $sort;
+        }
+
+        // Nothing to sort by.
+        if ($fieldsort === null) {
+            return '';
+        }
+
+        // If the sort specifies a direction, we need to handle that differently in Postgres.
+        if ($DB->get_dbfamily() === 'postgres') {
+            $fieldsortdirection = '';
+
+            preg_match('/(?<direction>ASC|DESC)?$/i', $fieldsort, $matches);
+            if (array_key_exists('direction', $matches)) {
+                $fieldsortdirection = $matches['direction'];
+                $fieldsort = core_text::substr($fieldsort, 0, -(core_text::strlen($fieldsortdirection)));
+            }
+
+            // Cast sort, stick the direction on the end.
+            $fieldsort = "CAST({$fieldsort} AS VARCHAR) {$fieldsortdirection}";
+        }
+
+        return $fieldsort;
     }
 }

@@ -1276,7 +1276,7 @@ class upgradelib_test extends advanced_testcase {
         $ical->unserialize($calendar);
 
         // Import subscription events.
-        calendar_import_icalendar_events($ical, null, $id);
+        calendar_import_events_from_ical($ical, $id);
 
         // Subscription should have added 18 events.
         $eventscount = $DB->count_records('event');
@@ -1525,5 +1525,202 @@ class upgradelib_test extends advanced_testcase {
         $this->assertInstanceOf(environment_results::class, check_admin_dir_usage($result));
         $this->assertEquals('admin_dir_usage', $result->getInfo());
         $this->assertFalse($result->getStatus());
+    }
+
+    /**
+     * Test the check_xmlrpc_usage check when the XML-RPC web service method is not set.
+     *
+     * @return void
+     */
+    public function test_check_xmlrpc_webservice_is_not_set(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+
+        $result = new environment_results('custom_checks');
+        $this->assertNull(check_xmlrpc_usage($result));
+
+        $CFG->webserviceprotocols = 'rest';
+        $result = new environment_results('custom_checks');
+        $this->assertNull(check_xmlrpc_usage($result));
+    }
+
+    /**
+     * Test the check_xmlrpc_usage check when the XML-RPC web service method is set.
+     *
+     * @return void
+     */
+    public function test_check_xmlrpc_webservice_is_set(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $CFG->webserviceprotocols = 'xmlrpc,rest';
+
+        $result = new environment_results('custom_checks');
+        $this->assertInstanceOf(environment_results::class, check_xmlrpc_usage($result));
+        $this->assertEquals('xmlrpc_webservice_usage', $result->getInfo());
+        $this->assertFalse($result->getStatus());
+    }
+
+    /**
+     * Test the check_xmlrpc_usage check when the MNet is turned on but no host was set up.
+     *
+     * @return void
+     */
+    public function test_check_xmlrpc_mnet_host_is_not_set(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $CFG->mnet_dispatcher_mode = 'strict';
+
+        $result = new environment_results('custom_checks');
+        $this->assertNull(check_xmlrpc_usage($result));
+    }
+
+    /**
+     * Test the check_xmlrpc_usage check when the MNet is turned on and the host was set up.
+     *
+     * @return void
+     */
+    public function test_check_xmlrpc_mnet_host_is_set(): void {
+        global $CFG, $DB;
+
+        $this->resetAfterTest();
+        $CFG->mnet_dispatcher_mode = 'strict';
+
+        // Add a mnet host.
+        $mnethost = new stdClass();
+        $mnethost->name = 'A mnet host';
+        $mnethost->public_key = 'A random public key!';
+        $mnethost->id = $DB->insert_record('mnet_host', $mnethost);
+
+        $result = new environment_results('custom_checks');
+        $this->assertInstanceOf(environment_results::class, check_xmlrpc_usage($result));
+        $this->assertEquals('xmlrpc_mnet_usage', $result->getInfo());
+        $this->assertFalse($result->getStatus());
+    }
+
+    /**
+     * Test the check_xmlrpc_usage check when the MNet is turned on and the Mahara portfolios was set up.
+     *
+     * @return void
+     */
+    public function test_check_xmlrpc_mahara_portfolios_is_set(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $CFG->mnet_dispatcher_mode = 'strict';
+
+        // Enable the Mahara portfolios.
+        \core\plugininfo\portfolio::enable_plugin('mahara', 1);
+
+        $result = new environment_results('custom_checks');
+        $this->assertInstanceOf(environment_results::class, check_xmlrpc_usage($result));
+        $this->assertEquals('xmlrpc_mahara_usage', $result->getInfo());
+        $this->assertFalse($result->getStatus());
+    }
+
+    /**
+     * Data provider of usermenu items.
+     *
+     * @return array
+     */
+    public function usermenu_items_dataprovider(): array {
+        return [
+            'Add new item to empty usermenu' => [
+                '',
+                'reports,core_reportbuilder|/reportbuilder/index.php',
+                'reports,core_reportbuilder|/reportbuilder/index.php',
+            ],
+            'Add new item to usermenu' => [
+                'profile,moodle|/user/profile.php
+grades,grades|/grade/report/mygrades.php',
+                'reports,core_reportbuilder|/reportbuilder/index.php',
+                'profile,moodle|/user/profile.php
+grades,grades|/grade/report/mygrades.php
+reports,core_reportbuilder|/reportbuilder/index.php',
+            ],
+            'Add existing item to usermenu' => [
+                'profile,moodle|/user/profile.php
+reports,core_reportbuilder|/reportbuilder/index.php
+calendar,core_calendar|/calendar/view.php?view=month',
+                'reports,core_reportbuilder|/reportbuilder/index.php',
+                'profile,moodle|/user/profile.php
+reports,core_reportbuilder|/reportbuilder/index.php
+calendar,core_calendar|/calendar/view.php?view=month',
+            ],
+        ];
+    }
+
+    /**
+     * Test the functionality of the {@link upgrade_add_item_to_usermenu()} function.
+     *
+     * @covers ::upgrade_add_item_to_usermenu
+     * @dataProvider usermenu_items_dataprovider
+     */
+    public function test_upgrade_add_item_to_usermenu(string $initialmenu, string $newmenuitem, string $expectedmenu) {
+        global $CFG;
+
+        $this->resetAfterTest();
+        // Set the base user menu.
+        $CFG->customusermenuitems = $initialmenu;
+
+        // Add the new item to the user menu.
+        upgrade_add_item_to_usermenu($newmenuitem);
+        $newcustomusermenu = $CFG->customusermenuitems;
+
+        $this->assertEquals($expectedmenu, $newcustomusermenu);
+    }
+
+    /**
+     * Test that file timestamps are corrected for copied files.
+     */
+    public function test_upgrade_fix_file_timestamps() {
+        global $DB;
+        $this->resetAfterTest();
+
+        // Add 2 files for testing, one with edited old timestamps.
+        $origtime = time();
+        $new = [
+            'contextid' => 123,
+            'component' => 'mod_label',
+            'filearea' => 'intro',
+            'itemid' => 0,
+            'filepath' => '/',
+            'filename' => 'file.txt',
+        ];
+        $old = [
+            'contextid' => 321,
+            'component' => 'mod_label',
+            'filearea' => 'intro',
+            'itemid' => 0,
+            'filepath' => '/',
+            'filename' => 'file.txt',
+        ];
+
+        // Create the file records. This will create a directory listing with the current time.
+        $fs = get_file_storage();
+        $newfile = $fs->create_file_from_string($new, 'new');
+        $oldfile = $fs->create_file_from_string($old, 'old');
+
+        // Manually set the timestamps to use on files.
+        $DB->set_field('files', 'timecreated', $origtime, ['id' => $newfile->get_id()]);
+        $DB->set_field('files', 'timemodified', $origtime, ['id' => $newfile->get_id()]);
+        $DB->set_field('files', 'timecreated', 1, ['id' => $oldfile->get_id()]);
+        $DB->set_field('files', 'timemodified', 1, ['id' => $oldfile->get_id()]);
+
+        upgrade_fix_file_timestamps();
+
+        // Check nothing changed on the new file.
+        $updatednew = $DB->get_record('files', ['id' => $newfile->get_id()]);
+        $this->assertEquals($origtime, $updatednew->timecreated);
+        $this->assertEquals($origtime, $updatednew->timemodified);
+
+        // Confirm that the file with old timestamps has been fixed.
+        $updatedold = $DB->get_record('files', ['id' => $oldfile->get_id()]);
+        $this->assertNotEquals(1, $updatedold->timecreated);
+        $this->assertNotEquals(1, $updatedold->timemodified);
+        $this->assertTrue($updatedold->timecreated >= $origtime);
+        $this->assertTrue($updatedold->timemodified >= $origtime);
     }
 }

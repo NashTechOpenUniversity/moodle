@@ -61,7 +61,7 @@ Feature: Allow to mark course as completed without cron for activity completion 
   @javascript
   Scenario: Update course completion when teacher grades a single assignment
     Given I am on the "Test assignment name" "assign activity" page logged in as teacher1
-    And I navigate to "View all submissions" in current page administration
+    And I follow "View all submissions"
     And I click on "Grade" "link" in the "student1@example.com" "table_row"
     And I set the field "Grade out of 100" to "40"
     And I click on "Save changes" "button"
@@ -90,7 +90,7 @@ Feature: Allow to mark course as completed without cron for activity completion 
     And I set the field "Assignment - Test assignment name2" to "1"
     And I press "Save changes"
     And I am on the "Test assignment name" "assign activity" page
-    And I navigate to "View all submissions" in current page administration
+    And I follow "View all submissions"
     And I click on "Grade" "link" in the "student1@example.com" "table_row"
     And I set the field "Grade out of 100" to "40"
     And I click on "Save changes" "button"
@@ -101,7 +101,7 @@ Feature: Allow to mark course as completed without cron for activity completion 
     And I should see "Status: In progress"
     And I log out
     And I am on the "Test assignment name2" "assign activity" page logged in as teacher1
-    And I navigate to "View all submissions" in current page administration
+    And I follow "View all submissions"
     And I click on "Grade" "link" in the "student1@example.com" "table_row"
     And I set the field "Grade out of 100" to "40"
     And I click on "Save changes" "button"
@@ -141,7 +141,6 @@ Feature: Allow to mark course as completed without cron for activity completion 
       | Grade for Test assignment name | 10.00 |
       | Feedback for Test assignment name | test data |
     And I press "Save"
-    And I press "Continue"
     And I log out
     And I log in as "student1"
     And I am on "Completion course" course homepage
@@ -156,7 +155,7 @@ Feature: Allow to mark course as completed without cron for activity completion 
   Scenario: Course completion should not be updated when teacher imports grades with csv file
     Given I log in as "teacher1"
     And I am on "Completion course" course homepage
-    And I navigate to "Import" in the course gradebook
+    And I navigate to "CSV file" import page in the course gradebook
     And I upload "lib/tests/fixtures/upload_grades.csv" file to "File" filemanager
     And I press "Upload grades"
     And I set the field "Map to" to "Email address"

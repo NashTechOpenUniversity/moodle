@@ -739,8 +739,10 @@ trait behat_session_trait {
 
     /**
      * Change browser window size.
-     *   - small: 640x480
-     *   - medium: 1024x768
+     *   - mobile: 425x750
+     *   - tablet: 768x1024
+     *   - small: 1024x768
+     *   - medium: 1366x768
      *   - large: 2560x1600
      *
      * @param string $windowsize size of window.
@@ -748,12 +750,22 @@ trait behat_session_trait {
      * @throws ExpectationException
      */
     protected function resize_window($windowsize, $viewport = false) {
+        global $CFG;
+
         // Non JS don't support resize window.
         if (!$this->running_javascript()) {
             return;
         }
 
         switch ($windowsize) {
+            case "mobile":
+                $width = 425;
+                $height = 750;
+                break;
+            case "tablet":
+                $width = 768;
+                $height = 1024;
+                break;
             case "small":
                 $width = 1024;
                 $height = 768;
@@ -775,6 +787,12 @@ trait behat_session_trait {
                 $width = (int) $size[0];
                 $height = (int) $size[1];
         }
+
+        if (isset($CFG->behat_window_size_modifier) && is_numeric($CFG->behat_window_size_modifier)) {
+            $width *= $CFG->behat_window_size_modifier;
+            $height *= $CFG->behat_window_size_modifier;
+        }
+
         if ($viewport) {
             // When setting viewport size, we set it so that the document width will be exactly
             // as specified, assuming that there is a vertical scrollbar. (In cases where there is

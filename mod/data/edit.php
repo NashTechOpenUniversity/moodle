@@ -152,6 +152,7 @@ $PAGE->set_title($data->name);
 $PAGE->set_heading($course->fullname);
 $PAGE->force_settings_menu(true);
 $PAGE->set_secondary_active_tab('modulepage');
+$PAGE->activityheader->disable();
 
 // Process incoming data for adding/updating records.
 
@@ -227,17 +228,6 @@ if ($datarecord = data_submitted() and confirm_sesskey()) {
 
 echo $OUTPUT->header();
 
-if (!$PAGE->has_secondary_navigation()) {
-    echo $OUTPUT->heading(format_string($data->name), 2);
-}
-
-// Render the activity information.
-$cminfo = cm_info::create($cm);
-$completiondetails = \core_completion\cm_completion_details::get_instance($cminfo, $USER->id);
-$activitydates = \core\activity_dates::get_dates_for_module($cminfo, $USER->id);
-echo $OUTPUT->activity_information($cminfo, $completiondetails, $activitydates);
-
-echo $OUTPUT->box(format_module_intro('data', $data, $cm->id), 'generalbox', 'intro');
 groups_print_activity_menu($cm, $CFG->wwwroot.'/mod/data/edit.php?d='.$data->id);
 
 /// Print the browsing interface
@@ -254,7 +244,9 @@ echo '<input name="sesskey" value="'.sesskey().'" type="hidden" />';
 echo $OUTPUT->box_start('generalbox boxaligncenter boxwidthwide');
 
 if (!$rid){
-    echo $OUTPUT->heading(get_string('newentry','data'), 3);
+    echo $OUTPUT->heading(get_string('newentry','data'));
+} else {
+    echo $OUTPUT->heading(get_string('editentry','data'));
 }
 
 /******************************************

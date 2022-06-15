@@ -1,4 +1,4 @@
-@core @core_course
+@core @core_course @core_courseformat
 Feature: Collapse course sections
   In order to quickly access the course structure
   As a user
@@ -68,7 +68,7 @@ Feature: Collapse course sections
     And I should see "Available until" in the "#section-4 .availabilityinfo" "css_element"
     And I should see "2013" in the "#section-4 .availabilityinfo" "css_element"
     And I should not see "Forum 4"
-    And I should see "Not available" in the "#section-5 .availabilityinfo" "css_element"
+    And I should see "Not available" in the "#section-5" "css_element"
     And I should not see "Forum 5"
     When I click on "#collapssesection3" "css_element"
     And I should see "Assignment 1" in the "region-main" "region"
@@ -84,7 +84,6 @@ Feature: Collapse course sections
     And I should not see "Book 2" in the "region-main" "region"
     And I should not see "Book 3" in the "region-main" "region"
     And I should not see "Available until" in the "#section-4 .availabilityinfo" "css_element"
-    And I should not see "Not available" in the "#section-5 .availabilityinfo" "css_element"
     And I click on "#collapssesection1" "css_element"
     And I click on "#collapssesection2" "css_element"
     And I click on "#collapssesection3" "css_element"
@@ -95,7 +94,6 @@ Feature: Collapse course sections
     And I should see "Book 2" in the "region-main" "region"
     And I should see "Book 3" in the "region-main" "region"
     And I should see "Available until" in the "#section-4 .availabilityinfo" "css_element"
-    And I should see "Not available" in the "#section-5 .availabilityinfo" "css_element"
 
   @javascript
   Scenario: Expand/collapse sections for Weeks format.
@@ -113,7 +111,7 @@ Feature: Collapse course sections
     And I should see "Available until" in the "#section-4 .availabilityinfo" "css_element"
     And I should see "2013" in the "#section-4 .availabilityinfo" "css_element"
     And I should see "Forum 4"
-    And I should see "Hidden from students" in the "#section-5 .availabilityinfo" "css_element"
+    And I should see "Hidden from students" in the "#section-5" "css_element"
     And I should see "Forum 5"
     When I click on "#collapssesection3" "css_element"
     And I should see "Assignment 1" in the "region-main" "region"
@@ -129,7 +127,7 @@ Feature: Collapse course sections
     And I should not see "Book 2" in the "region-main" "region"
     And I should not see "Book 3" in the "region-main" "region"
     And I should not see "Available until" in the "#section-4 .availabilityinfo" "css_element"
-    And I should not see "Not available" in the "#section-5 .availabilityinfo" "css_element"
+    And I should not see "Not available" in the "#section-5" "css_element"
     And I click on "#collapssesection1" "css_element"
     And I click on "#collapssesection2" "css_element"
     And I click on "#collapssesection3" "css_element"
@@ -142,7 +140,7 @@ Feature: Collapse course sections
     And I should see "Available until" in the "#section-4 .availabilityinfo" "css_element"
     And I should see "2013" in the "#section-4 .availabilityinfo" "css_element"
     And I should see "Forum 4"
-    And I should see "Hidden from students" in the "#section-5 .availabilityinfo" "css_element"
+    And I should see "Hidden from students" in the "#section-5" "css_element"
     And I should see "Forum 5"
 
   @javascript
@@ -155,7 +153,7 @@ Feature: Collapse course sections
       | Course layout | Show one section per page |
     And I press "Save and display"
     And "[data-toggle=collapse]" "css_element" should not exist in the "region-main" "region"
-    And I follow "Topic 2"
+    And I click on "Topic 2" "link" in the "region-main" "region"
     And I should see "Assignment 2" in the "region-main" "region"
     And "[data-toggle=collapse]" "css_element" should not exist in the "region-main" "region"
     Then "Topic 1" "section" should not exist
@@ -164,7 +162,7 @@ Feature: Collapse course sections
     And I should see "Available until" in the "#section-4 .availabilityinfo" "css_element"
     And I should see "2013" in the "#section-4 .availabilityinfo" "css_element"
     And I should see "Forum 4"
-    And I should see "Hidden from students" in the "#section-5 .availabilityinfo" "css_element"
+    And I should see "Hidden from students" in the "#section-5" "css_element"
     And I should see "Forum 5"
 
   @javascript
@@ -174,11 +172,11 @@ Feature: Collapse course sections
     When I navigate to "Settings" in current page administration
     And I expand all fieldsets
     And I set the following fields to these values:
-      | Format      | Weekly format     |
       | Course layout | Show one section per page |
+      | Format        | Weekly format             |
     And I press "Save and display"
     And "[data-toggle=collapse]" "css_element" should not exist in the "region-main" "region"
-    And I follow "8 May - 14 May"
+    And I click on "8 May - 14 May" "link" in the "region-main" "region"
     And I should see "Assignment 2" in the "region-main" "region"
     And "[data-toggle=collapse]" "css_element" should not exist in the "region-main" "region"
     Then "1 May - 7 May" "section" should not exist
@@ -189,5 +187,5 @@ Feature: Collapse course sections
     And I should see "Available until" in the "#section-4 .availabilityinfo" "css_element"
     And I should see "2013" in the "#section-4 .availabilityinfo" "css_element"
     And I should not see "Forum 4"
-    And I should see "Not available" in the "#section-5 .availabilityinfo" "css_element"
+    And I should see "Not available" in the "#section-5" "css_element"
     And I should not see "Forum 5"
