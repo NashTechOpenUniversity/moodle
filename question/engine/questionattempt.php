@@ -1191,6 +1191,11 @@ class question_attempt {
         $filearea = str_replace($this->get_field_prefix(), '', $name);
         $filearea = str_replace('-', 'bf_', $filearea);
         $filearea = 'response_' . $filearea;
+        if ($filearea !== clean_param($filearea, PARAM_AREA)) {
+            // Only lowercase ascii letters, numbers and underscores are allowed.
+            // Remove the invalid character in the filearea string.
+            $filearea = preg_replace('/[^a-z0-9_]/i', '', $filearea);
+        }
         return new question_file_saver($draftitemid, 'question', $filearea, $text);
     }
 
