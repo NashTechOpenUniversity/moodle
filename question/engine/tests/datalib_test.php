@@ -250,4 +250,36 @@ class datalib_test extends \qbehaviour_walkthrough_test_base {
         // Delete it.
         question_engine::delete_questions_usage_by_activity($quba->get_id());
     }
+
+    /**
+     * Test cases for {@see test_validate_manual_mark()}.
+     *
+     * @return array test cases
+     */
+    public function question_file_saver_filearea_cases(): array {
+        return [
+            'invalid filearea' => ['qtype_:sdadtest', 'qtype_sdadtest'],
+            'valid filearea' => ['response_audio', 'response_audio'],
+            'multiple underscore' => ['sub_test_*sadsafile', 'sub_test_sadsafile'],
+        ];
+    }
+
+    /**
+     *
+     * @dataProvider question_file_saver_filearea_cases
+     * @param $filearea
+     * @param $expected
+     */
+    public function test_question_saver_with_correct_file_area(string $filearea ,string $expected): void {
+        $this->resetAfterTest();
+        // The question_file_saver require a context user.
+        $this->setAdminUser();
+
+        $qfs = new question_file_saver(0, 'question', $filearea);
+        $qfsreflector = new \ReflectionClass(question_file_saver::class);
+        $filearea = $qfsreflector->getProperty('filearea');
+        $filearea->setAccessible(true);
+        $actual = $filearea->getValue($qfs);
+        $this->assertEquals($expected, $actual);
+    }
 }

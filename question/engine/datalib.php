@@ -1680,6 +1680,11 @@ class question_file_saver implements question_response_files {
     public function __construct($draftitemid, $component, $filearea, $text = null) {
         $this->draftitemid = $draftitemid;
         $this->component = $component;
+        if ($filearea !== clean_param($filearea, PARAM_AREA)) {
+            // Only lowercase ascii letters, numbers and underscores are allowed.
+            // Remove the invalid character in the filearea string.
+            $filearea = preg_replace('/[^a-z0-9_]/i', '', $filearea);
+        }
         $this->filearea = $filearea;
         $this->value = $this->compute_value($draftitemid, $text);
     }
