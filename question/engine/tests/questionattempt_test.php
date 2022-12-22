@@ -117,4 +117,29 @@ class questionattempt_test extends \advanced_testcase {
                     'qMDOgzdhS4W:1_omact_gen_14' => 'Check',
                 )));
     }
+
+    public function test_get_all_submitted_qt_vars_with_files() {
+        $this->resetAfterTest();
+        // The question_file_saver require a context user.
+        $this->setAdminUser();
+
+        $this->qa->set_usage_id('MDOgzdhS4W');
+        $this->qa->set_slot(1);
+
+        $_REQUEST['component_with_invalid:character'] = 1;
+        $_POST['component_with_invalid:character'] = 1;
+        $_POST['sesskey'] = sesskey();
+
+        $qareflector = new \ReflectionClass(question_attempt::class);
+        $method = $qareflector->getMethod('process_response_files');
+        $method->setAccessible(true);
+        $result = $method->invoke($this->qa, 'component_with_invalid:character', 'component_with_invalid:character');
+        $qfsreflector = new \ReflectionClass(\question_file_saver::class);
+        $filearea = $qfsreflector->getProperty('filearea');
+        $filearea->setAccessible(true);
+        $actual = $filearea->getValue($result);
+
+        $this->assertEquals('response_component_with_invalidcharacter', $actual);
+
+    }
 }
