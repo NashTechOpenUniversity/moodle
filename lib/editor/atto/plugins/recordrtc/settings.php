@@ -83,4 +83,13 @@ if ($ADMIN->fulltree) {
         return '';
     });
     $settings->add($setting);
+
+    // Pausing allowed.
+    $options = array(
+        ALLOW_PAUSING => new lang_string('yes', 'atto_recordrtc'),
+        DEFAULT_ALLOW_PAUSING => new lang_string('no', 'atto_recordrtc'),
+    );
+    $name = get_string('allowedpausing', 'atto_recordrtc');
+    $setting = new admin_setting_configselect('atto_recordrtc/allowedpausing', $name, '', DEFAULT_ALLOW_PAUSING, $options);
+    $settings->add($setting);
 }

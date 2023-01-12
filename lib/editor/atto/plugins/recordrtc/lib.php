@@ -32,6 +32,16 @@ defined('MOODLE_INTERNAL') || die();
 define('DEFAULT_TIME_LIMIT', 120);
 
 /**
+ * Default allow pausing is no.
+ */
+define('DEFAULT_ALLOW_PAUSING', 0);
+
+/**
+ * Allow pausing.
+ */
+define('ALLOW_PAUSING', 1);
+
+/**
  * Set params for this plugin.
  *
  * @param string $elementid
@@ -50,10 +60,12 @@ function atto_recordrtc_params_for_js($elementid, $options, $fpoptions) {
     $videobitrate = get_config('atto_recordrtc', 'videobitrate');
     $audiotimelimit = get_config('atto_recordrtc', 'audiotimelimit');
     $videotimelimit = get_config('atto_recordrtc', 'videotimelimit');
+    $allowedpausing = get_config('atto_recordrtc', 'allowedpausing');
 
     // Update $allowedtypes to account for capabilities.
     $audioallowed = $allowedtypes === 'audio' || $allowedtypes === 'both';
     $videoallowed = $allowedtypes === 'video' || $allowedtypes === 'both';
+    $pausingallowed = $allowedpausing == ALLOW_PAUSING;
     $audioallowed = $audioallowed && has_capability('atto/recordrtc:recordaudio', $context);
     $videoallowed = $videoallowed && has_capability('atto/recordrtc:recordvideo', $context);
     if ($audioallowed && $videoallowed) {
@@ -79,6 +91,7 @@ function atto_recordrtc_params_for_js($elementid, $options, $fpoptions) {
                     'videobitrate' => $videobitrate,
                     'audiotimelimit' => $audiotimelimit,
                     'videotimelimit' => $videotimelimit,
+                    'allowedpausing' => $pausingallowed,
                     'defaulttimelimit' => DEFAULT_TIME_LIMIT,
                     'audiortcicon' => $audiortcicon,
                     'videortcicon' => $videortcicon,
@@ -128,7 +141,9 @@ function atto_recordrtc_strings_for_js() {
                      'uploadprogress',
                      'uploadfailed',
                      'uploadfailed404',
-                     'uploadaborted'
+                     'uploadaborted',
+                     'pause',
+                     'resume'
                );
 
     $PAGE->requires->strings_for_js($strings, 'atto_recordrtc');

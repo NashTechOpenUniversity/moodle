@@ -24,6 +24,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['allowedpausing'] = 'Allow pausing';
 $string['allowedtypes'] = 'Allowed types';
 $string['allowedtypes_desc'] = 'Which recording buttons should appear in Atto. In addition to this setting, there are also capabilities which can control access to the buttons to particular users in particular contexts.';
 $string['attachrecording'] = 'Attach recording';
@@ -51,18 +52,21 @@ $string['insecurealert'] = 'Your browser might not allow this plugin to work unl
 $string['insecurealert_title'] = 'Insecure connection!';
 $string['nearingmaxsize'] = 'You have attained the maximum size limit for file uploads';
 $string['nearingmaxsize_title'] = 'Recording stopped';
+$string['no'] = 'No';
 $string['norecordingfound'] = 'Something appears to have gone wrong, it seems nothing has been recorded';
 $string['norecordingfound_title'] = 'No recording found';
 $string['nowebrtc'] = 'Your browser offers limited or no support for WebRTC technologies yet, and cannot be used with this plugin. Please switch or upgrade your browser';
 $string['nowebrtc_title'] = 'WebRTC not supported';
 $string['onlyaudio'] = 'Audio only';
 $string['onlyvideo'] = 'Video only';
+$string['pause'] = 'Pause';
 $string['pluginname'] = 'RecordRTC';
 $string['privacy:metadata'] = 'The RecordRTC plugin does not store any personal data.';
 $string['recordagain'] = 'Record again';
 $string['recordingfailed'] = 'Recording failed, try again';
 $string['recordrtc:recordaudio'] = 'Record audio directly into the text editor';
 $string['recordrtc:recordvideo'] = 'Record video directly into the text editor';
+$string['resume'] = 'Resume';
 $string['settings'] = 'RecordRTC settings';
 $string['startrecording'] = 'Start recording';
 $string['stoprecording'] = 'Stop recording';
@@ -82,3 +86,4 @@ $string['videortc'] = 'Record video';
 // Deprecated since Moodle 4.0.
 $string['timelimit'] = 'Time limit in seconds';
 $string['timelimit_desc'] = 'Maximum recording length allowed for the audio/video clips';
+$string['yes'] = 'Yes';
