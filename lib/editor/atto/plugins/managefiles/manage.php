@@ -93,16 +93,20 @@ $mform = new atto_managefiles_manage_form(null,
 
 if ($data = $mform->get_data()) {
     if (!empty($data->deletefile)) {
-        foreach (array_keys($data->deletefile) as $filehash) {
-            if ($file = $fs->get_file_by_hash($filehash)) {
-                // Make sure the user didn't modify the filehash to delete another file.
-                if ($file->get_component() == 'user' && $file->get_filearea() == 'draft'
-                        && $file->get_itemid() == $itemid && $file->get_contextid() == $usercontext->id) {
-                    $file->delete();
+        $selectedfile = array_filter($data->deletefile, function($selected, $filehash) use ($fs, $itemid, $usercontext) {
+            if ($selected) {
+                if ($file = $fs->get_file_by_hash($filehash)) {
+                    // Make sure the user didn't modify the filehash to delete another file.
+                    if ($file->get_component() == 'user' && $file->get_filearea() == 'draft'
+                            && $file->get_itemid() == $itemid && $file->get_contextid() == $usercontext->id) {
+                        $file->delete();
+                    }
                 }
+                return $selected;
             }
-        }
-        $filenames = array_diff_key($filenames, $data->deletefile);
+        }, ARRAY_FILTER_USE_BOTH);
+        $filenames = array_diff_key($filenames, $selectedfile);
+
         $mform = new atto_managefiles_manage_form(null,
             array('options' => $options, 'draftitemid' => $itemid, 'files' => $filenames, 'elementid' => $data->elementid),
             'post', '', array('id' => 'atto_managefiles_manageform'));

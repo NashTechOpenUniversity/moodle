@@ -89,8 +89,9 @@ class atto_managefiles_manage_form extends moodleform {
         $mform->addElement('static', '', '',
             html_writer::tag('div', get_string('unusedfilesdesc', 'atto_managefiles')));
 
+        $this->add_checkbox_controller(1);
         foreach ($files as $hash => $file) {
-            $mform->addElement('checkbox', 'deletefile[' . $hash . ']', '', $file, array('data-filename' => $file));
+            $mform->addElement('advcheckbox', 'deletefile[' . $hash . ']', '', $file, ['data-filename' => $file, 'group' => 1]);
             $mform->setType('deletefile[' . $hash . ']', PARAM_INT);
         }
 
