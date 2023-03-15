@@ -74,6 +74,7 @@ foreach ($jsondata as $data) {
 
     $emojibycategory[$category]['emojis'][] = [
         'sortorder' => (int) $data['sort_order'],
+        'name' => $data['name'],
         'unified' => $unified,
         'shortnames' => [$data['short_name']]
     ];
