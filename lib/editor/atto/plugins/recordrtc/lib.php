@@ -39,6 +39,7 @@ define('DEFAULT_TIME_LIMIT', 120);
  * @param stdClass $fpoptions - unused.
  */
 function atto_recordrtc_params_for_js($elementid, $options, $fpoptions) {
+    global $OUTPUT;
     $context = $options['context'];
     if (!$context) {
         $context = context_system::instance();
@@ -72,6 +73,7 @@ function atto_recordrtc_params_for_js($elementid, $options, $fpoptions) {
     }
     $audiortcicon = 'i/audiortc';
     $videortcicon = 'i/videortc';
+    $helpicon = $OUTPUT->pix_icon('help', get_string('allowdownload', 'atto_recordrtc'), 'moodle');
     $params = array('contextid' => $context->id,
                     'sesskey' => $sesskey,
                     'allowedtypes' => $allowedtypes,
@@ -82,7 +84,8 @@ function atto_recordrtc_params_for_js($elementid, $options, $fpoptions) {
                     'defaulttimelimit' => DEFAULT_TIME_LIMIT,
                     'audiortcicon' => $audiortcicon,
                     'videortcicon' => $videortcicon,
-                    'maxrecsize' => $maxrecsize
+                    'maxrecsize' => $maxrecsize,
+                    'helpicon' => $helpicon
               );
 
     return $params;
@@ -94,7 +97,9 @@ function atto_recordrtc_params_for_js($elementid, $options, $fpoptions) {
 function atto_recordrtc_strings_for_js() {
     global $PAGE;
 
-    $strings = array('audiortc',
+    $strings = array('allowdownload',
+                     'allowdownloadtext',
+                     'audiortc',
                      'videortc',
                      'nowebrtc_title',
                      'nowebrtc',

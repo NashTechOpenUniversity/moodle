@@ -1904,6 +1904,7 @@ function purify_html($text, $options = array()) {
                 'loop' => 'Bool',
                 'muted' => 'Bool',
                 'controls' => 'Bool',
+                'controlslist' => 'Enum#nodownload,nofullscreen,noremoteplayback',
                 'width' => 'Length',
                 'height' => 'Length',
             ]);
@@ -1915,7 +1916,8 @@ function purify_html($text, $options = array()) {
                 'autoplay' => 'Bool',
                 'loop' => 'Bool',
                 'muted' => 'Bool',
-                'controls' => 'Bool'
+                'controls' => 'Bool',
+                'controlslist' => 'Enum#nodownload,nofullscreen,noremoteplayback',
             ]);
             // https://html.spec.whatwg.org/#the-source-element
             $def->addElement('source', false, 'Empty', null, [

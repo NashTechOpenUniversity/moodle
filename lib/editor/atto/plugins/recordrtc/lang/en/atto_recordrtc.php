@@ -24,6 +24,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['allowdownload'] = 'Allow clip download';
+$string['allowdownloadtext'] = 'Unticking this option means that the AV clip should not be downloadable via the browser media player menu, via the context menu, or display the download icon. However, it cannot be guaranteed that determined users cannot access and download the file by other means.';
 $string['allowedtypes'] = 'Allowed types';
 $string['allowedtypes_desc'] = 'Which recording buttons should appear in Atto. In addition to this setting, there are also capabilities which can control access to the buttons to particular users in particular contexts.';
 $string['attachrecording'] = 'Attach recording';

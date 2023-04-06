@@ -15,6 +15,15 @@
     width: 100%;
 }
 
+.atto_recordrtc_allow_download {
+    justify-content: center;
+    align-items: center;
+}
+
+.atto_recordrtc_allow_download .form-check {
+    line-height: 1.5;
+}
+
 @media screen and (max-width: 670px) {
     .atto_recordrtc video {
         display: block;

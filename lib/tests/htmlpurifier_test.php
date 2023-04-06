@@ -367,13 +367,13 @@ class htmlpurifier_test extends \basic_testcase {
 
         $audioattrs = [
             'preload="auto"', 'autoplay=""', 'loop=""', 'muted=""', 'controls=""',
-            'crossorigin="anonymous"', 'crossorigin="use-credentials"'
+            'crossorigin="anonymous"', 'crossorigin="use-credentials"', 'controlslist="nodownload"'
         ];
         $videoattrs = [
             'crossorigin="anonymous"', 'crossorigin="use-credentials"',
             'poster="https://upload.wikimedia.org/wikipedia/en/1/14/Space_jam.jpg"',
             'preload="auto"', 'autoplay=""', 'playsinline=""', 'loop=""', 'muted=""',
-            'controls=""', 'width="420"', 'height="69"'
+            'controls=""', 'controlslist="nodownload"', 'width="420"', 'height="69"'
         ];
         return $generatetestcases('Plain audio', $audioattrs + ['src="http://example.com/jam.wav"'], [
                 '<audio %1$s>Looks like you can\'t slam the jams.</audio>',
