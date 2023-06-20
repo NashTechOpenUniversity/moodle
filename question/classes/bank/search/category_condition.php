@@ -59,6 +59,9 @@ class category_condition extends condition {
     /** @var int The maximum displayed length of the category info. */
     protected $maxinfolength;
 
+    /** @var \moodle_url The URL the form is submitted to. */
+    protected $baseurl;
+
     /**
      * Constructor
      * @param string     $cat           categoryID,contextID as used with question_bank_view->display()
@@ -92,7 +95,7 @@ class category_condition extends condition {
             $categoryids = [$this->category->id];
         }
         list($catidtest, $this->params) = $DB->get_in_or_equal($categoryids, SQL_PARAMS_NAMED, 'cat');
-        $this->where = 'q.category ' . $catidtest;
+        $this->where = 'qbe.questioncategoryid ' . $catidtest;
     }
 
     /**
@@ -137,7 +140,7 @@ class category_condition extends condition {
         global $PAGE;
         $displaydata = [];
         if ($this->recurse) {
-            $displaydata['checked'] = 'checked="true"';
+            $displaydata['checked'] = 'checked';
         }
         return $PAGE->get_renderer('core_question', 'bank')->render_category_condition_advanced($displaydata);
     }

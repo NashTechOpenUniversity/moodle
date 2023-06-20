@@ -142,6 +142,8 @@ if (($action == 'edit') || ($action == 'new')) {
             $success = true;
             if (!$repoid = $type->create()) {
                 $success = false;
+            } else {
+                add_to_config_log('repository_visibility', '', (int)$visible, $plugin);
             }
             $data = data_submitted();
         }
@@ -150,7 +152,7 @@ if (($action == 'edit') || ($action == 'new')) {
             core_plugin_manager::reset_caches();
             redirect($baseurl);
         } else {
-            print_error('instancenotsaved', 'repository', $baseurl);
+            throw new \moodle_exception('instancenotsaved', 'repository', $baseurl);
         }
         exit;
     } else {
@@ -181,31 +183,33 @@ if (($action == 'edit') || ($action == 'new')) {
     }
 } else if ($action == 'show') {
     if (!confirm_sesskey()) {
-        print_error('confirmsesskeybad', '', $baseurl);
+        throw new \moodle_exception('confirmsesskeybad', '', $baseurl);
     }
     $class = \core_plugin_manager::resolve_plugininfo_class('repository');
-    $class::enable_plugin($repository, true);
+    $class::enable_plugin($repository, 1);
     $return = true;
 } else if ($action == 'hide') {
     if (!confirm_sesskey()) {
-        print_error('confirmsesskeybad', '', $baseurl);
+        throw new \moodle_exception('confirmsesskeybad', '', $baseurl);
     }
     $class = \core_plugin_manager::resolve_plugininfo_class('repository');
-    $class::enable_plugin($repository, false);
+    $class::enable_plugin($repository, 0);
     $return = true;
 } else if ($action == 'delete') {
     $repositorytype = repository::get_type_by_typename($repository);
     if ($sure) {
         $PAGE->set_pagetype('admin-repository-' . $repository);
         if (!confirm_sesskey()) {
-            print_error('confirmsesskeybad', '', $baseurl);
+            throw new \moodle_exception('confirmsesskeybad', '', $baseurl);
         }
 
         if ($repositorytype->delete($downloadcontents)) {
+            // Include this information into config changes table.
+            add_to_config_log('repository_visibility', $repositorytype->get_visible(), '', $repository);
             core_plugin_manager::reset_caches();
             redirect($baseurl);
         } else {
-            print_error('instancenotdeleted', 'repository', $baseurl);
+            throw new \moodle_exception('instancenotdeleted', 'repository', $baseurl);
         }
         exit;
     } else {

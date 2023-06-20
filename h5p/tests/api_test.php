@@ -27,6 +27,8 @@ declare(strict_types = 1);
 
 namespace core_h5p;
 
+use stdClass;
+
 defined('MOODLE_INTERNAL') || die();
 
 /**
@@ -347,7 +349,7 @@ class api_test extends \advanced_testcase {
         $syscontext = \context_system::instance();
 
         // Create the original file.
-        $filename = 'greeting-card-887.h5p';
+        $filename = 'greeting-card.h5p';
         $path = __DIR__ . '/fixtures/' . $filename;
         $originalfile = helper::create_fake_stored_file_from_path($path);
         $originalfilerecord = [
@@ -444,11 +446,13 @@ class api_test extends \advanced_testcase {
      * @param string $fileauthor Author of the file to check.
      * @param string $filecomponent Component of the file to check.
      * @param bool $expected Expected result after calling the can_edit_content method.
+     * @param string $filearea Area of the file to check.
      *
      * @return void
      */
-    public function test_can_edit_content(string $currentuser, string $fileauthor, string $filecomponent, bool $expected): void {
-        global $USER;
+    public function test_can_edit_content(string $currentuser, string $fileauthor, string $filecomponent, bool $expected,
+            $filearea = 'unittest'): void {
+        global $USER, $DB;
 
         $this->setRunTestInSeparateProcess(true);
         $this->resetAfterTest();
@@ -472,8 +476,22 @@ class api_test extends \advanced_testcase {
             $this->setUser($users[$currentuser]);
         }
 
+        $itemid = rand();
+        if ($filearea === 'post') {
+            // Create a forum and add a discussion.
+            $forum = $this->getDataGenerator()->create_module('forum', ['course' => $course->id]);
+
+            $record = new stdClass();
+            $record->course = $course->id;
+            $record->userid = $users[$fileauthor]->id;
+            $record->forum = $forum->id;
+            $discussion = $this->getDataGenerator()->get_plugin_generator('mod_forum')->create_discussion($record);
+            $post = $DB->get_record('forum_posts', ['discussion' => $discussion->id]);
+            $itemid = $post->id;
+        }
+
         // Create the file.
-        $filename = 'greeting-card-887.h5p';
+        $filename = 'greeting-card.h5p';
         $path = __DIR__ . '/fixtures/' . $filename;
         if ($filecomponent === 'contentbank') {
             $generator = $this->getDataGenerator()->get_plugin_generator('core_contentbank');
@@ -491,8 +509,8 @@ class api_test extends \advanced_testcase {
             $filerecord = [
                 'contextid' => $context->id,
                 'component' => $filecomponent,
-                'filearea'  => 'unittest',
-                'itemid'    => rand(),
+                'filearea'  => $filearea,
+                'itemid'    => $itemid,
                 'filepath'  => '/',
                 'filename'  => basename($path),
                 'userid'    => $users[$fileauthor]->id,
@@ -589,18 +607,79 @@ class api_test extends \advanced_testcase {
                 'expected' => false,
             ],
 
+            // Component = mod_book.
+            'mod_book: Admin user is author' => [
+                'currentuser' => 'admin',
+                'fileauthor' => 'admin',
+                'filecomponent' => 'mod_book',
+                'expected' => true,
+            ],
+            'mod_book: Admin user, teacher is author' => [
+                'currentuser' => 'admin',
+                'fileauthor' => 'teacher',
+                'filecomponent' => 'mod_book',
+                'expected' => true,
+            ],
+
             // Component = mod_forum.
             'mod_forum: Admin user is author' => [
                 'currentuser' => 'admin',
                 'fileauthor' => 'admin',
                 'filecomponent' => 'mod_forum',
-                'expected' => false,
+                'expected' => true,
             ],
             'mod_forum: Admin user, teacher is author' => [
                 'currentuser' => 'admin',
                 'fileauthor' => 'teacher',
                 'filecomponent' => 'mod_forum',
+                'expected' => true,
+            ],
+            'mod_forum: Teacher user, admin is author' => [
+                'currentuser' => 'teacher',
+                'fileauthor' => 'admin',
+                'filecomponent' => 'mod_forum',
+                'expected' => true,
+            ],
+            'mod_forum: Student user, teacher is author' => [
+                'currentuser' => 'student',
+                'fileauthor' => 'teacher',
+                'filecomponent' => 'mod_forum',
                 'expected' => false,
+            ],
+            'mod_forum/post: Admin user is author' => [
+                'currentuser' => 'admin',
+                'fileauthor' => 'admin',
+                'filecomponent' => 'mod_forum',
+                'expected' => true,
+                'filearea' => 'post',
+            ],
+            'mod_forum/post: Teacher user, admin is author' => [
+                'currentuser' => 'teacher',
+                'fileauthor' => 'admin',
+                'filecomponent' => 'mod_forum',
+                'expected' => true,
+                'filearea' => 'post',
+            ],
+            'mod_forum/post: Student user, teacher is author' => [
+                'currentuser' => 'student',
+                'fileauthor' => 'teacher',
+                'filecomponent' => 'mod_forum',
+                'expected' => false,
+                'filearea' => 'post',
+            ],
+
+            // Component = block_html.
+            'block_html: Admin user is author' => [
+                'currentuser' => 'admin',
+                'fileauthor' => 'admin',
+                'filecomponent' => 'block_html',
+                'expected' => true,
+            ],
+            'block_html: Admin user, teacher is author' => [
+                'currentuser' => 'admin',
+                'fileauthor' => 'teacher',
+                'filecomponent' => 'block_html',
+                'expected' => true,
             ],
 
             // Component = contentbank.
@@ -652,6 +731,12 @@ class api_test extends \advanced_testcase {
                 'currentuser' => 'admin',
                 'fileauthor' => 'admin',
                 'filecomponent' => 'mod_unexisting',
+                'expected' => false,
+            ],
+            'Unexisting block' => [
+                'currentuser' => 'admin',
+                'fileauthor' => 'admin',
+                'filecomponent' => 'block_unexisting',
                 'expected' => false,
             ],
         ];
@@ -1112,33 +1197,33 @@ class api_test extends \advanced_testcase {
     public function is_valid_package_provider(): array {
         return [
             'Valid H5P file (as admin)' => [
-                'filename' => '/fixtures/greeting-card-887.h5p',
+                'filename' => '/fixtures/greeting-card.h5p',
                 'expected' => true,
                 'isadmin' => true,
             ],
             'Valid H5P file (as user) without library update and checking content' => [
-                'filename' => '/fixtures/greeting-card-887.h5p',
+                'filename' => '/fixtures/greeting-card.h5p',
                 'expected' => false, // Libraries are missing and user hasn't the right permissions to upload them.
                 'isadmin' => false,
                 'onlyupdatelibs' => false,
                 'skipcontent' => false,
             ],
             'Valid H5P file (as user) with library update and checking content' => [
-                'filename' => '/fixtures/greeting-card-887.h5p',
+                'filename' => '/fixtures/greeting-card.h5p',
                 'expected' => false, // Libraries are missing and user hasn't the right permissions to upload them.
                 'isadmin' => false,
                 'onlyupdatelibs' => true,
                 'skipcontent' => false,
             ],
             'Valid H5P file (as user) without library update and skipping content' => [
-                'filename' => '/fixtures/greeting-card-887.h5p',
+                'filename' => '/fixtures/greeting-card.h5p',
                 'expected' => true, // Content check is skipped so the package will be considered valid.
                 'isadmin' => false,
                 'onlyupdatelibs' => false,
                 'skipcontent' => true,
             ],
             'Valid H5P file (as user) with library update and skipping content' => [
-                'filename' => '/fixtures/greeting-card-887.h5p',
+                'filename' => '/fixtures/greeting-card.h5p',
                 'expected' => true, // Content check is skipped so the package will be considered valid.
                 'isadmin' => false,
                 'onlyupdatelibs' => true,

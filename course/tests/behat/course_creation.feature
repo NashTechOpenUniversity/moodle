@@ -21,13 +21,12 @@ Feature: Managers can create courses
     And I am on "Course 1" course homepage with editing mode on
     And I add the "Latest announcements" block
     And I am on the Announcements "forum activity" page
-    And "Add a new topic" "link" should exist
-    And "Subscription mode > Forced subscription" "link" should not exist in current page administration
-    And "Subscription mode > Forced subscription" "text" should exist in current page administration
+    And "Add discussion topic" "link" should exist
+    And I navigate to "Subscriptions" in current page administration
+    And I should see "Forced subscription"
     And I log out
     And I am on the Announcements "forum activity" page logged in as student1
     And "Add a new topic" "link" should not exist
-    And "Forced subscription" "text" should exist in current page administration
 
   Scenario: Create a course from the management interface and return to it
     Given the following "courses" exist:
@@ -76,13 +75,11 @@ Feature: Managers can create courses
     And the following "system role assigns" exist:
       | user   | role    | contextlevel |
       | kevin  | creator | System       |
-    And I log in as "admin"
-    And I set the following system permissions of "Creator" role:
-      | capability | permission |
-      | moodle/course:create | Allow |
-      | moodle/course:manageactivities | Allow |
-      | moodle/course:viewparticipants | Allow |
-    And I log out
+    And the following "role capability" exists:
+      | role                           | creator |
+      | moodle/course:create           | allow   |
+      | moodle/course:manageactivities | allow   |
+      | moodle/course:viewparticipants | allow   |
     And I log in as "kevin"
     And I am on site homepage
     When I press "Add a new course"

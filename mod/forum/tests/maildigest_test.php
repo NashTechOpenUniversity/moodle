@@ -15,27 +15,37 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * The module forums external functions unit tests
- *
- * @package    mod_forum
- * @category   external
- * @copyright  2013 Andrew Nicols
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+namespace mod_forum;
 
-defined('MOODLE_INTERNAL') || die();
+use mod_forum_tests_cron_trait;
+use mod_forum_tests_generator_trait;
+
+defined('MOODLE_INTERNAL') || die;
 
 require_once(__DIR__ . '/cron_trait.php');
 require_once(__DIR__ . '/generator_trait.php');
 
-class mod_forum_maildigest_testcase extends advanced_testcase {
+/**
+ * The module forums external functions unit tests
+ *
+ * @package    mod_forum
+ * @category   test
+ * @copyright  2013 Andrew Nicols
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class maildigest_test extends \advanced_testcase {
 
     // Make use of the cron tester trait.
     use mod_forum_tests_cron_trait;
 
     // Make use of the test generator trait.
     use mod_forum_tests_generator_trait;
+
+    /** @var \phpunit_message_sink */
+    protected $messagesink;
+
+    /** @var \phpunit_message_sink */
+    protected $mailsink;
 
     /**
      * Set up message and mail sinks, and set up other requirements for the
@@ -95,9 +105,9 @@ class mod_forum_maildigest_testcase extends advanced_testcase {
     protected function helper_setup_user_in_course() {
         global $DB;
 
-        $return = new stdClass();
-        $return->courses = new stdClass();
-        $return->forums = new stdClass();
+        $return = new \stdClass();
+        $return->courses = new \stdClass();
+        $return->forums = new \stdClass();
         $return->forumids = array();
 
         // Create a user.
@@ -108,7 +118,7 @@ class mod_forum_maildigest_testcase extends advanced_testcase {
         $return->courses->course1 = $this->getDataGenerator()->create_course();
 
         // Create forums.
-        $record = new stdClass();
+        $record = new \stdClass();
         $record->course = $return->courses->course1->id;
         $record->forcesubscribe = 1;
 
@@ -649,13 +659,13 @@ class mod_forum_maildigest_testcase extends advanced_testcase {
         ];
         $this->queue_tasks_and_assert($expect);
 
-        $tasks = $DB->get_records('task_adhoc');
+        $tasks = $DB->get_records('task_adhoc', ['component' => 'mod_forum']);
         $task = reset($tasks);
         $this->assertGreaterThanOrEqual(time(), $task->nextruntime);
     }
 
     /**
-     * The digest being in the past is queued til the next day.
+     * The digest being in the future is queued for today.
      */
     public function test_cron_digest_same_day() {
         global $DB, $CFG;
@@ -689,10 +699,77 @@ class mod_forum_maildigest_testcase extends advanced_testcase {
         ];
         $this->queue_tasks_and_assert($expect);
 
-        $tasks = $DB->get_records('task_adhoc');
+        $tasks = $DB->get_records('task_adhoc', ['component' => 'mod_forum']);
         $task = reset($tasks);
         $digesttime = usergetmidnight(time(), \core_date::get_server_timezone()) + ($CFG->digestmailtime * 3600);
         $this->assertLessThanOrEqual($digesttime, $task->nextruntime);
+    }
+
+    /**
+     * Tests that if a new message is posted after the days digest time,
+     * but before that days digests are sent a new task is created.
+     */
+    public function test_cron_digest_queue_next_before_current_processed() {
+        global $DB, $CFG;
+
+        $this->resetAfterTest(true);
+
+        // Set up a basic user enrolled in a course.
+        $userhelper = $this->helper_setup_user_in_course();
+        $user = $userhelper->user;
+        $forum1 = $userhelper->forums->forum1;
+
+        // Add 1 discussions to forum 1.
+        $this->helper_post_to_forum($forum1, $user, ['mailnow' => 1]);
+
+        // Set the tested user's default maildigest setting.
+        $DB->set_field('user', 'maildigest', 1, ['id' => $user->id]);
+
+        // Set the digest time to the future (magic, shouldn't work).
+        $CFG->digestmailtime = 25;
+        // One digest e-mail should be sent, and no individual notifications.
+        $expect = [
+            (object) [
+                'userid' => $user->id,
+                'digests' => 1,
+            ],
+        ];
+        $this->queue_tasks_and_assert($expect);
+
+        // Set the digest time to midnight.
+        $CFG->digestmailtime = 0;
+
+        // Add another discussions to forum 1.
+        $this->helper_post_to_forum($forum1, $user, ['mailnow' => 1]);
+
+        // One digest e-mail should be sent, and no individual notifications.
+        $expect = [
+            (object) [
+                'userid' => $user->id,
+                'digests' => 1,
+            ],
+        ];
+        $this->queue_tasks_and_assert($expect);
+
+        // There should now be two tasks queued.
+        $tasks = $DB->get_records('task_adhoc', ['component' => 'mod_forum']);
+        $this->assertCount(2, $tasks);
+
+        // Add yet another another discussions to forum 1.
+        $this->helper_post_to_forum($forum1, $user, ['mailnow' => 1]);
+
+        // One digest e-mail should be sent, and no individual notifications.
+        $expect = [
+            (object) [
+                'userid' => $user->id,
+                'digests' => 1,
+            ],
+        ];
+        $this->queue_tasks_and_assert($expect);
+
+        // There should still be two tasks queued.
+        $tasks = $DB->get_records('task_adhoc', ['component' => 'mod_forum']);
+        $this->assertCount(2, $tasks);
     }
 
     /**

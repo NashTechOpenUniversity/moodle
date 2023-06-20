@@ -76,10 +76,22 @@ class imsbadgeconnect extends base_definition {
             } else if ($key == 'image' && empty($issuer->get('image'))) {
                 // Update the image with the value in the manifest file if it's valid and empty in the issuer.
                 $url = filter_var($value, FILTER_SANITIZE_URL);
+                // Remove multiple slashes in URL. It will fix the Badgr bug with image URL defined in their manifest.
+                $url = preg_replace('/([^:])(\/{2,})/', '$1/', $url);
                 if (filter_var($url, FILTER_VALIDATE_URL) !== false) {
                     $issuer->set('image', $url);
                     $issuer->update();
                 }
+            } else if ($key == 'apiBase') {
+                (new endpoint(0, (object) [
+                    'issuerid' => $issuer->get('id'),
+                    'name' => $key,
+                    'url' => $value,
+                ]))->create();
+            } else if ($key == 'name') {
+                // Get and update issuer name.
+                $issuer->set('name', $value);
+                $issuer->update();
             }
         }
     }

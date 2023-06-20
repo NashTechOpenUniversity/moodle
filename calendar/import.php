@@ -33,15 +33,18 @@ $data = [];
 $pageurl = new moodle_url('/calendar/import.php');
 $managesubscriptionsurl = new moodle_url('/calendar/managesubscriptions.php');
 
-if ($courseid != SITEID && !empty($courseid)) {
+$headingstr = $calendarstr = get_string('calendar', 'calendar');
+
+if (!empty($courseid) && $courseid != SITEID) {
     $course = get_course($courseid);
     $data['eventtype'] = 'course';
     $data['courseid'] = $course->id;
     $pageurl->param('course', $course->id);
     $managesubscriptionsurl->param('course', $course->id);
+    $headingstr .= ": {$course->shortname}";
     navigation_node::override_active_url(new moodle_url('/course/view.php', ['id' => $course->id]));
     $PAGE->navbar->add(
-        get_string('calendar', 'calendar'),
+        $calendarstr,
         new moodle_url('/calendar/view.php', ['view' => 'month', 'course' => $course->id])
     );
 } else if (!empty($category)) {
@@ -53,12 +56,16 @@ if ($courseid != SITEID && !empty($courseid)) {
     navigation_node::override_active_url(new moodle_url('/course/index.php', ['categoryid' => $category]));
     $PAGE->set_category_by_id($category);
     $PAGE->navbar->add(
-        get_string('calendar', 'calendar'),
+        $calendarstr,
         new moodle_url('/calendar/view.php', ['view' => 'month', 'category' => $category])
     );
 } else {
     $course = get_site();
-    navigation_node::override_active_url(new moodle_url('/calendar/view.php', ['view' => 'month']));
+    $PAGE->navbar->add($calendarstr, new moodle_url('/calendar/view.php', ['view' => 'month']));
+}
+
+if (!empty($groupcourseid)) {
+    $pageurl->param('groupcourseid', $groupcourseid);
 }
 
 require_login($course, false);
@@ -67,14 +74,15 @@ if (!calendar_user_can_add_event($course)) {
 }
 
 $heading = get_string('importcalendar', 'calendar');
-$pagetitle = $course->shortname . ': ' . get_string('calendar', 'calendar') . ': ' . $heading;
+$pagetitle = $course->shortname . ': ' . $calendarstr . ': ' . $heading;
 
+$PAGE->set_secondary_navigation(false);
 $PAGE->set_title($pagetitle);
-$PAGE->set_heading($heading);
+$PAGE->set_heading($headingstr);
 $PAGE->set_url($pageurl);
 $PAGE->set_pagelayout('admin');
 $PAGE->navbar->add(get_string('managesubscriptions', 'calendar'), $managesubscriptionsurl);
-$PAGE->navbar->add($heading);
+$PAGE->navbar->add($heading, $pageurl);
 
 // Populate the 'group' select box based on the given 'groupcourseid', if necessary.
 $groups = [];
@@ -88,8 +96,14 @@ if (!empty($groupcourseid)) {
     }
     $data['groupcourseid'] = $groupcourseid;
     $data['eventtype'] = 'group';
-    $pageurl->param('groupcourseid', $groupcourseid);
 }
+if (!empty($category)) {
+    $managesubscriptionsurl->param('category', $category);
+    $data['category'] = $category;
+    $data['eventtype'] = 'category';
+}
+
+$renderer = $PAGE->get_renderer('core_calendar');
 
 $customdata = [
     'courseid' => $course->id,
@@ -109,7 +123,7 @@ if (!empty($formdata)) {
         $calendar = $form->get_file_content('importfile');
         $ical = new iCalendar();
         $ical->unserialize($calendar);
-        $importresults = calendar_import_icalendar_events($ical, null, $subscriptionid);
+        $importresults = calendar_import_events_from_ical($ical, $subscriptionid);
     } else {
         try {
             $importresults = calendar_update_subscription_events($subscriptionid);
@@ -125,10 +139,8 @@ if (!empty($formdata)) {
     if (!empty($formdata->categoryid)) {
         $managesubscriptionsurl->param('category', $formdata->categoryid);
     }
-    redirect($managesubscriptionsurl, $importresults);
+    redirect($managesubscriptionsurl, $renderer->render_import_result($importresults));
 }
-
-$renderer = $PAGE->get_renderer('core_calendar');
 
 echo $OUTPUT->header();
 echo $renderer->start_layout();

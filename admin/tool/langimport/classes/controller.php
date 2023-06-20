@@ -24,6 +24,8 @@
 
 namespace tool_langimport;
 
+use moodle_url;
+
 defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir.'/filelib.php');
 require_once($CFG->libdir.'/componentlib.class.php');
@@ -57,6 +59,25 @@ class controller {
         $this->installer = new \lang_installer();
 
         $this->availablelangs = $this->installer->get_remote_list_of_languages();
+    }
+
+    /**
+     * Redirect to the specified url, outputting any required messages.
+     *
+     * @param moodle_url $url
+     */
+    public function redirect(moodle_url $url): void {
+        if ($this->info) {
+            $info = implode('<br />', $this->info);
+            \core\notification::success($info);
+        }
+
+        if ($this->errors) {
+            $info = implode('<br />', $this->errors);
+            \core\notification::error($info);
+        }
+
+        redirect($url);
     }
 
     /**
@@ -112,6 +133,18 @@ class controller {
     public function uninstall_language($lang) {
         global $CFG;
 
+        $lang = clean_param($lang, PARAM_LANG);
+        if ($lang === '') {
+            // Do not allow uninstallation of invalid languages.
+            // Note: PARAM_LANG returns an empty string for invalid validation.
+            return false;
+        }
+
+        if ($lang === 'en') {
+            // Never allow removal of the default langauge.
+            return false;
+        }
+
         $dest1 = $CFG->dataroot.'/lang/'.$lang;
         $dest2 = $CFG->dirroot.'/lang/'.$lang;
         $rm1 = false;
@@ -124,6 +157,12 @@ class controller {
         }
 
         if ($rm1 or $rm2) {
+            // Set the default site language to en if the deleted language pack is the default site language.
+            if ($CFG->lang === $lang) {
+                set_config('lang', 'en');
+                // Fix the user's current language to the default site language.
+                fix_current_language($CFG->lang);
+            }
             $this->info[] = get_string('langpackremoved', 'tool_langimport', $lang);
             event\langpack_removed::event_with_langcode($lang)->trigger();
             return true;

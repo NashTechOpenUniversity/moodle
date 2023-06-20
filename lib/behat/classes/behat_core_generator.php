@@ -156,11 +156,23 @@ class behat_core_generator extends behat_generator_base {
                 'datagenerator' => 'role',
                 'required' => ['shortname'],
             ],
+            'role capabilities' => [
+                'singular' => 'role capability',
+                'datagenerator' => 'role_capability',
+                'required' => ['role'],
+                'switchids' => ['role' => 'roleid'],
+            ],
             'grade categories' => [
                 'singular' => 'grade category',
                 'datagenerator' => 'grade_category',
                 'required' => ['fullname', 'course'],
                 'switchids' => ['course' => 'courseid', 'gradecategory' => 'parent'],
+            ],
+            'grade grades' => [
+                'singular' => 'grade grade',
+                'datagenerator' => 'grade_grade',
+                'required' => ['gradeitem'],
+                'switchids' => ['user' => 'userid', 'gradeitem' => 'itemid'],
             ],
             'grade items' => [
                 'singular' => 'grade item',
@@ -253,6 +265,11 @@ class behat_core_generator extends behat_generator_base {
                 'datagenerator' => 'customlang',
                 'required' => ['component', 'stringid', 'value'],
             ],
+            'language packs' => [
+                'singular' => 'language pack',
+                'datagenerator' => 'langpack',
+                'required' => ['language'],
+            ],
             'analytics models' => [
                 'singular' => 'analytics model',
                 'datagenerator' => 'analytics_model',
@@ -287,9 +304,31 @@ class behat_core_generator extends behat_generator_base {
                 'required' => ['user', 'course', 'lastaccess'],
                 'switchids' => ['user' => 'userid', 'course' => 'courseid'],
             ],
+            'notifications' => [
+                'singular' => 'notification',
+                'datagenerator' => 'notification',
+                'required' => ['subject', 'userfrom', 'userto'],
+                'switchids' => ['userfrom' => 'userfromid', 'userto' => 'usertoid'],
+            ],
         ];
 
         return $entities;
+    }
+
+    /**
+     * Get the grade item id using a name.
+     *
+     * @param string $name
+     * @return int The grade item id
+     */
+    protected function get_gradeitem_id(string $name): int {
+        global $DB;
+
+        if (!$id = $DB->get_field('grade_items', 'id', ['itemname' => $name])) {
+            throw new Exception('The specified grade item with name "' . $name . '" could not be found.');
+        }
+
+        return $id;
     }
 
     /**
@@ -360,6 +399,22 @@ class behat_core_generator extends behat_generator_base {
             }
             unset($data['category']);
             $data['categoryid'] = $cat->id;
+        }
+
+        // We need to ensure that all these attributes coming from data are not-localised floats.
+        $attrs = [
+            'grademax',
+            'grademin',
+            'gradepass',
+            'multfactor',
+            'plusfactor',
+            'aggregationcoef',
+            'aggregationcoef2',
+        ];
+        foreach ($attrs as $attr) {
+            if (array_key_exists($attr, $data)) {
+                $data[$attr] = unformat_float($data[$attr]);
+            }
         }
 
         return $data;
@@ -504,6 +559,16 @@ class behat_core_generator extends behat_generator_base {
             $DB->update_record('tool_customlang', $record);
             tool_customlang_utils::checkin($USER->lang);
         }
+    }
+    /**
+     * Imports a langpack.
+     *
+     * @param array $data
+     */
+    protected function process_langpack($data) {
+        $controller = new \tool_langimport\controller();
+        $controller->install_languagepacks($data['language']);
+        get_string_manager()->reset_caches();
     }
 
     /**
@@ -666,6 +731,23 @@ class behat_core_generator extends behat_generator_base {
     }
 
     /**
+     * Assign capabilities to a role.
+     *
+     * @param array $data
+     */
+    protected function process_role_capability($data): void {
+        // We require the user to fill the role shortname.
+        if (empty($data['roleid'])) {
+            throw new Exception('\'role capability\' requires the field \'roleid\' to be specified');
+        }
+
+        $roleid = $data['roleid'];
+        unset($data['roleid']);
+
+        $this->datagenerator->create_role_capability($roleid, $data, \context_system::instance());
+    }
+
+    /**
      * Adds members to cohorts
      *
      * @param array $data
@@ -707,7 +789,9 @@ class behat_core_generator extends behat_generator_base {
         }
 
         $data['contextid'] = $context->id;
-        $this->datagenerator->get_plugin_generator('core_question')->create_question_category($data);
+        /** @var core_question_generator $qgenerator */
+        $qgenerator = $this->datagenerator->get_plugin_generator('core_question');
+        $qgenerator->create_question_category($data);
     }
 
     /**
@@ -754,7 +838,9 @@ class behat_core_generator extends behat_generator_base {
             $missingtypespecialcase = true;
         }
 
-        $questiondata = $this->datagenerator->get_plugin_generator('core_question')
+        /** @var core_question_generator $qgenerator */
+        $qgenerator = $this->datagenerator->get_plugin_generator('core_question');
+        $questiondata = $qgenerator
             ->create_question($data['qtype'], $which, $data);
 
         if ($missingtypespecialcase) {
@@ -903,7 +989,7 @@ class behat_core_generator extends behat_generator_base {
     /**
      * Creates an analytics model
      *
-     * @param target $data
+     * @param array $data target
      * @return void
      */
     protected function process_analytics_model($data) {
@@ -1022,6 +1108,39 @@ class behat_core_generator extends behat_generator_base {
         $backpack->password = '';
         $backpack->externalbackpackid = $data['externalbackpackid'];
         $DB->insert_record('badge_backpack', $backpack);
+    }
+
+    /**
+     * Creates notifications to specific user.
+     *
+     * @param array $data
+     * @return void
+     */
+    protected function process_notification(array $data) {
+        global $DB;
+
+        $notification = new stdClass();
+        $notification->useridfrom = $data['userfromid'];
+        $notification->useridto = $data['usertoid'];
+        $notification->subject = $data['subject'];
+        $notification->fullmessage = $data['subject'] . ' description';
+        $notification->smallmessage = $data['subject'] . ' description';
+        $notification->fullmessagehtml = $data['subject'] . ' description';
+
+        if ($data['timecreated'] !== 'null') {
+            $notification->timecreated = $data['timecreated'];
+        }
+
+        if ($data['timeread'] !== 'null') {
+            $notification->timeread = $data['timeread'];
+        }
+
+        if (!empty($data)) {
+            $popupnotification = new stdClass();
+            $popupnotification->notificationid = $DB->insert_record('notifications', $notification);
+            $DB->insert_record('message_popup_notifications', $popupnotification);
+        }
+
     }
 
     /**

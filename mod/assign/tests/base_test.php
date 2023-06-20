@@ -14,30 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Base class for unit tests for mod_assign.
- *
- * @package    mod_assign
- * @category   phpunit
- * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+namespace mod_assign;
 
+use mod_assign_testable_assign;
 
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->dirroot . '/mod/assign/locallib.php');
-require_once($CFG->dirroot . '/mod/assign/upgradelib.php');
 require_once(__DIR__ . '/fixtures/testable_assign.php');
 
 /**
  * Unit tests for (some of) mod/assign/locallib.php.
  *
+ * @package    mod_assign
+ * @category   test
  * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class mod_assign_base_testcase extends advanced_testcase {
+class base_test extends \advanced_testcase {
 
     /** @const Default number of students to create */
     const DEFAULT_STUDENT_COUNT = 3;
@@ -56,7 +51,7 @@ class mod_assign_base_testcase extends advanced_testcase {
     /** @const Number of groups to create */
     const GROUP_COUNT = 6;
 
-    /** @var stdClass $course New course created to hold the assignments */
+    /** @var \stdClass $course New course created to hold the assignments */
     protected $course = null;
 
     /** @var array $teachers List of DEFAULT_TEACHER_COUNT teachers in the course*/
@@ -211,7 +206,7 @@ class mod_assign_base_testcase extends advanced_testcase {
         }
         $instance = $generator->create_instance($params);
         $cm = get_coursemodule_from_instance('assign', $instance->id);
-        $context = context_module::instance($cm->id);
+        $context = \context_module::instance($cm->id);
         return new mod_assign_testable_assign($context, $cm, $this->course);
     }
 

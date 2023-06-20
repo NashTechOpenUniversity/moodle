@@ -31,7 +31,7 @@ use core_reportbuilder\local\filters\text;
  * @copyright   2021 Paul Holden <paulh@moodle.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class filter_testcase extends advanced_testcase {
+class filter_test extends advanced_testcase {
 
     /**
      * Test getting filter class
@@ -106,6 +106,18 @@ class filter_testcase extends advanced_testcase {
     public function test_get_field_params(): void {
         $filter = $this->create_filter('username', 'u.username = :foo', ['foo' => 'bar']);
         $this->assertEquals(['foo' => 'bar'], $filter->get_field_params());
+    }
+
+    /**
+     * Test getting field SQL and params, while providing index for uniqueness
+     */
+    public function test_get_field_sql_and_params(): void {
+        $filter = $this->create_filter('username', 'u.username = :username AND u.idnumber = :idnumber',
+            ['username' => 'test', 'idnumber' => 'bar']);
+
+        [$sql, $params] = $filter->get_field_sql_and_params(1);
+        $this->assertEquals('u.username = :username_1 AND u.idnumber = :idnumber_1', $sql);
+        $this->assertEquals(['username_1' => 'test', 'idnumber_1' => 'bar'], $params);
     }
 
     /**

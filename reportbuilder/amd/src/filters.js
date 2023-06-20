@@ -31,7 +31,7 @@ import {add as addToast} from 'core/toast';
 import DynamicForm from 'core_form/dynamicform';
 import * as reportEvents from 'core_reportbuilder/local/events';
 import * as reportSelectors from 'core_reportbuilder/local/selectors';
-import {reset as resetFilters} from 'core_reportbuilder/local/repository/filters';
+import {resetFilters} from 'core_reportbuilder/local/repository/filters';
 
 /**
  * Update filter button text to indicate applied filter count
@@ -57,8 +57,15 @@ const setFilterButtonCount = async(reportElement, filterCount) => {
  * @param {Number} contextId
  */
 export const init = (reportId, contextId) => {
-    const reportElement = document.querySelector(reportSelectors.forSystemReport(reportId));
+    const reportElement = document.querySelector(reportSelectors.forReport(reportId));
     const filterFormContainer = reportElement.querySelector(reportSelectors.regions.filtersForm);
+
+    // Ensure we only add our listeners once (can be called multiple times by mustache template).
+    if (filterFormContainer.dataset.initialized) {
+        return;
+    }
+    filterFormContainer.dataset.initialized = true;
+
     const filterForm = new DynamicForm(filterFormContainer, '\\core_reportbuilder\\form\\filter');
 
     // Submit report filters.
@@ -79,13 +86,14 @@ export const init = (reportId, contextId) => {
         event.preventDefault();
 
         const pendingPromise = new Pending('core_reportbuilder/filters:reset');
+        const reportParameters = reportElement.dataset.parameter;
 
-        resetFilters(reportId)
+        resetFilters(reportId, reportParameters)
             .then(() => getString('filtersreset', 'core_reportbuilder'))
             .then(addToast)
             .then(() => loadFragment('core_reportbuilder', 'filters_form', contextId, {
                 reportid: reportId,
-                parameters: reportElement.dataset.parameter,
+                parameters: reportParameters,
             }))
             .then((html, js) => {
                 Templates.replaceNodeContents(filterFormContainer, html, js);

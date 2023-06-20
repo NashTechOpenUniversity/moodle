@@ -14,15 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Group external PHPunit tests
- *
- * @package    core_group
- * @category   external
- * @copyright  2012 Jerome Mouneyrac
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @since Moodle 2.4
- */
+namespace core_group;
+
+use core_external\external_api;
+use core_group_external;
+use externallib_advanced_testcase;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -32,7 +28,16 @@ require_once($CFG->dirroot . '/webservice/tests/helpers.php');
 require_once($CFG->dirroot . '/group/externallib.php');
 require_once($CFG->dirroot . '/group/lib.php');
 
-class core_group_externallib_testcase extends externallib_advanced_testcase {
+/**
+ * Group external PHPunit tests
+ *
+ * @package    core_group
+ * @category   external
+ * @copyright  2012 Jerome Mouneyrac
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since Moodle 2.4
+ */
+class externallib_test extends externallib_advanced_testcase {
 
     /**
      * Test create_groups
@@ -55,6 +60,8 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
         $group2['courseid'] = $course->id;
         $group2['name'] = 'Group Test 2';
         $group2['description'] = 'Group Test 2 description';
+        $group2['visibility'] = GROUPS_VISIBILITY_MEMBERS;
+        $group2['participation'] = false;
         $group3 = array();
         $group3['courseid'] = $course->id;
         $group3['name'] = 'Group Test 3';
@@ -66,7 +73,7 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
         $group4['description'] = 'Group Test 4 description';
 
         // Set the required capabilities by the external function
-        $context = context_course::instance($course->id);
+        $context = \context_course::instance($course->id);
         $roleid = $this->assignUserCapability('moodle/course:managegroups', $context->id);
         $this->assignUserCapability('moodle/course:view', $context->id, $roleid);
 
@@ -87,23 +94,30 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
                     $this->assertEquals($dbgroup->descriptionformat, $group1['descriptionformat']);
                     $this->assertEquals($dbgroup->enrolmentkey, $group1['enrolmentkey']);
                     $this->assertEquals($dbgroup->idnumber, $group1['idnumber']);
+                    // The visibility and participation attributes were not specified, so should match the default values.
+                    $groupvisibility = GROUPS_VISIBILITY_ALL;
+                    $groupparticipation = true;
                     break;
                 case $group2['name']:
                     $groupdescription = $group2['description'];
                     $groupcourseid = $group2['courseid'];
+                    $groupvisibility = $group2['visibility'];
+                    $groupparticipation = $group2['participation'];
                     break;
                 default:
-                    throw new moodle_exception('unknowgroupname');
+                    throw new \moodle_exception('unknowgroupname');
                     break;
             }
             $this->assertEquals($dbgroup->description, $groupdescription);
             $this->assertEquals($dbgroup->courseid, $groupcourseid);
+            $this->assertEquals($dbgroup->visibility, $groupvisibility);
+            $this->assertEquals($dbgroup->participation, $groupparticipation);
         }
 
         try {
             $froups = core_group_external::create_groups(array($group3));
             $this->fail('Exception expected due to already existing idnumber.');
-        } catch (moodle_exception $e) {
+        } catch (\moodle_exception $e) {
             $this->assertInstanceOf('moodle_exception', $e);
             $this->assertEquals(get_string('idnumbertaken', 'error'), $e->getMessage());
         }
@@ -113,6 +127,33 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
 
         $this->expectException(\required_capability_exception::class);
         $froups = core_group_external::create_groups(array($group4));
+    }
+
+    /**
+     * Test that creating a group with an invalid visibility value throws an exception.
+     *
+     * @covers \core_group_external::create_groups
+     * @return void
+     */
+    public function test_create_group_invalid_visibility(): void {
+        $this->resetAfterTest(true);
+
+        $course = self::getDataGenerator()->create_course();
+
+        $group1 = array();
+        $group1['courseid'] = $course->id;
+        $group1['name'] = 'Group Test 1';
+        $group1['description'] = 'Group Test 1 description';
+        $group1['visibility'] = 1000;
+
+        // Set the required capabilities by the external function.
+        $context = \context_course::instance($course->id);
+        $roleid = $this->assignUserCapability('moodle/course:managegroups', $context->id);
+        $this->assignUserCapability('moodle/course:view', $context->id, $roleid);
+
+        // Call the external function.
+        $this->expectException('invalid_parameter_exception');
+        core_group_external::create_groups([$group1]);
     }
 
     /**
@@ -139,7 +180,7 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
         $group2data['idnumber'] = 'TEST2';
 
         // Set the required capabilities by the external function.
-        $context = context_course::instance($course->id);
+        $context = \context_course::instance($course->id);
         $roleid = $this->assignUserCapability('moodle/course:managegroups', $context->id);
         $this->assignUserCapability('moodle/course:view', $context->id, $roleid);
 
@@ -156,6 +197,7 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
         $group1data['idnumber'] = 'CHANGED';
         core_group_external::update_groups(array($group1data));
         $group2data['description'] = 'Group Test 2 description CHANGED';
+        $group2data['visibility'] = GROUPS_VISIBILITY_MEMBERS;
         core_group_external::update_groups(array($group2data));
 
         foreach ([$group1, $group2] as $group) {
@@ -164,16 +206,20 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
                 case $group1data['name']:
                     $this->assertEquals($dbgroup->idnumber, $group1data['idnumber']);
                     $groupdescription = $group1data['description'];
+                    // Visibility was not specified, so should match the default value.
+                    $groupvisibility = GROUPS_VISIBILITY_ALL;
                     break;
                 case $group2data['name']:
                     $this->assertEquals($dbgroup->idnumber, $group2data['idnumber']);
                     $groupdescription = $group2data['description'];
+                    $groupvisibility = $group2data['visibility'];
                     break;
                 default:
-                    throw new moodle_exception('unknowngroupname');
+                    throw new \moodle_exception('unknowngroupname');
                     break;
             }
             $this->assertEquals($dbgroup->description, $groupdescription);
+            $this->assertEquals($dbgroup->visibility, $groupvisibility);
         }
 
         // Taken idnumber exception.
@@ -181,7 +227,7 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
         try {
             $groups = core_group_external::update_groups(array($group1data));
             $this->fail('Exception expected due to already existing idnumber.');
-        } catch (moodle_exception $e) {
+        } catch (\moodle_exception $e) {
             $this->assertInstanceOf('moodle_exception', $e);
             $this->assertEquals(get_string('idnumbertaken', 'error'), $e->getMessage());
         }
@@ -192,6 +238,103 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
 
         $this->expectException(\required_capability_exception::class);
         $groups = core_group_external::update_groups(array($group1data));
+    }
+
+    /**
+     * Test an exception is thrown when an invalid visibility value is passed in an update.
+     *
+     * @covers \core_group_external::update_groups
+     * @return void
+     */
+    public function test_update_groups_invalid_visibility(): void {
+        $this->resetAfterTest(true);
+
+        $course = self::getDataGenerator()->create_course();
+
+        $group1data = array();
+        $group1data['courseid'] = $course->id;
+        $group1data['name'] = 'Group Test 1';
+
+        // Set the required capabilities by the external function.
+        $context = \context_course::instance($course->id);
+        $roleid = $this->assignUserCapability('moodle/course:managegroups', $context->id);
+        $this->assignUserCapability('moodle/course:view', $context->id, $roleid);
+
+        // Create the test group.
+        $group1 = self::getDataGenerator()->create_group($group1data);
+
+        $group1data['id'] = $group1->id;
+        unset($group1data['courseid']);
+        $group1data['visibility'] = 1000;
+
+        $this->expectException('invalid_parameter_exception');
+        core_group_external::update_groups(array($group1data));
+    }
+
+    /**
+     * Attempting to change the visibility of a group with members should throw an exception.
+     *
+     * @covers \core_group_external::update_groups
+     * @return void
+     */
+    public function test_update_groups_visibility_with_members(): void {
+        $this->resetAfterTest(true);
+
+        $course = self::getDataGenerator()->create_course();
+
+        $group1data = array();
+        $group1data['courseid'] = $course->id;
+        $group1data['name'] = 'Group Test 1';
+
+        // Set the required capabilities by the external function.
+        $context = \context_course::instance($course->id);
+        $roleid = $this->assignUserCapability('moodle/course:managegroups', $context->id);
+        $this->assignUserCapability('moodle/course:view', $context->id, $roleid);
+
+        // Create the test group and add a member.
+        $group1 = self::getDataGenerator()->create_group($group1data);
+        $user1 = self::getDataGenerator()->create_and_enrol($course);
+        self::getDataGenerator()->create_group_member(['userid' => $user1->id, 'groupid' => $group1->id]);
+
+        $group1data['id'] = $group1->id;
+        unset($group1data['courseid']);
+        $group1data['visibility'] = GROUPS_VISIBILITY_MEMBERS;
+
+        $this->expectExceptionMessage('The visibility of this group cannot be changed as it currently has members.');
+        core_group_external::update_groups(array($group1data));
+    }
+
+    /**
+     * Attempting to change the participation field of a group with members should throw an exception.
+     *
+     * @covers \core_group_external::update_groups
+     * @return void
+     */
+    public function test_update_groups_participation_with_members(): void {
+        $this->resetAfterTest(true);
+
+        $course = self::getDataGenerator()->create_course();
+
+        $group1data = array();
+        $group1data['courseid'] = $course->id;
+        $group1data['name'] = 'Group Test 1';
+
+        // Set the required capabilities by the external function.
+        $context = \context_course::instance($course->id);
+        $roleid = $this->assignUserCapability('moodle/course:managegroups', $context->id);
+        $this->assignUserCapability('moodle/course:view', $context->id, $roleid);
+
+        // Create the test group and add a member.
+        $group1 = self::getDataGenerator()->create_group($group1data);
+        $user1 = self::getDataGenerator()->create_and_enrol($course);
+        self::getDataGenerator()->create_group_member(['userid' => $user1->id, 'groupid' => $group1->id]);
+
+        $group1data['id'] = $group1->id;
+        unset($group1data['courseid']);
+        $group1data['participation'] = false;
+
+        $this->expectExceptionMessage('The participation mode of this group cannot be changed as it currently has members.');
+        core_group_external::update_groups(array($group1data));
     }
 
     /**
@@ -214,11 +357,13 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
         $group2data['courseid'] = $course->id;
         $group2data['name'] = 'Group Test 2';
         $group2data['description'] = 'Group Test 2 description';
+        $group2data['visibility'] = GROUPS_VISIBILITY_MEMBERS;
+        $group2data['participation'] = false;
         $group1 = self::getDataGenerator()->create_group($group1data);
         $group2 = self::getDataGenerator()->create_group($group2data);
 
         // Set the required capabilities by the external function
-        $context = context_course::instance($course->id);
+        $context = \context_course::instance($course->id);
         $roleid = $this->assignUserCapability('moodle/course:managegroups', $context->id);
         $this->assignUserCapability('moodle/course:view', $context->id, $roleid);
 
@@ -236,6 +381,9 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
                 case $group1->name:
                     $groupdescription = $group1->description;
                     $groupcourseid = $group1->courseid;
+                    // The visibility and participation attributes were not specified, so should match the default values.
+                    $groupvisibility = GROUPS_VISIBILITY_ALL;
+                    $groupparticipation = true;
                     $this->assertEquals($dbgroup->descriptionformat, $group1->descriptionformat);
                     $this->assertEquals($dbgroup->enrolmentkey, $group1->enrolmentkey);
                     $this->assertEquals($dbgroup->idnumber, $group1->idnumber);
@@ -243,13 +391,17 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
                 case $group2->name:
                     $groupdescription = $group2->description;
                     $groupcourseid = $group2->courseid;
+                    $groupvisibility = $group2->visibility;
+                    $groupparticipation = $group2->participation;
                     break;
                 default:
-                    throw new moodle_exception('unknowgroupname');
+                    throw new \moodle_exception('unknowgroupname');
                     break;
             }
             $this->assertEquals($dbgroup->description, $groupdescription);
             $this->assertEquals($dbgroup->courseid, $groupcourseid);
+            $this->assertEquals($dbgroup->visibility, $groupvisibility);
+            $this->assertEquals($dbgroup->participation, $groupparticipation);
         }
 
         // Call without required capability
@@ -286,7 +438,7 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
         $group3 = self::getDataGenerator()->create_group($group3data);
 
         // Set the required capabilities by the external function
-        $context = context_course::instance($course->id);
+        $context = \context_course::instance($course->id);
         $roleid = $this->assignUserCapability('moodle/course:managegroups', $context->id);
         $this->assignUserCapability('moodle/course:view', $context->id, $roleid);
 
@@ -335,7 +487,7 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
         try {
             $groupings = core_group_external::create_groupings(array($grouping1data));
             $this->fail('Exception expected due to already existing idnumber.');
-        } catch (moodle_exception $e) {
+        } catch (\moodle_exception $e) {
             $this->assertInstanceOf('moodle_exception', $e);
             $this->assertEquals(get_string('idnumbertaken', 'error'), $e->getMessage());
         }
@@ -361,7 +513,7 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
         try {
             $groupings = core_group_external::update_groupings(array($grouping2data));
             $this->fail('Exception expected due to already existing idnumber.');
-        } catch (moodle_exception $e) {
+        } catch (\moodle_exception $e) {
             $this->assertInstanceOf('moodle_exception', $e);
             $this->assertEquals(get_string('idnumbertaken', 'error'), $e->getMessage());
         }
@@ -386,7 +538,7 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
         $grouping = self::getDataGenerator()->create_grouping($groupingdata);
 
         // Set the required capabilities by the external function.
-        $context = context_course::instance($course->id);
+        $context = \context_course::instance($course->id);
         $roleid = $this->assignUserCapability('moodle/course:managegroups', $context->id);
         $this->assignUserCapability('moodle/course:view', $context->id, $roleid);
 
@@ -436,7 +588,7 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
                     $groupcourseid = $group2->courseid;
                     break;
                 default:
-                    throw new moodle_exception('unknowgroupname');
+                    throw new \moodle_exception('unknowgroupname');
                     break;
             }
             $this->assertEquals($dbgroup->description, $groupdescription);
@@ -475,7 +627,7 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
         $grouping3 = self::getDataGenerator()->create_grouping($groupingdata3);
 
         // Set the required capabilities by the external function.
-        $context = context_course::instance($course->id);
+        $context = \context_course::instance($course->id);
         $roleid = $this->assignUserCapability('moodle/course:managegroups', $context->id);
         $this->assignUserCapability('moodle/course:view', $context->id, $roleid);
 
@@ -689,13 +841,13 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
         // First try possible errors.
         try {
             $data = core_group_external::get_activity_allowed_groups($cm2->id);
-        } catch (moodle_exception $e) {
+        } catch (\moodle_exception $e) {
             $this->assertEquals('requireloginerror', $e->errorcode);
         }
 
         try {
             $data = core_group_external::get_activity_allowed_groups($cm3->id);
-        } catch (moodle_exception $e) {
+        } catch (\moodle_exception $e) {
             $this->assertEquals('requireloginerror', $e->errorcode);
         }
 
@@ -771,13 +923,13 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
 
         try {
             $data = core_group_external::get_activity_groupmode($cm2->id);
-        } catch (moodle_exception $e) {
+        } catch (\moodle_exception $e) {
             $this->assertEquals('requireloginerror', $e->errorcode);
         }
 
         try {
             $data = core_group_external::get_activity_groupmode($cm3->id);
-        } catch (moodle_exception $e) {
+        } catch (\moodle_exception $e) {
             $this->assertEquals('requireloginerror', $e->errorcode);
         }
 
@@ -814,7 +966,7 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
         $this->assertEquals(0, $memberstotal);
 
         // Set the required capabilities by the external function.
-        $context = context_course::instance($course->id);
+        $context = \context_course::instance($course->id);
         $roleid = $this->assignUserCapability('moodle/course:managegroups', $context->id);
         $this->assignUserCapability('moodle/course:view', $context->id, $roleid);
 
@@ -877,7 +1029,7 @@ class core_group_externallib_testcase extends externallib_advanced_testcase {
         $this->assertEquals(3, $memberstotal);
 
         // Set the required capabilities by the external function.
-        $context = context_course::instance($course->id);
+        $context = \context_course::instance($course->id);
         $roleid = $this->assignUserCapability('moodle/course:managegroups', $context->id);
         $this->assignUserCapability('moodle/course:view', $context->id, $roleid);
 

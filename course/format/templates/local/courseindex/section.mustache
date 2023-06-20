@@ -26,9 +26,10 @@
         "uniqid": "0",
         "number": 1,
         "sectionurl": "#",
-        "isactive": 1,
+        "indexcollapsed": 0,
         "current": 1,
         "visible": 1,
+        "hasrestrictions": 0,
         "cms": [
             {
                 "id": 10,
@@ -56,29 +57,36 @@
 }}
 <div
     class="courseindex-section {{#current}}current{{/current}}"
-    id="{{uniqid}}-course-index-section-{{id}}"
+    id="course-index-section-{{id}}"
     data-for="section"
     data-id="{{id}}"
     data-number="{{number}}"
+    role="treeitem"
+    aria-owns="courseindexcollapse{{number}}"
 >
-    <div class="courseindex-item d-flex {{^visible}}dimmed{{/visible}} courseindex-section-title"
+    <div class="courseindex-item d-flex
+            {{^visible}}dimmed{{/visible}}
+            {{#hasrestrictions}}restrictions{{/hasrestrictions}}
+            courseindex-section-title"
         id="courseindexsection{{number}}"
         data-for="section_item"
     >
         <a data-toggle="collapse"
             href="#courseindexcollapse{{number}}"
-            aria-expanded="{{#isactive}}true{{/isactive}}{{^isactive}}false{{/isactive}}"
+            class="courseindex-chevron icons-collapse-expand {{#indexcollapsed}}collapsed{{/indexcollapsed}}"
+            aria-expanded="{{^indexcollapsed}}true{{/indexcollapsed}}{{#indexcollapsed}}false{{/indexcollapsed}}"
             aria-controls="courseindexcollapse{{number}}"
-            class="courseindex-link icons-collapse-expand {{^isactive}}collapsed{{/isactive}}"
+            tabindex="-1"
         >
             <span class="collapsed-icon icon-no-margin mr-1"
-                data-toggle="tooltip" title="{{#str}} expand, core {{/str}}">
-                {{#pix}} t/collapsed, core {{/pix}}
+                title="{{#str}} expand, core {{/str}}">
+                <span class="dir-rtl-hide">{{#pix}} t/collapsedchevron, core {{/pix}}</span>
+                <span class="dir-ltr-hide">{{#pix}} t/collapsedchevron_rtl, core {{/pix}}</span>
                 <span class="sr-only">{{#str}} expand, core {{/str}}</span>
             </span>
             <span class="expanded-icon icon-no-margin mr-1"
-                data-toggle="tooltip" title="{{#str}} collapse, core {{/str}}">
-                {{#pix}} t/expanded, core {{/pix}}
+                title="{{#str}} collapse, core {{/str}}">
+                {{#pix}} t/expandedchevron, core {{/pix}}
                 <span class="sr-only">{{#str}} collapse, core {{/str}}</span>
             </span>
         </a>
@@ -86,18 +94,23 @@
             class="courseindex-link text-truncate"
             data-action="togglecourseindexsection"
             data-for="section_title"
+            tabindex="-1"
         >
             {{{title}}}
         </a>
-        <span class="current-badge badge badge-primary ml-2 px-2">
+        <span class="current-badge badge badge-primary ml-2 px-2 rounded-pill">
             {{highlighted}}
+        </span>
+        <span class="courseindex-locked ml-1" data-for="cm_name">
+            {{#pix}} t/locked, core {{/pix}}
         </span>
         <span class="dragicon ml-auto">{{#pix}}i/dragdrop{{/pix}}</span>
     </div>
     <div id="courseindexcollapse{{number}}"
-        class="courseindex-item-content collapse {{#isactive}}show{{/isactive}}"
-        aria-labelledby="courseindexsection{{number}}">
-        <ul class="courseindex-sectioncontent unlist" data-for="cmlist" data-id="{{id}}">
+        class="courseindex-item-content collapse {{^indexcollapsed}}show{{/indexcollapsed}}"
+        aria-labelledby="courseindexsection{{number}}" role="group"
+    >
+        <ul class="courseindex-sectioncontent unlist" data-for="cmlist" data-id="{{id}}" role="group">
             {{#cms}}
             {{> core_courseformat/local/courseindex/cm }}
             {{/cms}}
@@ -106,6 +119,6 @@
 </div>
 {{#js}}
 require(['core_courseformat/local/courseindex/section'], function(component) {
-    component.init('{{uniqid}}-course-index-section-{{id}}');
+    component.init('course-index-section-{{id}}');
 });
 {{/js}}

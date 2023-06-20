@@ -1,4 +1,4 @@
-@core @core_grades
+@core @core_grades @javascript
 Feature: Average grades are displayed in the gradebook
   In order to check the expected results are displayed
   As an admin
@@ -42,8 +42,7 @@ Feature: Average grades are displayed in the gradebook
     And I press "Save changes"
     And I turn editing mode off
     # Suspend a user
-    And I am on "Course 1" course homepage
-    And I navigate to "Users > Enrolled users" in current page administration
+    And I am on the "Course 1" "enrolled users" page
     And I click on "Edit enrolment" "link" in the "Student 2" "table_row"
     And I set the following fields to these values:
       | Status | Suspended |

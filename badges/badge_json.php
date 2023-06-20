@@ -66,7 +66,9 @@ if ($badge->status != BADGE_STATUS_INACTIVE) {
             $json['image'] = $urlimage;
         }
 
-        $json['criteria']['id'] = $url->out(false);
+        $params = ['id' => $badge->id];
+        $badgeurl = new moodle_url('/badges/badgeclass.php', $params);
+        $json['criteria']['id'] = $badgeurl->out(false);
         $json['criteria']['narrative'] = $badge->markdown_badge_criteria();
         $json['issuer'] = $badge->get_badge_issuer();
         $json['@context'] = OPEN_BADGES_V2_CONTEXT;
@@ -77,6 +79,10 @@ if ($badge->status != BADGE_STATUS_INACTIVE) {
         }
         if (!empty($badge->language)) {
             $json['@language'] = $badge->language;
+        }
+        $badgetags = $badge->get_badge_tags();
+        if ($badgetags) {
+            $json['tags'] = $badgetags;
         }
 
         $relatedbadges = $badge->get_related_badges(true);

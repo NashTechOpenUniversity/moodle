@@ -43,7 +43,7 @@ $string['creategrouping'] = 'Create grouping';
 $string['creategroupinselectedgrouping'] = 'Create group in grouping';
 $string['createingrouping'] = 'Grouping of auto-created groups';
 $string['createorphangroup'] = 'Create orphan group';
-$string['csvdelimiter'] = 'CSV delimiter';
+$string['csvdelimiter'] = 'CSV separator';
 $string['databaseupgradegroups'] = 'Groups version is now {$a}';
 $string['defaultgrouping'] = 'Default grouping';
 $string['defaultgroupingname'] = 'Grouping';
@@ -54,11 +54,13 @@ $string['deletegroupconfirm'] = 'Are you sure you want to delete group \'{$a}\'?
 $string['deletegrouping'] = 'Delete grouping';
 $string['deletegroupingconfirm'] = 'Are you sure you want to delete grouping \'{$a}\'? (Groups in the grouping are not deleted.)';
 $string['deletegroupsconfirm'] = 'Are you sure you want to delete the following groups?';
-$string['deleteselectedgroup'] = 'Delete selected group';
+$string['deleteselectedgroup'] = 'Delete';
+$string['disablemessagingaction'] = 'Disable messaging';
 $string['editgroupingsettings'] = 'Edit grouping settings';
 $string['editgroupsettings'] = 'Edit group settings';
 $string['editusersgroupsa'] = 'Edit groups for "{$a}"';
 $string['enablemessaging'] = 'Group messaging';
+$string['enablemessagingaction'] = 'Enable messaging';
 $string['enablemessaging_help'] = 'If enabled, group members can send messages to the others in their group via the messaging drawer.';
 $string['encoding'] = 'Encoding';
 $string['enrolmentkey'] = 'Enrolment key';
@@ -85,6 +87,7 @@ $string['eventgroupinggroupassigned'] = 'Group assigned to grouping';
 $string['eventgroupinggroupunassigned'] = 'Group unassigned from grouping';
 $string['eventgroupingupdated'] = 'Grouping updated';
 $string['existingmembers'] = 'Existing members: {$a}';
+$string['exportgroupsgroupings'] = 'Download groups and groupings as';
 $string['filtergroups'] = 'Filter groups by:';
 $string['group'] = 'Group';
 $string['groupaddedsuccesfully'] = 'Group {$a} added successfully';
@@ -138,7 +141,7 @@ $string['importgroups'] = 'Import groups';
 $string['importgroups_help'] = 'Groups may be imported via text file. The format of the file should be as follows:
 
 * Each line of the file contains one record
-* Each record is a series of data separated by commas
+* Each record is a series of data separated by the selected separator
 * The first record contains a list of fieldnames defining the format of the rest of the file
 * Required fieldname is groupname
 * Optional fieldnames are groupidnumber, description, enrolmentkey, groupingname, enablemessaging';
@@ -170,9 +173,15 @@ $string['nousersinrole'] = 'There are no suitable users in the selected role';
 $string['number'] = 'Group/member count';
 $string['numgroups'] = 'Number of groups';
 $string['nummembers'] = 'Members per group';
+$string['manageactions'] = 'Manage';
+$string['messagingdisabled'] = 'Successfully disabled messaging in {$a} group(s)';
+$string['messagingenabled'] = 'Successfully enabled messaging in {$a} group(s)';
 $string['mygroups'] = 'My groups';
 $string['othergroups'] = 'Other groups';
 $string['overview'] = 'Overview';
+$string['participation'] = 'Show group in dropdown menu for activities in group mode';
+$string['participation_help'] = 'Should group members be able to select this group for activities in separate or visible groups mode? (Only applicable if group membership is visible to everyone or only visible to members.)';
+$string['participationshort'] = 'Participation';
 $string['potentialmembers'] = 'Potential members: {$a}';
 $string['potentialmembs'] = 'Potential members';
 $string['printerfriendly'] = 'Printer-friendly display';
@@ -197,7 +206,19 @@ $string['toomanygroups'] = 'Insufficient users to populate this number of groups
 $string['usercount'] = 'User count';
 $string['usercounttotal'] = 'User count ({$a})';
 $string['usergroupmembership'] = 'Selected user\'s membership:';
-$string['memberofgroup'] = 'Group member of: {$a}';
+$string['visibility'] = 'Group membership visibility';
+$string['visibility_help'] = '* Visible to everyone - all course participants can view who is in the group
+* Only visible to members - course participants not in the group can’t view the group or its members
+* Only see own membership - a user can see they are in the group but can’t view other group members
+* Hidden - only teachers can view the group and its members
 
-// Deprecated since Moodle 3.11.
-$string['hidepicture'] = 'Hide picture';
+Users with the view hidden groups capability can always view group membership.
+
+Note that you can\'t change this setting if the group has members.';
+$string['visibilityshort'] = 'Visibility';
+$string['visibilityall'] = 'Visible to everyone';
+$string['visibilitymembers'] = 'Only visible to members';
+$string['visibilityown'] = 'Only see own membership';
+$string['visibilitynone'] = 'Hidden';
+$string['memberofgroup'] = 'Group member of: {$a}';
+$string['withselected'] = 'With selected';

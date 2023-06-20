@@ -20,18 +20,16 @@ Feature: Restrict which blocks can be added to Dashboard
     And I log in as "student1"
     And I turn editing mode on
     Then the add block selector should contain "Comments" block
-    And the add block selector should contain "Courses" block
     And the add block selector should contain "Text" block
     And the add block selector should contain "Tags" block
 
   Scenario: Remove the ability to add the comments block to Dashboard
-    When I log in as "admin"
-    And I set the following system permissions of "Authenticated user" role:
-      | block/comments:myaddinstance | Prohibit |
-      | block/course_list:myaddinstance | Prohibit |
-      | block/html:myaddinstance | Prohibit |
-    And I log out
-    And I log in as "student1"
+    Given the following "role capability" exists:
+      | role                            | user     |
+      | block/comments:myaddinstance    | prohibit |
+      | block/course_list:myaddinstance | prohibit |
+      | block/html:myaddinstance        | prohibit |
+    When I log in as "student1"
     And I turn editing mode on
     Then the add block selector should not contain "Comments" block
     And the add block selector should not contain "Courses" block

@@ -114,6 +114,7 @@ abstract class page_wiki {
         if ($activesecondarytab) {
             $PAGE->set_secondary_active_tab($activesecondarytab);
         }
+        $PAGE->add_body_class('limitedwidth');
         // the search box
         if (!empty($subwiki->id)) {
             $search = optional_param('searchstring', null, PARAM_TEXT);
@@ -125,7 +126,7 @@ abstract class page_wiki {
      * This method prints the top of the page.
      */
     function print_header() {
-        global $OUTPUT, $PAGE, $CFG, $USER, $SESSION;
+        global $OUTPUT, $PAGE, $SESSION;
 
         $PAGE->set_heading($PAGE->course->fullname);
 
@@ -138,12 +139,6 @@ abstract class page_wiki {
         $this->create_navbar();
 
         echo $OUTPUT->header();
-        $wiki = $PAGE->activityrecord;
-        if (!$PAGE->has_secondary_navigation()) {
-            echo $OUTPUT->heading(format_string($wiki->name));
-        }
-
-        echo $this->wikioutput->wiki_info();
 
         if (!empty($this->page)) {
             echo $this->action_bar($this->page->id, $PAGE->url);
@@ -370,7 +365,7 @@ class page_wiki_view extends page_wiki {
             $params['swid'] = $this->subwiki->id;
             $params['title'] = $this->title;
         } else {
-            print_error(get_string('invalidparameters', 'wiki'));
+            throw new \moodle_exception(get_string('invalidparameters', 'wiki'));
         }
         $PAGE->set_url(new moodle_url($CFG->wwwroot . '/mod/wiki/view.php', $params));
     }
@@ -1210,7 +1205,7 @@ class page_wiki_diff extends page_wiki {
 
             echo $this->wikioutput->diff($pageid, $oldversion, $newversion, array('total' => $total));
         } else {
-            print_error('versionerror', 'wiki');
+            throw new \moodle_exception('versionerror', 'wiki');
         }
     }
 }
@@ -1468,6 +1463,9 @@ class page_wiki_map extends page_wiki {
      * @var int wiki view option
      */
     private $view;
+
+    /** @var renderer_base */
+    protected $output;
 
     function print_header() {
         parent::print_header();
@@ -1776,7 +1774,7 @@ class page_wiki_map extends page_wiki {
             $strdataux = '';
             foreach ($pages as $page) {
                 $user = wiki_get_user_info($page->userid);
-                $strdata = strftime('%d %b %Y', $page->timemodified);
+                $strdata = date('d M Y', $page->timemodified);
                 if ($strdata != $strdataux) {
                     $table->data[] = array($OUTPUT->heading($strdata, 4));
                     $strdataux = $strdata;
@@ -1999,9 +1997,7 @@ class page_wiki_deletecomment extends page_wiki {
     }
 
     public function set_action($action, $commentid, $content) {
-        $this->action = $action;
         $this->commentid = $commentid;
-        $this->content = $content;
     }
 
     protected function create_navbar() {
@@ -2135,7 +2131,7 @@ class page_wiki_save extends page_wiki_edit {
             $url = new moodle_url('/mod/wiki/view.php', array('pageid' => $this->page->id, 'group' => $this->subwiki->groupid));
             redirect($url);
         } else {
-            print_error('savingerror', 'wiki');
+            throw new \moodle_exception('savingerror', 'wiki');
         }
     }
 }
@@ -2225,7 +2221,7 @@ class page_wiki_viewversion extends page_wiki {
             echo $OUTPUT->box($content, 'generalbox wiki_contentbox');
 
         } else {
-            print_error('versionerror', 'wiki');
+            throw new \moodle_exception('versionerror', 'wiki');
         }
     }
 }
@@ -2252,7 +2248,7 @@ class page_wiki_confirmrestore extends page_wiki_save {
                 wiki_restore_page($this->page, $version, $this->modcontext)) {
             redirect($CFG->wwwroot . '/mod/wiki/view.php?pageid=' . $this->page->id, get_string('restoring', 'wiki', $version->version), 3);
         } else {
-            print_error('restoreerror', 'wiki', $version->version);
+            throw new \moodle_exception('restoreerror', 'wiki', $version->version);
         }
     }
 
@@ -2266,6 +2262,7 @@ class page_wiki_prettyview extends page_wiki {
     function __construct($wiki, $subwiki, $cm) {
         global $PAGE;
         $PAGE->set_pagelayout('embedded');
+        $PAGE->activityheader->disable();
         parent::__construct($wiki, $subwiki, $cm);
     }
 
@@ -2349,7 +2346,7 @@ class page_wiki_handlecomments extends page_wiki {
                 $this->delete_comment($this->commentid);
                 redirect($CFG->wwwroot . '/mod/wiki/comments.php?pageid=' . $this->page->id, get_string('deletecomment', 'wiki'), 2);
             } else {
-                print_error('nopermissiontoeditcomment');
+                throw new \moodle_exception('nopermissiontoeditcomment');
             }
         }
 

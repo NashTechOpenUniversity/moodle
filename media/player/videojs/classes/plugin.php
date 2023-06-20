@@ -154,6 +154,10 @@ class media_videojs_plugin extends core_media_player_native {
             $datasetup[] = '"aspectRatio": "1:0"';
         }
 
+        // Additional setup for playback rate and user actions.
+        $datasetup[] = '"playbackRates": [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]';
+        $datasetup[] = '"userActions": {"hotkeys": true}';
+
         // Attributes for the video/audio tag.
         // We use data-setup-lazy as the attribute name for the config instead of
         // data-setup because data-setup will cause video.js to load the player as soon as the library is loaded,
@@ -281,7 +285,7 @@ class media_videojs_plugin extends core_media_player_native {
             $url = reset($urls);
 
             // Check against regex.
-            if (preg_match($this->get_regex_youtube(), $url->out(false), $this->matches)) {
+            if (preg_match($this->get_regex_youtube(), $url->out(false), $matches)) {
                 $this->youtube = true;
                 return array($url);
             }
@@ -415,6 +419,9 @@ class media_videojs_plugin extends core_media_player_native {
      * @param moodle_page $page The page we are going to add requirements to.
      */
     public function setup($page) {
+        if (during_initial_install() || is_major_upgrade_required()) {
+            return;
+        }
 
         // Load dynamic loader. It will scan page for videojs media and load necessary modules.
         // Loader will be loaded on absolutely every page, however the videojs will only be loaded

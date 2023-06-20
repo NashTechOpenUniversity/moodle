@@ -24,28 +24,19 @@
         "url": "#",
         "instancename": "Activity name",
         "uservisible": true,
-        "icon": "../../../pix/help.svg",
         "onclick": "alert('ok')",
         "altname": "PDF file",
         "linkclasses": "",
-        "textclasses": ""
+        "modname": "resource"
     }
 }}
-{{#url}}
-    {{#uservisible}}
-        <a href="{{url}}" class="aalink {{linkclasses}}" onclick="{{{onclick}}}">
-            <img class="iconlarge activityicon" src="{{icon}}" alt="" role="presentation" aria-hidden="true" />
-            <span class="instancename">
-                {{instancename}} {{{altname}}}
-            </span>
-        </a>
-    {{/uservisible}}
-    {{^uservisible}}
-        <div class="{{textclasses}}">
-            <img class="iconlarge activityicon" src="{{icon}}" alt="" role="presentation" aria-hidden="true" />
-            <span class="instancename">
-                {{instancename}} {{{altname}}}
-            </span>
-        </div>
-    {{/uservisible}}
-{{/url}}
+{{#uservisible}}
+    <a href="{{url}}" class="{{linkclasses}} aalink stretched-link" onclick="{{{onclick}}}">
+        <span class="instancename">{{{instancename}}} {{{altname}}}</span>
+    </a>
+{{/uservisible}}
+{{^uservisible}}
+    <span class="instancename">
+        {{{instancename}}} {{{altname}}}
+    </span>
+{{/uservisible}}

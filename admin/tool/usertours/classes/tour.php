@@ -209,7 +209,7 @@ class tour {
     /**
      * Fetch all steps in the tour.
      *
-     * @return  stdClass[]
+     * @return  step[]
      */
     public function get_steps() {
         if (empty($this->steps)) {
@@ -341,7 +341,7 @@ class tour {
      */
     public function get_endtourlabel(): string {
         if ($this->endtourlabel) {
-            $label = $this->endtourlabel;
+            $label = helper::get_string_from_input($this->endtourlabel);
         } else if ($this->count_steps() == 1) {
             $label = get_string('endonesteptour', 'tool_usertours');
         } else {
@@ -367,7 +367,7 @@ class tour {
     /**
      * The link to view this tour.
      *
-     * @return  moodle_url
+     * @return  \moodle_url
      */
     public function get_view_link() {
         return helper::get_view_tour_link($this->id);
@@ -376,7 +376,7 @@ class tour {
     /**
      * The link to edit this tour.
      *
-     * @return  moodle_url
+     * @return  \moodle_url
      */
     public function get_edit_link() {
         return helper::get_edit_tour_link($this->id);

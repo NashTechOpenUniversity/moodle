@@ -37,7 +37,17 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since      3.6
  */
-define(['jquery', 'core/dragdrop', 'core/key_codes'], function($, dragDrop, keys) {
+define([
+    'jquery',
+    'core/dragdrop',
+    'core/key_codes',
+    'core_form/changechecker'
+], function(
+    $,
+    dragDrop,
+    keys,
+    FormChangeChecker
+) {
 
     "use strict";
 
@@ -50,6 +60,7 @@ define(['jquery', 'core/dragdrop', 'core/key_codes'], function($, dragDrop, keys
      */
     function DragDropToTextQuestion(containerId, readOnly) {
         this.containerId = containerId;
+        this.questionAnswer = {};
         if (readOnly) {
             this.getRoot().addClass('qtype_ddwtos-readonly');
         }
@@ -187,6 +198,48 @@ define(['jquery', 'core/dragdrop', 'core/key_codes'], function($, dragDrop, keys
             // Send the drag to drop.
             thisQ.sendDragToDrop(thisQ.getUnplacedChoice(thisQ.getGroup(input), choice), drop);
         });
+
+        // Save the question answer.
+        thisQ.questionAnswer = thisQ.getQuestionAnsweredValues();
+    };
+
+    /**
+     * Get the question answered values.
+     *
+     * @return {Object} Contain key-value with key is the input id and value is the input value.
+     */
+    DragDropToTextQuestion.prototype.getQuestionAnsweredValues = function() {
+        let result = {};
+        this.getRoot().find('input.placeinput').each((i, inputNode) => {
+            result[inputNode.id] = inputNode.value;
+        });
+
+        return result;
+    };
+
+    /**
+     * Check if the question is being interacted or not.
+     *
+     * @return {boolean} Return true if the user has changed the question-answer.
+     */
+    DragDropToTextQuestion.prototype.isQuestionInteracted = function() {
+        const oldAnswer = this.questionAnswer;
+        const newAnswer = this.getQuestionAnsweredValues();
+        let isInteracted = false;
+
+        // First, check both answers have the same structure or not.
+        if (JSON.stringify(newAnswer) !== JSON.stringify(oldAnswer)) {
+            isInteracted = true;
+            return isInteracted;
+        }
+        // Check the values.
+        Object.keys(newAnswer).forEach(key => {
+            if (newAnswer[key] !== oldAnswer[key]) {
+                isInteracted = true;
+            }
+        });
+
+        return isInteracted;
     };
 
     /**
@@ -199,7 +252,7 @@ define(['jquery', 'core/dragdrop', 'core/key_codes'], function($, dragDrop, keys
             drag = $(e.target).closest('.draghome');
 
         var info = dragDrop.prepare(e);
-        if (!info.start) {
+        if (!info.start || drag.hasClass('beingdragged')) {
             return;
         }
 
@@ -252,17 +305,9 @@ define(['jquery', 'core/dragdrop', 'core/key_codes'], function($, dragDrop, keys
      */
     DragDropToTextQuestion.prototype.dragMove = function(pageX, pageY, drag) {
         var thisQ = this;
-        this.getRoot().find('span.drop.group' + this.getGroup(drag)).each(function(i, dropNode) {
+        this.getRoot().find('span.group' + this.getGroup(drag)).not('.beingdragged').each(function(i, dropNode) {
             var drop = $(dropNode);
             if (thisQ.isPointInDrop(pageX, pageY, drop)) {
-                drop.addClass('valid-drag-over-drop');
-            } else {
-                drop.removeClass('valid-drag-over-drop');
-            }
-        });
-        this.getRoot().find('span.draghome.placed.group' + this.getGroup(drag)).not('.beingdragged').each(function(i, dropNode) {
-            var drop = $(dropNode);
-            if (thisQ.isPointInDrop(pageX, pageY, drop) && !thisQ.isDragSameAsDrop(drag, drop)) {
                 drop.addClass('valid-drag-over-drop');
             } else {
                 drop.removeClass('valid-drag-over-drop');
@@ -281,36 +326,31 @@ define(['jquery', 'core/dragdrop', 'core/key_codes'], function($, dragDrop, keys
         var thisQ = this,
             root = this.getRoot(),
             placed = false;
-        root.find('span.drop.group' + this.getGroup(drag)).each(function(i, dropNode) {
-            var drop = $(dropNode);
-            if (!thisQ.isPointInDrop(pageX, pageY, drop)) {
-                // Not this drop.
+        root.find('span.group' + this.getGroup(drag)).not('.beingdragged').each(function(i, dropNode) {
+            if (placed) {
+                return false;
+            }
+            const dropZone = $(dropNode);
+            if (!thisQ.isPointInDrop(pageX, pageY, dropZone)) {
+                // Not this drop zone.
                 return true;
             }
-
+            let drop = null;
+            if (dropZone.hasClass('placed')) {
+                // This is an placed drag item in a drop.
+                dropZone.removeClass('valid-drag-over-drop');
+                // Get the correct drop.
+                drop = thisQ.getDrop(drag, thisQ.getClassnameNumericSuffix(dropZone, 'inplace'));
+            } else {
+                // Empty drop.
+                drop = dropZone;
+            }
             // Now put this drag into the drop.
             drop.removeClass('valid-drag-over-drop');
             thisQ.sendDragToDrop(drag, drop);
             placed = true;
             return false; // Stop the each() here.
         });
-
-        root.find('span.draghome.placed.group' + this.getGroup(drag)).not('.beingdragged').each(function(i, placedNode) {
-            var placedDrag = $(placedNode);
-            if (!thisQ.isPointInDrop(pageX, pageY, placedDrag) || thisQ.isDragSameAsDrop(drag, placedDrag)) {
-                // Not this placed drag.
-                return true;
-            }
-
-            // Now put this drag into the drop.
-            placedDrag.removeClass('valid-drag-over-drop');
-            var currentPlace = thisQ.getClassnameNumericSuffix(placedDrag, 'inplace');
-            var drop = thisQ.getDrop(drag, currentPlace);
-            thisQ.sendDragToDrop(drag, drop);
-            placed = true;
-            return false; // Stop the each() here.
-        });
-
         if (!placed) {
             this.sendDragHome(drag);
         }
@@ -340,6 +380,11 @@ define(['jquery', 'core/dragdrop', 'core/key_codes'], function($, dragDrop, keys
                 drop.focus();
             }
         } else {
+            // Prevent the drag item drop into two drop-zone.
+            if (this.getClassnameNumericSuffix(drag, 'inplace')) {
+                return;
+            }
+
             this.setInputValue(this.getPlace(drop), this.getChoice(drag));
             drag.removeClass('unplaced')
                 .addClass('placed inplace' + this.getPlace(drop));
@@ -712,17 +757,6 @@ define(['jquery', 'core/dragdrop', 'core/key_codes'], function($, dragDrop, keys
     };
 
     /**
-     * Check that the drag is drop to it's clone.
-     *
-     * @param {jQuery} drag The drag.
-     * @param {jQuery} drop The drop.
-     * @returns {boolean}
-     */
-    DragDropToTextQuestion.prototype.isDragSameAsDrop = function(drag, drop) {
-        return this.getChoice(drag) === this.getChoice(drop) && this.getGroup(drag) === this.getGroup(drop);
-    };
-
-    /**
      * Singleton that tracks all the DragDropToTextQuestions on this page, and deals
      * with event dispatching.
      *
@@ -868,6 +902,20 @@ define(['jquery', 'core/dragdrop', 'core/key_codes'], function($, dragDrop, keys
             if (questionManager.isKeyboardNavigation) {
                 questionManager.isKeyboardNavigation = false;
             }
+            if (thisQ.isQuestionInteracted()) {
+                // The user has interacted with the draggable items. We need to mark the form as dirty.
+                questionManager.handleFormDirty();
+                // Save the new answered value.
+                thisQ.questionAnswer = thisQ.getQuestionAnsweredValues();
+            }
+        },
+
+        /**
+         * Handle when the form is dirty.
+         */
+        handleFormDirty: function() {
+            const responseForm = document.getElementById('responseform');
+            FormChangeChecker.markFormAsDirty(responseForm);
         }
     };
 

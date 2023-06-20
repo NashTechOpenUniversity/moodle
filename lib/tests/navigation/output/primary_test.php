@@ -47,7 +47,7 @@ class primary_test extends \advanced_testcase {
     /**
      * Test the primary export to confirm we are getting the nodes
      *
-     * @dataProvider test_primary_export_provider
+     * @dataProvider primary_export_provider
      * @param bool $withcustom Setup with custom menu
      * @param bool $withlang Setup with langs
      * @param string $userloggedin The type of user ('admin' or 'guest') if creating setup with logged in user,
@@ -95,7 +95,7 @@ class primary_test extends \advanced_testcase {
         if (isloggedin() && !isguestuser()) {
             // Look for a language menu item within the user menu items.
             $usermenulang = array_filter($data['user']['items'], function($usermenuitem) {
-                return $usermenuitem->title === get_string('language');
+                return $usermenuitem->itemtype !== 'divider' && $usermenuitem->title === get_string('language');
             });
             if ($withlang) { // If multiple languages are installed.
                 // Assert that the language menu exists within the user menu.
@@ -113,156 +113,34 @@ class primary_test extends \advanced_testcase {
      *
      * @return array
      */
-    public function test_primary_export_provider(): array {
+    public function primary_export_provider(): array {
         return [
             "Export the menu data when: custom menu exists; multiple langs installed; user is not logged in." => [
-                true, true, '', ['moremenu', 'lang', 'user']
+                true, true, '', ['mobileprimarynav', 'moremenu', 'lang', 'user']
             ],
             "Export the menu data when: custom menu exists; langs not installed; user is not logged in." => [
-                true, false, '', ['moremenu', 'user']
+                true, false, '', ['mobileprimarynav', 'moremenu', 'user']
             ],
             "Export the menu data when: custom menu exists; multiple langs installed; logged in as admin." => [
-                true, true, 'admin', ['moremenu', 'user']
+                true, true, 'admin', ['mobileprimarynav', 'moremenu', 'user']
             ],
             "Export the menu data when: custom menu exists; langs not installed; logged in as admin." => [
-                true, false, 'admin', ['moremenu', 'user']
+                true, false, 'admin', ['mobileprimarynav', 'moremenu', 'user']
             ],
             "Export the menu data when: custom menu exists; multiple langs installed; logged in as guest." => [
-                true, true, 'guest', ['moremenu', 'lang', 'user']
+                true, true, 'guest', ['mobileprimarynav', 'moremenu', 'lang', 'user']
             ],
             "Export the menu data when: custom menu exists; langs not installed; logged in as guest." => [
-                true, false, 'guest', ['moremenu', 'user']
+                true, false, 'guest', ['mobileprimarynav', 'moremenu', 'user']
             ],
             "Export the menu data when: custom menu does not exist; multiple langs installed; logged in as guest." => [
-                false, true, 'guest', ['moremenu', 'lang', 'user']
+                false, true, 'guest', ['mobileprimarynav', 'moremenu', 'lang', 'user']
             ],
             "Export the menu data when: custom menu does not exist; multiple langs installed; logged in as admin." => [
-                false, true, 'admin', ['moremenu', 'user']
+                false, true, 'admin', ['mobileprimarynav', 'moremenu', 'user']
             ],
             "Export the menu data when: custom menu does not exist; langs not installed; user is not logged in." => [
-                false, false, '', ['moremenu', 'user']
-            ],
-        ];
-    }
-
-    /**
-     * Test the get_lang_menu
-     *
-     * @dataProvider get_lang_menu_provider
-     * @param bool $withadditionallangs
-     * @param string $language
-     * @param array $expected
-     */
-    public function test_get_lang_menu(bool $withadditionallangs, string $language, array $expected) {
-        global $CFG, $PAGE;
-
-        // Mimic multiple langs installed. To trigger responses 'get_list_of_translations'.
-        // Note: The text/title of the nodes generated will be 'English(fr), English(de)' but we don't care about this.
-        // We are testing whether the nodes gets generated when the lang menu is available.
-        if ($withadditionallangs) {
-            mkdir("$CFG->dataroot/lang/de", 0777, true);
-            mkdir("$CFG->dataroot/lang/fr", 0777, true);
-            // Ensure the new langs are picked up and not taken from the cache.
-            $stringmanager = get_string_manager();
-            $stringmanager->reset_caches(true);
-        }
-
-        force_current_language($language);
-
-        $output = new primary($PAGE);
-        $method = new ReflectionMethod('core\navigation\output\primary', 'get_lang_menu');
-        $method->setAccessible(true);
-        $renderer = $PAGE->get_renderer('core');
-
-        $response = $method->invoke($output, $renderer);
-
-        if ($withadditionallangs) { // If there are multiple languages installed.
-            // Assert that the title of the language menu matches the expected one.
-            $this->assertEquals($expected['title'], $response['title']);
-            // Assert that the number of language menu items matches the number of the expected items.
-            $this->assertEquals(count($expected['items']), count($response['items']));
-            foreach ($expected['items'] as $expecteditem) {
-                // We need to manually generate the url key and its value in the expected item array as this cannot
-                // be done in the data provider due to the change of the state of $PAGE.
-                $expecteditem['url'] = $expecteditem['isactive'] ? new \moodle_url('#') :
-                    new \moodle_url($PAGE->url, ['lang' => $expecteditem['lang']]);
-                // The lang value is only used to generate the url, so this key can be removed.
-                unset($expecteditem['lang']);
-
-                // Assert that the given expected item exists in the returned items.
-                $this->assertTrue(in_array($expecteditem, $response['items']));
-            }
-        } else { // No multiple languages.
-            $this->assertEquals($expected, $response);
-        }
-    }
-
-    /**
-     * Provider for test_get_lang_menu
-     *
-     * @return array
-     */
-    public function get_lang_menu_provider(): array {
-        return [
-            'Lang menu with only the current language' => [
-                false, 'en', []
-            ],
-            'Lang menu with only multiple languages installed' => [
-                true, 'en', [
-                    'title' => 'English ‎(en)‎',
-                    'items' => [
-                        [
-                            'title' => 'English ‎(en)‎',
-                            'text' => 'English ‎(en)‎',
-                            'link' => true,
-                            'isactive' => true,
-                            'lang' => 'en'
-                        ],
-                        [
-                            'title' => 'English ‎(de)‎',
-                            'text' => 'English ‎(de)‎',
-                            'link' => true,
-                            'isactive' => false,
-                            'lang' => 'de'
-                        ],
-
-                        [
-                            'title' => 'English ‎(fr)‎',
-                            'text' => 'English ‎(fr)‎',
-                            'link' => true,
-                            'isactive' => false,
-                            'lang' => 'fr'
-                        ],
-                    ],
-                ],
-            ],
-            'Lang menu with only multiple languages installed and other than EN set active.' => [
-                true, 'de', [
-                    'title' => 'English ‎(de)‎',
-                    'items' => [
-                        [
-                            'title' => 'English ‎(en)‎',
-                            'text' => 'English ‎(en)‎',
-                            'link' => true,
-                            'isactive' => false,
-                            'lang' => 'en'
-                        ],
-                        [
-                            'title' => 'English ‎(de)‎',
-                            'text' => 'English ‎(de)‎',
-                            'link' => true,
-                            'isactive' => true,
-                            'lang' => 'de'
-                        ],
-                        [
-                            'title' => 'English ‎(fr)‎',
-                            'text' => 'English ‎(fr)‎',
-                            'link' => true,
-                            'isactive' => false,
-                            'lang' => 'fr'
-                        ],
-                    ],
-                ],
+                false, false, '', ['mobileprimarynav', 'moremenu', 'user']
             ],
         ];
     }
@@ -281,7 +159,20 @@ class primary_test extends \advanced_testcase {
         $method = new ReflectionMethod('core\navigation\output\primary', 'get_custom_menu');
         $method->setAccessible(true);
         $renderer = $PAGE->get_renderer('core');
-        $this->assertEquals($expected, $method->invoke($output, $renderer));
+
+        // We can't assert the value of each menuitem "moremenuid" property (because it's random).
+        $custommenufilter = static function(array $custommenu) use (&$custommenufilter): void {
+            foreach ($custommenu as $menuitem) {
+                unset($menuitem->moremenuid);
+                // Recursively move through child items.
+                $custommenufilter($menuitem->children);
+            }
+        };
+
+        $actual = $method->invoke($output, $renderer);
+        $custommenufilter($actual);
+
+        $this->assertEquals($expected, $actual);
     }
 
     /**

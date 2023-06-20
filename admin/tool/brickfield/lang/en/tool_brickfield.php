@@ -93,6 +93,7 @@ $string['invalidcourseid'] = 'Invalid course, please check your input';
 $string['invalidlinkphrases'] = 'click|click here|here|more|more here|info|info here|information|information here|read more|read more here|further information|further information here|further details|further details here';
 $string['module'] = 'Module';
 $string['modulename'] = 'Name';
+$string['newwindowphrases'] = 'new window|new-window|new_window';
 $string['noerrorsfound'] = 'No common accessibility errors were found for your search parameters. Congratulations!';
 $string['norecords'] = 'No relevant records were found for your search parameters.';
 $string['notregistered'] = 'Your accessibility toolkit needs to be registered.';
@@ -248,7 +249,7 @@ $string['printable:toolname'] = 'Summary report';
 $string['printable:toolshortname'] = 'Summary report';
 $string['printable:downloadpdf'] = 'Download PDF';
 $string['printable:printreport'] = 'Printable report';
-$string['error:nocoursespecified'] = 'This summary report requires a valid course id. Please access the accessibility toolkit from within a course, via the actions menu, which will then supply this required course id.';
+$string['error:nocoursespecified'] = 'The summary report requires a valid course ID. Please access the accessibility toolkit from within a course.';
 $string['pdf:filename'] = 'Brickfield_Summaryreport_CourseID-{$a}';
 
 // Advanced page.
@@ -270,3 +271,9 @@ $string['headingthree'] = 'Accessible file formats';
 $string['headingfour'] = 'Focus effort';
 $string['headingfive'] = 'HTML fixes';
 $string['headingsix'] = 'Performance support';
+$string['icon:analytics-custom'] = 'Analytics icon';
+$string['icon:tools-custom'] = 'Tools icon';
+$string['icon:file-edit-custom'] = 'Edit file icon';
+$string['icon:search-plus-custom'] = 'Search icon';
+$string['icon:wand-magic-custom'] = 'Magic wand icon';
+$string['icon:hands-helping-custom'] = 'Helping hands icon';

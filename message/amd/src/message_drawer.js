@@ -35,6 +35,7 @@ define(
     'core_message/message_drawer_router',
     'core_message/message_drawer_routes',
     'core_message/message_drawer_events',
+    'core_message/message_drawer_helper',
     'core/pending',
     'core/drawer',
 ],
@@ -52,6 +53,7 @@ function(
     Router,
     Routes,
     Events,
+    Helper,
     Pending,
     Drawer
 ) {
@@ -84,7 +86,7 @@ function(
      * @param {string} selector The route container.
      *
      * @return {array} elements Found route container objects.
-    */
+     */
     var getParametersForRoute = function(namespace, root, selector) {
 
         var header = root.find(SELECTORS.HEADER_CONTAINER).find(selector);
@@ -353,6 +355,9 @@ function(
                 Router.go.apply(null, routeParams);
             }
         }
+
+        // Mark the drawer as ready.
+        Helper.markDrawerReady();
     };
 
     return {

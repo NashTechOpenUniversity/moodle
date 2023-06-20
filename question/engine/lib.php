@@ -66,7 +66,7 @@ abstract class question_engine {
      * {@link save_questions_usage_by_activity()}.
      *
      * @param string $component the plugin creating this attempt. For example mod_quiz.
-     * @param object $context the context this usage belongs to.
+     * @param context $context the context this usage belongs to.
      * @return question_usage_by_activity the newly created object.
      */
     public static function make_questions_usage_by_activity($component, $context) {
@@ -630,7 +630,7 @@ class question_display_options {
     public $editquestionparams = array();
 
     /**
-     * @var int the context the attempt being output belongs to.
+     * @var context the context the attempt being output belongs to.
      */
     public $context;
 
@@ -638,6 +638,20 @@ class question_display_options {
      * @var int The option to show the action author in the response history.
      */
     public $userinfoinhistory = self::HIDDEN;
+
+    /**
+     * This identifier should be added to the labels of all input fields in the question.
+     *
+     * This is so people using assistive technology can easily tell which input belong to
+     * which question. The helper {@see self::add_question_identifier_to_label() makes this easier.
+     *
+     * If not set before the question is rendered, then it defaults to 'Question N'.
+     * (lang string)
+     *
+     * @var string The identifier that the question being rendered is associated with.
+     *              E.g. The question number when it is rendered on a quiz.
+     */
+    public $questionidentifier = null;
 
     /**
      * Set all the feedback-related fields {@link $feedback}, {@link generalfeedback},
@@ -668,6 +682,38 @@ class question_display_options {
             $options[$i] = $i;
         }
         return $options;
+    }
+
+    /**
+     * Helper to add the question identify (if there is one) to the label of an input field in a question.
+     *
+     * @param string $label The plain field label. E.g. 'Answer 1'
+     * @param bool $sridentifier If true, the question identifier, if added, will be wrapped in a sr-only span. Default false.
+     * @param bool $addbefore If true, the question identifier will be added before the label.
+     * @return string The amended label. For example 'Answer 1, Question 1'.
+     */
+    public function add_question_identifier_to_label(string $label, bool $sridentifier = false, bool $addbefore = false): string {
+        if (!$this->has_question_identifier()) {
+            return $label;
+        }
+        $identifier = $this->questionidentifier;
+        if ($sridentifier) {
+            $identifier = html_writer::span($identifier, 'sr-only');
+        }
+        $fieldlang = 'fieldinquestion';
+        if ($addbefore) {
+            $fieldlang = 'fieldinquestionpre';
+        }
+        return get_string($fieldlang, 'question', (object)['fieldname' => $label, 'questionindentifier' => $identifier]);
+    }
+
+    /**
+     * Whether a question number has been provided for the question that is being displayed.
+     *
+     * @return bool
+     */
+    public function has_question_identifier(): bool {
+        return $this->questionidentifier !== null && trim($this->questionidentifier) !== '';
     }
 }
 
@@ -747,26 +793,22 @@ abstract class question_flags {
             'requires' => array('base', 'dom', 'event-delegate', 'io-base'),
         );
         $actionurl = $CFG->wwwroot . '/question/toggleflag.php';
-        $flagtext = array(
-            0 => get_string('clickflag', 'question'),
-            1 => get_string('clickunflag', 'question')
-        );
         $flagattributes = array(
             0 => array(
                 'src' => $OUTPUT->image_url('i/unflagged') . '',
                 'title' => get_string('clicktoflag', 'question'),
-                'alt' => get_string('notflagged', 'question'),
-              //  'text' => get_string('clickflag', 'question'),
+                'alt' => get_string('flagged', 'question'), // Label on toggle should not change.
+                'text' => get_string('clickflag', 'question'),
             ),
             1 => array(
                 'src' => $OUTPUT->image_url('i/flagged') . '',
                 'title' => get_string('clicktounflag', 'question'),
                 'alt' => get_string('flagged', 'question'),
-               // 'text' => get_string('clickunflag', 'question'),
+                'text' => get_string('clickunflag', 'question'),
             ),
         );
         $PAGE->requires->js_init_call('M.core_question_flags.init',
-                array($actionurl, $flagattributes, $flagtext), false, $module);
+                array($actionurl, $flagattributes), false, $module);
         $done = true;
     }
 }
@@ -921,8 +963,8 @@ abstract class question_utils {
                     'converted to roman numerals.', $number);
         }
 
-        return self::$thousands[$number / 1000 % 10] . self::$hundreds[$number / 100 % 10] .
-                self::$tens[$number / 10 % 10] . self::$units[$number % 10];
+        return self::$thousands[floor($number / 1000) % 10] . self::$hundreds[floor($number / 100) % 10] .
+                self::$tens[floor($number / 10) % 10] . self::$units[$number % 10];
     }
 
     /**
@@ -1019,9 +1061,10 @@ abstract class question_utils {
     /**
      * Get the options required to configure the filepicker for one of the editor
      * toolbar buttons.
+     *
      * @param mixed $acceptedtypes array of types of '*'.
      * @param int $draftitemid the draft area item id.
-     * @param object $context the context.
+     * @param context $context the context.
      * @return object the required options.
      */
     protected static function specific_filepicker_options($acceptedtypes, $draftitemid, $context) {
@@ -1042,7 +1085,8 @@ abstract class question_utils {
 
     /**
      * Get filepicker options for question related text areas.
-     * @param object $context the context.
+     *
+     * @param context $context the context.
      * @param int $draftitemid the draft area item id.
      * @return array An array of options
      */
@@ -1056,7 +1100,8 @@ abstract class question_utils {
 
     /**
      * Get editor options for question related text areas.
-     * @param object $context the context.
+     *
+     * @param context $context the context.
      * @return array An array of options
      */
     public static function get_editor_options($context) {

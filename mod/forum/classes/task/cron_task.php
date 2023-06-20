@@ -221,7 +221,7 @@ class cron_task extends \core\task\scheduled_task {
         global $DB;
 
         if (empty($discussionids)) {
-            $this->discussion = [];
+            $this->discussions = [];
         } else {
 
             $requiredfields = [
@@ -329,23 +329,26 @@ class cron_task extends \core\task\scheduled_task {
 
             $send = false;
             // Setup this user so that the capabilities are cached, and environment matches receiving user.
-            cron_setup_user($user);
+            \core\cron::setup_user($user);
 
             list($individualpostdata, $digestpostdata) = $this->fetch_posts_for_user($user);
 
             if (!empty($digestpostdata)) {
                 // Insert all of the records for the digest.
                 $DB->insert_records('forum_queue', $digestpostdata);
-                $digesttime = usergetmidnight($timenow, $sitetimezone) + ($CFG->digestmailtime * 3600);
+                $servermidnight = usergetmidnight($timenow, $sitetimezone);
+                $digesttime = $servermidnight + ($CFG->digestmailtime * 3600);
 
                 if ($digesttime < $timenow) {
                     // Digest time is in the past. Get a new time for tomorrow.
-                    $digesttime = usergetmidnight($timenow + DAYSECS, $sitetimezone) + ($CFG->digestmailtime * 3600);
+                    $servermidnight = usergetmidnight($timenow + DAYSECS, $sitetimezone);
+                    $digesttime = $servermidnight + ($CFG->digestmailtime * 3600);
                 }
 
                 $task = new \mod_forum\task\send_user_digests();
                 $task->set_userid($user->id);
                 $task->set_component('mod_forum');
+                $task->set_custom_data(['servermidnight' => $servermidnight]);
                 $task->set_next_run_time($digesttime);
                 \core\task\manager::reschedule_or_queue_adhoc_task($task);
                 $usercounts['digests']++;

@@ -20,7 +20,6 @@ namespace core_reportbuilder\local\entities;
 
 use context_course;
 use context_helper;
-use core_course_category;
 use core_reportbuilder\local\filters\boolean_select;
 use core_reportbuilder\local\filters\course_selector;
 use core_reportbuilder\local\filters\date;
@@ -59,16 +58,9 @@ class course extends base {
         return [
             'course' => 'c',
             'context' => 'cctx',
+            'tag_instance' => 'cti',
+            'tag' => 'ct',
         ];
-    }
-
-    /**
-     * The default machine-readable name for this entity that will be used in the internal names of the columns/filters.
-     *
-     * @return string
-     */
-    protected function get_default_entity_name(): string {
-        return 'course';
     }
 
     /**
@@ -107,10 +99,26 @@ class course extends base {
 
         $filters = array_merge($this->get_all_filters(), $customfields->get_filters());
         foreach ($filters as $filter) {
-            $this->add_filter($filter);
+            $this
+                ->add_condition($filter)
+                ->add_filter($filter);
         }
 
         return $this;
+    }
+
+    /**
+     * Return syntax for joining on the context table
+     *
+     * @return string
+     */
+    public function get_context_join(): string {
+        $coursealias = $this->get_table_alias('course');
+        $contextalias = $this->get_table_alias('context');
+
+        return "LEFT JOIN {context} {$contextalias}
+            ON {$contextalias}.contextlevel = " . CONTEXT_COURSE . "
+           AND {$contextalias}.instanceid = {$coursealias}.id";
     }
 
     /**
@@ -122,7 +130,6 @@ class course extends base {
         return [
             'fullname' => new lang_string('fullnamecourse'),
             'shortname' => new lang_string('shortnamecourse'),
-            'category' => new lang_string('coursecategory'),
             'idnumber' => new lang_string('idnumbercourse'),
             'summary' => new lang_string('coursesummary'),
             'format' => new lang_string('format'),
@@ -175,7 +182,6 @@ class course extends base {
             case 'summary':
                 $fieldtype = column::TYPE_LONGTEXT;
                 break;
-            case 'category':
             case 'groupmode':
                 $fieldtype = column::TYPE_INTEGER;
                 break;
@@ -195,6 +201,26 @@ class course extends base {
     }
 
     /**
+     * Return joins necessary for retrieving tags
+     *
+     * @return string[]
+     */
+    public function get_tag_joins(): array {
+        $course = $this->get_table_alias('course');
+        $taginstance = $this->get_table_alias('tag_instance');
+        $tag = $this->get_table_alias('tag');
+
+        return [
+            "LEFT JOIN {tag_instance} {$taginstance}
+                    ON {$taginstance}.component = 'core'
+                   AND {$taginstance}.itemtype = 'course'
+                   AND {$taginstance}.itemid = {$course}.id",
+            "LEFT JOIN {tag} {$tag}
+                    ON {$tag}.id = {$taginstance}.tagid",
+        ];
+    }
+
+    /**
      * Returns list of all available columns.
      *
      * These are all the columns available to use in any report that uses this entity.
@@ -202,7 +228,8 @@ class course extends base {
      * @return column[]
      */
     protected function get_all_columns(): array {
-        $columns = [];
+        global $DB;
+
         $coursefields = $this->get_course_fields();
         $tablealias = $this->get_table_alias('course');
         $contexttablealias = $this->get_table_alias('context');
@@ -214,7 +241,7 @@ class course extends base {
             'courseidnumberewithlink' => 'idnumber',
         ];
         foreach ($fields as $key => $field) {
-            $columns[] = (new column(
+            $column = (new column(
                 $key,
                 new lang_string($key, 'core_reportbuilder'),
                 $this->get_entity_name()
@@ -228,29 +255,43 @@ class course extends base {
                         return '';
                     }
 
-                    return html_writer::link(course_get_url($row->id), $value);
+                    context_helper::preload_from_record($row);
+
+                    return html_writer::link(course_get_url($row->id),
+                        format_string($value, true, ['context' => context_course::instance($row->id)]));
                 });
+
+            // Join on the context table so that we can use it for formatting these columns later.
+            if ($key === 'coursefullnamewithlink') {
+                $column->add_join($this->get_context_join())
+                    ->add_fields(context_helper::get_preload_record_columns_sql($contexttablealias));
+            }
+
+            $columns[] = $column;
         }
 
         foreach ($coursefields as $coursefield => $coursefieldlang) {
+            $columntype = $this->get_course_field_type($coursefield);
+
+            $columnfieldsql = "{$tablealias}.{$coursefield}";
+            if ($columntype === column::TYPE_LONGTEXT && $DB->get_dbfamily() === 'oracle') {
+                $columnfieldsql = $DB->sql_order_by_text($columnfieldsql, 1024);
+            }
+
             $column = (new column(
                 $coursefield,
                 $coursefieldlang,
                 $this->get_entity_name()
             ))
                 ->add_joins($this->get_joins())
-                ->set_type($this->get_course_field_type($coursefield))
-                ->add_field("$tablealias.$coursefield")
+                ->set_type($columntype)
+                ->add_field($columnfieldsql, $coursefield)
                 ->add_callback([$this, 'format'], $coursefield)
                 ->set_is_sortable($this->is_sortable($coursefield));
 
             // Join on the context table so that we can use it for formatting these columns later.
             if ($coursefield === 'summary' || $coursefield === 'shortname' || $coursefield === 'fullname') {
-                $join = "LEFT JOIN {context} {$contexttablealias}
-                           ON {$contexttablealias}.contextlevel = " . CONTEXT_COURSE . "
-                          AND {$contexttablealias}.instanceid = {$tablealias}.id";
-
-                $column->add_join($join)
+                $column->add_join($this->get_context_join())
                     ->add_field("{$tablealias}.id", 'courseid')
                     ->add_fields(context_helper::get_preload_record_columns_sql($contexttablealias));
             }
@@ -274,11 +315,9 @@ class course extends base {
 
         $fields = $this->get_course_fields();
         foreach ($fields as $field => $name) {
-            // Filtering isn't supported for LONGTEXT fields on Oracle.
-            if ($this->get_course_field_type($field) === column::TYPE_LONGTEXT &&
-                    $DB->get_dbfamily() === 'oracle') {
-
-                continue;
+            $filterfieldsql = "{$tablealias}.{$field}";
+            if ($this->get_course_field_type($field) === column::TYPE_LONGTEXT) {
+                $filterfieldsql = $DB->sql_cast_to_char($filterfieldsql);
             }
 
             $optionscallback = [static::class, 'get_options_for_' . $field];
@@ -297,7 +336,7 @@ class course extends base {
                 $field,
                 $name,
                 $this->get_entity_name(),
-                "{$tablealias}.$field"
+                $filterfieldsql
             ))
                 ->add_joins($this->get_joins());
 
@@ -313,7 +352,7 @@ class course extends base {
         $filters[] = (new filter(
             course_selector::class,
             'courseselector',
-            new lang_string('courses'),
+            new lang_string('courseselect', 'core_reportbuilder'),
             $this->get_entity_name(),
             "{$tablealias}.id"
         ))
@@ -352,15 +391,6 @@ class course extends base {
             SEPARATEGROUPS => get_string('groupsseparate', 'group'),
             VISIBLEGROUPS => get_string('groupsvisible', 'group'),
         ];
-    }
-
-    /**
-     * List of options for the field category.
-     *
-     * @return array
-     */
-    public static function get_options_for_category(): array {
-        return core_course_category::make_categories_list('moodle/category:viewcourselist');
     }
 
     /**

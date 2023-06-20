@@ -23,9 +23,6 @@
  */
 
 namespace core_auth\output;
-defined('MOODLE_INTERNAL') || die();
-
-require_once($CFG->libdir . '/externallib.php');
 
 use context_system;
 use help_icon;
@@ -64,12 +61,12 @@ class login implements renderable, templatable {
     public $instructions;
     /** @var moodle_url The form action login URL. */
     public $loginurl;
-    /** @var bool Whether the username should be remembered. */
-    public $rememberusername;
     /** @var moodle_url The sign-up URL. */
     public $signupurl;
     /** @var string The user name to pre-fill the form with. */
     public $username;
+    /** @var string The language selector menu. */
+    public $languagemenu;
     /** @var string The csrf token to limit login to requests that come from the login form. */
     public $logintoken;
     /** @var string Maintenance message, if Maintenance is enabled. */
@@ -82,19 +79,20 @@ class login implements renderable, templatable {
      * @param string $username The username to display.
      */
     public function __construct(array $authsequence, $username = '') {
-        global $CFG;
+        global $CFG, $OUTPUT, $PAGE;
 
         $this->username = $username;
 
+        $languagedata = new \core\output\language_menu($PAGE);
+
+        $this->languagemenu = $languagedata->export_for_action_menu($OUTPUT);
         $this->canloginasguest = $CFG->guestloginbutton and !isguestuser();
         $this->canloginbyemail = !empty($CFG->authloginviaemail);
         $this->cansignup = $CFG->registerauth == 'email' || !empty($CFG->registerauth);
         if ($CFG->rememberusername == 0) {
             $this->cookieshelpicon = new help_icon('cookiesenabledonlysession', 'core');
-            $this->rememberusername = false;
         } else {
             $this->cookieshelpicon = new help_icon('cookiesenabled', 'core');
-            $this->rememberusername = true;
         }
 
         $this->autofocusform = !empty($CFG->loginpageautofocus);
@@ -111,8 +109,12 @@ class login implements renderable, templatable {
             $this->instructions = get_string('loginsteps', 'core', 'signup.php');
         }
 
-        if ($CFG->maintenance_enabled == true && !empty($CFG->maintenance_message)) {
-            $this->maintenance = $CFG->maintenance_message;
+        if ($CFG->maintenance_enabled == true) {
+            if (!empty($CFG->maintenance_message)) {
+                $this->maintenance = $CFG->maintenance_message;
+            } else {
+                $this->maintenance = get_string('sitemaintenance', 'admin');
+            }
         }
 
         // Identity providers.
@@ -144,14 +146,14 @@ class login implements renderable, templatable {
         $data->hasidentityproviders = !empty($this->identityproviders);
         $data->hasinstructions = !empty($this->instructions) || $this->cansignup;
         $data->identityproviders = $identityproviders;
-        list($data->instructions, $data->instructionsformat) = external_format_text($this->instructions, FORMAT_MOODLE,
+        list($data->instructions, $data->instructionsformat) = \core_external\util::format_text($this->instructions, FORMAT_MOODLE,
             context_system::instance()->id);
         $data->loginurl = $this->loginurl->out(false);
-        $data->rememberusername = $this->rememberusername;
         $data->signupurl = $this->signupurl->out(false);
         $data->username = $this->username;
         $data->logintoken = $this->logintoken;
         $data->maintenance = format_text($this->maintenance, FORMAT_MOODLE);
+        $data->languagemenu = $this->languagemenu;
 
         return $data;
     }

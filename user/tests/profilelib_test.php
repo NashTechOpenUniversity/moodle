@@ -14,17 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Unit tests for user/profile/lib.php.
- *
- * @package core_user
- * @copyright 2014 The Open University
- * @licensehttp://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
-defined('MOODLE_INTERNAL') || die();
-
-global $CFG;
+namespace core_user;
 
 /**
  * Unit tests for user/profile/lib.php.
@@ -33,15 +23,21 @@ global $CFG;
  * @copyright 2014 The Open University
  * @licensehttp://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class core_user_profilelib_testcase extends advanced_testcase {
+class profilelib_test extends \advanced_testcase {
+
+    /**
+     * Load required test libraries
+     */
+    public static function setUpBeforeClass(): void {
+        global $CFG;
+        require_once("{$CFG->dirroot}/user/profile/lib.php");
+    }
+
     /**
      * Tests profile_get_custom_fields function and checks it is consistent
      * with profile_user_record.
      */
     public function test_get_custom_fields() {
-        global $CFG;
-        require_once($CFG->dirroot . '/user/profile/lib.php');
-
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
 
@@ -111,9 +107,9 @@ class core_user_profilelib_testcase extends advanced_testcase {
 
         // Course without sections.
         $course = $this->getDataGenerator()->create_course();
-        $context = context_course::instance($course->id);
+        $context = \context_course::instance($course->id);
         $user = $this->getDataGenerator()->create_user();
-        $usercontext = context_user::instance($user->id);
+        $usercontext = \context_user::instance($user->id);
 
         $this->setUser($user);
 
@@ -245,8 +241,7 @@ class core_user_profilelib_testcase extends advanced_testcase {
      * Tests the profile_get_custom_field_data_by_shortname function when working normally.
      */
     public function test_profile_get_custom_field_data_by_shortname_normal() {
-        global $DB, $CFG;
-        require_once($CFG->dirroot . '/user/profile/lib.php');
+        global $DB;
 
         $this->resetAfterTest();
 
@@ -278,9 +273,79 @@ class core_user_profilelib_testcase extends advanced_testcase {
      * Tests the profile_get_custom_field_data_by_shortname function with a field that doesn't exist.
      */
     public function test_profile_get_custom_field_data_by_shortname_missing() {
-        global $CFG;
-        require_once($CFG->dirroot . '/user/profile/lib.php');
-
         $this->assertNull(profile_get_custom_field_data_by_shortname('speciality'));
+    }
+
+    /**
+     * Data provider for {@see test_profile_get_custom_field_data_by_shortname_case_sensitivity}
+     *
+     * @return array[]
+     */
+    public function profile_get_custom_field_data_by_shortname_case_sensitivity_provider(): array {
+        return [
+            'Matching case, case-sensitive search' => ['hello', 'hello', true, true],
+            'Matching case, case-insensitive search' => ['hello', 'hello', false, true],
+            'Non-matching case, case-sensitive search' => ['hello', 'Hello', true, false],
+            'Non-matching case, case-insensitive search' => ['hello', 'Hello', false, true],
+            'Non-matching, case-sensitive search' => ['hello', 'hola', true, false],
+            'Non-matching, case-insensitive search' => ['hello', 'hola', false, false],
+        ];
+    }
+
+    /**
+     * Test retrieving custom field by shortname, specifying case-sensitivity when matching
+     *
+     * @param string $shortname
+     * @param string $shortnamesearch
+     * @param bool $casesensitive
+     * @param bool $expectmatch
+     *
+     * @dataProvider profile_get_custom_field_data_by_shortname_case_sensitivity_provider
+     */
+    public function test_profile_get_custom_field_data_by_shortname_case_sensitivity(
+        string $shortname,
+        string $shortnamesearch,
+        bool $casesensitive,
+        bool $expectmatch
+    ): void {
+        $this->resetAfterTest();
+
+        $this->getDataGenerator()->create_custom_profile_field([
+            'datatype' => 'text',
+            'shortname' => $shortname,
+            'name' => 'My field',
+        ]);
+
+        $customfield = profile_get_custom_field_data_by_shortname($shortnamesearch, $casesensitive);
+        if ($expectmatch) {
+            $this->assertInstanceOf(\stdClass::class, $customfield);
+            $this->assertEquals('text', $customfield->datatype);
+            $this->assertEquals($shortname, $customfield->shortname);
+            $this->assertEquals('My field', $customfield->name);
+        } else {
+            $this->assertNull($customfield);
+        }
+    }
+
+    /**
+     * Test profile field loading via profile_get_user_field helper
+     *
+     * @covers ::profile_get_user_field
+     */
+    public function test_profile_get_user_field(): void {
+        $this->resetAfterTest();
+
+        $profilefield = $this->getDataGenerator()->create_custom_profile_field([
+            'shortname' => 'fruit',
+            'name' => 'Fruit',
+            'datatype' => 'text',
+        ]);
+        $user = $this->getDataGenerator()->create_user(['profile_field_fruit' => 'Apple']);
+
+        $fieldinstance = profile_get_user_field('text', $profilefield->id, $user->id);
+        $this->assertInstanceOf(\profile_field_text::class, $fieldinstance);
+        $this->assertEquals($profilefield->id, $fieldinstance->fieldid);
+        $this->assertEquals($user->id, $fieldinstance->userid);
+        $this->assertEquals('Apple', $fieldinstance->data);
     }
 }

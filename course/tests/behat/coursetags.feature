@@ -48,6 +48,8 @@ Feature: Tagging courses
     And I log out
     And I log in as "user1"
     And I turn editing mode on
+    And the following config values are set as admin:
+      | unaddableblocks | | theme_boost|
     # TODO MDL-57120 "Tags" link not accessible without navigation block.
     And I add the "Navigation" block if not present
     And I click on "Site pages" "list_item" in the "Navigation" "block"
@@ -66,10 +68,9 @@ Feature: Tagging courses
     And I log out
 
   Scenario: User can set course tags using separate form
-    Given I log in as "admin"
-    And I set the following system permissions of "Non-editing teacher" role:
-      | moodle/course:tag | Allow |
-    And I log out
+    Given the following "role capability" exists:
+      | role              | teacher |
+      | moodle/course:tag | allow   |
     When I log in as "teacher2"
     And I am on "Course 1" course homepage
     And I navigate to "Course tags" in current page administration
@@ -85,6 +86,8 @@ Feature: Tagging courses
     And I log out
     And I log in as "user1"
     And I turn editing mode on
+    And the following config values are set as admin:
+      | unaddableblocks | | theme_boost|
     # TODO MDL-57120 "Tags" link not accessible without navigation block.
     And I add the "Navigation" block if not present
     And I click on "Site pages" "list_item" in the "Navigation" "block"

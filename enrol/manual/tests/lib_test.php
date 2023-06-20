@@ -22,6 +22,10 @@
  * @copyright  2012 Petr Skoda {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace enrol_manual;
+
+use course_enrolment_manager;
+use stdClass;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -34,7 +38,7 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright  2012 Petr Skoda {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class enrol_manual_lib_testcase extends advanced_testcase {
+class lib_test extends \advanced_testcase {
     /**
      * Test enrol migration function used when uninstalling enrol plugins.
      */
@@ -60,10 +64,10 @@ class enrol_manual_lib_testcase extends advanced_testcase {
         $course4 = $this->getDataGenerator()->create_course();
         $course5 = $this->getDataGenerator()->create_course();
 
-        $context1 = context_course::instance($course1->id);
-        $context2 = context_course::instance($course2->id);
-        $context3 = context_course::instance($course3->id);
-        $context4 = context_course::instance($course4->id);
+        $context1 = \context_course::instance($course1->id);
+        $context2 = \context_course::instance($course2->id);
+        $context3 = \context_course::instance($course3->id);
+        $context4 = \context_course::instance($course4->id);
 
         $user1 = $this->getDataGenerator()->create_user();
         $user2 = $this->getDataGenerator()->create_user();
@@ -210,7 +214,7 @@ class enrol_manual_lib_testcase extends advanced_testcase {
         /** @var $manualplugin enrol_manual_plugin */
         $manualplugin = enrol_get_plugin('manual');
 
-        $trace = new null_progress_trace();
+        $trace = new \null_progress_trace();
 
         $now = time();
 
@@ -231,9 +235,9 @@ class enrol_manual_lib_testcase extends advanced_testcase {
         $course1 = $this->getDataGenerator()->create_course();
         $course2 = $this->getDataGenerator()->create_course();
         $course3 = $this->getDataGenerator()->create_course();
-        $context1 = context_course::instance($course1->id);
-        $context2 = context_course::instance($course2->id);
-        $context3 = context_course::instance($course3->id);
+        $context1 = \context_course::instance($course1->id);
+        $context2 = \context_course::instance($course2->id);
+        $context3 = \context_course::instance($course3->id);
 
         $this->assertEquals(3, $DB->count_records('enrol', array('enrol'=>'manual')));
         $instance1 = $DB->get_record('enrol', array('courseid'=>$course1->id, 'enrol'=>'manual'), '*', MUST_EXIST);
@@ -335,7 +339,7 @@ class enrol_manual_lib_testcase extends advanced_testcase {
         $this->resetAfterTest();
         $this->preventResetByRollback(); // Messaging does not like transactions...
 
-        $trace = new null_progress_trace();
+        $trace = new \null_progress_trace();
 
         /** @var $manualplugin enrol_manual_plugin */
         $manualplugin = enrol_get_plugin('manual');
@@ -539,5 +543,108 @@ class enrol_manual_lib_testcase extends advanced_testcase {
         $actions = $plugin->get_user_enrolment_actions($manager, $ue);
         // Manual enrol has 2 enrol actions -- edit and unenrol.
         $this->assertCount(2, $actions);
+    }
+
+    /**
+     * Test how the default enrolment instance inherits its settings from the global plugin settings.
+     *
+     * @dataProvider default_enrolment_instance_data_provider
+     * @param stdClass $expectation
+     * @param stdClass $globalsettings
+     * @covers \enrol_manual::add_default_instance
+     */
+    public function test_default_enrolment_instance_acquires_correct_settings(stdClass $expectation, stdClass $globalsettings) {
+        global $DB;
+
+        $this->resetAfterTest();
+
+        $generator = $this->getDataGenerator();
+
+        // Given the plugin is globally configured with the following settings.
+        $plugin = enrol_get_plugin('manual');
+        $plugin->set_config('status', $globalsettings->status);
+        $plugin->set_config('roleid', $globalsettings->roleid);
+        $plugin->set_config('enrolperiod', $globalsettings->enrolperiod);
+        $plugin->set_config('expirynotify', $globalsettings->expirynotify);
+        $plugin->set_config('expirythreshold', $globalsettings->expirythreshold);
+
+        // When creating a course.
+        $course = $generator->create_course();
+
+        // Then the default manual enrolment instance being created is properly configured.
+        $enrolinstance = $DB->get_record('enrol', ['courseid' => $course->id, 'enrol' => 'manual']);
+        $this->assertEquals($expectation->status, $enrolinstance->status);
+        $this->assertEquals($expectation->roleid, $enrolinstance->roleid);
+        $this->assertEquals($expectation->enrolperiod, $enrolinstance->enrolperiod);
+        $this->assertEquals($expectation->expirynotify, $enrolinstance->expirynotify);
+        $this->assertEquals($expectation->notifyall, $enrolinstance->notifyall);
+        $this->assertEquals($expectation->expirythreshold, $enrolinstance->expirythreshold);
+    }
+
+    /**
+     * Data provider for test_default_enrolment_instance_acquires_correct_settings().
+     *
+     * @return array
+     */
+    public function default_enrolment_instance_data_provider(): array {
+        $studentroles = get_archetype_roles('student');
+        $studentrole = array_shift($studentroles);
+
+        $teacherroles = get_archetype_roles('teacher');
+        $teacherrole = array_shift($teacherroles);
+
+        return [
+            'enabled, student role, no duration set, notify no one on expiry, 12 hours notification threshold' => [
+                'expectation' => (object) [
+                    'status' => ENROL_INSTANCE_ENABLED,
+                    'roleid' => $studentrole->id,
+                    'enrolperiod' => 0,
+                    'expirynotify' => 0,
+                    'notifyall' => 0,
+                    'expirythreshold' => 12 * HOURSECS,
+                ],
+                'global settings' => (object) [
+                    'status' => ENROL_INSTANCE_ENABLED,
+                    'roleid' => $studentrole->id,
+                    'enrolperiod' => 0,
+                    'expirynotify' => 0,
+                    'expirythreshold' => 12 * HOURSECS,
+                ],
+            ],
+            'enabled, student role, 72 hours duration, notify enroller only on expiry, 1 day notification threshold' => [
+                'expectation' => (object) [
+                    'status' => ENROL_INSTANCE_ENABLED,
+                    'roleid' => $studentrole->id,
+                    'enrolperiod' => 72 * HOURSECS,
+                    'expirynotify' => 1,
+                    'notifyall' => 0,
+                    'expirythreshold' => DAYSECS,
+                ],
+                'global settings' => (object) [
+                    'status' => ENROL_INSTANCE_ENABLED,
+                    'roleid' => $studentrole->id,
+                    'enrolperiod' => 72 * HOURSECS,
+                    'expirynotify' => 1,
+                    'expirythreshold' => DAYSECS,
+                ],
+            ],
+            'disabled, teacher role, no duration set, notify enroller and enrolled on expiry, 0 notification threshold' => [
+                'expectation' => (object) [
+                    'status' => ENROL_INSTANCE_DISABLED,
+                    'roleid' => $teacherrole->id,
+                    'enrolperiod' => 0,
+                    'expirynotify' => 2,
+                    'notifyall' => 1,
+                    'expirythreshold' => 0
+                ],
+                'global settings' => (object) [
+                    'status' => ENROL_INSTANCE_DISABLED,
+                    'roleid' => $teacherrole->id,
+                    'enrolperiod' => 0,
+                    'expirynotify' => 2,
+                    'expirythreshold' => 0,
+                ],
+            ],
+        ];
     }
 }

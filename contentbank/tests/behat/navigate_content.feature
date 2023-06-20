@@ -29,26 +29,25 @@ Feature: Navigate to different contexts in the content bank
   Scenario: Admins can view and navigate to all the contexts in the content bank
     Given I am on site homepage
     And I turn editing mode on
+    And the following config values are set as admin:
+      | unaddableblocks | | theme_boost|
     And I add the "Navigation" block if not present
     And I expand "Site pages" node
     When I click on "Content bank" "link"
-    And "contextid" "select" should exist
-    And the "contextid" select box should contain "System"
-    And the "contextid" select box should contain "Cat 1"
-    And the "contextid" select box should contain "Cat 2"
-    And the "contextid" select box should contain "C0"
-    And the "contextid" select box should contain "C1"
-    And the "contextid" select box should contain "C2"
+    And the "Choose course or category" select box should contain "System"
+    And the "Choose course or category" select box should contain "Cat 1"
+    And the "Choose course or category" select box should contain "Cat 2"
+    And the "Choose course or category" select box should contain "Course 0"
+    And the "Choose course or category" select box should contain "Course 1"
+    And the "Choose course or category" select box should contain "Course 2"
     And I should see "santjordi.h5p"
     And I should not see "santjordi_rose.h5p"
     And I should not see "Dragon.h5p"
-    And I click on "contextid" "select"
-    And I click on "Cat 1" "option"
+    And I set the field "Choose course or category" to "Cat 1"
     Then I should not see "santjordi.h5p"
     And I should see "santjordi_rose.h5p"
     And I should not see "Dragon.h5p"
-    And I click on "contextid" "select"
-    And I click on "C0" "option"
+    And I set the field "Choose course or category" to "Course 0"
     And I should not see "santjordi.h5p"
     And I should not see "santjordi_rose.h5p"
     And I should see "Dragon.h5p"
@@ -64,22 +63,22 @@ Feature: Navigate to different contexts in the content bank
     And I log out
     And I am on the "C0" "Course" page logged in as "teacher"
     And I turn editing mode on
+    And the following config values are set as admin:
+      | unaddableblocks | | theme_boost|
     And I add the "Navigation" block if not present
     And I expand "Site pages" node
     When I click on "Content bank" "link"
-    And "contextid" "select" should exist
-    And the "contextid" select box should contain "C0"
-    And the "contextid" select box should contain "C1"
-    And the "contextid" select box should not contain "System"
-    And the "contextid" select box should not contain "Cat 1"
-    And the "contextid" select box should not contain "Cat 2"
-    And the "contextid" select box should not contain "C2"
+    And the "Choose course or category" select box should contain "Course 0"
+    And the "Choose course or category" select box should contain "Course 1"
+    And the "Choose course or category" select box should not contain "System"
+    And the "Choose course or category" select box should not contain "Cat 1"
+    And the "Choose course or category" select box should not contain "Cat 2"
+    And the "Choose course or category" select box should not contain "Course 2"
     And I should see "Dragon.h5p"
     And I should not see "princess.h5p"
     And I should not see "santjordi.h5p"
     And I should not see "santjordi_rose.h5p"
-    And I click on "contextid" "select"
-    And I click on "C1" "option"
+    And I set the field "Choose course or category" to "Course 1"
     Then I should not see "Dragon.h5p"
     And I should see "princess.h5p"
     And I should not see "santjordi.h5p"
@@ -90,15 +89,13 @@ Feature: Navigate to different contexts in the content bank
     And I am on the "C0" "Course" page logged in as "teacher"
     And I expand "Site pages" node
     When I click on "Content bank" "link"
-    And "contextid" "select" should exist
-    And the "contextid" select box should contain "C0"
-    And the "contextid" select box should contain "C1"
-    And the "contextid" select box should contain "Cat 1"
-    And the "contextid" select box should not contain "System"
-    And the "contextid" select box should not contain "Cat 2"
-    And the "contextid" select box should not contain "C2"
+    And the "Choose course or category" select box should contain "Course 0"
+    And the "Choose course or category" select box should contain "Course 1"
+    And the "Choose course or category" select box should contain "Cat 1"
+    And the "Choose course or category" select box should not contain "System"
+    And the "Choose course or category" select box should not contain "Cat 2"
+    And the "Choose course or category" select box should not contain "Course 2"
     And I should see "Dragon.h5p"
-    And I click on "contextid" "select"
-    And I click on "Cat 1" "option"
+    And I set the field "Choose course or category" to "Cat 1"
     And I should not see "Dragon.h5p"
     And I should see "santjordi_rose.h5p"

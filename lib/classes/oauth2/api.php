@@ -76,8 +76,8 @@ class api {
     /**
      * Create one of the standard issuers.
      *
-     * @param string $type One of google, facebook, microsoft, nextcloud or imsobv2p1
-     * @param string|false $baseurl Baseurl (only required for nextcloud and imsobv2p1)
+     * @param string $type One of google, facebook, microsoft, MoodleNet, nextcloud or imsobv2p1
+     * @param string|false $baseurl Baseurl (only required for nextcloud, imsobv2p1 and moodlenet)
      * @return \core\oauth2\issuer
      */
     public static function create_standard_issuer($type, $baseurl = false) {
@@ -91,6 +91,10 @@ class api {
             case 'nextcloud':
                 if (!$baseurl) {
                     throw new moodle_exception('Nextcloud service type requires the baseurl parameter.');
+                }
+            case 'moodlenet':
+                if (!$baseurl) {
+                    throw new moodle_exception('MoodleNet service type requires the baseurl parameter.');
                 }
             case 'google':
             case 'facebook':
@@ -327,19 +331,19 @@ class api {
      */
     protected static function create_or_update_issuer($data, bool $create): issuer {
         require_capability('moodle/site:config', context_system::instance());
-        $issuer = new issuer(0, $data);
+        $issuer = new issuer($data->id ?? 0, $data);
 
         // Will throw exceptions on validation failures.
         if ($create) {
             $issuer->create();
+
+            // Perform service discovery.
+            $classname = self::get_service_classname($issuer->get('servicetype'));
+            $classname::discover_endpoints($issuer);
+            self::guess_image($issuer);
         } else {
             $issuer->update();
         }
-
-        // Perform service discovery.
-        $classname = self::get_service_classname($issuer->get('servicetype'));
-        $classname::discover_endpoints($issuer);
-        self::guess_image($issuer);
 
         return $issuer;
     }

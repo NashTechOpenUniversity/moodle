@@ -67,6 +67,17 @@ class api {
         $DB->delete_records('h5p_library_dependencies', array('libraryid' => $library->id));
         $DB->delete_records('h5p_libraries', array('id' => $library->id));
 
+        // Remove the library from the cache.
+        $libscache = \cache::make('core', 'h5p_libraries');
+        $libarray = [
+            'machineName' => $library->machinename,
+            'majorVersion' => $library->majorversion,
+            'minorVersion' => $library->minorversion,
+        ];
+        $libstring = H5PCore::libraryToString($libarray);
+        $librarykey = helper::get_cache_librarykey($libstring);
+        $libscache->delete($librarykey);
+
         // Remove the libraries using this library.
         $requiredlibraries = self::get_dependent_libraries($library->id);
         foreach ($requiredlibraries as $requiredlibrary) {
@@ -163,7 +174,7 @@ class api {
             unset($library->major_version);
             $library->minorVersion = (int) $library->minorversion;
             unset($library->minorversion);
-            $library->metadataSettings = json_decode($library->metadatasettings);
+            $library->metadataSettings = json_decode($library->metadatasettings ?? '');
 
             // If we already add this library means that it is an old version,as the previous query was sorted by version.
             if (isset($added[$library->name])) {
@@ -267,7 +278,8 @@ class api {
      * - The user is the author of the file.
      * - The component is different from user (i.e. private files).
      * - If the component is contentbank, the user can edit this file (calling the ContentBank API).
-     * - If the component is mod_h5pactivity, the user has the addinstance capability.
+     * - If the component is mod_xxx or block_xxx, the user has the addinstance capability.
+     * - If the component implements the can_edit_content in the h5p\canedit class and the callback to this method returns true.
      *
      * @param \stored_file $file The H5P file to check.
      *
@@ -277,25 +289,37 @@ class api {
     public static function can_edit_content(\stored_file $file): bool {
         global $USER;
 
+        list($type, $component) = \core_component::normalize_component($file->get_component());
+
         // Private files.
         $currentuserisauthor = $file->get_userid() == $USER->id;
-        $isuserfile = $file->get_component() === 'user';
+        $isuserfile = $component === 'user';
         if ($currentuserisauthor && $isuserfile) {
             // The user can edit the content because it's a private user file and she is the owner.
             return true;
         }
 
-        // For mod_h5pactivity, check whether the user can add/edit them.
-        if ($file->get_component() === 'mod_h5pactivity') {
+        // Check if the plugin where the file belongs implements the custom can_edit_content method and call it if that's the case.
+        $classname = '\\' . $file->get_component() . '\\h5p\\canedit';
+        $methodname = 'can_edit_content';
+        if (method_exists($classname, $methodname)) {
+            return $classname::{$methodname}($file);
+        }
+
+        // For mod/block files, check if the user has the addinstance capability of the component where the file belongs.
+        if ($type === 'mod' || $type === 'block') {
+            // For any other component, check whether the user can add/edit them.
             $context = \context::instance_by_id($file->get_contextid());
-            if (has_capability("mod/h5pactivity:addinstance", $context)) {
-                // The user can edit the content because she has the capability for creating H5P activities where the file belongs.
+            $plugins = \core_component::get_plugin_list($type);
+            $isvalid = array_key_exists($component, $plugins);
+            if ($isvalid && has_capability("$type/$component:addinstance", $context)) {
+                // The user can edit the content because she has the capability for creating instances where the file belongs.
                 return true;
             }
         }
 
         // For contentbank files, use the API to check if the user has access.
-        if ($file->get_component() == 'contentbank') {
+        if ($component == 'contentbank') {
             $cb = new \core_contentbank\contentbank();
             $content = $cb->get_content_from_id($file->get_itemid());
             $contenttype = $content->get_content_type_instance();

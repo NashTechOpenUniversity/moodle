@@ -1,15 +1,19 @@
 Description of MatthiasMullie\Minify import into Moodle
 
-1) Download https://github.com/matthiasmullie/minify/archive/1.3.51.zip and unzip
+1) Go to https://github.com/matthiasmullie/minify/releases
 
-mv minify-1.3.51/src /path/to/moodle/lib/minify/matthiasmullie-minify/
-mv minify-1.3.51/data /path/to/moodle/lib/minify/matthiasmullie-minify/
+Download the latest minify "Source code (zip)" and unzip it:
 
-2) Download https://github.com/matthiasmullie/path-converter/archive/1.1.0.zip and unzip
+mv minify-X.Y.ZZ/src /path/to/moodle/lib/minify/matthiasmullie-minify/
+mv minify-X.Y.ZZ/data /path/to/moodle/lib/minify/matthiasmullie-minify/
 
-mv path-converter-1.1.0/src/ /path/to/moodle/lib/minify/matthiasmullie-pathconverter/
+2) Go to https://github.com/matthiasmullie/path-converter/releases/ and unzip
 
-Local changes applied:
+Download the latest path-converter Source code (zip) and unzip it:
+
+mv path-converter-A.B.C/src/ /path/to/moodle/lib/minify/matthiasmullie-pathconverter/
+
+3) Apply the following patches:
 
 MDL-68191: https://github.com/matthiasmullie/minify/issues/317 is a bug that stops
   large sections of the CSS from being minimised, and also is a huge performance drain.
@@ -18,9 +22,3 @@ MDL-68191: https://github.com/matthiasmullie/minify/issues/317 is a bug that sto
   a few seconds. This is one of the reasons Behat runs in the browser are so slow.)
   Whenever this library is updated check if the fix is included and remove this note.
   NOTE: As of 2020/12/08, only the first commit was brought into Moodle
-
-
-2020-12-07 - Peter Dias
------------------------
-* Removed php74 compliance step as it is now part of the library
-* Updated minify to 1.3.63 and pathconverter to 1.1.3

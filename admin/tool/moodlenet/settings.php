@@ -30,12 +30,14 @@ if ($hassiteconfig) {
     $optionalsubsystems->add(new admin_setting_configcheckbox('tool_moodlenet/enablemoodlenet',
         new lang_string('enablemoodlenet', 'tool_moodlenet'),
         new lang_string('enablemoodlenet_desc', 'tool_moodlenet'),
-        0, 1, 0)
+        1, 1, 0)
     );
 
     // Create a MoodleNet category.
     if (get_config('tool_moodlenet', 'enablemoodlenet')) {
-        $ADMIN->add('root', new admin_category('moodlenet', get_string('pluginname', 'tool_moodlenet')));
+        if (!$ADMIN->locate('moodlenet')) {
+            $ADMIN->add('root', new admin_category('moodlenet', get_string('pluginname', 'tool_moodlenet')));
+        }
         // Our settings page.
         $settings = new admin_settingpage('tool_moodlenet', get_string('moodlenetsettings', 'tool_moodlenet'));
         $ADMIN->add('moodlenet', $settings);

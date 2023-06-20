@@ -722,7 +722,7 @@ class HTML_QuickForm extends HTML_Common {
      * @param    string     $name           (optional)group name
      * @param    string     $groupLabel     (optional)group label
      * @param    string     $separator      (optional)string to separate elements
-     * @param    string     $appendName     (optional)specify whether the group name should be
+     * @param    bool       $appendName     (optional)specify whether the group name should be
      *                                      used in the form element name ex: group[element]
      * @return   object     reference to added group of elements
      * @since    2.8
@@ -733,7 +733,7 @@ class HTML_QuickForm extends HTML_Common {
     {
         static $anonGroups = 1;
 
-        if (0 == strlen($name)) {
+        if (0 == strlen($name ?? '')) {
             $name       = 'qf_group_' . $anonGroups++;
             $appendName = false;
         }
@@ -813,6 +813,7 @@ class HTML_QuickForm extends HTML_Common {
     function getSubmitValue($elementName)
     {
         $value = null;
+        $elementName = $elementName ?? '';
         if (isset($this->_submitValues[$elementName]) || isset($this->_submitFiles[$elementName])) {
             $value = isset($this->_submitValues[$elementName])? $this->_submitValues[$elementName]: array();
             if (is_array($value) && isset($this->_submitFiles[$elementName])) {

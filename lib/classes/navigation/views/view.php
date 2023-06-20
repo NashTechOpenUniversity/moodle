@@ -30,9 +30,9 @@ use navigation_node_collection;
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 abstract class view extends navigation_node {
-    /** @var stdClass $context the current context */
+    /** @var \stdClass $context the current context */
     protected $context;
-    /** @var moodle_page $page the moodle page that the navigation belongs to */
+    /** @var \moodle_page $page the moodle page that the navigation belongs to */
     protected $page;
     /** @var bool $initialised A switch to see if the navigation node is initialised */
     protected $initialised = false;
@@ -73,7 +73,7 @@ abstract class view extends navigation_node {
         foreach ($nodes as $type => $leaves) {
             foreach ($leaves as $leaf => $location) {
                 if ($node = $source->find($leaf, $type)) {
-                    $nodesordered["$location"] = $node;
+                    $nodesordered["$location"] = $nodesordered["$location"] ?? $node;
                 }
             }
         }
@@ -131,7 +131,6 @@ abstract class view extends navigation_node {
                 // If node is one of the new views then set the active node to the child.
                 if (!$node instanceof view) {
                     $node->make_active();
-                    $child->make_inactive();
                     $result = $node;
                 } else {
                     $child->make_active();

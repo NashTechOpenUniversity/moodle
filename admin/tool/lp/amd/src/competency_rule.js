@@ -16,7 +16,7 @@
 /**
  * Competency rule base module.
  *
- * @module     tool_lp/competencyrule
+ * @module     tool_lp/competency_rule
  * @copyright  2015 Frédéric Massart - FMCorz.net
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -98,8 +98,7 @@ define(['jquery'], function($) {
     /**
      * Callback to inject the template.
      *
-     * @param  {Node} container Node to inject in.
-     * @return {Promise} Resolved when done.
+     * @returns {Promise} Resolved when done.
      * @method injectTemplate
      */
     Rule.prototype.injectTemplate = function() {

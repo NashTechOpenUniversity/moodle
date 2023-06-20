@@ -52,8 +52,8 @@ abstract class question_wizard_form extends moodleform {
         $mform->addElement('hidden', 'returnurl');
         $mform->setType('returnurl', PARAM_LOCALURL);
 
-        $mform->addElement('hidden', 'scrollpos');
-        $mform->setType('scrollpos', PARAM_INT);
+        $mform->addElement('hidden', 'mdlscrollto');
+        $mform->setType('mdlscrollto', PARAM_INT);
 
         $mform->addElement('hidden', 'appendqnumstring');
         $mform->setType('appendqnumstring', PARAM_ALPHA);
@@ -92,6 +92,10 @@ abstract class question_edit_form extends question_wizard_form {
     public $fileoptions;
     /** @var object instance of question type */
     public $instance;
+    /** @var object instance of custom field */
+    protected $customfieldhandler;
+    /** @var bool custom field plugin enabled or disabled*/
+    protected $customfieldpluginenabled = true;
 
     public function __construct($submiturl, $question, $category, $contexts, $formeditable = true) {
         global $DB;
@@ -99,8 +103,15 @@ abstract class question_edit_form extends question_wizard_form {
         $this->question = $question;
         $this->contexts = $contexts;
 
+        // Get the question category id.
+        if (isset($question->id)) {
+            $qcategory = $question->categoryobject->id ?? get_question_bank_entry($question->id)->questioncategoryid;
+        } else {
+            $qcategory = $question->category;
+        }
+
         $record = $DB->get_record('question_categories',
-                array('id' => $question->category), 'contextid');
+                array('id' => $qcategory), 'contextid');
         $this->context = context::instance_by_id($record->contextid);
 
         $this->editoroptions = array('subdirs' => 1, 'maxfiles' => EDITOR_UNLIMITED_FILES,
@@ -109,6 +120,10 @@ abstract class question_edit_form extends question_wizard_form {
 
         $this->category = $category;
         $this->categorycontext = context::instance_by_id($category->contextid);
+
+        if (!\core\plugininfo\qbank::is_plugin_enabled('qbank_customfields')) {
+            $this->customfieldpluginenabled = false;
+        }
 
         parent::__construct($submiturl, null, 'post', '', ['data-qtype' => $this->qtype()], $formeditable);
     }
@@ -167,8 +182,13 @@ abstract class question_edit_form extends question_wizard_form {
             $currentgrp[0] = $mform->createElement('questioncategory', 'category',
                     get_string('categorycurrent', 'question'),
                     array('contexts' => array($this->categorycontext)));
-            if ($this->question->formoptions->canedit ||
-                    $this->question->formoptions->cansaveasnew) {
+            // Validate if the question is being duplicated.
+            $beingcopied = false;
+            if (isset($this->question->beingcopied)) {
+                $beingcopied = $this->question->beingcopied;
+            }
+            if (($this->question->formoptions->canedit ||
+                    $this->question->formoptions->cansaveasnew) && ($beingcopied)) {
                 // Not move only form.
                 $currentgrp[1] = $mform->createElement('checkbox', 'usecurrentcat', '',
                         get_string('categorycurrentuse', 'question'));
@@ -179,14 +199,30 @@ abstract class question_edit_form extends question_wizard_form {
             $mform->addGroup($currentgrp, 'currentgrp',
                     get_string('categorycurrent', 'question'), null, false);
 
-            $mform->addElement('questioncategory', 'categorymoveto',
+            if (($beingcopied)) {
+                $mform->addElement('questioncategory', 'categorymoveto',
                     get_string('categorymoveto', 'question'),
                     array('contexts' => array($this->categorycontext)));
-            if ($this->question->formoptions->canedit ||
+                if ($this->question->formoptions->canedit ||
                     $this->question->formoptions->cansaveasnew) {
-                // Not move only form.
-                $mform->disabledIf('categorymoveto', 'usecurrentcat', 'checked');
+                    // Not move only form.
+                    $mform->disabledIf('categorymoveto', 'usecurrentcat', 'checked');
+                }
             }
+        }
+
+        if (!empty($this->question->id) && !$this->question->beingcopied) {
+            // Add extra information from plugins when editing a question (e.g.: Authors, version control and usage).
+            $functionname = 'edit_form_display';
+            $questiondata = [];
+            $plugins = get_plugin_list_with_function('qbank', $functionname);
+            foreach ($plugins as $componentname => $plugin) {
+                $element = new StdClass();
+                $element->pluginhtml = component_callback($componentname, $functionname, [$this->question]);
+                $questiondata['editelements'][] = $element;
+            }
+            $mform->addElement('static', 'versioninfo', get_string('versioninfo', 'qbank_editquestion'),
+                $PAGE->get_renderer('qbank_editquestion')->render_question_info($questiondata));
         }
 
         $mform->addElement('text', 'name', get_string('questionname', 'question'),
@@ -198,6 +234,9 @@ abstract class question_edit_form extends question_wizard_form {
                 array('rows' => 15), $this->editoroptions);
         $mform->setType('questiontext', PARAM_RAW);
         $mform->addRule('questiontext', null, 'required', null, 'client');
+
+        $mform->addElement('select', 'status', get_string('status', 'qbank_editquestion'),
+                            \qbank_editquestion\editquestion_helper::get_question_status_list());
 
         $mform->addElement('float', 'defaultmark', get_string('defaultmark', 'question'),
                 array('size' => 7));
@@ -222,28 +261,11 @@ abstract class question_edit_form extends question_wizard_form {
             $this->add_tag_fields($mform);
         }
 
-        if (!empty($this->question->id)) {
-            $mform->addElement('header', 'createdmodifiedheader',
-                    get_string('createdmodifiedheader', 'question'));
-            $a = new stdClass();
-            if (!empty($this->question->createdby)) {
-                $a->time = userdate($this->question->timecreated);
-                $a->user = fullname($DB->get_record(
-                        'user', array('id' => $this->question->createdby)));
-            } else {
-                $a->time = get_string('unknown', 'question');
-                $a->user = get_string('unknown', 'question');
-            }
-            $mform->addElement('static', 'created', get_string('created', 'question'),
-                    get_string('byandon', 'question', $a));
-            if (!empty($this->question->modifiedby)) {
-                $a = new stdClass();
-                $a->time = userdate($this->question->timemodified);
-                $a->user = fullname($DB->get_record(
-                        'user', array('id' => $this->question->modifiedby)));
-                $mform->addElement('static', 'modified', get_string('modified', 'question'),
-                        get_string('byandon', 'question', $a));
-            }
+        if ($this->customfieldpluginenabled) {
+            // Add custom fields to the form.
+            $this->customfieldhandler = qbank_customfields\customfield\question_handler::create();
+            $this->customfieldhandler->set_parent_context($this->categorycontext); // For question handler only.
+            $this->customfieldhandler->instance_form_definition($mform, empty($this->question->id) ? 0 : $this->question->id);
         }
 
         $this->add_hidden_fields();
@@ -283,6 +305,17 @@ abstract class question_edit_form extends question_wizard_form {
      */
     protected function definition_inner($mform) {
         // By default, do nothing.
+    }
+
+    /**
+     * Tweak the form with values provided by custom fields in use.
+     */
+    public function definition_after_data() {
+        $mform = $this->_form;
+        if ($this->customfieldpluginenabled) {
+            $this->customfieldhandler->instance_form_definition_after_data($mform,
+                empty($this->question->id) ? 0 : $this->question->id);
+        }
     }
 
     /**
@@ -508,7 +541,7 @@ abstract class question_edit_form extends question_wizard_form {
         }
         $penaltyoptions = array();
         foreach ($penalties as $penalty) {
-            $penaltyoptions["{$penalty}"] = (100 * $penalty) . '%';
+            $penaltyoptions["{$penalty}"] = format_float(100 * $penalty, 5, true, true) . '%';
         }
         $mform->addElement('select', 'penalty',
                 get_string('penaltyforeachincorrecttry', 'question'), $penaltyoptions);
@@ -813,11 +846,11 @@ abstract class question_edit_form extends question_wizard_form {
         global $DB;
 
         $errors = parent::validation($fromform, $files);
+
+        // Make sure that the user can edit the question.
         if (empty($fromform['makecopy']) && isset($this->question->id)
-                && ($this->question->formoptions->canedit ||
-                        $this->question->formoptions->cansaveasnew)
-                && empty($fromform['usecurrentcat']) && !$this->question->formoptions->canmove) {
-            $errors['currentgrp'] = get_string('nopermissionmove', 'question');
+            && !$this->question->formoptions->canedit) {
+            $errors['currentgrp'] = get_string('nopermissionedit', 'question');
         }
 
         // Category.
@@ -844,17 +877,28 @@ abstract class question_edit_form extends question_wizard_form {
                 $categoryinfo = $fromform['category'];
             }
             list($categoryid, $notused) = explode(',', $categoryinfo);
-            $conditions = 'category = ? AND idnumber = ?';
+            $conditions = 'questioncategoryid = ? AND idnumber = ?';
             $params = [$categoryid, $fromform['idnumber']];
             if (!empty($this->question->id)) {
+                // Get the question bank entry id to not check the idnumber for the same bank entry.
+                $sql = "SELECT DISTINCT qbe.id
+                          FROM {question_versions} qv
+                          JOIN {question_bank_entries} qbe ON qbe.id = qv.questionbankentryid
+                         WHERE qv.questionid = ?";
+                $bankentry = $DB->get_record_sql($sql, ['id' => $this->question->id]);
                 $conditions .= ' AND id <> ?';
-                $params[] = $this->question->id;
+                $params[] = $bankentry->id;
             }
-            if ($DB->record_exists_select('question', $conditions, $params)) {
+
+            if ($DB->record_exists_select('question_bank_entries', $conditions, $params)) {
                 $errors['idnumber'] = get_string('idnumbertaken', 'error');
             }
         }
 
+        if ($this->customfieldpluginenabled) {
+            // Add the custom field validation.
+            $errors  = array_merge($errors, $this->customfieldhandler->instance_form_validation($fromform, $files));
+        }
         return $errors;
     }
 

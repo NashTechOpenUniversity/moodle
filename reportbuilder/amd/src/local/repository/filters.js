@@ -28,12 +28,80 @@ import Ajax from 'core/ajax';
  *
  * @method
  * @param {Number} reportId
+ * @param {String} reportParameters
  * @return {Promise}
  */
-export const reset = reportId => {
+export const resetFilters = (reportId, reportParameters) => {
     const request = {
         methodname: 'core_reportbuilder_filters_reset',
-        args: {reportid: reportId}
+        args: {reportid: reportId, parameters: reportParameters}
+    };
+
+    return Ajax.call([request])[0];
+};
+
+/**
+ * Set filter values for given report
+ *
+ * @method
+ * @param {Number} reportId
+ * @param {String} reportParameters
+ * @param {String} filterValues
+ * @return {Promise}
+ */
+export const setFilters = (reportId, reportParameters, filterValues) => {
+    const request = {
+        methodname: 'core_reportbuilder_set_filters',
+        args: {reportid: reportId, parameters: reportParameters, values: filterValues}
+    };
+
+    return Ajax.call([request])[0];
+};
+
+/**
+ * Add a filter to the given report
+ *
+ * @param {Number} reportId
+ * @param {String} uniqueIdentifier
+ * @return {Promise}
+ */
+export const addFilter = (reportId, uniqueIdentifier) => {
+    const request = {
+        methodname: 'core_reportbuilder_filters_add',
+        args: {reportid: reportId, uniqueidentifier: uniqueIdentifier}
+    };
+
+    return Ajax.call([request])[0];
+};
+
+/**
+ * Remove filter from given report
+ *
+ * @param {Number} reportId
+ * @param {Number} filterId
+ * @return {Promise}
+ */
+export const deleteFilter = (reportId, filterId) => {
+    const request = {
+        methodname: 'core_reportbuilder_filters_delete',
+        args: {reportid: reportId, filterid: filterId}
+    };
+
+    return Ajax.call([request])[0];
+};
+
+/**
+ * Reorder a filter in a given report
+ *
+ * @param {Number} reportId
+ * @param {Number} filterId
+ * @param {Number} position
+ * @return {Promise}
+ */
+export const reorderFilter = (reportId, filterId, position) => {
+    const request = {
+        methodname: 'core_reportbuilder_filters_reorder',
+        args: {reportid: reportId, filterid: filterId, position: position}
     };
 
     return Ajax.call([request])[0];

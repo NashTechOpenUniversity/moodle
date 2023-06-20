@@ -195,6 +195,7 @@ class icon_system_fontawesome extends icon_system_font {
             'theme:fp/view_tree_active' => 'fa-folder',
             'core:i/addblock' => 'fa-plus-square',
             'core:i/assignroles' => 'fa-user-plus',
+            'core:i/asterisk' => 'fa-asterisk',
             'core:i/backup' => 'fa-file-zip-o',
             'core:i/badge' => 'fa-shield',
             'core:i/breadcrumbdivider' => 'fa-angle-right',
@@ -236,8 +237,10 @@ class icon_system_fontawesome extends icon_system_font {
             'core:i/empty' => 'fa-fw',
             'core:i/enrolmentsuspended' => 'fa-pause',
             'core:i/enrolusers' => 'fa-user-plus',
+            'core:i/excluded' => 'fa-minus-circle',
             'core:i/expired' => 'fa-exclamation text-warning',
             'core:i/export' => 'fa-download',
+            'core:i/link' => 'fa-link',
             'core:i/externallink' => 'fa-external-link',
             'core:i/files' => 'fa-file',
             'core:i/filter' => 'fa-filter',
@@ -293,6 +296,7 @@ class icon_system_fontawesome extends icon_system_font {
             'core:i/open' => 'fa-folder-open',
             'core:i/otherevent' => 'fa-calendar',
             'core:i/outcomes' => 'fa-tasks',
+            'core:i/overriden_grade' => 'fa-edit',
             'core:i/payment' => 'fa-money',
             'core:i/permissionlock' => 'fa-lock',
             'core:i/permissions' => 'fa-pencil-square-o',
@@ -358,9 +362,12 @@ class icon_system_fontawesome extends icon_system_font {
             'core:t/block' => 'fa-ban',
             'core:t/block_to_dock_rtl' => 'fa-chevron-right',
             'core:t/block_to_dock' => 'fa-chevron-left',
+            'core:t/blocks_drawer' => 'fa-chevron-left',
+            'core:t/blocks_drawer_rtl' => 'fa-chevron-right',
             'core:t/calc_off' => 'fa-calculator', // TODO: Change to better icon once we have stacked icon support or more icons.
             'core:t/calc' => 'fa-calculator',
             'core:t/check' => 'fa-check',
+            'core:t/clipboard' => 'fa-clipboard',
             'core:t/cohort' => 'fa-users',
             'core:t/collapsed_empty_rtl' => 'fa-caret-square-o-left',
             'core:t/collapsed_empty' => 'fa-caret-square-o-right',
@@ -368,6 +375,10 @@ class icon_system_fontawesome extends icon_system_font {
             'core:t/collapsed' => 'fa-caret-right',
             'core:t/collapsedcaret' => 'fa-caret-right',
             'core:t/collapsedchevron' => 'fa-chevron-right',
+            'core:t/collapsedchevron_rtl' => 'fa-chevron-left',
+            'core:t/completion_complete' => 'fa-circle',
+            'core:t/completion_fail' => 'fa-times',
+            'core:t/completion_incomplete' => 'fa-circle-thin',
             'core:t/contextmenu' => 'fa-cog',
             'core:t/copy' => 'fa-copy',
             'core:t/delete' => 'fa-trash',
@@ -394,19 +405,23 @@ class icon_system_fontawesome extends icon_system_font {
             'core:t/groups' => 'fa-user-circle',
             'core:t/groupv' => 'fa-user-circle-o',
             'core:t/hide' => 'fa-eye',
+            'core:t/index_drawer' => 'fa-list',
             'core:t/left' => 'fa-arrow-left',
             'core:t/less' => 'fa-caret-up',
+            'core:t/life-ring' => 'fa-life-ring',
             'core:t/locked' => 'fa-lock',
             'core:t/lock' => 'fa-unlock',
             'core:t/locktime' => 'fa-lock',
             'core:t/markasread' => 'fa-check',
             'core:t/messages' => 'fa-comments',
+            'core:t/messages-o' => 'fa-comments-o',
             'core:t/message' => 'fa-comment-o',
             'core:t/more' => 'fa-caret-down',
             'core:t/move' => 'fa-arrows-v',
             'core:t/online' => 'fa-circle',
             'core:t/passwordunmask-edit' => 'fa-pencil',
             'core:t/passwordunmask-reveal' => 'fa-eye',
+            'core:t/play' => 'fa-play',
             'core:t/portfolioadd' => 'fa-plus',
             'core:t/preferences' => 'fa-wrench',
             'core:t/preview' => 'fa-search-plus',
@@ -422,6 +437,7 @@ class icon_system_fontawesome extends icon_system_font {
             'core:t/sort_asc' => 'fa-sort-asc',
             'core:t/sort_desc' => 'fa-sort-desc',
             'core:t/sort' => 'fa-sort',
+            'core:t/stealth' => 'fa-low-vision',
             'core:t/stop' => 'fa-stop',
             'core:t/switch_minus' => 'fa-minus',
             'core:t/switch_plus' => 'fa-plus',
@@ -486,6 +502,12 @@ class icon_system_fontawesome extends icon_system_font {
         if (isset($icon->attributes['aria-hidden'])) {
             $data['aria-hidden'] = $icon->attributes['aria-hidden'];
         }
+
+        // Flipping help icon direction in right-to-left languages.
+        if (right_to_left() && $data['key'] == "fa-question-circle text-info") {
+            $data['extraclasses'] = "fa-flip-horizontal";
+        }
+
         return $output->render_from_template('core/pix_icon_fontawesome', $data);
     }
 

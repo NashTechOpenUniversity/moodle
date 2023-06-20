@@ -26,14 +26,12 @@
 require('../config.php');
 
 require_login();
-require_sesskey();
 
 $usercontext = context_user::instance($USER->id);
 
 $PAGE->set_context($usercontext);
 $PAGE->set_url('/user/managetoken.php');
 $PAGE->set_title(get_string('securitykeys', 'webservice'));
-$PAGE->set_heading(get_string('securitykeys', 'webservice'));
 $PAGE->set_pagelayout('admin');
 
 $rsstokenboxhtml = $webservicetokenboxhtml = '';
@@ -41,7 +39,7 @@ $rsstokenboxhtml = $webservicetokenboxhtml = '';
 if ( !is_siteadmin($USER->id)
     && !empty($CFG->enablewebservices)
     && has_capability('moodle/webservice:createtoken', $usercontext )) {
-    require($CFG->dirroot.'/webservice/lib.php');
+    require_once($CFG->dirroot.'/webservice/lib.php');
 
     $action  = optional_param('action', '', PARAM_ALPHANUMEXT);
     $tokenid = optional_param('tokenid', '', PARAM_SAFEDIR);
@@ -57,7 +55,9 @@ if ( !is_siteadmin($USER->id)
             $resetconfirmation = $wsrenderer->user_reset_token_confirmation($token);
         } else {
             // Delete the token that need to be regenerated.
+            require_sesskey();
             $webservice->delete_user_ws_token($tokenid);
+            redirect($PAGE->url, get_string('resettokencomplete', 'core_webservice'));
         }
     }
 
@@ -92,7 +92,9 @@ if (!empty($CFG->enablerssfeeds)) {
         if (!$confirm) {
             $resetconfirmation = $rssrenderer->user_reset_rss_token_confirmation();
         } else {
+            require_sesskey();
             rss_delete_token($USER->id);
+            redirect($PAGE->url, get_string('resettokencomplete', 'core_webservice'));
         }
     }
     if (empty($resetconfirmation)) {

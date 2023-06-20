@@ -1,4 +1,4 @@
-@core @core_grades
+@core @core_grades @javascript
 Feature: Control the aggregation of the scales
   In order to use control the aggregation of the scales
   As an admin
@@ -44,10 +44,10 @@ Feature: Control the aggregation of the scales
     When I give the grade "10" to the user "Student 1" for the grade item "Grade me"
     And I give the grade "B" to the user "Student 1" for the grade item "Scale me"
     And I press "Save changes"
-    And I set the following settings for grade item "Course 1":
+    And I set the following settings for grade item "Course 1" of type "course" on "grader" page:
       | Aggregation | <aggregation> |
     And I navigate to "View > User report" in the course gradebook
-    And I select "Student 1" from the "Select all or one user" singleselect
+    And I click on "Student 1" in the "user" search widget
     Then the following should exist in the "user-grade" table:
       | Grade item             | Grade          | Percentage  | Contribution to course total |
       | Grade me               | 10.00          | 10.00 %     | <gradecontrib>               |
@@ -61,7 +61,7 @@ Feature: Control the aggregation of the scales
     And I log in as "teacher1"
     And I am on "Course 1" course homepage
     And I navigate to "View > User report" in the course gradebook
-    And I select "Student 1" from the "Select all or one user" singleselect
+    And I click on "Student 1" in the "user" search widget
     And the following should exist in the "user-grade" table:
       | Grade item             | Grade          | Percentage  | Contribution to course total |
       | Grade me               | 10.00          | 10.00 %     | <gradecontrib2>              |
@@ -80,19 +80,19 @@ Feature: Control the aggregation of the scales
       | Highest grade                       | Highest grade.                       | 10.00       | 10.00 %  | 10.00        | 0.00         | 75.00        | 75.00 %   | 0.00 %        | 75.00 %       |
       | Mode of grades                      | Mode of grades.                      | 10.00       | 10.00 %  | 10.00        | 0.00         | 75.00        | 75.00 %   | 0.00 %        | 75.00 %       |
 
-  @javascript
   Scenario: Weights of scales cannot be edited when they are not aggregated
     Given I log in as "teacher1"
     And I am on "Course 1" course homepage
     And I navigate to "View > Grader report" in the course gradebook
     And I turn editing mode on
-    When I set the following settings for grade item "Course 1":
+    When I set the following settings for grade item "Course 1" of type "course" on "grader" page:
       | Aggregation | Natural |
+    And I press "Save changes"
     And I navigate to "Setup > Gradebook setup" in the course gradebook
     And I set the field "Override weight of Grade me" to "1"
     Then the field "Override weight of Grade me" matches value "100.00"
-    And I open the action menu in "Scale me" "table_row"
-    And I click on "Edit settings" "link" in the "Scale me" "table_row"
+    And I click on grade item menu "Scale me" of type "gradeitem" on "setup" page
+    And I choose "Edit grade item" in the open action menu
     And I follow "Show more..."
     And I should not see "Weight adjusted"
     And I should not see "Weight"
@@ -104,8 +104,8 @@ Feature: Control the aggregation of the scales
     And the field "Override weight of Grade me" matches value "95.238"
     And I set the field "Override weight of Scale me" to "1"
     And the field "Override weight of Scale me" matches value "4.8"
-    And I open the action menu in "Scale me" "table_row"
-    And I click on "Edit settings" "link" in the "Scale me" "table_row"
+    And I click on grade item menu "Scale me" of type "gradeitem" on "setup" page
+    And I choose "Edit grade item" in the open action menu
     And I follow "Show more..."
     And I should see "Weight adjusted"
     And I should see "Weight"

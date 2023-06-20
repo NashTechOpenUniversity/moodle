@@ -14,6 +14,9 @@ Feature: Atto Autosave
       | user | course | role |
       | teacher1 | C1 | editingteacher |
       | teacher2 | C1 | editingteacher |
+    And the following "blocks" exist:
+      | blockname     | contextlevel | reference | pagetypepattern | defaultregion |
+      | private_files | System       | 1         | my-index        | side-post     |
     And I log in as "admin"
     And I navigate to "Plugins > Text editors > Atto HTML editor > Atto toolbar settings" in site administration
     And I set the field "Autosave frequency" to "3"
@@ -21,7 +24,7 @@ Feature: Atto Autosave
     And I click on "Save changes" "button"
     And I am on "Course 1" course homepage
     And I navigate to "Settings" in current page administration
-    And I set the field with xpath "//select[@name='summary_editor[format]']" to "1"
+    And I set the field "Course summary format" to "1"
     And I click on "Save and display" "button"
     And I log out
 

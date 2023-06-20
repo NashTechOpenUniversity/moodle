@@ -49,9 +49,8 @@ class block_rss_client_edit_form extends block_edit_form {
 
         $insql = '';
         $params = array('userid' => $USER->id);
-        $rssconfig = unserialize(base64_decode($this->block->instance->configdata));
-        if ($rssconfig && !empty($rssconfig->rssid)) {
-            list($insql, $inparams) = $DB->get_in_or_equal($rssconfig->rssid, SQL_PARAMS_NAMED);
+        if (!empty($this->block->config) && !empty($this->block->config->rssid)) {
+            list($insql, $inparams) = $DB->get_in_or_equal($this->block->config->rssid, SQL_PARAMS_NAMED);
             $insql = "OR id $insql ";
             $params += $inparams;
         }
@@ -89,5 +88,14 @@ class block_rss_client_edit_form extends block_edit_form {
 
         $mform->addElement('selectyesno', 'config_block_rss_client_show_channel_image', get_string('clientshowimagelabel', 'block_rss_client'));
         $mform->setDefault('config_block_rss_client_show_channel_image', 0);
+    }
+
+    /**
+     * Display the configuration form when block is being added to the page
+     *
+     * @return bool
+     */
+    public static function display_form_when_adding(): bool {
+        return true;
     }
 }

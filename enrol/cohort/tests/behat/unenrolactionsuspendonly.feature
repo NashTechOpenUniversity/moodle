@@ -28,16 +28,13 @@ Feature: Unenrol action to disable course enrolment
   @javascript @skip_chrome_zerosize
   Scenario: Removing the user from the cohort will suspend the enrolment but keep the role
     When I log in as "teacher001"
-    And I am on "Course 001" course homepage
-    And I navigate to course participants
-    And I navigate to "Users > Enrolment methods" in current page administration
+    And I am on the "Course 001" "enrolment methods" page
     And I select "Cohort sync" from the "Add method" singleselect
     And I open the autocomplete suggestions list
     Then "System cohort" "autocomplete_suggestions" should exist
     And I set the field "Cohort" to "System cohort"
     And I press "Add method"
-    And I am on "Course 001" course homepage
-    And I navigate to "Users > Enrolled users" in current page administration
+    And I am on the "Course 001" "enrolled users" page
     And I should see "student001@example.com"
     And I should see "student002@example.com"
     And I should see "student003@example.com"
@@ -48,7 +45,7 @@ Feature: Unenrol action to disable course enrolment
     And I select "Disable course enrolment" from the "External unenrol action" singleselect
     And I press "Save changes"
     And I navigate to "Users > Accounts > Cohorts" in site administration
-    When I click on "Assign" "link" in the "System cohort" "table_row"
+    When I press "Assign" action in the "System cohort" report row
     And I set the field "removeselect_searchtext" to "Student 001"
     And I set the field "Current users" to "Student 001 (student001@example.com)"
     And I wait "1" seconds
@@ -63,16 +60,13 @@ Feature: Unenrol action to disable course enrolment
   @javascript @skip_chrome_zerosize
   Scenario: Deleting non-empty cohort will suspend the enrolment but keep the role
     When I log in as "teacher001"
-    And I am on "Course 001" course homepage
-    And I navigate to course participants
-    And I navigate to "Users > Enrolment methods" in current page administration
+    And I am on the "Course 001" "enrolment methods" page
     And I select "Cohort sync" from the "Add method" singleselect
     And I open the autocomplete suggestions list
     Then "System cohort" "autocomplete_suggestions" should exist
     And I set the field "Cohort" to "System cohort"
     And I press "Add method"
-    And I am on "Course 001" course homepage
-    And I navigate to "Users > Enrolled users" in current page administration
+    And I am on the "Course 001" "enrolled users" page
     And I should see "student001@example.com"
     And I should see "student002@example.com"
     And I should see "student003@example.com"
@@ -83,7 +77,7 @@ Feature: Unenrol action to disable course enrolment
     And I select "Disable course enrolment" from the "External unenrol action" singleselect
     And I press "Save changes"
     And I navigate to "Users > Accounts > Cohorts" in site administration
-    When I click on "Delete" "link" in the "System cohort" "table_row"
+    When I press "Delete" action in the "System cohort" report row
     And I press "Continue"
     And I am on "Course 001" course homepage
     And I navigate to course participants

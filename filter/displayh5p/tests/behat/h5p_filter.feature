@@ -18,6 +18,9 @@ Feature: Render H5P content using filters
       | activity | name       | intro      | introformat | course | content  | contentformat | idnumber |
       | page     | PageName1  | PageDesc1  | 1           | C1     | H5Ptest  | 1             | 1        |
       | page     | PageName2  | PageDesc1  | 1           | C1     | H5Ptest  | 1             | 1        |
+    And the following "blocks" exist:
+      | blockname     | contextlevel | reference | pagetypepattern | defaultregion |
+      | private_files | System       | 1         | my-index        | side-post     |
     And the "displayh5p" filter is "on"
     And the following config values are set as admin:
       | allowedsources | https://moodle.h5p.com/content/[id]/embed | filter_displayh5p |
@@ -49,7 +52,8 @@ Feature: Render H5P content using filters
     And I wait until the page is ready
     Then ".h5p-iframe" "css_element" should not exist
 
-  @javascript
+  # This scenario has Atto-specific steps. See MDL-75913 for further details.
+  @javascript @editor_atto
   Scenario: Render a local H5P file as admin
     Given I log in as "admin"
     And I am on "Course 1" course homepage with editing mode on
@@ -68,6 +72,7 @@ Feature: Render H5P content using filters
     And I click on "Insert H5P" "button" in the "Insert H5P" "dialogue"
     And I wait until the page is ready
     When I click on "Save and display" "button"
+    And I should see "PageName1" in the "page-header" "region"
 #   Switch to iframe created by filter
     And I switch to "h5p-iframe" class iframe
 #   Switch to iframe created by embed.php page
@@ -83,7 +88,8 @@ Feature: Render H5P content using filters
     And I should not see "you don't have access"
     And I should see "Lorum ipsum"
 
-  @javascript
+  # This scenario has Atto-specific steps. See MDL-75913 for further details.
+  @javascript @editor_atto
   Scenario: Render a local H5P file as teacher
     Given I log in as "teacher1"
     And I am on "Course 1" course homepage with editing mode on
@@ -102,12 +108,14 @@ Feature: Render H5P content using filters
     And I click on "Insert H5P" "button" in the "Insert H5P" "dialogue"
     And I wait until the page is ready
     When I click on "Save and display" "button"
+    And I should see "PageName1" in the "page-header" "region"
 #   Switch to iframe created by filter
     And I switch to "h5p-iframe" class iframe
     Then I should see "Note that the libraries may exist in the file you uploaded, but you're not allowed to upload new libraries."
     And I should see "missing-required-library"
 
-  @javascript
+  # This scenario has Atto-specific steps. See MDL-75913 for further details.
+  @javascript @editor_atto
   Scenario: Render a local H5P file with existing libraries
     Given I log in as "teacher1"
     And I am on "Course 1" course homepage with editing mode on
@@ -126,6 +134,7 @@ Feature: Render H5P content using filters
     And I click on "Insert H5P" "button" in the "Insert H5P" "dialogue"
     And I wait until the page is ready
     And I click on "Save and display" "button"
+    And I should see "PageName1" in the "page-header" "region"
 #   Switch to iframe created by filter
     And I switch to "h5p-iframe" class iframe
 #   Libraries don't exist, so an error should be displayed.
@@ -149,6 +158,7 @@ Feature: Render H5P content using filters
     And I click on "Insert H5P" "button" in the "Insert H5P" "dialogue"
     And I wait until the page is ready
     And I click on "Save and display" "button"
+    And I should see "PageName2" in the "page-header" "region"
 #   Switch to iframe created by filter
     And I switch to "h5p-iframe" class iframe
 #   Switch to iframe created by embed.php page
@@ -165,7 +175,8 @@ Feature: Render H5P content using filters
     Then I should not see "missing-required-library"
     And I should see "Lorum ipsum"
 
-  @javascript
+  # This scenario has Atto-specific steps. See MDL-75913 for further details.
+  @javascript @editor_atto
   Scenario: Render local H5P file with a disabled main library
     Given I log in as "admin"
 # Upload H5P file to private files.
@@ -187,6 +198,7 @@ Feature: Render H5P content using filters
     And I click on "Select this file" "button"
     And I click on "Insert H5P" "button" in the "Insert H5P" "dialogue"
     And I click on "Save and display" "button"
+    And I should see "PageName1" in the "page-header" "region"
     And I switch to "h5p-iframe" class iframe
 #   Library is disabled, so an error should be displayed.
     Then I should see "This file can't be displayed because its content type is disabled."

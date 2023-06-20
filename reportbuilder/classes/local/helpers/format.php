@@ -21,7 +21,7 @@ namespace core_reportbuilder\local\helpers;
 use stdClass;
 
 /**
- * Class containing helper methods for format columns data as callbacks.
+ * Class containing helper methods for formatting column data via callbacks
  *
  * @package     core_reportbuilder
  * @copyright   2021 Sara Arjona <sara@moodle.com> based on Alberto Lara Hernández <albertolara@moodle.com> code.
@@ -32,22 +32,38 @@ class format {
     /**
      * Returns formatted date.
      *
-     * @param int $value Unix timestamp
+     * @param int|null $value Unix timestamp
      * @param stdClass $row
      * @param string|null $format Format string for strftime
      * @return string
      */
-    public static function userdate(int $value, stdClass $row, ?string $format = null): string {
+    public static function userdate(?int $value, stdClass $row, ?string $format = null): string {
         return $value ? userdate($value, $format) : '';
     }
 
     /**
      * Returns yes/no string depending on the given value
      *
-     * @param bool $value
+     * @param bool|null $value
      * @return string
      */
-    public static function boolean_as_text(bool $value): string {
+    public static function boolean_as_text(?bool $value): string {
+        if ($value === null) {
+            return '';
+        }
         return $value ? get_string('yes') : get_string('no');
+    }
+
+    /**
+     * Returns float value as a percentage
+     *
+     * @param float|null $value
+     * @return string
+     */
+    public static function percent(?float $value): string {
+        if ($value === null) {
+            return '';
+        }
+        return get_string('percents', 'moodle', format_float($value));
     }
 }

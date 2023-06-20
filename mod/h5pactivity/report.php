@@ -43,11 +43,13 @@ if (empty($id)) {
 
 require_login($course, true, $cm);
 
+$currentgroup = groups_get_activity_group($cm, true);
+
 $manager = manager::create_from_coursemodule($cm);
 
-$report = $manager->get_report($userid, $attemptid);
+$report = $manager->get_report($userid, $attemptid, $currentgroup);
 if (!$report) {
-    print_error('permissiondenied');
+    throw new \moodle_exception('permissiondenied');
 }
 
 $user = $report->get_user();
@@ -84,6 +86,7 @@ $event->trigger();
 $shortname = format_string($course->shortname, true, ['context' => $context]);
 $pagetitle = strip_tags($shortname.': '.format_string($moduleinstance->name));
 $PAGE->set_title(format_string($pagetitle));
+$PAGE->activityheader->disable();
 
 $navbar = [];
 if ($manager->can_view_all_attempts()) {
@@ -124,6 +127,8 @@ $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_context($context);
 
 echo $OUTPUT->header();
+
+groups_print_activity_menu($cm, $PAGE->url);
 
 echo html_writer::start_div('mt-4');
 echo $report->print();

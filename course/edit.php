@@ -81,7 +81,7 @@ if ($id) {
     // Editing course.
     if ($id == SITEID){
         // Don't allow editing of  'site course' using this from.
-        print_error('cannoteditsiteform');
+        throw new \moodle_exception('cannoteditsiteform');
     }
 
     // Login to the course and retrieve also all fields defined by course format.
@@ -112,6 +112,11 @@ if ($id) {
     $PAGE->set_context($catcontext);
 }
 
+// We are adding a new course and have a category context.
+if (isset($catcontext)) {
+    $PAGE->set_secondary_active_tab('categorymain');
+}
+
 // Prepare course and the editor.
 $editoroptions = array('maxfiles' => EDITOR_UNLIMITED_FILES, 'maxbytes'=>$CFG->maxbytes, 'trusttext'=>false, 'noclean'=>true);
 $overviewfilesoptions = course_overviewfiles_options($course);
@@ -122,12 +127,6 @@ if (!empty($course)) {
     $course = file_prepare_standard_editor($course, 'summary', $editoroptions, $coursecontext, 'course', 'summary', 0);
     if ($overviewfilesoptions) {
         file_prepare_standard_filemanager($course, 'overviewfiles', $overviewfilesoptions, $coursecontext, 'course', 'overviewfiles', 0);
-    }
-
-    // Inject current aliases.
-    $aliases = $DB->get_records('role_names', array('contextid'=>$coursecontext->id));
-    foreach($aliases as $alias) {
-        $course->{'role_'.$alias->roleid} = $alias->name;
     }
 
     // Populate course tags.
@@ -223,17 +222,20 @@ if (!empty($course->id)) {
         // If the user doesn't have either manage caps then they can only manage within the given category.
         $managementurl->param('categoryid', $categoryid);
     }
-    // Because the course category management interfaces are buried in the admin tree and that is loaded by ajax
+    // Because the course category interfaces are buried in the admin tree and that is loaded by ajax
     // we need to manually tell the navigation we need it loaded. The second arg does this.
-    navigation_node::override_active_url($managementurl, true);
+    navigation_node::override_active_url(new moodle_url('/course/index.php', ['categoryid' => $category->id]), true);
+    $PAGE->set_primary_active_tab('home');
+    $PAGE->navbar->add(get_string('coursemgmt', 'admin'), $managementurl);
 
     $pagedesc = $straddnewcourse;
     $title = "$site->shortname: $straddnewcourse";
-    $fullname = $site->fullname;
+    $fullname = format_string($category->name);
     $PAGE->navbar->add($pagedesc);
 }
 
 $PAGE->set_title($title);
+$PAGE->add_body_class('limitedwidth');
 $PAGE->set_heading($fullname);
 
 echo $OUTPUT->header();

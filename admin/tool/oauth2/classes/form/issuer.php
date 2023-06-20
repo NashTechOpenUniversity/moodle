@@ -46,9 +46,6 @@ class issuer extends persistent {
     /** @var string $type */
     protected $type;
 
-    /** @var boolean $showrequireconfirm Whether to show the require confirmation email checkbox or not. */
-    protected $showrequireconfirm;
-
     /**
      * Constructor.
      *
@@ -74,7 +71,6 @@ class issuer extends persistent {
         if (array_key_exists('type', $customdata)) {
             $this->type = $customdata['type'];
         }
-        $this->showrequireconfirm = !empty($customdata['showrequireconfirm']);
         parent::__construct($action, $customdata, $method, $target, $attributes, $editable, $ajaxformdata);
     }
 
@@ -112,7 +108,7 @@ class issuer extends persistent {
         $mform->addHelpButton('clientsecret', 'issuerclientsecret', 'tool_oauth2');
 
         // Use basic authentication.
-        $mform->addElement('checkbox', 'basicauth', get_string('usebasicauth', 'tool_oauth2'));
+        $mform->addElement('advcheckbox', 'basicauth', get_string('usebasicauth', 'tool_oauth2'));
         $mform->addHelpButton('basicauth', 'usebasicauth', 'tool_oauth2');
 
         // Base Url.
@@ -169,14 +165,22 @@ class issuer extends persistent {
         $mform->addHelpButton('alloweddomains', 'issueralloweddomains', 'tool_oauth2');
         $mform->hideIf('alloweddomains', 'showonloginpage', 'eq', \core\oauth2\issuer::SERVICEONLY);
 
-        if ($this->showrequireconfirm) {
-            // Require confirmation email for new accounts.
-            $mform->addElement('advcheckbox', 'requireconfirmation', get_string('issuerrequireconfirmation', 'tool_oauth2'));
-            $mform->addHelpButton('requireconfirmation', 'issuerrequireconfirmation', 'tool_oauth2');
-            $mform->hideIf('requireconfirmation', 'showonloginpage', 'eq', \core\oauth2\issuer::SERVICEONLY);
-        }
+        // Require confirmation email for new accounts.
+        $mform->addElement('advcheckbox', 'requireconfirmation',
+                get_string('issuerrequireconfirmation', 'tool_oauth2'));
+        $mform->addHelpButton('requireconfirmation', 'issuerrequireconfirmation', 'tool_oauth2');
+        $mform->hideIf('requireconfirmation', 'showonloginpage',
+                'eq', \core\oauth2\issuer::SERVICEONLY);
 
-        if ($this->type == 'imsobv2p1' || $issuer->get('servicetype') == 'imsobv2p1') {
+        $mform->addElement('checkbox', 'acceptrisk', get_string('acceptrisk', 'tool_oauth2'));
+        $mform->addHelpButton('acceptrisk', 'acceptrisk', 'tool_oauth2');
+        $mform->hideIf('acceptrisk', 'showonloginpage',
+                'eq', \core\oauth2\issuer::SERVICEONLY);
+        $mform->hideIf('acceptrisk', 'requireconfirmation', 'checked');
+
+
+        if ($this->type == 'imsobv2p1' || $issuer->get('servicetype') == 'imsobv2p1'
+                || $this->type == 'moodlenet' || $issuer->get('servicetype') == 'moodlenet') {
             $mform->addRule('baseurl', null, 'required', null, 'client');
         } else {
             $mform->addRule('clientid', null, 'required', null, 'client');
@@ -241,13 +245,15 @@ class issuer extends persistent {
      * @return array of additional errors, or overridden errors.
      */
     protected function extra_validation($data, $files, array &$errors) {
-        $errors = [];
         if ($data->showonloginpage != \core\oauth2\issuer::SERVICEONLY) {
             if (!strlen(trim($data->loginscopes))) {
                 $errors['loginscopes'] = get_string('required');
             }
             if (!strlen(trim($data->loginscopesoffline))) {
                 $errors['loginscopesoffline'] = get_string('required');
+            }
+            if (empty($data->requireconfirmation) && empty($data->acceptrisk)) {
+                $errors['acceptrisk'] = get_string('required');
             }
         }
         return $errors;

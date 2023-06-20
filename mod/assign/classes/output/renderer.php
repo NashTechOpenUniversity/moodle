@@ -24,6 +24,8 @@
 
 namespace mod_assign\output;
 
+defined('MOODLE_INTERNAL') || die();
+
 require_once($CFG->dirroot . '/mod/assign/locallib.php');
 
 use \mod_assign\output\grading_app;
@@ -37,6 +39,9 @@ use \mod_assign\output\grading_app;
  */
 class renderer extends \plugin_renderer_base {
 
+    /** @var string a unique ID. */
+    public $htmlid;
+
     /**
      * Rendering assignment files
      *
@@ -44,8 +49,8 @@ class renderer extends \plugin_renderer_base {
      * @param int $userid
      * @param string $filearea
      * @param string $component
-     * @param stdClass $course
-     * @param stdClass $coursemodule
+     * @param \stdClass $course
+     * @param \stdClass $coursemodule
      * @return string
      */
     public function assign_files(\context $context, $userid, $filearea, $component, $course = null, $coursemodule = null) {
@@ -166,7 +171,7 @@ class renderer extends \plugin_renderer_base {
             $fullname = fullname($summary->user, $summary->viewfullnames);
             $extrainfo = array();
             foreach ($summary->extrauserfields as $extrafield) {
-                $extrainfo[] = $summary->user->$extrafield;
+                $extrainfo[] = s($summary->user->$extrafield);
             }
             if (count($extrainfo)) {
                 $fullname .= ' (' . implode(', ', $extrainfo) . ')';
@@ -228,10 +233,6 @@ class renderer extends \plugin_renderer_base {
      * @return string
      */
     public function render_assign_header(assign_header $header) {
-        global $USER;
-
-        $o = '';
-
         if ($header->subpage) {
             $this->page->navbar->add($header->subpage, $header->subpageurl);
             $args = ['contextname' => $header->context->get_context_name(false, true), 'subpage' => $header->subpage];
@@ -246,28 +247,26 @@ class renderer extends \plugin_renderer_base {
         $this->page->set_title($title);
         $this->page->set_heading($this->page->course->fullname);
 
-        $o .= $this->output->header();
-        $o .= $this->output->heading($heading);
-
-        // Show the activity information output component.
-        $modinfo = get_fast_modinfo($header->assign->course);
-        $cm = $modinfo->get_cm($header->coursemoduleid);
-        $cmcompletion = \core_completion\cm_completion_details::get_instance($cm, $USER->id);
-        $activitydates = \core\activity_dates::get_dates_for_module($cm, $USER->id);
-        $o .= $this->output->activity_information($cm, $cmcompletion, $activitydates);
-
-        if ($header->preface) {
-            $o .= $header->preface;
+        $description = $header->preface;
+        if ($header->showintro || $header->activity) {
+            $description = $this->output->box_start('generalbox boxaligncenter');
+            if ($header->showintro) {
+                $description .= format_module_intro('assign', $header->assign, $header->coursemoduleid);
+            }
+            if ($header->activity) {
+                $description .= $this->format_activity_text($header->assign, $header->coursemoduleid);
+            }
+            $description .= $header->postfix;
+            $description .= $this->output->box_end();
         }
 
-        if ($header->showintro) {
-            $o .= $this->output->box_start('generalbox boxaligncenter', 'intro');
-            $o .= format_module_intro('assign', $header->assign, $header->coursemoduleid);
-            $o .= $header->postfix;
-            $o .= $this->output->box_end();
-        }
+        $activityheader = $this->page->activityheader;
+        $activityheader->set_attrs([
+            'title' => $activityheader->is_title_allowed() ? $heading : '',
+            'description' => $description
+        ]);
 
-        return $o;
+        return $this->output->header();
     }
 
     /**
@@ -292,6 +291,12 @@ class renderer extends \plugin_renderer_base {
         $o = '';
         $o .= $this->output->container_start('gradingsummary');
         $o .= $this->output->heading(get_string('gradingsummary', 'assign'), 3);
+
+        if (isset($summary->cm)) {
+            $currenturl = new \moodle_url('/mod/assign/view.php', array('id' => $summary->cm->id));
+            $o .= groups_print_activity_menu($summary->cm, $currenturl->out(), true);
+        }
+
         $o .= $this->output->box_start('boxaligncenter gradingsummarytable');
         $t = new \html_table();
         $t->attributes['class'] = 'generaltable table-bordered';
@@ -369,24 +374,17 @@ class renderer extends \plugin_renderer_base {
 
         }
 
+        // Add time limit info if there is one.
+        $timelimitenabled = get_config('assign', 'enabletimelimit');
+        if ($timelimitenabled && $summary->timelimit > 0) {
+            $cell1content = get_string('timelimit', 'assign');
+            $cell2content = format_time($summary->timelimit);
+            $this->add_table_row_tuple($t, $cell1content, $cell2content, [], []);
+        }
+
         // All done - write the table.
         $o .= \html_writer::table($t);
         $o .= $this->output->box_end();
-
-        // Link to the grading page.
-        $o .= \html_writer::start_tag('center');
-        $o .= $this->output->container_start('submissionlinks');
-        $urlparams = array('id' => $summary->coursemoduleid, 'action' => 'grading');
-        $url = new \moodle_url('/mod/assign/view.php', $urlparams);
-        $o .= \html_writer::link($url, get_string('viewgrading', 'mod_assign'),
-            ['class' => 'btn btn-secondary']);
-        if ($summary->cangrade) {
-            $urlparams = array('id' => $summary->coursemoduleid, 'action' => 'grader');
-            $url = new \moodle_url('/mod/assign/view.php', $urlparams);
-            $o .= \html_writer::link($url, get_string('gradeverb'),
-                ['class' => 'btn btn-primary ml-1']);
-        }
-        $o .= $this->output->container_end();
 
         // Close the container and insert a spacer.
         $o .= $this->output->container_end();
@@ -453,6 +451,11 @@ class renderer extends \plugin_renderer_base {
         $o .= \html_writer::table($t);
         $o .= $this->output->box_end();
 
+        if (!empty($status->gradingcontrollergrade)) {
+            $o .= $this->output->heading(get_string('gradebreakdown', 'assign'), 4);
+            $o .= $status->gradingcontrollergrade;
+        }
+
         $o .= $this->output->container_end();
         return $o;
     }
@@ -467,7 +470,6 @@ class renderer extends \plugin_renderer_base {
         $o = '';
         $o .= $this->output->container_start('submissionstatustable');
         $o .= $this->output->heading(get_string('submission', 'assign'), 3);
-        $time = time();
 
         if ($status->teamsubmissionenabled) {
             $group = $status->submissiongroup;
@@ -567,33 +569,20 @@ class renderer extends \plugin_renderer_base {
                 // Extension date.
                 $duedate = $status->extensionduedate;
             }
+        }
 
-            // Time remaining.
-            $classname = 'timeremaining';
-            if ($duedate - $time <= 0) {
-                if (!$submission ||
-                    $submission->status != ASSIGN_SUBMISSION_STATUS_SUBMITTED) {
-                    if ($status->submissionsenabled) {
-                        $remaining = get_string('overdue', 'assign', format_time($time - $duedate));
-                        $classname = 'overdue';
-                    } else {
-                        $remaining = get_string('duedatereached', 'assign');
-                    }
-                } else {
-                    if ($submission->timemodified > $duedate) {
-                        $remaining = get_string('submittedlate',
-                                              'assign',
-                                              format_time($submission->timemodified - $duedate));
-                        $classname = 'latesubmission';
-                    } else {
-                        $remaining = get_string('submittedearly',
-                                               'assign',
-                                               format_time($submission->timemodified - $duedate));
-                        $classname = 'earlysubmission';
-                    }
-                }
-            } else {
-                $remaining = get_string('paramtimeremaining', 'assign', format_time($duedate - $time));
+        // Time remaining.
+        // Only add the row if there is a due date, or a countdown.
+        if ($status->duedate > 0 || !empty($submission->timestarted)) {
+            [$remaining, $classname] = $this->get_time_remaining($status);
+
+            // If the assignment is not submitted, and there is a submission in progress,
+            // Add a heading for the time limit.
+            if (!empty($submission) &&
+                $submission->status != ASSIGN_SUBMISSION_STATUS_SUBMITTED &&
+                !empty($submission->timestarted)
+            ) {
+                $o .= $this->output->container(get_string('timeremaining', 'assign'));
             }
             $o .= $this->output->container($remaining, $classname);
         }
@@ -716,7 +705,7 @@ class renderer extends \plugin_renderer_base {
                 if (!$status->submissionsenabled) {
                     $cell2content = get_string('noonlinesubmissions', 'assign');
                 } else {
-                    $cell2content = get_string('noattempt', 'assign');
+                    $cell2content = get_string('nosubmissionyet', 'assign');
                 }
             }
         } else {
@@ -801,36 +790,22 @@ class renderer extends \plugin_renderer_base {
                 $this->add_table_row_tuple($t, $cell1content, $cell2content);
                 $duedate = $status->extensionduedate;
             }
+        }
 
-            // Time remaining.
+        // Time remaining.
+        // Only add the row if there is a due date, or a countdown.
+        if ($status->duedate > 0 || !empty($submission->timestarted)) {
             $cell1content = get_string('timeremaining', 'assign');
-            $cell2attributes = [];
-            if ($duedate - $time <= 0) {
-                if (!$submission ||
-                    $submission->status != ASSIGN_SUBMISSION_STATUS_SUBMITTED) {
-                    if ($status->submissionsenabled) {
-                        $cell2content = get_string('overdue', 'assign', format_time($time - $duedate));
-                        $cell2attributes = array('class' => 'overdue');
-                    } else {
-                        $cell2content = get_string('duedatereached', 'assign');
-                    }
-                } else {
-                    if ($submission->timemodified > $duedate) {
-                        $cell2content = get_string('submittedlate',
-                                              'assign',
-                                              format_time($submission->timemodified - $duedate));
-                        $cell2attributes = array('class' => 'latesubmission');
-                    } else {
-                        $cell2content = get_string('submittedearly',
-                                               'assign',
-                                               format_time($submission->timemodified - $duedate));
-                        $cell2attributes = array('class' => 'earlysubmission');
-                    }
-                }
-            } else {
-                $cell2content = format_time($duedate - $time);
-            }
-            $this->add_table_row_tuple($t, $cell1content, $cell2content, [], $cell2attributes);
+            [$cell2content, $cell2attributes] = $this->get_time_remaining($status);
+            $this->add_table_row_tuple($t, $cell1content, $cell2content, [], ['class' => $cell2attributes]);
+        }
+
+        // Add time limit info if there is one.
+        $timelimitenabled = get_config('assign', 'enabletimelimit') && $status->timelimit > 0;
+        if ($timelimitenabled && $status->timelimit > 0) {
+            $cell1content = get_string('timelimit', 'assign');
+            $cell2content = format_time($status->timelimit);
+            $this->add_table_row_tuple($t, $cell1content, $cell2content, [], []);
         }
 
         // Show graders whether this submission is editable by students.
@@ -843,13 +818,6 @@ class renderer extends \plugin_renderer_base {
                 $cell2content = get_string('submissionnoteditable', 'assign');
                 $cell2attributes = array('class' => 'submissionnoteditable');
             }
-            $this->add_table_row_tuple($t, $cell1content, $cell2content, [], $cell2attributes);
-        }
-
-        // Grading criteria preview.
-        if (!empty($status->gradingcontrollerpreview)) {
-            $cell1content = get_string('gradingmethodpreview', 'assign');
-            $cell2content = $status->gradingcontrollerpreview;
             $this->add_table_row_tuple($t, $cell1content, $cell2content, [], $cell2attributes);
         }
 
@@ -893,62 +861,10 @@ class renderer extends \plugin_renderer_base {
         $o .= \html_writer::table($t);
         $o .= $this->output->box_end();
 
-        // Links.
-        if ($status->view == assign_submission_status::STUDENT_VIEW) {
-            if ($status->canedit) {
-                if (!$submission || $submission->status == ASSIGN_SUBMISSION_STATUS_NEW) {
-                    $o .= $this->output->box_start('generalbox submissionaction');
-                    $urlparams = array('id' => $status->coursemoduleid, 'action' => 'editsubmission');
-                    $o .= $this->output->single_button(new \moodle_url('/mod/assign/view.php', $urlparams),
-                                                       get_string('addsubmission', 'assign'), 'get');
-                    $o .= $this->output->box_start('boxaligncenter submithelp');
-                    $o .= get_string('addsubmission_help', 'assign');
-                    $o .= $this->output->box_end();
-                    $o .= $this->output->box_end();
-                } else if ($submission->status == ASSIGN_SUBMISSION_STATUS_REOPENED) {
-                    $o .= $this->output->box_start('generalbox submissionaction');
-                    $urlparams = array('id' => $status->coursemoduleid,
-                                       'action' => 'editprevioussubmission',
-                                       'sesskey'=>sesskey());
-                    $o .= $this->output->single_button(new \moodle_url('/mod/assign/view.php', $urlparams),
-                                                       get_string('addnewattemptfromprevious', 'assign'), 'get');
-                    $o .= $this->output->box_start('boxaligncenter submithelp');
-                    $o .= get_string('addnewattemptfromprevious_help', 'assign');
-                    $o .= $this->output->box_end();
-                    $o .= $this->output->box_end();
-                    $o .= $this->output->box_start('generalbox submissionaction');
-                    $urlparams = array('id' => $status->coursemoduleid, 'action' => 'editsubmission');
-                    $o .= $this->output->single_button(new \moodle_url('/mod/assign/view.php', $urlparams),
-                                                       get_string('addnewattempt', 'assign'), 'get');
-                    $o .= $this->output->box_start('boxaligncenter submithelp');
-                    $o .= get_string('addnewattempt_help', 'assign');
-                    $o .= $this->output->box_end();
-                    $o .= $this->output->box_end();
-                } else {
-                    $o .= $this->output->box_start('generalbox submissionaction');
-                    $urlparams = array('id' => $status->coursemoduleid, 'action' => 'editsubmission');
-                    $o .= $this->output->single_button(new \moodle_url('/mod/assign/view.php', $urlparams),
-                                                       get_string('editsubmission', 'assign'), 'get');
-                    $urlparams = array('id' => $status->coursemoduleid, 'action' => 'removesubmissionconfirm');
-                    $o .= $this->output->single_button(new \moodle_url('/mod/assign/view.php', $urlparams),
-                                                       get_string('removesubmission', 'assign'), 'get');
-                    $o .= $this->output->box_start('boxaligncenter submithelp');
-                    $o .= get_string('editsubmission_help', 'assign');
-                    $o .= $this->output->box_end();
-                    $o .= $this->output->box_end();
-                }
-            }
-
-            if ($status->cansubmit) {
-                $urlparams = array('id' => $status->coursemoduleid, 'action'=>'submit');
-                $o .= $this->output->box_start('generalbox submissionaction');
-                $o .= $this->output->single_button(new \moodle_url('/mod/assign/view.php', $urlparams),
-                                                   get_string('submitassignment', 'assign'), 'get');
-                $o .= $this->output->box_start('boxaligncenter submithelp');
-                $o .= get_string('submitassignment_help', 'assign');
-                $o .= $this->output->box_end();
-                $o .= $this->output->box_end();
-            }
+        // Grading criteria preview.
+        if (!empty($status->gradingcontrollerpreview)) {
+            $o .= $this->output->heading(get_string('gradingmethodpreview', 'assign'), 4);
+            $o .= $status->gradingcontrollerpreview;
         }
 
         $o .= $this->output->container_end();
@@ -1345,6 +1261,14 @@ class renderer extends \plugin_renderer_base {
                                       $info['cmname']);
             $due = $info['timedue'] ? userdate($info['timedue']) : '-';
 
+            if ($info['cangrade']) {
+                $params['action'] = 'grading';
+                $gradeinfo = \html_writer::link(new \moodle_url('/mod/assign/view.php', $params),
+                    get_string('numberofsubmissionsneedgradinglabel', 'assign', $info['gradeinfo']));
+            } else {
+                $gradeinfo = $info['gradeinfo'];
+            }
+
             $printsection = '';
             if ($indexsummary->usesections) {
                 if ($info['sectionname'] !== $currentsection) {
@@ -1359,9 +1283,9 @@ class renderer extends \plugin_renderer_base {
             }
 
             if ($indexsummary->usesections) {
-                $row = array($printsection, $link, $due, $info['submissioninfo'], $info['gradeinfo']);
+                $row = [$printsection, $link, $due, $info['submissioninfo'], $gradeinfo];
             } else {
-                $row = array($link, $due, $info['submissioninfo'], $info['gradeinfo']);
+                $row = [$link, $due, $info['submissioninfo'], $gradeinfo];
             }
             $table->data[] = $row;
         }
@@ -1371,7 +1295,61 @@ class renderer extends \plugin_renderer_base {
         return $o;
     }
 
+    /**
+     * Get the time remaining for a submission.
+     *
+     * @param \mod_assign\output\assign_submission_status $status
+     * @return array The first element is the time remaining as a human readable
+     *               string and the second is a CSS class.
+     */
+    protected function get_time_remaining(\mod_assign\output\assign_submission_status $status): array {
+        $time = time();
+        $submission = $status->teamsubmission ? $status->teamsubmission : $status->submission;
+        $submissionstarted = $submission && property_exists($submission, 'timestarted') && $submission->timestarted;
+        $timelimitenabled = get_config('assign', 'enabletimelimit') && $status->timelimit > 0 && $submissionstarted;
+        $duedatereached = $status->duedate > 0 && $status->duedate - $time <= 0;
+        $timelimitenabledbeforeduedate = $timelimitenabled && !$duedatereached;
 
+        // There is a submission, display the relevant early/late message.
+        if ($submission && $submission->status == ASSIGN_SUBMISSION_STATUS_SUBMITTED) {
+            $latecalculation = $submission->timemodified - ($timelimitenabledbeforeduedate ? $submission->timestarted : 0);
+            $latethreshold = $timelimitenabledbeforeduedate ? $status->timelimit : $status->duedate;
+            $earlystring = $timelimitenabledbeforeduedate ? 'submittedundertime' : 'submittedearly';
+            $latestring = $timelimitenabledbeforeduedate ? 'submittedovertime' : 'submittedlate';
+            $ontime = $latecalculation <= $latethreshold;
+            return [
+                get_string(
+                    $ontime ? $earlystring : $latestring,
+                    'assign',
+                    format_time($latecalculation - $latethreshold)
+                ),
+                $ontime ? 'earlysubmission' : 'latesubmission'
+            ];
+        }
+
+        // There is no submission, due date has passed, show assignment is overdue.
+        if ($duedatereached) {
+            return [
+                get_string(
+                    $status->submissionsenabled ? 'overdue' : 'duedatereached',
+                    'assign',
+                    format_time($time - $status->duedate)
+                ),
+                'overdue'
+            ];
+        }
+
+        // An attempt has started and there is a time limit, display the time limit.
+        if ($timelimitenabled && !empty($submission->timestarted)) {
+            return [
+                (new \assign($status->context, null, null))->get_timelimit_panel($submission),
+                'timeremaining'
+            ];
+        }
+
+        // Assignment is not overdue, and no submission has been made. Just display the due date.
+        return [get_string('paramtimeremaining', 'assign', format_time($status->duedate - $time)), 'timeremaining'];
+    }
 
     /**
      * Internal function - creates htmls structure suitable for YUI tree.
@@ -1480,4 +1458,64 @@ class renderer extends \plugin_renderer_base {
         return $this->render_from_template('mod_assign/grading_app', $context);
     }
 
+    /**
+     * Renders the submission action menu.
+     *
+     * @param \mod_assign\output\actionmenu $actionmenu The actionmenu
+     * @return string Rendered action menu.
+     */
+    public function submission_actionmenu(\mod_assign\output\actionmenu $actionmenu): string {
+        $context = $actionmenu->export_for_template($this);
+        return $this->render_from_template('mod_assign/submission_actionmenu', $context);
+    }
+
+    /**
+     * Renders the user submission action menu.
+     *
+     * @param \mod_assign\output\user_submission_actionmenu $actionmenu The actionmenu
+     * @return string The rendered action menu.
+     */
+    public function render_user_submission_actionmenu(\mod_assign\output\user_submission_actionmenu $actionmenu): string {
+        $context = $actionmenu->export_for_template($this);
+        return $this->render_from_template('mod_assign/user_submission_actionmenu', $context);
+    }
+
+    /**
+     * Renders the override action menu.
+     *
+     * @param \mod_assign\output\override_actionmenu $actionmenu The actionmenu
+     * @return string The rendered override action menu.
+     */
+    public function render_override_actionmenu(\mod_assign\output\override_actionmenu $actionmenu): string {
+        $context = $actionmenu->export_for_template($this);
+        return $this->render_from_template('mod_assign/override_actionmenu', $context);
+    }
+
+    /**
+     * Renders the grading action menu.
+     *
+     * @param \mod_assign\output\grading_actionmenu $actionmenu The actionmenu
+     * @return string The rendered grading action menu.
+     */
+    public function render_grading_actionmenu(\mod_assign\output\grading_actionmenu $actionmenu): string {
+        $context = $actionmenu->export_for_template($this);
+        return $this->render_from_template('mod_assign/grading_actionmenu', $context);
+    }
+
+    /**
+     * Formats activity intro text.
+     *
+     * @param object $assign Instance of assign.
+     * @param int $cmid Course module ID.
+     * @return string
+     */
+    public function format_activity_text($assign, $cmid) {
+        global $CFG;
+        require_once("$CFG->libdir/filelib.php");
+        $context = \context_module::instance($cmid);
+        $options = array('noclean' => true, 'para' => false, 'filter' => true, 'context' => $context, 'overflowdiv' => true);
+        $activity = file_rewrite_pluginfile_urls(
+            $assign->activity, 'pluginfile.php', $context->id, 'mod_assign', ASSIGN_ACTIVITYATTACHMENT_FILEAREA, 0);
+        return trim(format_text($activity, $assign->activityformat, $options, null));
+    }
 }

@@ -129,6 +129,20 @@ $calendarCurrentDateBackground: $primary;
     }
 }
 
+#region-main {
+    .maincalendar {
+        .calendarwrapper {
+            td {
+                & > div {
+                    height: 11.5em;
+                    overflow: hidden;
+                }
+            }
+        }
+    }
+
+}
+
 .maincalendar {
     vertical-align: top;
     padding: 0;
@@ -154,8 +168,13 @@ $calendarCurrentDateBackground: $primary;
             margin: 0;
             padding: 0;
 
+            li[data-event-folded="true"] {
+                display: none;
+            }
+
             li {
                 list-style-type: none;
+                line-height: 1.2em;
 
                 > a {
                     @include text-truncate;
@@ -169,6 +188,10 @@ $calendarCurrentDateBackground: $primary;
                             text-decoration: $link-hover-decoration;
                         }
                     }
+                }
+
+                a[data-action="view-day-link"] {
+                    @include text-truncate;
                 }
 
                 .icon {
@@ -222,7 +245,12 @@ $calendarCurrentDateBackground: $primary;
         }
 
         td {
-            height: 5em;
+
+            a.day:focus {
+                display: inline-block;
+                border-radius: 50%;
+                box-shadow: $input-btn-focus-box-shadow;
+            }
 
             .day-number-circle {
                 display: inline-block;
@@ -545,6 +573,25 @@ table.calendartable caption {
     caption-side: top;
 }
 
+@mixin day-number-has-event {
+    .day-number {
+        display: inline-block;
+        position: relative;
+
+        &:before {
+            content: '.';
+            display: inline-block;
+            position: absolute;
+            bottom: 0.4em;
+            left: 0;
+            text-align: center;
+            width: 100%;
+            font-size: 3em;
+            color: inherit;
+        }
+    }
+}
+
 @media (min-width: 768px) {
     #page-calender-view {
         .container-fluid {
@@ -553,7 +600,7 @@ table.calendartable caption {
     }
 }
 
-@media (min-width: 1200px) {
+@media (min-width: 768px) {
     section:not(#region-main) {
         .block {
             &.block_calendar_month {
@@ -595,22 +642,7 @@ table.calendartable caption {
                                         display: none;
                                     }
 
-                                    .day-number {
-                                        display: inline-block;
-                                        position: relative;
-
-                                        &:before {
-                                            content: '.';
-                                            display: inline-block;
-                                            position: absolute;
-                                            bottom: 0.4em;
-                                            left: 0;
-                                            text-align: center;
-                                            width: 100%;
-                                            font-size: 3em;
-                                            color: inherit;
-                                        }
-                                    }
+                                    @include day-number-has-event;
                                 }
                                 &:after {
                                     content: '';
@@ -644,7 +676,7 @@ table.calendartable caption {
     }
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 768px) {
     .maincalendar {
         .calendartable {
             &.calendarmonth {
@@ -663,11 +695,17 @@ table.calendartable caption {
                         [data-region="day-content"] {
                             display: none;
                         }
+
+                        @include day-number-has-event;
                     }
                     &:after {
                         content: '';
                         display: block;
                         margin-top: calc(100% - 26px);
+                    }
+
+                    & > div {
+                        height: auto !important; // stylelint-disable-line declaration-no-important
                     }
                 }
             }
@@ -698,4 +736,5 @@ table.calendartable caption {
 
 .cal_courses_flt {
     color: $gray-600;
+    max-width: 75%;
 }

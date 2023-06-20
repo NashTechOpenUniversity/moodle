@@ -1,6 +1,16 @@
 This files describes API changes in /badges/*,
 information provided here is intended especially for developers.
 
+=== 4.3 ===
+* The following, deprecated since 3.11, have been removed and can no longer be used:
+ - `badges/ajax.js`
+ - `badges_check_backpack_accessibility`
+ - `badges_setup_backpack_js`
+ - `badges_local_backpack_js`
+
+=== 4.0 ===
+* Function print_badge_tabs has been deprecated in favour of manage_badge_action_bar instead
+
 === 3.11 ===
 * $CFG->badges_site_backpack setting has been completely removed because it's not required anymore. From now, the primary
 site backpack will be the first one in the "Manage backpacks" list (so, the one with lower sortorder value).

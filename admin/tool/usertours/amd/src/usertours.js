@@ -14,6 +14,8 @@ import {eventTypes} from './events';
 
 let currentTour = null;
 let tourId = null;
+let restartTourAndKeepProgress = false;
+let currentStepNo = null;
 
 /**
  * Find the first matching tour.
@@ -69,10 +71,24 @@ export const init = async(tourDetails, filters) => {
 
     // Watch for the reset link.
     document.querySelector('body').addEventListener('click', e => {
-        const resetLink = e.target.closest('[data-action="tool_usertours/resetpagetour"]');
+        const resetLink = e.target.closest('#resetpagetour');
         if (resetLink) {
             e.preventDefault();
             resetTourState(tourId);
+        }
+    });
+
+    // Watch for the resize event.
+    window.addEventListener("resize", () => {
+        // Only listen for the running tour.
+        if (currentTour && currentTour.tourRunning) {
+            clearTimeout(window.resizedFinished);
+            window.resizedFinished = setTimeout(() => {
+                // Wait until the resize event has finished.
+                currentStepNo = currentTour.getCurrentStepNumber();
+                restartTourAndKeepProgress = true;
+                resetTourState(tourId);
+            }, 250);
         }
     });
 };
@@ -87,14 +103,12 @@ const fetchTour = async tourId => {
     const pendingPromise = new Pending(`admin_usertour_fetchTour:${tourId}`);
 
     try {
+        // If we don't have any tour config (because it doesn't need showing for the current user), return early.
         const response = await tourRepository.fetchTour(tourId);
-        if (!response.hasOwnProperty('tourconfig')) {
-            pendingPromise.resolve();
+        if (response.hasOwnProperty('tourconfig')) {
+            const {html} = await Templates.renderForPromise('tool_usertours/tourstep', response.tourconfig);
+            startBootstrapTour(tourId, html, response.tourconfig);
         }
-
-        const {html} = await Templates.renderForPromise('tool_usertours/tourstep', response.tourconfig);
-        startBootstrapTour(tourId, html, response.tourconfig);
-
         pendingPromise.resolve();
     } catch (error) {
         pendingPromise.resolve();
@@ -189,7 +203,13 @@ const startBootstrapTour = (tourId, template, tourConfig) => {
     });
 
     currentTour = new BootstrapTour(tourConfig);
-    return currentTour.startTour();
+    let startAt = 0;
+    if (restartTourAndKeepProgress && currentStepNo) {
+        startAt = currentStepNo;
+        restartTourAndKeepProgress = false;
+        currentStepNo = null;
+    }
+    return currentTour.startTour(startAt);
 };
 
 /**

@@ -29,7 +29,7 @@ use stdClass;
  * @copyright   2021 Paul Holden <paulh@moodle.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class format_testcase extends advanced_testcase {
+class format_test extends advanced_testcase {
 
     /**
      * Test userdate method
@@ -63,5 +63,12 @@ class format_testcase extends advanced_testcase {
      */
     public function test_boolean_as_text(bool $value, string $expected): void {
         $this->assertEquals($expected, format::boolean_as_text($value));
+    }
+
+    /**
+     * Test percentage formatting of a float
+     */
+    public function test_percent(): void {
+        $this->assertEquals('33.3%', format::percent(1 / 3 * 100));
     }
 }

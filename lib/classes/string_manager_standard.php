@@ -43,7 +43,7 @@ class core_string_manager_standard implements core_string_manager {
     protected $cache;
     /** @var int get_string() counter */
     protected $countgetstring = 0;
-    /** @var bool use disk cache */
+    /** @var array use disk cache */
     protected $translist;
     /** @var array language aliases to use in the language selector */
     protected $transaliases = [];
@@ -309,6 +309,7 @@ class core_string_manager_standard implements core_string_manager {
             'strftimedaydatetime' => 1,
             'strftimedayshort' => 1,
             'strftimedaytime' => 1,
+            'strftimemonth' => 1,
             'strftimemonthyear' => 1,
             'strftimerecent' => 1,
             'strftimerecentfull' => 1,
@@ -362,7 +363,7 @@ class core_string_manager_standard implements core_string_manager {
 
         if ($a !== null) {
             // Process array's and objects (except lang_strings).
-            if (is_array($a) or (is_object($a) && !($a instanceof lang_string))) {
+            if (is_array($a) or (is_object($a) && !($a instanceof Stringable))) {
                 $a = (array)$a;
                 $search = array();
                 $replace = array();
@@ -371,7 +372,7 @@ class core_string_manager_standard implements core_string_manager {
                         // We do not support numeric keys - sorry!
                         continue;
                     }
-                    if (is_array($value) or (is_object($value) && !($value instanceof lang_string))) {
+                    if (is_array($value) or (is_object($value) && !($value instanceof Stringable))) {
                         // We support just string or lang_string as value.
                         continue;
                     }
@@ -525,7 +526,7 @@ class core_string_manager_standard implements core_string_manager {
         $cachekey = 'list_'.$this->get_key_suffix();
         $cachedlist = $this->menucache->get($cachekey);
         if ($cachedlist !== false) {
-            // The cache content is invalid.
+            // The cache content is valid.
             if ($returnall or empty($this->translist)) {
                 return $cachedlist;
             }

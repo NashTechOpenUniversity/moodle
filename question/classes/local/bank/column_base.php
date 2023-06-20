@@ -97,6 +97,7 @@ abstract class column_base {
      */
     public function display_header(): void {
         global $PAGE;
+        $renderer = $PAGE->get_renderer('core_question', 'bank');
 
         $data = [];
         $data['sortable'] = true;
@@ -125,15 +126,18 @@ abstract class column_base {
                 $data['tip'] = $tip;
             }
         }
+        $help = $this->help_icon();
+        if ($help) {
+            $data['help'] = $help->export_for_template($renderer);
+        }
 
-        $renderer = $PAGE->get_renderer('core_question', 'bank');
         echo $renderer->render_column_header($data);
     }
 
     /**
      * Title for this column. Not used if is_sortable returns an array.
      */
-    abstract protected function get_title();
+    abstract public function get_title();
 
     /**
      * Use this when get_title() returns
@@ -141,8 +145,17 @@ abstract class column_base {
      *
      * @return string a fuller version of the name.
      */
-    protected function get_title_tip() {
+    public function get_title_tip() {
         return '';
+    }
+
+    /**
+     * If you return a help icon here, it is shown in the column header after the title.
+     *
+     * @return \help_icon|null help icon to show, if required.
+     */
+    public function help_icon(): ?\help_icon {
+        return null;
     }
 
     /**
@@ -244,6 +257,17 @@ abstract class column_base {
     abstract public function get_name();
 
     /**
+     * Get the name of this column. This must be unique.
+     * When using the inherited class to make many columns from one parent,
+     * ensure each instance returns a unique value.
+     *
+     * @return string The unique name;
+     */
+    public function get_column_name() {
+        return (new \ReflectionClass($this))->getShortName();
+    }
+
+    /**
      * Any extra class names you would like applied to every cell in this column.
      *
      * @return array
@@ -302,13 +326,27 @@ abstract class column_base {
     }
 
     /**
+     * If this column requires any aggregated statistics, it should declare that here.
+     *
+     * This is those statistics can be efficiently loaded in bulk.
+     *
+     * The statistics are all loaded just before load_additional_data is called on each column.
+     * The values are then available from $this->qbank->get_aggregate_statistic(...);
+     *
+     * @return string[] the names of the required statistics fields. E.g. ['facility'].
+     */
+    public function get_required_statistics_fields(): array {
+        return [];
+    }
+
+    /**
      * If this column needs extra data (e.g. tags) then load that here.
      *
      * The extra data should be added to the question object in the array.
      * Probably a good idea to check that another column has not already
      * loaded the data you want.
      *
-     * @param \stdClass[] $questions the questions that will be displayed.
+     * @param \stdClass[] $questions the questions that will be displayed, indexed by question id.
      */
     public function load_additional_data(array $questions) {
     }

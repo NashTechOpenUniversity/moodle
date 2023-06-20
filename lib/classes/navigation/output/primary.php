@@ -33,7 +33,7 @@ use custom_menu;
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class primary implements renderable, templatable {
-    /** @var moodle_page $page the moodle page that the navigation belongs to */
+    /** @var \moodle_page $page the moodle page that the navigation belongs to */
     private $page = null;
 
     /**
@@ -57,10 +57,14 @@ class primary implements renderable, templatable {
 
         $menudata = (object) array_merge($this->get_primary_nav(), $this->get_custom_menu($output));
         $moremenu = new \core\navigation\output\more_menu($menudata, 'navbar-nav', false);
+        $mobileprimarynav = array_merge($this->get_primary_nav(), $this->get_custom_menu($output));
+
+        $languagemenu = new \core\output\language_menu($this->page);
 
         return [
+            'mobileprimarynav' => $mobileprimarynav,
             'moremenu' => $moremenu->export_for_template($output),
-            'lang' => !isloggedin() || isguestuser() ? $this->get_lang_menu($output) : [],
+            'lang' => !isloggedin() || isguestuser() ? $languagemenu->export_for_template($output) : [],
             'user' => $this->get_user_menu($output),
         ];
     }
@@ -79,6 +83,7 @@ class primary implements renderable, templatable {
                 'text' => $node->text,
                 'icon' => $node->icon,
                 'isactive' => $node->isactive,
+                'key' => $node->key,
             ];
         }
 
@@ -109,47 +114,6 @@ class primary implements renderable, templatable {
         }
 
         return $nodes;
-    }
-
-    /**
-     * Get a list of options for the lang picker.
-     *
-     * @param renderer_base $output
-     * @return array
-     */
-    protected function get_lang_menu(renderer_base $output): array {
-        // Early return if a lang menu does not exists.
-        if (empty($output->lang_menu())) {
-            return [];
-        }
-
-        $currentlang = current_language();
-        $langs = get_string_manager()->get_list_of_translations();
-        $nodes = [];
-        $activelanguage = '';
-
-        // Add the lang picker if needed.
-        foreach ($langs as $langtype => $langname) {
-            $isactive = $langtype == $currentlang;
-            $node = [
-                'title' => $langname,
-                'text' => $langname,
-                'link' => true,
-                'isactive' => $isactive,
-                'url' => $isactive ? new \moodle_url('#') : new \moodle_url($this->page->url, ['lang' => $langtype]),
-            ];
-
-            $nodes[] = $node;
-
-            if ($isactive) {
-                $activelanguage = $langname;
-            }
-        }
-
-        return [
-            'title' => $activelanguage,
-            'items' => $nodes,
-        ];
     }
 
     /**
@@ -229,7 +193,8 @@ class primary implements renderable, templatable {
         }, $info->navitems);
 
         // Include the language menu as a submenu within the user menu.
-        $langmenu = $this->get_lang_menu($output);
+        $languagemenu = new \core\output\language_menu($this->page);
+        $langmenu = $languagemenu->export_for_template($output);
         if (!empty($langmenu)) {
             $languageitems = $langmenu['items'];
             // If there are available languages, generate the data for the the language selector submenu.
@@ -240,7 +205,6 @@ class primary implements renderable, templatable {
                     'itemtype' => 'submenu-link',
                     'submenuid' => $langsubmenuid,
                     'title' => get_string('language'),
-                    'pixicon' => 'i/language',
                     'divider' => false,
                     'submenulink' => true,
                 ];
@@ -262,8 +226,7 @@ class primary implements renderable, templatable {
             }
         }
 
-        // Add dividers after the first item and before the last item.
-        $modifiedarray[0]->divider = true;
+        // Add divider before the last item.
         $modifiedarray[count($modifiedarray) - 2]->divider = true;
         $usermenudata['items'] = $modifiedarray;
         $usermenudata['submenus'] = array_values($submenusdata);

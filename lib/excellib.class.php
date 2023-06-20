@@ -50,7 +50,7 @@ use \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
  * @package moodlecore
  */
 class MoodleExcelWorkbook {
-    /** @var PhpSpreadsheet */
+    /** @var \PhpOffice\PhpSpreadsheet\Spreadsheet */
     protected $objspreadsheet;
 
     /** @var string */
@@ -425,11 +425,11 @@ class MoodleExcelWorksheet {
         $objdrawing->setOffsetX($x);
         $objdrawing->setOffsetY($y);
         $objdrawing->setWorksheet($this->worksheet);
-        if ($scale_x != 1) {
+        if ($scalex != 1) {
             $objdrawing->setResizeProportional(false);
             $objdrawing->getWidth($objdrawing->getWidth() * $scalex);
         }
-        if ($scale_y != 1) {
+        if ($scaley != 1) {
             $objdrawing->setResizeProportional(false);
             $objdrawing->setHeight($objdrawing->getHeight() * $scaley);
         }

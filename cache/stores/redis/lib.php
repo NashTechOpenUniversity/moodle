@@ -113,6 +113,22 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
     protected $compressor = self::COMPRESSOR_NONE;
 
     /**
+     * Bytes read or written by last call to set()/get() or set_many()/get_many().
+     *
+     * @var int
+     */
+    protected $lastiobytes = 0;
+
+    /** @var int Maximum number of seconds to wait for a lock before giving up. */
+    protected $lockwait = 60;
+
+    /** @var int Timeout before lock is automatically released (in case of crashes) */
+    protected $locktimeout = 600;
+
+    /** @var ?array Array of current locks, or null if we haven't registered shutdown function */
+    protected $currentlocks = null;
+
+    /**
      * Determines if the requirements for this type of store are met.
      *
      * @return bool
@@ -175,6 +191,12 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
         }
         $password = !empty($configuration['password']) ? $configuration['password'] : '';
         $prefix = !empty($configuration['prefix']) ? $configuration['prefix'] : '';
+        if (array_key_exists('lockwait', $configuration)) {
+            $this->lockwait = (int)$configuration['lockwait'];
+        }
+        if (array_key_exists('locktimeout', $configuration)) {
+            $this->locktimeout = (int)$configuration['locktimeout'];
+        }
         $this->redis = $this->new_redis($configuration['server'], $prefix, $password);
     }
 
@@ -209,8 +231,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
                 if (!empty($prefix)) {
                     $redis->setOption(Redis::OPT_PREFIX, $prefix);
                 }
-                // Database setting option...
-                $this->isready = $this->ping($redis);
+                $this->isready = true;
             } else {
                 $this->isready = false;
             }
@@ -290,6 +311,9 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
             return $value;
         }
 
+        // When using compression, values are always strings, so strlen will work.
+        $this->lastiobytes = strlen($value);
+
         return $this->uncompress($value);
     }
 
@@ -306,11 +330,32 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
             return $values;
         }
 
+        $this->lastiobytes = 0;
         foreach ($values as &$value) {
+            $this->lastiobytes += strlen($value);
             $value = $this->uncompress($value);
         }
 
         return $values;
+    }
+
+    /**
+     * Gets the number of bytes read from or written to cache as a result of the last action.
+     *
+     * If compression is not enabled, this function always returns IO_BYTES_NOT_SUPPORTED. The reason is that
+     * when compression is not enabled, data sent to the cache is not serialized, and we would
+     * need to serialize it to compute the size, which would have a significant performance cost.
+     *
+     * @return int Bytes read or written
+     * @since Moodle 4.0
+     */
+    public function get_last_io_bytes(): int {
+        if ($this->compressor != self::COMPRESSOR_NONE) {
+            return $this->lastiobytes;
+        } else {
+            // Not supported unless compression is on.
+            return parent::get_last_io_bytes();
+        }
     }
 
     /**
@@ -323,6 +368,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
     public function set($key, $value) {
         if ($this->compressor != self::COMPRESSOR_NONE) {
             $value = $this->compress($value);
+            $this->lastiobytes = strlen($value);
         }
 
         if ($this->redis->hSet($this->hash, $key, $value) === false) {
@@ -354,10 +400,12 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
             $now = self::get_time();
         }
 
+        $this->lastiobytes = 0;
         foreach ($keyvaluearray as $pair) {
             $key = $pair['key'];
             if ($this->compressor != self::COMPRESSOR_NONE) {
                 $pairs[$key] = $this->compress($pair['value']);
+                $this->lastiobytes += strlen($pairs[$key]);
             } else {
                 $pairs[$key] = $pair['value'];
             }
@@ -406,6 +454,10 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * @return int The number of keys successfully deleted.
      */
     public function delete_many(array $keys) {
+        // If there are no keys to delete, do nothing.
+        if (!$keys) {
+            return 0;
+        }
         $count = $this->redis->hDel($this->hash, ...$keys);
         if ($this->definition->get_ttl()) {
             // When TTL is enabled, also remove the keys from the TTL list.
@@ -434,7 +486,6 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * Cleans up after an instance of the store.
      */
     public function instance_deleted() {
-        $this->purge();
         $this->redis->close();
         unset($this->redis);
     }
@@ -491,7 +542,38 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * @return bool True if the lock was acquired, false if it was not.
      */
     public function acquire_lock($key, $ownerid) {
-        return $this->redis->setnx($key, $ownerid);
+        $timelimit = time() + $this->lockwait;
+        do {
+            // If the key doesn't already exist, grab it and return true.
+            if ($this->redis->setnx($key, $ownerid)) {
+                // Ensure Redis deletes the key after a bit in case something goes wrong.
+                $this->redis->expire($key, $this->locktimeout);
+                // If we haven't got it already, better register a shutdown function.
+                if ($this->currentlocks === null) {
+                    core_shutdown_manager::register_function([$this, 'shutdown_release_locks']);
+                    $this->currentlocks = [];
+                }
+                $this->currentlocks[$key] = $ownerid;
+                return true;
+            }
+            // Wait 1 second then retry.
+            sleep(1);
+        } while (time() < $timelimit);
+        return false;
+    }
+
+    /**
+     * Releases any locks when the system shuts down, in case there is a crash or somebody forgets
+     * to use 'try-finally'.
+     *
+     * Do not call this function manually (except from unit test).
+     */
+    public function shutdown_release_locks() {
+        foreach ($this->currentlocks as $key => $ownerid) {
+            debugging('Automatically releasing Redis cache lock: ' . $key . ' (' . $ownerid .
+                    ') - did somebody forget to call release_lock()?', DEBUG_DEVELOPER);
+            $this->release_lock($key, $ownerid);
+        }
     }
 
     /**
@@ -505,7 +587,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      */
     public function check_lock_state($key, $ownerid) {
         $result = $this->redis->get($key);
-        if ($result === $ownerid) {
+        if ($result === (string)$ownerid) {
             return true;
         }
         if ($result === false) {
@@ -550,6 +632,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      */
     public function release_lock($key, $ownerid) {
         if ($this->check_lock_state($key, $ownerid)) {
+            unset($this->currentlocks[$key]);
             return ($this->redis->del($key) !== false);
         }
         return false;
@@ -572,7 +655,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
         $count = 0;
         $batches = 0;
         $timebefore = microtime(true);
-        $memorybefore = $this->get_used_memory();
+        $memorybefore = $this->store_total_size();
         do {
             $keys = $this->redis->zRangeByScore($this->hash . self::TTL_SUFFIX, 0, $limit,
                     ['limit' => [0, self::TTL_EXPIRE_BATCH]]);
@@ -580,7 +663,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
             $count += count($keys);
             $batches++;
         } while (count($keys) === self::TTL_EXPIRE_BATCH);
-        $memoryafter = $this->get_used_memory();
+        $memoryafter = $this->store_total_size();
         $timeafter = microtime(true);
 
         $result = ['keys' => $count, 'batches' => $batches, 'time' => $timeafter - $timebefore];
@@ -624,12 +707,33 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
     }
 
     /**
+     * Estimates the stored size, taking into account whether compression is turned on.
+     *
+     * @param mixed $key Key name
+     * @param mixed $value Value
+     * @return int Approximate stored size
+     */
+    public function estimate_stored_size($key, $value): int {
+        if ($this->compressor == self::COMPRESSOR_NONE) {
+            // If uncompressed, use default estimate.
+            return parent::estimate_stored_size($key, $value);
+        } else {
+            // If compressed, compress value.
+            return strlen($this->serialize($key)) + strlen($this->compress($value));
+        }
+    }
+
+    /**
      * Gets Redis reported memory usage.
      *
      * @return int|null Memory used by Redis or null if we don't know
      */
-    protected function get_used_memory(): ?int {
-        $details = $this->redis->info('MEMORY');
+    public function store_total_size(): ?int {
+        try {
+            $details = $this->redis->info('MEMORY');
+        } catch (\RedisException $e) {
+            return null;
+        }
         if (empty($details['used_memory'])) {
             return null;
         } else {

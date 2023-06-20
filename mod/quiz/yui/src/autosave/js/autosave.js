@@ -202,6 +202,10 @@ M.mod_quiz.autosave = {
         this.form.delegate('change', this.value_changed, this.SELECTORS.CHANGE_ELEMENTS, this);
         this.form.on('submit', this.stop_autosaving, this);
 
+        require(['core_form/events'], function(FormEvent) {
+            window.addEventListener(FormEvent.eventTypes.uploadChanged, this.value_changed.bind(this));
+        }.bind(this));
+
         this.init_tinymce(this.TINYMCE_DETECTION_REPEATS);
 
         this.save_hidden_field_values();
@@ -261,7 +265,14 @@ M.mod_quiz.autosave = {
 
         Y.log('Found TinyMCE.', 'debug', 'moodle-mod_quiz-autosave');
         this.editor_change_handler = Y.bind(this.editor_changed, this);
-        window.tinyMCE.onAddEditor.add(Y.bind(this.init_tinymce_editor, this));
+        if (window.tinyMCE.onAddEditor) {
+            window.tinyMCE.onAddEditor.add(Y.bind(this.init_tinymce_editor, this));
+        } else if (window.tinyMCE.on) {
+            var startSaveTimer = this.start_save_timer_if_necessary.bind(this);
+            window.tinyMCE.on('AddEditor', function(event) {
+                event.editor.on('Change Undo Redo keydown', startSaveTimer);
+            });
+        }
     },
 
     /**

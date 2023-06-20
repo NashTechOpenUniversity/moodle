@@ -35,6 +35,8 @@ Feature: Browse course list and return back from enrolment page
     Given I log in as "admin"
     And I am on site homepage
     And I turn editing mode on
+    And the following config values are set as admin:
+      | unaddableblocks | | theme_boost|
     And I add the "Navigation" block if not present
     And I configure the "Navigation" block
     And I set the following fields to these values:
@@ -60,11 +62,9 @@ Feature: Browse course list and return back from enrolment page
     And the following "activities" exist:
       | activity   | name        | intro                         | course | idnumber    |
       | choice     | Test choice | Test choice description       | C1     | choice1     |
-    And I log in as "admin"
-    And I set the following system permissions of "Non-enrolled" role:
-      | capability | permission |
-      | moodle/course:view | Allow |
-    And I log out
+    And the following "role capability" exists:
+      | role               | custom1 |
+      | moodle/course:view | allow   |
     When I log in as "user1"
     And I am on course index
     And I follow "Category 1"

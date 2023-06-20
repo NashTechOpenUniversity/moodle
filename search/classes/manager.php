@@ -264,12 +264,44 @@ class manager {
     }
 
     /**
+     * Tests if global search is configured to be equivalent to the front page course search.
+     *
+     * @return bool
+     */
+    public static function can_replace_course_search(): bool {
+        global $CFG;
+
+        // Assume we can replace front page search.
+        $canreplace = true;
+
+        // Global search must be enabled.
+        if (!static::is_global_search_enabled()) {
+            $canreplace = false;
+        }
+
+        // Users must be able to search the details of all courses that they can see,
+        // even if they do not have access to them.
+        if (empty($CFG->searchincludeallcourses)) {
+            $canreplace = false;
+        }
+
+        // Course search must be enabled.
+        if ($canreplace) {
+            $areaid = static::generate_areaid('core_course', 'course');
+            $enabledareas = static::get_search_areas_list(true);
+            $canreplace = isset($enabledareas[$areaid]);
+        }
+
+        return $canreplace;
+    }
+
+    /**
      * Returns the search URL for course search
      *
      * @return moodle_url
      */
     public static function get_course_search_url() {
-        if (self::is_global_search_enabled()) {
+        if (self::can_replace_course_search()) {
             $searchurl = '/search/index.php';
         } else {
             $searchurl = '/course/search.php';
@@ -585,6 +617,8 @@ class manager {
         static::$allsearchareas = null;
         static::$instance = null;
         static::$searchareacategories = null;
+        static::$coursedeleting = [];
+        static::$phpunitfaketime = null;
 
         base_block::clear_static();
         engine::clear_users_cache();
@@ -1255,15 +1289,8 @@ class manager {
                 if ($batches !== $numdocs + $numdocsignored) {
                     $batchinfo = ' (' . $batches . ' batch' . ($batches === 1 ? '' : 'es') . ')';
                 }
-            } else if (count($result) === 5) {
-                // Backward compatibility for engines that don't return a batch count.
-                [$numrecords, $numdocs, $numdocsignored, $lastindexeddoc, $partial] = $result;
-                // Deprecated since Moodle 3.10 MDL-68690.
-                // TODO: MDL-68776 This will be deleted in Moodle 4.2.
-                debugging('engine::add_documents() should return $batches (5-value return is deprecated)',
-                        DEBUG_DEVELOPER);
             } else {
-                throw new coding_exception('engine::add_documents() should return $partial (4-value return is deprecated)');
+                throw new \coding_exception('engine::add_documents() should return 6 values');
             }
 
             if ($numdocs > 0) {
@@ -1420,19 +1447,8 @@ class manager {
                 if ($batches !== $numdocs + $numdocsignored) {
                     $batchinfo = ' (' . $batches . ' batch' . ($batches === 1 ? '' : 'es') . ')';
                 }
-            } else if (count($result) === 5) {
-                // Backward compatibility for engines that don't return a batch count.
-                [$numrecords, $numdocs, $numdocsignored, $lastindexeddoc, $partial] = $result;
-                // Deprecated since Moodle 3.10 MDL-68690.
-                // TODO: MDL-68776 This will be deleted in Moodle 4.2 (as should the below bit).
-                debugging('engine::add_documents() should return $batches (5-value return is deprecated)',
-                        DEBUG_DEVELOPER);
             } else {
-                // Backward compatibility for engines that don't support partial adding.
-                list($numrecords, $numdocs, $numdocsignored, $lastindexeddoc) = $result;
-                debugging('engine::add_documents() should return $partial (4-value return is deprecated)',
-                        DEBUG_DEVELOPER);
-                $partial = false;
+                throw new \coding_exception('engine::add_documents() should return 6 values');
             }
 
             if ($numdocs > 0) {

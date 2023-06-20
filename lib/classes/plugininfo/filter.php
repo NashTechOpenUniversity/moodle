@@ -23,14 +23,18 @@
  */
 namespace core\plugininfo;
 
-use moodle_url, part_of_admin_tree, admin_settingpage, admin_externalpage;
-
-defined('MOODLE_INTERNAL') || die();
+use admin_settingpage;
+use moodle_url;
+use part_of_admin_tree;
 
 /**
  * Class for text filters
  */
 class filter extends base {
+
+    public static function plugintype_supports_disabling(): bool {
+        return true;
+    }
 
     public function init_display_name() {
         if (!get_string_manager()->string_exists('filtername', $this->component)) {
@@ -75,7 +79,7 @@ class filter extends base {
 
         filter_set_global_state($pluginname, $enabled);
         if ($enabled == TEXTFILTER_DISABLED) {
-            filter_set_applies_to_strings($filterpath, false);
+            filter_set_applies_to_strings($pluginname, false);
         }
 
         reset_text_filters_cache();
@@ -84,12 +88,32 @@ class filter extends base {
         return true;
     }
 
+    /**
+     * Returns current status for a pluginname.
+     *
+     * Filters have different values for enabled/disabled plugins so the current value needs to be calculated in a
+     * different way than the default method in the base class.
+     *
+     * @param string $pluginname The plugin name to check.
+     * @return int The current status (enabled, disabled...) of $pluginname.
+     */
+    public static function get_enabled_plugin(string $pluginname): int {
+        global $DB, $CFG;
+        require_once("$CFG->libdir/filterlib.php");
+
+        $conditions = ['filter' => $pluginname, 'contextid' => \context_system::instance()->id];
+        $record = $DB->get_record('filter_active', $conditions, 'active');
+
+        return $record ? (int) $record->active : TEXTFILTER_DISABLED;
+    }
+
     public function get_settings_section_name() {
         return 'filtersetting' . $this->name;
     }
 
     public function load_settings(part_of_admin_tree $adminroot, $parentnodename, $hassiteconfig) {
         global $CFG, $USER, $DB, $OUTPUT, $PAGE; // In case settings.php wants to refer to them.
+        /** @var \admin_root $ADMIN */
         $ADMIN = $adminroot; // May be used in settings.php.
         $plugininfo = $this; // Also can be used inside settings.php.
         $filter = $this;     // Also can be used inside settings.php.

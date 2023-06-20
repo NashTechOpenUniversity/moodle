@@ -51,7 +51,7 @@ class format_topics extends core_courseformat\base {
     }
 
     public function uses_indentation(): bool {
-        return false;
+        return (get_config('format_topics', 'indentation')) ? true : false;
     }
 
     /**
@@ -135,7 +135,7 @@ class format_topics extends core_courseformat\base {
                     $usercoursedisplay = COURSE_DISPLAY_SINGLEPAGE;
                 }
             } else {
-                $usercoursedisplay = $course->coursedisplay;
+                $usercoursedisplay = $course->coursedisplay ?? COURSE_DISPLAY_SINGLEPAGE;
             }
             if ($sectionno != 0 && $usercoursedisplay == COURSE_DISPLAY_MULTIPAGE) {
                 $url->param('section', $sectionno);
@@ -435,7 +435,7 @@ class format_topics extends core_courseformat\base {
         $renderer = $PAGE->get_renderer('format_topics');
 
         if (!($section instanceof section_info)) {
-            $modinfo = $this->get_modinfo();
+            $modinfo = course_modinfo::instance($this->courseid);
             $section = $modinfo->get_section_info($section->section);
         }
         $elementclass = $this->get_output_classname('content\\section\\availability');
@@ -453,7 +453,9 @@ class format_topics extends core_courseformat\base {
      */
     public function get_config_for_external() {
         // Return everything (nothing to hide).
-        return $this->get_format_options();
+        $formatoptions = $this->get_format_options();
+        $formatoptions['indentation'] = get_config('format_topics', 'indentation');
+        return $formatoptions;
     }
 }
 

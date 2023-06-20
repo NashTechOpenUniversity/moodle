@@ -36,10 +36,12 @@ class course_selector extends base {
      * @param MoodleQuickForm $mform
      */
     public function setup_form(MoodleQuickForm $mform): void {
+        $operatorlabel = get_string('filterfieldvalue', 'core_reportbuilder', $this->get_header());
         $options = [
             'multiple' => true,
         ];
-        $mform->addElement('course', $this->name . '_values', get_string('selectcourses', 'core_reportbuilder'), $options)
+
+        $mform->addElement('course', $this->name . '_values', $operatorlabel, $options)
             ->setHiddenLabel(true);
     }
 
@@ -64,5 +66,16 @@ class course_selector extends base {
         [$courseselect, $courseparams] = $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED, $paramprefix);
 
         return ["{$fieldsql} $courseselect", array_merge($params, $courseparams)];
+    }
+
+    /**
+     * Return sample filter values
+     *
+     * @return array
+     */
+    public function get_sample_values(): array {
+        return [
+            "{$this->name}_values" => [1],
+        ];
     }
 }

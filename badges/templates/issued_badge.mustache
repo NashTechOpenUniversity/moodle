@@ -15,7 +15,7 @@
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
-    @template core_badges/issued_badges
+    @template core_badges/issued_badge
 
     Display an issued badge.
 
@@ -23,13 +23,14 @@
     * coursefullname - Course name (only available if it's a course badge).
     * sitefullname - Site name (only available if it's a site badge).
     * badgeimage - Badge image.
-    * expireddate - Date (in the past) when the badge expired (if defined). If expiredate is defined, this field will be empty.
-    * expireddateformatted - Formatted expired date.
-    * expiredate - Date (in the future) when the badge will expire (if defined). If expireddate is defined, this field will be empty.
+    * expireddate - Date (in the past) when the badge expired. If expiredate is defined, this field will be empty [optional].
+    * expireddateformatted - Formatted expired date [optional].
+    * expiredate - Date (in the future) when the badge will expire. If expireddate is defined, this field will be empty [optional].
     * badgename - Badge name.
     * badgedescription - Badge description.
-    * badgeissuedon - Date where the badge was issued on by the user.
-    * recipientname - User awarded with the badge.
+    * badgeissuedon - Date where the badge was issued on by the user [optional].
+    * recipientname - User awarded with the badge [optional].
+    * recipientnotification.message - Message to be displayed if there is some issue with the recipient [optional].
     * criteria - HTML code with the criteria to display.
     * issuedby - Badge issuer.
     * issuedbyemailobfuscated - Badge issuer email link obfuscated.
@@ -45,6 +46,7 @@
     * relatedbadges - Array of related badges (if hasrelatedbadges is set to true).
     * hasalignments - Whether the badge has alignments or not.
     * alignments - Array of alignments (if hasalignments is set to true).
+    * hostedurl - The URL where the badge is hosted [optional].
 
     Example context (json):
     {
@@ -55,7 +57,10 @@
         "badgedescription":"This badge is awarded to people who have provided outstanding support to other participants in the MOOC",
         "badgeissuedon": 1625491897,
         "recipientname": "Judit Cortes",
-        "criteria": "Complete <strong>ALL</strong> of the listed requirements.<ul><li>This badge has to be awarded by a user with the following role:<ul><li>Teacher</li></ul></li><li>The following activity has to be completed:<ul><li><strong>View video</strong></li></ul></li><li>The following badge has to be earned:<ul><li><strong>Lean Moodle 3.11 Basics participant</strong></li></ul></li></ul>;",
+        "recipientnotification": {
+            "message": "This user cannot be verified as a recipient of this badge."
+        },
+        "criteria": "Complete <strong>ALL</strong> of the listed requirements.<ul><li>This badge has to be awarded by a user with the following role:<ul><li>Teacher</li></ul></li><li>The following activity has to be completed:<ul><li><strong>View video</strong></li></ul></li><li>The following badge has to be earned:<ul><li><strong>Lean Moodle 3.11 Basics participant</strong></li></ul></li></ul>",
         "issuedby": "Moodle HQ",
         "issuedbyemailobfuscated": "<a href=\"mailto:xxxxx\">Moodle HQ</a>",
         "hasotherfields": true,
@@ -106,14 +111,15 @@
                 "targetframework": "Framework name",
                 "targetcode": "A1001"
             }
-        ]
+        ],
+        "hostedurl": "http://externalbackpack/badge?id=ABC"
     }
 }}
 
 <div id="badge" class="container-fluid">
 <div class="row">
     <div id="badge-image-col" class="col col-auto">
-        <img src="{{badgeimage}}" alt="{{badgename}}" width="300" class="mx-auto d-block"/>
+        <img src="{{badgeimage}}" alt="{{imagecaption}}" width="300" class="mx-auto d-block"/>
         {{#expireddateformatted}}
             <span class="expireimage">
                 {{# pix }} i/expired, core, {{# str }} expireddate, badges, {{expireddateformatted}} {{/ str }}{{/ pix }}
@@ -133,19 +139,27 @@
 
     <div id="badge-details-col" class="col">
         <h2>{{badgename}}</h2>
+
+        {{#recipientname}}
         <div id="badge-awardedto" class="pt-1 pb-2">
+            {{#recipientnotification}}
+                {{> core/notification_warning}}
+            {{/recipientnotification}}
             {{#str}}awardedto, core_badges, {{recipientname}}{{/str}}
         </div>
+        {{/recipientname}}
 
         <div id="badge-issued-expire" class="pt-1 pb-2">
             <div class="pb-3">
             <small>
-            {{#str}}
-                issuedon,
-                core_badges,
-                {{#userdate}}{{badgeissuedon}}, {{#str}} strftimedatetime, langconfig {{/str}}{{/userdate}}
-            {{/str}}
-            <br/>
+            {{#badgeissuedon}}
+                {{#str}}
+                    issuedon,
+                    core_badges,
+                    {{#userdate}}{{badgeissuedon}}, {{#str}} strftimedatetime, langconfig {{/str}}{{/userdate}}
+                {{/str}}
+                <br/>
+            {{/badgeissuedon}}
             {{#expiredate}}
                 {{#str}}
                     expiresin,
@@ -179,6 +193,14 @@
             </div>
             {{/issuedby}}
 
+            {{#hostedurl}}
+            <div class="pb-2">
+                <a href="{{.}}" target="_blank" aria-label="{{#str}}hostedurldescription, core_badges{{/str}}">
+                    {{#str}}hostedurl, core_badges{{/str}}
+                </a>
+            </div>
+            {{/hostedurl}}
+
             {{#coursefullname}}
             <div class="pb-2">
                 {{#str}}
@@ -189,6 +211,11 @@
             </div>
             {{/coursefullname}}
         </div>
+        {{#badgetag}}
+            <p class="pb-2">
+                {{> core_tag/taglist}}
+            </p>
+        {{/badgetag}}
 
         <p class="pb-4">{{{badgedescription}}}</p>
 

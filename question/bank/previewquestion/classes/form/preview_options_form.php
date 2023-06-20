@@ -23,6 +23,7 @@ require_once($CFG->libdir . '/formslib.php');
 use moodleform;
 use question_display_options;
 use question_engine;
+use qbank_previewquestion\question_preview_options;
 
 /**
  * Settings form for the preview options.
@@ -42,8 +43,16 @@ class preview_options_form extends moodleform {
                 question_display_options::VISIBLE => get_string('shown', 'question'),
         ];
 
-        $mform->addElement('header', 'attemptoptionsheader', get_string('attemptoptions', 'question'));
-
+        $mform->addElement('header', 'attemptoptionsheader', get_string('previewoptions', 'qbank_previewquestion'));
+        $mform->setExpanded('attemptoptionsheader', false);
+        // Add html element with class to display long text in single line.
+        $mform->addElement('html', \html_writer::div(get_string('theoptionsyouselectonlyaffectthepreview',
+            'qbank_previewquestion'), "col-md-12 row d-flex col-form-label form-group"));
+        $versions = $this->_customdata['versions'];
+        $versions[question_preview_options::ALWAYS_LATEST] = get_string('alwayslatest', 'qbank_previewquestion');
+        $currentversion = $this->_customdata['restartversion'];
+        $select = $mform->addElement('select', 'restartversion', get_string('questionversion', 'qbank_previewquestion'), $versions);
+        $select->setSelected($currentversion);
         $behaviours = question_engine::get_behaviour_options(
                 $this->_customdata['quba']->get_preferred_behaviour());
         $mform->addElement('select', 'behaviour',
@@ -63,6 +72,7 @@ class preview_options_form extends moodleform {
                 get_string('restartwiththeseoptions', 'question'));
 
         $mform->addElement('header', 'displayoptionsheader', get_string('displayoptions', 'question'));
+        $mform->setExpanded('displayoptionsheader', false);
 
         $mform->addElement('select', 'correctness', get_string('whethercorrect', 'question'),
                 $hiddenorvisible);

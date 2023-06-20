@@ -22,7 +22,6 @@ use comment;
 use context;
 use context_course;
 use core_question_generator;
-use question_edit_contexts;
 use stdClass;
 
 /**
@@ -33,7 +32,7 @@ use stdClass;
  * @author     Safat Shahin <safatshahin@catalyst-au.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class qbank_comment_comment_created_deleted_test extends advanced_testcase {
+class comment_created_deleted_test extends advanced_testcase {
 
     /** @var stdClass Keeps course object */
     private $course;
@@ -66,7 +65,7 @@ class qbank_comment_comment_created_deleted_test extends advanced_testcase {
         $this->context = context_course::instance($this->course->id);
 
         // Create a question in the default category.
-        $contexts = new question_edit_contexts($this->context);
+        $contexts = new \core_question\local\bank\question_edit_contexts($this->context);
         $cat = question_make_default_categories($contexts->all());
         $this->questiondata = $questiongenerator->create_question('numerical', null,
                 ['name' => 'Example question', 'category' => $cat->id]);
@@ -103,7 +102,7 @@ class qbank_comment_comment_created_deleted_test extends advanced_testcase {
         // Checking that the event contains the expected values.
         $this->assertInstanceOf('\qbank_comment\event\comment_created', $event);
         $this->assertEquals($this->context, $event->get_context());
-        $this->assertStringContainsString('\'qbank_comment\' for the question with id \''.$this->questiondata->id.'\'',
+        $this->assertStringContainsString('\'qbank_comment\' for the question with ID \''.$this->questiondata->id.'\'',
                 $event->get_description());
     }
 
@@ -122,7 +121,7 @@ class qbank_comment_comment_created_deleted_test extends advanced_testcase {
         // Checking that the event contains the expected values.
         $this->assertInstanceOf('\qbank_comment\event\comment_deleted', $event);
         $this->assertEquals($this->context, $event->get_context());
-        $this->assertStringContainsString('\'qbank_comment\' for the question with id \''.$this->questiondata->id.'\'',
+        $this->assertStringContainsString('\'qbank_comment\' for the question with ID \''.$this->questiondata->id.'\'',
                 $event->get_description());
     }
 }

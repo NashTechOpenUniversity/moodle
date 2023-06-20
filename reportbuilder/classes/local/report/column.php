@@ -20,7 +20,10 @@ namespace core_reportbuilder\local\report;
 
 use coding_exception;
 use lang_string;
+use core_reportbuilder\local\helpers\aggregation;
 use core_reportbuilder\local\helpers\database;
+use core_reportbuilder\local\aggregation\base;
+use core_reportbuilder\local\models\column as column_model;
 
 /**
  * Class to represent a report column
@@ -58,11 +61,14 @@ final class column {
     /** @var lang_string $columntitle Used as a title for the column in reports */
     private $columntitle;
 
+    /** @var bool $hascustomcolumntitle Used to store if the column has been given a custom title */
+    private $hascustomcolumntitle = false;
+
     /** @var string $entityname Name of the entity this column belongs to */
     private $entityname;
 
     /** @var int $type Column data type (one of the TYPE_* class constants) */
-    private $type = null;
+    private $type = self::TYPE_TEXT;
 
     /** @var string[] $joins List of SQL joins for this column */
     private $joins = [];
@@ -73,17 +79,38 @@ final class column {
     /** @var array $params  */
     private $params = [];
 
+    /** @var string $groupbysql */
+    private $groupbysql;
+
     /** @var array[] $callbacks Array of [callable, additionalarguments] */
     private $callbacks = [];
 
+    /** @var base|null $aggregation Aggregation type to apply to column */
+    private $aggregation = null;
+
+    /** @var array $disabledaggregation Aggregation types explicitly disabled  */
+    private $disabledaggregation = [];
+
     /** @var bool $issortable Used to indicate if a column is sortable */
     private $issortable = false;
+
+    /** @var array $sortfields Fields to sort the column by */
+    private $sortfields = [];
 
     /** @var array $attributes */
     private $attributes = [];
 
     /** @var bool $available Used to know if column is available to the current user or not */
     protected $available = true;
+
+    /** @var bool $deprecated */
+    protected $deprecated = false;
+
+    /** @var string $deprecatedmessage */
+    protected $deprecatedmessage;
+
+    /** @var column_model $persistent */
+    protected $persistent;
 
     /**
      * Column constructor
@@ -136,6 +163,7 @@ final class column {
      */
     public function set_title(?lang_string $title): self {
         $this->columntitle = $title;
+        $this->hascustomcolumntitle = true;
         return $this;
     }
 
@@ -146,6 +174,15 @@ final class column {
      */
     public function get_title(): string {
         return $this->columntitle ? (string) $this->columntitle : '';
+    }
+
+    /**
+     * Check whether this column has been given a custom title
+     *
+     * @return bool
+     */
+    public function has_custom_title(): bool {
+        return $this->hascustomcolumntitle;
     }
 
     /**
@@ -171,7 +208,7 @@ final class column {
      * Set the column index within the current report
      *
      * @param int $index
-     * @return column
+     * @return self
      */
     public function set_index(int $index): self {
         $this->index = $index;
@@ -179,10 +216,13 @@ final class column {
     }
 
     /**
-     * Set the column type
+     * Set the column type, if not called then the type will be assumed to be {@see TYPE_TEXT}
+     *
+     * The type of a column is used to cast the first column field passed to any callbacks {@see add_callback} as well as the
+     * aggregation options available for the column
      *
      * @param int $type
-     * @return column
+     * @return self
      * @throws coding_exception
      */
     public function set_type(int $type): self {
@@ -203,11 +243,11 @@ final class column {
     }
 
     /**
-     * Return column type
+     * Return column type, that being one of the TYPE_* class constants
      *
-     * @return int|null
+     * @return int
      */
-    public function get_type(): ?int {
+    public function get_type(): int {
         return $this->type;
     }
 
@@ -333,12 +373,12 @@ final class column {
         $fields = [];
 
         foreach ($this->fields as $alias => $sql) {
-            // Ensure params within SQL are prefixed with column index.
-            foreach ($this->params as $name => $value) {
-                $sql = preg_replace_callback('/:(?<param>' . preg_quote($name, '\b/') . ')/', function(array $matches): string {
-                    return ':' . $this->unique_param_name($matches['param']);
-                }, $sql);
-            }
+
+            // Ensure parameter names within SQL are prefixed with column index.
+            $params = array_keys($this->params);
+            $sql = database::sql_replace_parameter_names($sql, $params, function(string $param): string {
+                return $this->unique_param_name($param);
+            });
 
             $fields[$alias] = [
                 'sql' => $sql,
@@ -355,9 +395,22 @@ final class column {
      * @return array
      */
     public function get_fields(): array {
-        $fields = array_map(static function(array $field): string {
-            return "{$field['sql']} AS {$field['alias']}";
-        }, $this->get_fields_sql_alias());
+        $fieldsalias = $this->get_fields_sql_alias();
+
+        if (!empty($this->aggregation)) {
+            $fieldsaliassql = array_column($fieldsalias, 'sql');
+            $field = reset($fieldsalias);
+
+            // If aggregating the column, generate SQL from column fields and use it to generate aggregation SQL.
+            $columnfieldsql = $this->aggregation::get_column_field_sql($fieldsaliassql);
+            $aggregationfieldsql = $this->aggregation::get_field_sql($columnfieldsql, $this->get_type());
+
+            $fields = ["{$aggregationfieldsql} AS {$field['alias']}"];
+        } else {
+            $fields = array_map(static function(array $field): string {
+                return "{$field['sql']} AS {$field['alias']}";
+            }, $fieldsalias);
+        }
 
         return array_values($fields);
     }
@@ -393,14 +446,53 @@ final class column {
     }
 
     /**
-     * Adds column callback (in the case there are multiple, they will be applied one after another)
+     * Define suitable SQL fragment for grouping by the columns fields. This will be returned from {@see get_groupby_sql} if set
+     *
+     * @param string $groupbysql
+     * @return self
+     */
+    public function set_groupby_sql(string $groupbysql): self {
+        $this->groupbysql = $groupbysql;
+        return $this;
+    }
+
+    /**
+     * Return suitable SQL fragment for grouping by the column fields (during aggregation)
+     *
+     * @return array
+     */
+    public function get_groupby_sql(): array {
+        global $DB;
+
+        // Return defined value if it's already been set during column definition.
+        if (!empty($this->groupbysql)) {
+            return [$this->groupbysql];
+        }
+
+        $fieldsalias = $this->get_fields_sql_alias();
+
+        // Note that we can reference field aliases in GROUP BY only in MySQL/Postgres.
+        $usealias = in_array($DB->get_dbfamily(), ['mysql', 'postgres']);
+        $columnname = $usealias ? 'alias' : 'sql';
+
+        return array_column($fieldsalias, $columnname);
+    }
+
+    /**
+     * Adds column callback (in the case there are multiple, they will be called iteratively - the result of each passed
+     * along to the next in the chain)
      *
      * The callback should implement the following signature (where $value is the first column field, $row is all column
-     * fields, and $additionalarguments are those passed on from this method):
+     * fields, $additionalarguments are those passed to this method, and $aggregation indicates the current aggregation type
+     * being applied to the column):
      *
-     * function($value, stdClass $row[, $additionalarguments]): string
+     * function($value, stdClass $row, $additionalarguments, ?string $aggregation): string
      *
-     * @param callable $callable function that takes arguments ($value, \stdClass $row, $additionalarguments)
+     * The type of the $value parameter passed to the callback is determined by calling {@see set_type}, this type is preserved
+     * if the column is part of a report source and is being aggregated. For entities that can be left joined to a report, the
+     * first argument of the callback must be nullable (as it should also be if the first column field is itself nullable).
+     *
+     * @param callable $callable
      * @param mixed $additionalarguments
      * @return self
      */
@@ -422,13 +514,79 @@ final class column {
     }
 
     /**
+     * Set column aggregation type
+     *
+     * @param string|null $aggregation Type of aggregation, e.g. 'sum', 'count', etc
+     * @return self
+     * @throws coding_exception For invalid aggregation type, or one that is incompatible with column type
+     */
+    public function set_aggregation(?string $aggregation): self {
+        if (!empty($aggregation)) {
+            $aggregation = aggregation::get_full_classpath($aggregation);
+            if (!aggregation::valid($aggregation) || !$aggregation::compatible($this->get_type())) {
+                throw new coding_exception('Invalid column aggregation', $aggregation);
+            }
+        }
+
+        $this->aggregation = $aggregation;
+        return $this;
+    }
+
+    /**
+     * Get column aggregation type
+     *
+     * @return base|null
+     */
+    public function get_aggregation(): ?string {
+        return $this->aggregation;
+    }
+
+    /**
+     * Set disabled aggregation methods for the column. Typically only those methods suitable for the current column type are
+     * available: {@see aggregation::get_column_aggregations}, however in some cases we may want to disable specific methods
+     *
+     * @param array $disabledaggregation Array of types, e.g. ['min', 'sum']
+     * @return self
+     */
+    public function set_disabled_aggregation(array $disabledaggregation): self {
+        $this->disabledaggregation = $disabledaggregation;
+        return $this;
+    }
+
+    /**
+     * Disable all aggregation methods for the column, for instance when current database can't aggregate fields that contain
+     * sub-queries
+     *
+     * @return self
+     */
+    public function set_disabled_aggregation_all(): self {
+        $aggregationnames = array_map(static function(string $aggregation): string {
+            return $aggregation::get_class_name();
+        }, aggregation::get_aggregations());
+
+        return $this->set_disabled_aggregation($aggregationnames);
+    }
+
+    /**
+     * Return those aggregations methods explicitly disabled for the column
+     *
+     * @return array
+     */
+    public function get_disabled_aggregation(): array {
+        return $this->disabledaggregation;
+    }
+
+    /**
      * Sets the column as sortable
      *
      * @param bool $issortable
+     * @param array $sortfields Define the fields that should be used when the column is sorted, typically a subset of the fields
+     *      selected for the column, via {@see add_field}. If omitted then the first selected field is used
      * @return self
      */
-    public function set_is_sortable(bool $issortable): self {
+    public function set_is_sortable(bool $issortable, array $sortfields = []): self {
         $this->issortable = $issortable;
+        $this->sortfields = $sortfields;
         return $this;
     }
 
@@ -438,7 +596,40 @@ final class column {
      * @return bool
      */
     public function get_is_sortable(): bool {
+
+        // Defer sortable status to aggregation type if column is being aggregated.
+        if (!empty($this->aggregation)) {
+            return $this->aggregation::sortable($this->issortable);
+        }
+
         return $this->issortable;
+    }
+
+    /**
+     * Return fields to use for sorting of the column, where available the field aliases will be returned
+     *
+     * @return array
+     */
+    public function get_sort_fields(): array {
+        $fieldsalias = $this->get_fields_sql_alias();
+
+        return array_map(static function(string $sortfield) use ($fieldsalias): string {
+
+            // Check whether sortfield refers to a defined field alias.
+            if (array_key_exists($sortfield, $fieldsalias)) {
+                return $fieldsalias[$sortfield]['alias'];
+            }
+
+            // Check whether sortfield refers to field SQL.
+            foreach ($fieldsalias as $field) {
+                if (strcasecmp($sortfield, $field['sql']) === 0) {
+                    $sortfield = $field['alias'];
+                    break;
+                }
+            }
+
+            return $sortfield;
+        }, $this->sortfields);
     }
 
     /**
@@ -450,8 +641,9 @@ final class column {
     private function get_values(array $row): array {
         $values = [];
 
+        // During aggregation we only get a single alias back, subsequent aliases won't exist.
         foreach ($this->get_fields_sql_alias() as $alias => $field) {
-            $values[$alias] = $row[$field['alias']];
+            $values[$alias] = $row[$field['alias']] ?? null;
         }
 
         return $values;
@@ -461,13 +653,17 @@ final class column {
      * Return the default column value, that being the value of it's first field
      *
      * @param array $values
+     * @param int $columntype
      * @return mixed
      */
-    private function get_default_value(array $values) {
+    public static function get_default_value(array $values, int $columntype) {
         $value = reset($values);
+        if ($value === null) {
+            return $value;
+        }
 
         // Ensure default value is cast to it's strict type.
-        switch ($this->get_type()) {
+        switch ($columntype) {
             case self::TYPE_INTEGER:
             case self::TYPE_TIMESTAMP:
                 $value = (int) $value;
@@ -491,11 +687,16 @@ final class column {
      */
     public function format_value(array $row) {
         $values = $this->get_values($row);
-        $value = $this->get_default_value($values);
+        $value = self::get_default_value($values, $this->type);
 
-        // Loop through, and apply any defined callbacks.
-        foreach ($this->callbacks as $callback) {
-            $value = ($callback[0])($value, (object) $values, $callback[1]);
+        // If column is being aggregated then defer formatting to them, otherwise loop through all column callbacks.
+        if (!empty($this->aggregation)) {
+            $value = $this->aggregation::format_value($value, $values, $this->callbacks, $this->type);
+        } else {
+            foreach ($this->callbacks as $callback) {
+                [$callable, $arguments] = $callback;
+                $value = ($callable)($value, (object) $values, $arguments, null);
+            }
         }
 
         return $value;
@@ -540,5 +741,56 @@ final class column {
     public function set_is_available(bool $available): self {
         $this->available = $available;
         return $this;
+    }
+
+    /**
+     * Set deprecated state of the column, in which case it will still be shown when already present in existing reports but
+     * won't be available for selection in the report editor
+     *
+     * @param string $deprecatedmessage
+     * @return self
+     */
+    public function set_is_deprecated(string $deprecatedmessage = ''): self {
+        $this->deprecated = true;
+        $this->deprecatedmessage = $deprecatedmessage;
+        return $this;
+    }
+
+    /**
+     * Return deprecated state of the column
+     *
+     * @return bool
+     */
+    public function get_is_deprecated(): bool {
+        return $this->deprecated;
+    }
+
+    /**
+     * Return deprecated message of the column
+     *
+     * @return string
+     */
+    public function get_is_deprecated_message(): string {
+        return $this->deprecatedmessage;
+    }
+
+    /**
+     * Set column persistent
+     *
+     * @param column_model $persistent
+     * @return self
+     */
+    public function set_persistent(column_model $persistent): self {
+        $this->persistent = $persistent;
+        return $this;
+    }
+
+    /**
+     * Return column persistent
+     *
+     * @return mixed
+     */
+    public function get_persistent(): column_model {
+        return $this->persistent;
     }
 }

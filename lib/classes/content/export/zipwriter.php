@@ -249,27 +249,28 @@ class zipwriter {
 
         $exportedcourse = $this->get_course();
         $courselink = (new moodle_url('/course/view.php', ['id' => $exportedcourse->id]))->out(false);
+        $coursename = format_string($exportedcourse->fullname, true, ['context' => $this->coursecontext]);
 
         $this->add_template_requirements();
 
         $templatedata->global = (object) [
             'righttoleft' => right_to_left(),
-            'language' => str_replace('_', '-', current_language()),
+            'language' => get_html_lang_attribute_value(current_language()),
             'sitename' => format_string($SITE->fullname, true, ['context' => context_system::instance()]),
             'siteurl' => $CFG->wwwroot,
             'pathtotop' => $this->get_relative_context_path($context, $this->rootcontext, '/'),
             'contentexportfooter' => get_string('contentexport_footersummary', 'core', (object) [
                 'courselink' => $courselink,
-                'coursename' => $exportedcourse->fullname,
+                'coursename' => $coursename,
                 'userfullname' => fullname($USER),
                 'date' => userdate(time()),
             ]),
             'contentexportsummary' => get_string('contentexport_coursesummary', 'core', (object) [
                 'courselink' => $courselink,
-                'coursename' => $exportedcourse->fullname,
+                'coursename' => $coursename,
                 'date' => userdate(time()),
             ]),
-            'coursename' => $exportedcourse->fullname,
+            'coursename' => $coursename,
             'courseshortname' => $exportedcourse->shortname,
             'courselink' => $courselink,
             'exportdate' => userdate(time()),

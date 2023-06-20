@@ -23,19 +23,28 @@
  */
 
 import {BaseComponent} from 'core/reactive';
+import {debounce} from 'core/utils';
 import {getCurrentCourseEditor} from 'core_courseformat/courseeditor';
+import Config from 'core/config';
 import inplaceeditable from 'core/inplace_editable';
 import Section from 'core_courseformat/local/content/section';
 import CmItem from 'core_courseformat/local/content/section/cmitem';
-// Course actions is needed for actions that are not migrated to components.
-import courseActions from 'core_course/actions';
+import Fragment from 'core/fragment';
+import Templates from 'core/templates';
+import DispatchActions from 'core_courseformat/local/content/actions';
+import * as CourseEvents from 'core_course/events';
+// The jQuery module is only used for interacting with Boostrap 4. It can we removed when MDL-71979 is integrated.
+import jQuery from 'jquery';
+import Pending from 'core/pending';
 
 export default class Component extends BaseComponent {
 
     /**
      * Constructor hook.
+     *
+     * @param {Object} descriptor the component descriptor
      */
-    create() {
+    create(descriptor) {
         // Optional component name for debugging.
         this.name = 'course_format';
         // Default query selectors.
@@ -45,6 +54,21 @@ export default class Component extends BaseComponent {
             SECTION_CMLIST: `[data-for='cmlist']`,
             COURSE_SECTIONLIST: `[data-for='course_sectionlist']`,
             CM: `[data-for='cmitem']`,
+            PAGE: `#page`,
+            TOGGLER: `[data-action="togglecoursecontentsection"]`,
+            COLLAPSE: `[data-toggle="collapse"]`,
+            TOGGLEALL: `[data-toggle="toggleall"]`,
+            // Formats can override the activity tag but a default one is needed to create new elements.
+            ACTIVITYTAG: 'li',
+            SECTIONTAG: 'li',
+        };
+        // Default classes to toggle on refresh.
+        this.classes = {
+            COLLAPSED: `collapsed`,
+            // Course content classes.
+            ACTIVITY: `activity`,
+            STATEDREADY: `stateready`,
+            SECTION: `section`,
         };
         // Array to save dettached elements during element resorting.
         this.dettachedCms = {};
@@ -52,6 +76,9 @@ export default class Component extends BaseComponent {
         // Index of sections and cms components.
         this.sections = {};
         this.cms = {};
+        // The page section return.
+        this.sectionReturn = descriptor.sectionReturn ?? 0;
+        this.debouncedReloads = new Map();
     }
 
     /**
@@ -59,27 +86,125 @@ export default class Component extends BaseComponent {
      *
      * @param {string} target the DOM main element or its ID
      * @param {object} selectors optional css selector overrides
+     * @param {number} sectionReturn the content section return
      * @return {Component}
      */
-    static init(target, selectors) {
+    static init(target, selectors, sectionReturn) {
         return new Component({
             element: document.getElementById(target),
             reactive: getCurrentCourseEditor(),
             selectors,
+            sectionReturn,
         });
     }
 
     /**
      * Initial state ready method.
      *
-     * Course content elements could not provide JS Components because the elements HTML is applied
-     * directly from the course actions. To keep internal components updated this module keeps
-     * a list of the active components and mark them as "indexed". This way when any action replace
-     * the HTML this component will recreate the components an add any necessary event listener.
-     *
+     * @param {Object} state the state data
      */
-    stateReady() {
+    stateReady(state) {
         this._indexContents();
+        // Activate section togglers.
+        this.addEventListener(this.element, 'click', this._sectionTogglers);
+
+        // Collapse/Expand all sections button.
+        const toogleAll = this.getElement(this.selectors.TOGGLEALL);
+        if (toogleAll) {
+
+            // Ensure collapse menu button adds aria-controls attribute referring to each collapsible element.
+            const collapseElements = this.getElements(this.selectors.COLLAPSE);
+            const collapseElementIds = [...collapseElements].map(element => element.id);
+            toogleAll.setAttribute('aria-controls', collapseElementIds.join(' '));
+
+            this.addEventListener(toogleAll, 'click', this._allSectionToggler);
+            this.addEventListener(toogleAll, 'keydown', e => {
+                // Collapse/expand all sections when Space key is pressed on the toggle button.
+                if (e.key === ' ') {
+                    this._allSectionToggler(e);
+                }
+            });
+            this._refreshAllSectionsToggler(state);
+        }
+
+        if (this.reactive.supportComponents) {
+            // Actions are only available in edit mode.
+            if (this.reactive.isEditing) {
+                new DispatchActions(this);
+            }
+
+            // Mark content as state ready.
+            this.element.classList.add(this.classes.STATEDREADY);
+        }
+
+        // Capture completion events.
+        this.addEventListener(
+            this.element,
+            CourseEvents.manualCompletionToggled,
+            this._completionHandler
+        );
+
+        // Capture page scroll to update page item.
+        this.addEventListener(
+            document.querySelector(this.selectors.PAGE),
+            "scroll",
+            this._scrollHandler
+        );
+    }
+
+    /**
+     * Setup sections toggler.
+     *
+     * Toggler click is delegated to the main course content element because new sections can
+     * appear at any moment and this way we prevent accidental double bindings.
+     *
+     * @param {Event} event the triggered event
+     */
+    _sectionTogglers(event) {
+        const sectionlink = event.target.closest(this.selectors.TOGGLER);
+        const closestCollapse = event.target.closest(this.selectors.COLLAPSE);
+        // Assume that chevron is the only collapse toggler in a section heading;
+        // I think this is the most efficient way to verify at the moment.
+        const isChevron = closestCollapse?.closest(this.selectors.SECTION_ITEM);
+
+        if (sectionlink || isChevron) {
+
+            const section = event.target.closest(this.selectors.SECTION);
+            const toggler = section.querySelector(this.selectors.COLLAPSE);
+            const isCollapsed = toggler?.classList.contains(this.classes.COLLAPSED) ?? false;
+
+            if (isChevron || isCollapsed) {
+                // Update the state.
+                const sectionId = section.getAttribute('data-id');
+                this.reactive.dispatch(
+                    'sectionContentCollapsed',
+                    [sectionId],
+                    !isCollapsed
+                );
+            }
+        }
+    }
+
+    /**
+     * Handle the collapse/expand all sections button.
+     *
+     * Toggler click is delegated to the main course content element because new sections can
+     * appear at any moment and this way we prevent accidental double bindings.
+     *
+     * @param {Event} event the triggered event
+     */
+    _allSectionToggler(event) {
+        event.preventDefault();
+
+        const target = event.target.closest(this.selectors.TOGGLEALL);
+        const isAllCollapsed = target.classList.contains(this.classes.COLLAPSED);
+
+        const course = this.reactive.get('course');
+        this.reactive.dispatch(
+            'sectionContentCollapsed',
+            course.sectionlist ?? [],
+            !isAllCollapsed
+        );
     }
 
     /**
@@ -88,6 +213,10 @@ export default class Component extends BaseComponent {
      * @returns {Array} of watchers
      */
     getWatchers() {
+        // Section return is a global page variable but most formats define it just before start printing
+        // the course content. This is the reason why we define this page setting here.
+        this.reactive.sectionReturn = this.sectionReturn;
+
         // Check if the course format is compatible with reactive components.
         if (!this.reactive.supportComponents) {
             return [];
@@ -95,32 +224,87 @@ export default class Component extends BaseComponent {
         return [
             // State changes that require to reload some course modules.
             {watch: `cm.visible:updated`, handler: this._reloadCm},
+            {watch: `cm.stealth:updated`, handler: this._reloadCm},
+            {watch: `cm.sectionid:updated`, handler: this._reloadCm},
+            {watch: `cm.indent:updated`, handler: this._reloadCm},
             // Update section number and title.
             {watch: `section.number:updated`, handler: this._refreshSectionNumber},
+            // Collapse and expand sections.
+            {watch: `section.contentcollapsed:updated`, handler: this._refreshSectionCollapsed},
             // Sections and cm sorting.
             {watch: `transaction:start`, handler: this._startProcessing},
             {watch: `course.sectionlist:updated`, handler: this._refreshCourseSectionlist},
             {watch: `section.cmlist:updated`, handler: this._refreshSectionCmlist},
             // Reindex sections and cms.
             {watch: `state:updated`, handler: this._indexContents},
-            // State changes thaty require to reload course modules.
-            {watch: `cm.visible:updated`, handler: this._reloadCm},
-            {watch: `cm.sectionid:updated`, handler: this._reloadCm},
         ];
     }
 
     /**
-     * Reload a course module.
+     * Update section collapsed state via bootstrap 4 if necessary.
      *
-     * Most course module HTML is still strongly backend dependant.
-     * Some changes require to get a new version af the module.
+     * Formats that do not use bootstrap 4 must override this method in order to keep the section
+     * toggling working.
      *
-     * @param {Object} update the state update data
+     * @param {object} args
+     * @param {Object} args.state The state data
+     * @param {Object} args.element The element to update
      */
-    _reloadCm({element}) {
-        const cmitem = this.getElement(this.selectors.CM, element.id);
-        if (cmitem) {
-            courseActions.refreshModule(cmitem, element.id);
+    _refreshSectionCollapsed({state, element}) {
+        const target = this.getElement(this.selectors.SECTION, element.id);
+        if (!target) {
+            throw new Error(`Unknown section with ID ${element.id}`);
+        }
+        // Check if it is already done.
+        const toggler = target.querySelector(this.selectors.COLLAPSE);
+        const isCollapsed = toggler?.classList.contains(this.classes.COLLAPSED) ?? false;
+
+        if (element.contentcollapsed !== isCollapsed) {
+            let collapsibleId = toggler.dataset.target ?? toggler.getAttribute("href");
+            if (!collapsibleId) {
+                return;
+            }
+            collapsibleId = collapsibleId.replace('#', '');
+            const collapsible = document.getElementById(collapsibleId);
+            if (!collapsible) {
+                return;
+            }
+
+            // Course index is based on Bootstrap 4 collapsibles. To collapse them we need jQuery to
+            // interact with collapsibles methods. Hopefully, this will change in Bootstrap 5 because
+            // it does not require jQuery anymore (when MDL-71979 is integrated).
+            jQuery(collapsible).collapse(element.contentcollapsed ? 'hide' : 'show');
+        }
+
+        this._refreshAllSectionsToggler(state);
+    }
+
+    /**
+     * Refresh the collapse/expand all sections element.
+     *
+     * @param {Object} state The state data
+     */
+    _refreshAllSectionsToggler(state) {
+        const target = this.getElement(this.selectors.TOGGLEALL);
+        if (!target) {
+            return;
+        }
+        // Check if we have all sections collapsed/expanded.
+        let allcollapsed = true;
+        let allexpanded = true;
+        state.section.forEach(
+            section => {
+                allcollapsed = allcollapsed && section.contentcollapsed;
+                allexpanded = allexpanded && !section.contentcollapsed;
+            }
+        );
+        if (allcollapsed) {
+            target.classList.add(this.classes.COLLAPSED);
+            target.setAttribute('aria-expanded', false);
+        }
+        if (allexpanded) {
+            target.classList.remove(this.classes.COLLAPSED);
+            target.setAttribute('aria-expanded', true);
         }
     }
 
@@ -139,6 +323,45 @@ export default class Component extends BaseComponent {
     }
 
     /**
+     * Activity manual completion listener.
+     *
+     * @param {Event} event the custom ecent
+     */
+    _completionHandler({detail}) {
+        if (detail === undefined) {
+            return;
+        }
+        this.reactive.dispatch('cmCompletion', [detail.cmid], detail.completed);
+    }
+
+    /**
+     * Check the current page scroll and update the active element if necessary.
+     */
+    _scrollHandler() {
+        const pageOffset = document.querySelector(this.selectors.PAGE).scrollTop;
+        const items = this.reactive.getExporter().allItemsArray(this.reactive.state);
+        // Check what is the active element now.
+        let pageItem = null;
+        items.every(item => {
+            const index = (item.type === 'section') ? this.sections : this.cms;
+            if (index[item.id] === undefined) {
+                return true;
+            }
+
+            const element = index[item.id].element;
+            // Activities without url can only be page items in edit mode.
+            if (item.type === 'cm' && !item.url && !this.reactive.isEditing) {
+                return pageOffset >= element.offsetTop;
+            }
+            pageItem = item;
+            return pageOffset >= element.offsetTop;
+        });
+        if (pageItem) {
+            this.reactive.dispatch('setPageItem', pageItem.type, pageItem.id);
+        }
+    }
+
+    /**
      * Update a course section when the section number changes.
      *
      * The courseActions module used for most course section tools still depends on css classes and
@@ -148,13 +371,15 @@ export default class Component extends BaseComponent {
      * Course formats can override the section title rendering so the frontend depends heavily on backend
      * rendering. Luckily in edit mode we can trigger a title update using the inplace_editable module.
      *
-     * @param {Object} details the update details.
+     * @param {Object} param
+     * @param {Object} param.element details the update details.
      */
     _refreshSectionNumber({element}) {
         // Find the element.
         const target = this.getElement(this.selectors.SECTION, element.id);
         if (!target) {
-            throw new Error(`Unkown section with ID ${element.id}`);
+            // Job done. Nothing to refresh.
+            return;
         }
         // Update section numbers in all data, css and YUI attributes.
         target.id = `section-${element.number}`;
@@ -185,27 +410,37 @@ export default class Component extends BaseComponent {
     /**
      * Refresh a section cm list.
      *
-     * @param {Object} details the update details.
+     * @param {Object} param
+     * @param {Object} param.element details the update details.
      */
     _refreshSectionCmlist({element}) {
         const cmlist = element.cmlist ?? [];
         const section = this.getElement(this.selectors.SECTION, element.id);
         const listparent = section?.querySelector(this.selectors.SECTION_CMLIST);
+        // A method to create a fake element to be replaced when the item is ready.
+        const createCm = this._createCmItem.bind(this);
         if (listparent) {
-            this._fixOrder(listparent, cmlist, this.selectors.CM, this.dettachedCms);
+            this._fixOrder(listparent, cmlist, this.selectors.CM, this.dettachedCms, createCm);
         }
     }
 
     /**
      * Refresh the section list.
      *
-     * @param {Object} details the update details.
+     * @param {Object} param
+     * @param {Object} param.element details the update details.
      */
     _refreshCourseSectionlist({element}) {
+        // If we have a section return means we only show a single section so no need to fix order.
+        if (this.reactive.sectionReturn != 0) {
+            return;
+        }
         const sectionlist = element.sectionlist ?? [];
         const listparent = this.getElement(this.selectors.COURSE_SECTIONLIST);
+        // For now section cannot be created at a frontend level.
+        const createSection = this._createSectionItem.bind(this);
         if (listparent) {
-            this._fixOrder(listparent, sectionlist, this.selectors.SECTION, this.dettachedSections);
+            this._fixOrder(listparent, sectionlist, this.selectors.SECTION, this.dettachedSections, createSection);
         }
     }
 
@@ -266,18 +501,140 @@ export default class Component extends BaseComponent {
     /**
      * Reload a course module contents.
      *
-     * @param {details} param0 the watcher details
-     * @property {object} param0.element the state object
+     * Most course module HTML is still strongly backend dependant.
+     * Some changes require to get a new version of the module.
+     *
+     * @param {object} param0 the watcher details
+     * @param {object} param0.element the state object
      */
     _reloadCm({element}) {
-        const cmitem = this.getElement(this.selectors.CM, element.id);
-        if (cmitem) {
-            const promise = courseActions.refreshModule(cmitem, element.id);
-            promise.then(() => {
+        if (!this.getElement(this.selectors.CM, element.id)) {
+            return;
+        }
+        const debouncedReload = this._getDebouncedReloadCm(element.id);
+        debouncedReload();
+    }
+
+    /**
+     * Generate or get a reload CM debounced function.
+     * @param {Number} cmId
+     * @returns {Function} the debounced reload function
+     */
+    _getDebouncedReloadCm(cmId) {
+        const pendingKey = `courseformat/content:reloadCm_${cmId}`;
+        let debouncedReload = this.debouncedReloads.get(pendingKey);
+        if (debouncedReload) {
+            return debouncedReload;
+        }
+        const pendingReload = new Pending(pendingKey);
+        const reload = () => {
+            this.debouncedReloads.delete(pendingKey);
+            const cmitem = this.getElement(this.selectors.CM, cmId);
+            if (!cmitem) {
+                return;
+            }
+            const promise = Fragment.loadFragment(
+                'core_courseformat',
+                'cmitem',
+                Config.courseContextId,
+                {
+                    id: cmId,
+                    courseid: Config.courseId,
+                    sr: this.reactive.sectionReturn ?? 0,
+                }
+            );
+            promise.then((html, js) => {
+                Templates.replaceNode(cmitem, html, js);
                 this._indexContents();
+                pendingReload.resolve();
+                return;
+            }).catch();
+        };
+        debouncedReload = debounce(reload, 200);
+        this.debouncedReloads.set(pendingKey, debouncedReload);
+        return debouncedReload;
+    }
+
+    /**
+     * Reload a course section contents.
+     *
+     * Section HTML is still strongly backend dependant.
+     * Some changes require to get a new version of the section.
+     *
+     * @param {details} param0 the watcher details
+     * @param {object} param0.element the state object
+     */
+    _reloadSection({element}) {
+        const pendingReload = new Pending(`courseformat/content:reloadSection_${element.id}`);
+        const sectionitem = this.getElement(this.selectors.SECTION, element.id);
+        if (sectionitem) {
+            const promise = Fragment.loadFragment(
+                'core_courseformat',
+                'section',
+                Config.courseContextId,
+                {
+                    id: element.id,
+                    courseid: Config.courseId,
+                    sr: this.reactive.sectionReturn ?? 0,
+                }
+            );
+            promise.then((html, js) => {
+                Templates.replaceNode(sectionitem, html, js);
+                this._indexContents();
+                pendingReload.resolve();
                 return;
             }).catch();
         }
+    }
+
+    /**
+     * Create a new course module item in a section.
+     *
+     * Thos method will append a fake item in the container and trigger an ajax request to
+     * replace the fake element by the real content.
+     *
+     * @param {Element} container the container element (section)
+     * @param {Number} cmid the course-module ID
+     * @returns {Element} the created element
+     */
+    _createCmItem(container, cmid) {
+        const newItem = document.createElement(this.selectors.ACTIVITYTAG);
+        newItem.dataset.for = 'cmitem';
+        newItem.dataset.id = cmid;
+        // The legacy actions.js requires a specific ID and class to refresh the CM.
+        newItem.id = `module-${cmid}`;
+        newItem.classList.add(this.classes.ACTIVITY);
+        container.append(newItem);
+        this._reloadCm({
+            element: this.reactive.get('cm', cmid),
+        });
+        return newItem;
+    }
+
+    /**
+     * Create a new section item.
+     *
+     * This method will append a fake item in the container and trigger an ajax request to
+     * replace the fake element by the real content.
+     *
+     * @param {Element} container the container element (section)
+     * @param {Number} sectionid the course-module ID
+     * @returns {Element} the created element
+     */
+    _createSectionItem(container, sectionid) {
+        const section = this.reactive.get('section', sectionid);
+        const newItem = document.createElement(this.selectors.SECTIONTAG);
+        newItem.dataset.for = 'section';
+        newItem.dataset.id = sectionid;
+        newItem.dataset.number = section.number;
+        // The legacy actions.js requires a specific ID and class to refresh the section.
+        newItem.id = `section-${sectionid}`;
+        newItem.classList.add(this.classes.SECTION);
+        container.append(newItem);
+        this._reloadSection({
+            element: section,
+        });
+        return newItem;
     }
 
     /**
@@ -287,8 +644,12 @@ export default class Component extends BaseComponent {
      * @param {Array} neworder an array with the ids order
      * @param {string} selector the element selector
      * @param {Object} dettachedelements a list of dettached elements
+     * @param {function} createMethod method to create missing elements
      */
-    _fixOrder(container, neworder, selector, dettachedelements) {
+    async _fixOrder(container, neworder, selector, dettachedelements, createMethod) {
+        if (container === undefined) {
+            return;
+        }
 
         // Empty lists should not be visible.
         if (!neworder.length) {
@@ -302,7 +663,11 @@ export default class Component extends BaseComponent {
 
         // Move the elements in order at the beginning of the list.
         neworder.forEach((itemid, index) => {
-            const item = this.getElement(selector, itemid) ?? dettachedelements[itemid];
+            let item = this.getElement(selector, itemid) ?? dettachedelements[itemid] ?? createMethod(container, itemid);
+            if (item === undefined) {
+                // Missing elements cannot be sorted.
+                return;
+            }
             // Get the current elemnt at that position.
             const currentitem = container.children[index];
             if (currentitem === undefined) {
@@ -320,7 +685,7 @@ export default class Component extends BaseComponent {
         // Remove the remaining elements.
         while (container.children.length > neworder.length) {
             const lastchild = container.lastChild;
-            if (lastchild.classList.contains('dndupload-preview')) {
+            if (lastchild?.classList?.contains('dndupload-preview')) {
                 dndFakeActivity = lastchild;
             } else {
                 dettachedelements[lastchild?.dataset?.id ?? 0] = lastchild;

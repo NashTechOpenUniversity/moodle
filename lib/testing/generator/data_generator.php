@@ -87,10 +87,18 @@ EOD;
      * @return void
      */
     public function reset() {
+        $this->gradecategorycounter = 0;
+        $this->gradeitemcounter = 0;
+        $this->gradeoutcomecounter = 0;
         $this->usercounter = 0;
         $this->categorycount = 0;
+        $this->cohortcount = 0;
         $this->coursecount = 0;
         $this->scalecount = 0;
+        $this->groupcount = 0;
+        $this->groupingcount = 0;
+        $this->rolecount = 0;
+        $this->tagcount = 0;
 
         foreach ($this->generators as $generator) {
             $generator->reset();
@@ -121,19 +129,20 @@ EOD;
         $dir = core_component::get_component_directory($component);
         $lib = $dir . '/tests/generator/lib.php';
         if (!$dir || !is_readable($lib)) {
-            throw new coding_exception("Component {$component} does not support " .
-                    "generators yet. Missing tests/generator/lib.php.");
+            $this->generators[$component] = $this->get_default_plugin_generator($component);
+
+            return $this->generators[$component];
         }
 
         include_once($lib);
         $classname = $component . '_generator';
 
-        if (!class_exists($classname)) {
-            throw new coding_exception("Component {$component} does not support " .
-                    "data generators yet. Class {$classname} not found.");
+        if (class_exists($classname)) {
+            $this->generators[$component] = new $classname($this);
+        } else {
+            $this->generators[$component] = $this->get_default_plugin_generator($component, $classname);
         }
 
-        $this->generators[$component] = new $classname($this);
         return $this->generators[$component];
     }
 
@@ -428,7 +437,7 @@ EOD;
      * Create course section if does not exist yet
      * @param array|stdClass $record must contain 'course' and 'section' attributes
      * @param array|null $options
-     * @return stdClass
+     * @return section_info
      * @throws coding_exception
      */
     public function create_course_section($record = null, array $options = null) {
@@ -530,6 +539,14 @@ EOD;
 
         if (!isset($record['descriptionformat'])) {
             $record['descriptionformat'] = FORMAT_MOODLE;
+        }
+
+        if (!isset($record['visibility'])) {
+            $record['visibility'] = GROUPS_VISIBILITY_ALL;
+        }
+
+        if (!isset($record['participation'])) {
+            $record['participation'] = true;
         }
 
         $id = groups_create_group((object)$record);
@@ -780,7 +797,20 @@ EOD;
         // If no archetype was specified we allow it to be added to all contexts,
         // otherwise we allow it in the archetype contexts.
         if (!$record['archetype']) {
-            $contextlevels = array_keys(context_helper::get_all_levels());
+            $contextlevels = [];
+            $usefallback = true;
+            foreach (context_helper::get_all_levels() as $level => $title) {
+                if (array_key_exists($title, $record)) {
+                    $usefallback = false;
+                    if (!empty($record[$title])) {
+                        $contextlevels[] = $level;
+                    }
+                }
+            }
+
+            if ($usefallback) {
+                $contextlevels = array_keys(context_helper::get_all_levels());
+            }
         } else {
             // Copying from the archetype default rol.
             $archetyperoleid = $DB->get_field(
@@ -793,7 +823,6 @@ EOD;
         set_role_contextlevels($newroleid, $contextlevels);
 
         if ($record['archetype']) {
-
             // We copy all the roles the archetype can assign, override, switch to and view.
             if ($record['archetype']) {
                 $types = array('assign', 'override', 'switch', 'view');
@@ -811,7 +840,74 @@ EOD;
             role_cap_duplicate($sourcerole, $newroleid);
         }
 
+        $allcapabilities = get_all_capabilities();
+        $foundcapabilities = array_intersect(array_keys($allcapabilities), array_keys($record));
+        $systemcontext = \context_system::instance();
+
+        $allpermissions = [
+            'inherit' => CAP_INHERIT,
+            'allow' => CAP_ALLOW,
+            'prevent' => CAP_PREVENT,
+            'prohibit' => CAP_PROHIBIT,
+        ];
+
+        foreach ($foundcapabilities as $capability) {
+            $permission = $record[$capability];
+            if (!array_key_exists($permission, $allpermissions)) {
+                throw new \coding_exception("Unknown capability permissions '{$permission}'");
+            }
+            assign_capability(
+                $capability,
+                $allpermissions[$permission],
+                $newroleid,
+                $systemcontext->id,
+                true
+            );
+        }
+
         return $newroleid;
+    }
+
+    /**
+     * Set role capabilities for the specified role.
+     *
+     * @param int $roleid The Role to set capabilities for
+     * @param array $rolecapabilities The list of capability =>permission to set for this role
+     * @param null|context $context The context to apply this capability to
+     */
+    public function create_role_capability(int $roleid, array $rolecapabilities, context $context = null): void {
+        // Map the capabilities into human-readable names.
+        $allpermissions = [
+            'inherit' => CAP_INHERIT,
+            'allow' => CAP_ALLOW,
+            'prevent' => CAP_PREVENT,
+            'prohibit' => CAP_PROHIBIT,
+        ];
+
+        // Fetch all capabilities to check that they exist.
+        $allcapabilities = get_all_capabilities();
+        foreach ($rolecapabilities as $capability => $permission) {
+            if ($permission === '') {
+                // Allow items to be skipped.
+                continue;
+            }
+
+            if (!array_key_exists($capability, $allcapabilities)) {
+                throw new \coding_exception("Unknown capability '{$capability}'");
+            }
+
+            if (!array_key_exists($permission, $allpermissions)) {
+                throw new \coding_exception("Unknown capability permissions '{$permission}'");
+            }
+
+            assign_capability(
+                $capability,
+                $allpermissions[$permission],
+                $roleid,
+                $context->id,
+                true
+            );
+        }
     }
 
     /**
@@ -940,12 +1036,13 @@ EOD;
     /**
      * Assigns the specified role to a user in the context.
      *
-     * @param int $roleid
+     * @param int|string $role either an int role id or a string role shortname.
      * @param int $userid
-     * @param int $contextid Defaults to the system context
+     * @param int|context $contextid Defaults to the system context
      * @return int new/existing id of the assignment
      */
-    public function role_assign($roleid, $userid, $contextid = false) {
+    public function role_assign($role, $userid, $contextid = false) {
+        global $DB;
 
         // Default to the system context.
         if (!$contextid) {
@@ -953,15 +1050,18 @@ EOD;
             $contextid = $context->id;
         }
 
-        if (empty($roleid)) {
+        if (empty($role)) {
             throw new coding_exception('roleid must be present in testing_data_generator::role_assign() arguments');
+        }
+        if (!is_number($role)) {
+            $role = $DB->get_field('role', 'id', ['shortname' => $role], MUST_EXIST);
         }
 
         if (empty($userid)) {
             throw new coding_exception('userid must be present in testing_data_generator::role_assign() arguments');
         }
 
-        return role_assign($roleid, $userid, $contextid);
+        return role_assign($role, $userid, $contextid);
     }
 
     /**
@@ -999,6 +1099,57 @@ EOD;
 
         $gradecategory->update_from_db();
         return $gradecategory->get_record_data();
+    }
+
+    /**
+     * Create a grade_grade.
+     *
+     * @param array $record
+     * @return grade_grade the grade record
+     */
+    public function create_grade_grade(?array $record = null): grade_grade {
+        global $DB, $USER;
+
+        $item = $DB->get_record('grade_items', ['id' => $record['itemid']]);
+        $userid = $record['userid'] ?? $USER->id;
+
+        unset($record['itemid']);
+        unset($record['userid']);
+
+        if ($item->itemtype === 'mod') {
+            $cm = get_coursemodule_from_instance($item->itemmodule, $item->iteminstance);
+            $module = new $item->itemmodule(context_module::instance($cm->id), $cm, false);
+            $record['attemptnumber'] = $record['attemptnumber'] ?? 0;
+
+            $module->save_grade($userid, (object) $record);
+
+            $grade = grade_grade::fetch(['userid' => $userid, 'itemid' => $item->id]);
+        } else {
+            $grade = grade_grade::fetch(['userid' => $userid, 'itemid' => $item->id]);
+            $record['rawgrade'] = $record['rawgrade'] ?? $record['grade'] ?? null;
+            $record['finalgrade'] = $record['finalgrade'] ?? $record['grade'] ?? null;
+
+            unset($record['grade']);
+
+            if ($grade) {
+                $fields = $grade->required_fields + array_keys($grade->optional_fields);
+
+                foreach ($fields as $field) {
+                    $grade->{$field} = $record[$field] ?? $grade->{$field};
+                }
+
+                $grade->update();
+            } else {
+                $record['userid'] = $userid;
+                $record['itemid'] = $item->id;
+
+                $grade = new grade_grade($record, false);
+
+                $grade->insert();
+            }
+        }
+
+        return $grade;
     }
 
     /**
@@ -1068,7 +1219,7 @@ EOD;
     /**
      * Helper function used to create an LTI tool.
      *
-     * @param array $data
+     * @param stdClass $data
      * @return stdClass the tool
      */
     public function create_lti_tool($data = array()) {
@@ -1096,10 +1247,15 @@ EOD;
             $data->status = ENROL_INSTANCE_ENABLED;
         }
 
+        // Default to legacy lti version.
+        if (empty($data->ltiversion) || !in_array($data->ltiversion, ['LTI-1p0/LTI-2p0', 'LTI-1p3'])) {
+            $data->ltiversion = 'LTI-1p0/LTI-2p0';
+        }
+
         // Add some extra necessary fields to the data.
-        $data->name = 'Test LTI';
-        $data->roleinstructor = $studentrole->id;
-        $data->rolelearner = $teacherrole->id;
+        $data->name = $data->name ?? 'Test LTI';
+        $data->roleinstructor = $teacherrole->id;
+        $data->rolelearner = $studentrole->id;
 
         // Get the enrol LTI plugin.
         $enrolplugin = enrol_get_plugin('lti');
@@ -1255,6 +1411,11 @@ EOD;
                     [$data['categoryid']]) + 1;
         }
 
+        if ($data['datatype'] === 'menu' && isset($data['param1'])) {
+            // Convert new lines to the proper character.
+            $data['param1'] = str_replace('\n', "\n", $data['param1']);
+        }
+
         // Defaults for other values.
         $defaults = [
             'description' => '',
@@ -1311,7 +1472,7 @@ EOD;
      *
      * @param   \stdClass   $course The course to enrol in
      * @param   string      $role The role to give within the course
-     * @param   \stdClass   $userparams User parameters
+     * @param   \stdClass|array   $userparams User parameters
      * @return  \stdClass   The created user
      */
     public function create_and_enrol($course, $role = 'student', $userparams = null, $enrol = 'manual',
@@ -1347,4 +1508,29 @@ EOD;
 
         return $DB->get_record('user_lastaccess', ['id' => $recordid], '*', MUST_EXIST);
     }
+
+    /**
+     * Gets a default generator for a given component.
+     *
+     * @param string $component The component name, e.g. 'mod_forum' or 'core_question'.
+     * @param string $classname The name of the class missing from the generators file.
+     * @return component_generator_base The generator.
+     */
+    protected function get_default_plugin_generator(string $component, ?string $classname = null) {
+        [$type, $plugin] = core_component::normalize_component($component);
+
+        switch ($type) {
+            case 'block':
+                return new default_block_generator($this, $plugin);
+        }
+
+        if (is_null($classname)) {
+            throw new coding_exception("Component {$component} does not support " .
+                "generators yet. Missing tests/generator/lib.php.");
+        }
+
+        throw new coding_exception("Component {$component} does not support " .
+            "data generators yet. Class {$classname} not found.");
+    }
+
 }

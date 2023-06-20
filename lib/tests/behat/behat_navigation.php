@@ -444,7 +444,9 @@ class behat_navigation extends behat_base {
         $nodetext = end($nodes);
 
         // Find administration menu.
-        $menuxpath = $this->find_header_administration_menu() ?: $this->find_page_administration_menu(true);
+        if (!$menuxpath = $this->find_page_action_menu()) {
+            $menuxpath = $this->find_header_administration_menu() ?: $this->find_page_administration_menu(true);
+        }
 
         $this->toggle_page_administration_menu($menuxpath);
         $this->execute('behat_general::should_exist_in_the', [$nodetext, $selectortype, $menuxpath, 'xpath_element']);
@@ -489,7 +491,7 @@ class behat_navigation extends behat_base {
      */
     public function i_navigate_to_in_site_administration($nodetext) {
         $nodelist = array_map('trim', explode('>', $nodetext));
-        $this->i_select_from_flat_navigation_drawer(get_string('administrationsite'));
+        $this->i_select_from_primary_navigation(get_string('administrationsite'));
         $this->select_on_administration_page($nodelist);
     }
 
@@ -625,7 +627,7 @@ class behat_navigation extends behat_base {
             }
             return [$component, $name];
         } else {
-            throw new coding_exception('The page name most be in the form ' .
+            throw new coding_exception('The page name must be in the form ' .
                     '"{page-name}" for core pages, or "{component} > {page-name}" ' .
                     'for pages belonging to other components. ' .
                     'For example "Admin notifications" or "mod_quiz > View".');
@@ -717,8 +719,17 @@ class behat_navigation extends behat_base {
             case 'Homepage':
                 return new moodle_url('/');
 
+            case 'My courses':
+                return new moodle_url('/my/courses.php');
+
             case 'Admin notifications':
                 return new moodle_url('/admin/');
+
+            case 'My private files':
+                return new moodle_url('/user/files.php');
+
+            case 'System logs report':
+                return new moodle_url('/report/log/index.php');
 
             default:
                 throw new Exception('Unrecognised core page type "' . $name . '."');
@@ -732,10 +743,21 @@ class behat_navigation extends behat_base {
      * | Page type                  | Identifier meaning        | description                          |
      * | Category                   | category idnumber         | List of courses in that category.    |
      * | Course                     | course shortname          | Main course home pag                 |
+     * | Course editing             | course shortname          | Edit settings page for the course    |
      * | Activity                   | activity idnumber         | Start page for that activity         |
      * | Activity editing           | activity idnumber         | Edit settings page for that activity |
      * | [modname] Activity         | activity name or idnumber | Start page for that activity         |
      * | [modname] Activity editing | activity name or idnumber | Edit settings page for that activity |
+     * | Backup                     | course shortname          | Course to backup                     |
+     * | Import                     | course shortname          | Course import from                   |
+     * | Restore                    | course shortname          | Course to restore from               |
+     * | Reset                      | course shortname          | Course to reset                      |
+     * | Course copy                | course shortname          | Course to copy                       |
+     * | Groups                     | course shortname          | Groups page for the course           |
+     * | Permissions                | course shortname          | Permissions page for the course      |
+     * | Enrolment methods          | course shortname          | Enrolment methods for the course     |
+     * | Enrolled users             | course shortname          | The main participants page           |
+     * | Other users                | course shortname          | The course other users page          |
      *
      * Examples:
      *
@@ -747,8 +769,6 @@ class behat_navigation extends behat_base {
      * @throws Exception with a meaningful error message if the specified page cannot be found.
      */
     protected function resolve_core_page_instance_url(string $type, string $identifier): moodle_url {
-        global $DB;
-
         $type = strtolower($type);
 
         switch ($type) {
@@ -759,11 +779,19 @@ class behat_navigation extends behat_base {
                 }
                 return new moodle_url('/course/index.php', ['categoryid' => $categoryid]);
 
+            case 'course editing':
+                $courseid = $this->get_course_id($identifier);
+                if (!$courseid) {
+                    throw new Exception('The specified course with shortname, fullname, or idnumber "' .
+                        $identifier . '" does not exist');
+                }
+                return new moodle_url('/course/edit.php', ['id' => $courseid]);
+
             case 'course':
                 $courseid = $this->get_course_id($identifier);
                 if (!$courseid) {
                     throw new Exception('The specified course with shortname, fullname, or idnumber "' .
-                            $identifier . '" does not exist');
+                        $identifier . '" does not exist');
                 }
                 return new moodle_url('/course/view.php', ['id' => $courseid]);
 
@@ -782,6 +810,85 @@ class behat_navigation extends behat_base {
                 return new moodle_url('/course/modedit.php', [
                     'update' => $cm->id,
                 ]);
+            case 'backup':
+                $courseid = $this->get_course_id($identifier);
+                if (!$courseid) {
+                    throw new Exception('The specified course with shortname, fullname, or idnumber "' .
+                            $identifier . '" does not exist');
+                }
+                return new moodle_url('/backup/backup.php', ['id' => $courseid]);
+            case 'import':
+                $courseid = $this->get_course_id($identifier);
+                if (!$courseid) {
+                    throw new Exception('The specified course with shortname, fullname, or idnumber "' .
+                            $identifier . '" does not exist');
+                }
+                return new moodle_url('/backup/import.php', ['id' => $courseid]);
+            case 'restore':
+                $courseid = $this->get_course_id($identifier);
+                if (!$courseid) {
+                    throw new Exception('The specified course with shortname, fullname, or idnumber "' .
+                            $identifier . '" does not exist');
+                }
+                $context = context_course::instance($courseid);
+                return new moodle_url('/backup/restorefile.php', ['contextid' => $context->id]);
+            case 'reset':
+                $courseid = $this->get_course_id($identifier);
+                if (!$courseid) {
+                    throw new Exception('The specified course with shortname, fullname, or idnumber "' .
+                            $identifier . '" does not exist');
+                }
+                return new moodle_url('/course/reset.php', ['id' => $courseid]);
+            case 'course copy':
+                $courseid = $this->get_course_id($identifier);
+                if (!$courseid) {
+                    throw new Exception('The specified course with shortname, fullname, or idnumber "' .
+                            $identifier . '" does not exist');
+                }
+                return new moodle_url('/backup/copy.php', ['id' => $courseid]);
+            case 'groups':
+                $courseid = $this->get_course_id($identifier);
+                if (!$courseid) {
+                    throw new Exception('The specified course with shortname, fullname, or idnumber "' .
+                            $identifier . '" does not exist');
+                }
+                return new moodle_url('/group/index.php', ['id' => $courseid]);
+            case 'permissions':
+                $courseid = $this->get_course_id($identifier);
+                if (!$courseid) {
+                    throw new Exception('The specified course with shortname, fullname, or idnumber "' .
+                            $identifier . '" does not exist');
+                }
+                $context = context_course::instance($courseid);
+                return new moodle_url('/admin/roles/permissions.php', ['contextid' => $context->id]);
+            case 'enrolment methods':
+                $courseid = $this->get_course_id($identifier);
+                if (!$courseid) {
+                    throw new Exception('The specified course with shortname, fullname, or idnumber "' .
+                            $identifier . '" does not exist');
+                }
+                return new moodle_url('/enrol/instances.php', ['id' => $courseid]);
+            case 'enrolled users':
+                $courseid = $this->get_course_id($identifier);
+                if (!$courseid) {
+                    throw new Exception('The specified course with shortname, fullname, or idnumber "' .
+                            $identifier . '" does not exist');
+                }
+                return new moodle_url('/user/index.php', ['id' => $courseid]);
+            case 'other users':
+                $courseid = $this->get_course_id($identifier);
+                if (!$courseid) {
+                    throw new Exception('The specified course with shortname, fullname, or idnumber "' .
+                        $identifier . '" does not exist');
+                }
+                return new moodle_url('/enrol/otherusers.php', ['id' => $courseid]);
+            case 'renameroles':
+                $courseid = $this->get_course_id($identifier);
+                if (!$courseid) {
+                    throw new Exception('The specified course with shortname, fullname, or idnumber "' .
+                            $identifier . '" does not exist');
+                }
+                return new moodle_url('/enrol/renameroles.php', ['id' => $courseid]);
         }
 
         $parts = explode(' ', $type);
@@ -824,9 +931,8 @@ class behat_navigation extends behat_base {
      * @return void
      */
     public function i_am_on_course_homepage($coursefullname) {
-        global $DB;
-        $course = $DB->get_record("course", array("fullname" => $coursefullname), 'id', MUST_EXIST);
-        $url = new moodle_url('/course/view.php', ['id' => $course->id]);
+        $courseid = $this->get_course_id($coursefullname);
+        $url = new moodle_url('/course/view.php', ['id' => $courseid]);
         $this->execute('behat_general::i_visit', [$url]);
     }
 
@@ -848,10 +954,8 @@ class behat_navigation extends behat_base {
      * @param string $onoroff Whehter to switch editing on, or off.
      */
     public function i_am_on_course_homepage_with_editing_mode_set_to(string $coursefullname, string $onoroff): void {
-        global $DB;
-
-        $course = $DB->get_record("course", array("fullname" => $coursefullname), 'id', MUST_EXIST);
-        $url = new moodle_url('/course/view.php', ['id' => $course->id]);
+        $courseid = $this->get_course_id($coursefullname);
+        $url = new moodle_url('/course/view.php', ['id' => $courseid]);
 
         // Visit the course page.
         $this->execute('behat_general::i_visit', [$url]);
@@ -908,15 +1012,29 @@ class behat_navigation extends behat_base {
     }
 
     /**
-     * Clicks link with specified id|title|alt|text in the flat navigation drawer.
+     * Clicks link with specified id|title|alt|text in the primary navigation
      *
-     * @When /^I select "(?P<link_string>(?:[^"]|\\")*)" from flat navigation drawer$/
+     * @When /^I select "(?P<link_string>(?:[^"]|\\")*)" from primary navigation$/
      * @throws ElementNotFoundException Thrown by behat_base::find
      * @param string $link
      */
-    public function i_select_from_flat_navigation_drawer($link) {
-        $this->i_open_flat_navigation_drawer();
-        $this->execute('behat_general::i_click_on_in_the', [$link, 'link', '#nav-drawer', 'css_element']);
+    public function i_select_from_primary_navigation(string $link) {
+        $this->execute('behat_general::i_click_on_in_the',
+            [$link, 'link', '.primary-navigation .moremenu.navigation', 'css_element']
+        );
+    }
+
+    /**
+     * Clicks link with specified id|title|alt|text in the secondary navigation
+     *
+     * @When I select :link from secondary navigation
+     * @throws ElementNotFoundException Thrown by behat_base::find
+     * @param string $link
+     */
+    public function i_select_from_secondary_navigation(string $link) {
+        $this->execute('behat_general::i_click_on_in_the',
+            [$link, 'link', '.secondary-navigation .moremenu.navigation', 'css_element']
+        );
     }
 
     /**
@@ -925,7 +1043,9 @@ class behat_navigation extends behat_base {
     protected function go_to_main_course_page() {
         $url = $this->getSession()->getCurrentUrl();
         if (!preg_match('|/course/view.php\?id=[\d]+$|', $url)) {
-            $node = $this->find('xpath', '//header//div[@id=\'page-navbar\']//a[contains(@href,\'/course/view.php?id=\')]');
+            $node = $this->find('xpath',
+                '//header//div[@id=\'page-navbar\']//a[contains(@href,\'/course/view.php?id=\')]'
+            );
             $this->execute('behat_general::i_click_on', [$node, 'NodeElement']);
         }
     }
@@ -946,7 +1066,7 @@ class behat_navigation extends behat_base {
             $tabxpath = '//ul[@role=\'tablist\']/li/a[contains(normalize-space(.), ' . $tabname . ')]';
             $menubarxpath = '//ul[@role=\'menubar\']/li/a[contains(normalize-space(.), ' . $tabname . ')]';
             $linkname = behat_context_helper::escape(get_string('moremenu'));
-            $menubarmorexpath = '//ul[@role=\'menubar\']/li/a[contains(normalize-space(.), ' . $linkname . ')]';
+            $menubarmorexpath = '//ul[contains(@class,\'more-nav\')]/li/a[contains(normalize-space(.), ' . $linkname . ')]';
             $tabnode = $this->getSession()->getPage()->find('xpath', $tabxpath);
             $menunode = $this->getSession()->getPage()->find('xpath', $menubarxpath);
             $menubuttons = $this->getSession()->getPage()->findAll('xpath', $menubarmorexpath);
@@ -990,11 +1110,16 @@ class behat_navigation extends behat_base {
 
         // Find a link and click on it.
         $linkname = behat_context_helper::escape($lastnode);
-        $xpath .= '//a[contains(normalize-space(.), ' . $linkname . ')]';
-        if (!$node = $this->getSession()->getPage()->find('xpath', $xpath)) {
-            throw new ElementNotFoundException($this->getSession(), 'Link "' . join(' > ', $nodelist) . '"');
+        $xpathlink = $xpathbutton = $xpath;
+        $xpathlink .= '//a[contains(normalize-space(.), ' . $linkname . ')]';
+        $xpathbutton .= '//button[contains(normalize-space(.), ' . $linkname . ')]';
+        if ($node = $this->getSession()->getPage()->find('xpath', $xpathbutton)) {
+            $this->execute('behat_general::i_click_on', [$node, 'NodeElement']);
+        } else if (!$node = $this->getSession()->getPage()->find('xpath', $xpathlink)) {
+             throw new ElementNotFoundException($this->getSession(), 'Link "' . join(' > ', $nodelist) . '"');
+        } else {
+            $this->execute('behat_general::i_click_on', [$node, 'NodeElement']);
         }
-        $this->execute('behat_general::i_click_on', [$node, 'NodeElement']);
     }
 
     /**
@@ -1004,7 +1129,8 @@ class behat_navigation extends behat_base {
      * @return null|string
      */
     protected function find_header_administration_menu($mustexist = false) {
-        $menuxpath = '//header[@id=\'page-header\']//div[contains(@class,\'moodle-actionmenu\')]';
+        $menuxpath = '//div[contains(@class,\'secondary-navigation\')]//nav[contains(@class,\'moremenu\')]';
+
         if ($mustexist) {
             $exception = new ElementNotFoundException($this->getSession(), 'Page header administration menu');
             $this->find('xpath', $menuxpath, $exception);
@@ -1032,6 +1158,24 @@ class behat_navigation extends behat_base {
     }
 
     /**
+     * Locates the action menu on the page (but not in the header) and returns its xpath
+     *
+     * @param null|bool $mustexist if specified throws an exception if menu is not found
+     * @return null|string
+     */
+    protected function find_page_action_menu($mustexist = false) {
+        $menuxpath = '//div[@id=\'action-menu-0-menubar\']';
+
+        if ($mustexist) {
+            $exception = new ElementNotFoundException($this->getSession(), 'Page check');
+            $this->find('xpath', $menuxpath, $exception);
+        } else if (!$this->getSession()->getPage()->find('xpath', $menuxpath)) {
+            return null;
+        }
+        return $menuxpath;
+    }
+
+    /**
      * Toggles administration menu
      *
      * @param string $menuxpath (optional) xpath to the page administration menu if already known
@@ -1042,7 +1186,9 @@ class behat_navigation extends behat_base {
         }
         if ($menuxpath && $this->running_javascript()) {
             $node = $this->find('xpath', $menuxpath . '//a[@data-toggle=\'dropdown\']');
-            $this->execute('behat_general::i_click_on', [$node, 'NodeElement']);
+            if ($node->isVisible()) {
+                $this->execute('behat_general::i_click_on', [$node, 'NodeElement']);
+            }
         }
     }
 
@@ -1059,12 +1205,20 @@ class behat_navigation extends behat_base {
         // Find administration menu.
         if ($menuxpath = $this->find_header_administration_menu()) {
             $isheader = true;
+        } else if ($menuxpath = $this->find_page_action_menu(true)) {
+            $isheader = false;
         } else {
             $menuxpath = $this->find_page_administration_menu(true);
             $isheader = false;
         }
 
         $this->execute('behat_navigation::toggle_page_administration_menu', [$menuxpath]);
+
+        $firstnode = $nodelist[0];
+        $firstlinkname = behat_context_helper::escape($firstnode);
+        $firstlink = $this->getSession()->getPage()->find('xpath',
+            $menuxpath . '//a[contains(normalize-space(.), ' . $firstlinkname . ')]'
+        );
 
         if (!$isheader || count($nodelist) == 1) {
             $lastnode = end($nodelist);
@@ -1074,14 +1228,30 @@ class behat_navigation extends behat_base {
                 $this->execute('behat_general::i_click_on', [$link, 'NodeElement']);
                 return;
             }
+        } else if ($firstlink) {
+            $this->execute('behat_general::i_click_on', [$firstlink, 'NodeElement']);
+            array_splice($nodelist, 0, 1);
+            $this->select_on_administration_page($nodelist);
+            return;
         }
 
         if ($isheader) {
-            // Course administration and Front page administration will have subnodes under "More...".
+            // Front page administration will have subnodes under "More...".
             $linkname = behat_context_helper::escape(get_string('morenavigationlinks'));
-            $link = $this->getSession()->getPage()->find('xpath', $menuxpath . '//a[contains(normalize-space(.), ' . $linkname . ')]');
+            $link = $this->getSession()->getPage()->find('xpath',
+                $menuxpath . '//a[contains(normalize-space(.), ' . $linkname . ')]'
+            );
+            // Course administration will have subnodes under "Course administration".
+            $courselinkname = behat_context_helper::escape(get_string('courseadministration'));
+            $courselink = $this->getSession()->getPage()->find('xpath',
+                $menuxpath . '//a[contains(normalize-space(.), ' . $courselinkname . ')]'
+            );
             if ($link) {
                 $this->execute('behat_general::i_click_on', [$link, 'NodeElement']);
+                $this->select_on_administration_page($nodelist);
+                return;
+            } else if ($courselink) {
+                $this->execute('behat_general::i_click_on', [$courselink, 'NodeElement']);
                 $this->select_on_administration_page($nodelist);
                 return;
             }
@@ -1112,6 +1282,7 @@ class behat_navigation extends behat_base {
      * First checks to see if we are on this page via the breadcrumb. If not we then attempt to follow the link name given.
      *
      * @param  string $pagename Name of the breadcrumb item to check and follow.
+     * @Given /^I follow the breadcrumb "(?P<url_string>(?:[^"]|\\")*)"$/
      */
     public function go_to_breadcrumb_location(string $pagename): void {
         $link = $this->getSession()->getPage()->find(

@@ -47,10 +47,7 @@ class mod_folder_renderer extends plugin_renderer_base {
         }
 
         if (trim($folder->intro)) {
-            if ($folder->display != FOLDER_DISPLAY_INLINE) {
-                $output .= $this->output->box(format_module_intro('folder', $folder, $cm->id),
-                        'generalbox', 'intro');
-            } else if ($cm->showdescription) {
+            if ($folder->display == FOLDER_DISPLAY_INLINE && $cm->showdescription) {
                 // for "display inline" do not filter, filters run at display time.
                 $output .= format_module_intro('folder', $folder, $cm->id, false);
             }
@@ -63,7 +60,8 @@ class mod_folder_renderer extends plugin_renderer_base {
         $canmanagecourseactivities = has_capability('moodle/course:manageactivities', $context);
         if ($canmanagefolderfiles && ($folder->display != FOLDER_DISPLAY_INLINE || !$canmanagecourseactivities)) {
             $editbutton = new single_button(new moodle_url('/mod/folder/edit.php', ['id' => $cm->id]),
-                get_string('edit'), 'post', true);
+                get_string('edit'), 'post', single_button::BUTTON_PRIMARY);
+            $editbutton->class = 'navitem';
             $buttons .= $this->render($editbutton);
         }
 
@@ -72,13 +70,15 @@ class mod_folder_renderer extends plugin_renderer_base {
         if ($downloadable) {
             $downloadbutton = new single_button(new moodle_url('/mod/folder/download_folder.php', ['id' => $cm->id]),
                 get_string('downloadfolder', 'folder'), 'get');
-            $downloadbutton->class .= ' ml-auto';
+            $downloadbutton->class = 'navitem ml-auto';
             $buttons .= $this->render($downloadbutton);
         }
 
         if ($buttons) {
-            $output .= $this->output->container_start("box generalbox d-flex mb-3 folderbuttons");
+            $output .= $this->output->container_start("container-fluid tertiary-navigation");
+            $output .= $this->output->container_start("row");
             $output .= $buttons;
+            $output .= $this->output->container_end();
             $output .= $this->output->container_end();
         }
 

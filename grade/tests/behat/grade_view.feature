@@ -1,4 +1,4 @@
-@core @core_grades
+@core @core_grades @javascript
 Feature: We can enter in grades and view reports from the gradebook
   In order to check the expected results are displayed
   As a teacher
@@ -70,9 +70,8 @@ Feature: We can enter in grades and view reports from the gradebook
 
   Scenario: Grade a grade item and ensure the results display correctly in the gradebook
     When I navigate to "View > User report" in the course gradebook
-    And "Grader report" "link" should exist
-    And "Outcomes report" "link" should exist
-    And the "Select all or one user" select box should contain "All users (1)"
+    And the "Gradebook navigation menu" select menu should contain "Grader report"
+    And I click on "All users (1)" in the "user" search widget
     And I log out
     And I log in as "student1"
     And I follow "Grades" in the user menu
@@ -91,7 +90,7 @@ Feature: We can enter in grades and view reports from the gradebook
 
   Scenario: We can add a weighting to a grade item and it is displayed properly in the user report
     When I navigate to "Setup > Gradebook setup" in the course gradebook
-    And I set the following settings for grade item "Course 1":
+    And I set the following settings for grade item "Course 1" of type "course" on "setup" page:
       | Aggregation | Weighted mean of grades |
     And I set the field "Extra credit value for Test assignment name" to "0.72"
     And I press "Save changes"

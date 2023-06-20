@@ -147,6 +147,7 @@
     td,
     th {
         padding: 0 0.2em;
+        max-width: 40vw;
     }
 
     th {
@@ -268,6 +269,7 @@ body.path-question-type {
 .que span.qno {
     font-size: 1.5em;
     font-weight: bold;
+    word-break: break-word;
 }
 
 .que .info > div {
@@ -585,35 +587,6 @@ body.jsenabled .questionflag input[type=checkbox] {
     padding: 0.3em 0;
 }
 
-#page-mod-quiz-edit div.questionbank .modulespecificbuttonscontainer {
-    padding: 0;
-
-    strong {
-        display: block;
-    }
-
-    hr,
-    br {
-        display: none;
-    }
-
-    strong {
-        margin-left: -0.3em;
-    }
-
-    strong label {
-        margin-left: 0.3em;
-    }
-
-    input {
-        margin-left: 0;
-    }
-
-    input + input {
-        margin-left: 5px;
-    }
-}
-
 .questionbankwindow .module {
     width: auto;
 }
@@ -682,5 +655,14 @@ body.path-question-type .mform fieldset.hidden {
     }
     .que .content {
         margin: 0;
+    }
+}
+
+@include media-breakpoint-down(md) {
+    #categoryquestions {
+        td,
+        th {
+            max-width: 75vw;
+        }
     }
 }

@@ -14,12 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-
 /**
- * External course participation api.
- *
- * This api is mostly read only, the actual enrol and unenrol
- * support is in each enrol plugin.
+ * Course participations External functions.
  *
  * @package    core_enrol
  * @category   external
@@ -27,16 +23,23 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
-require_once("$CFG->libdir/externallib.php");
+use core_external\external_api;
+use core_external\external_files;
+use core_external\external_format_value;
+use core_external\external_function_parameters;
+use core_external\external_multiple_structure;
+use core_external\external_single_structure;
+use core_external\external_value;
 
 /**
  * Enrol external functions
  *
+ * This api is mostly read only, the actual enrol and unenrol
+ * support is in each enrol plugin.
+ *
  * @package    core_enrol
  * @category   external
- * @copyright  2011 Jerome Mouneyrac
+ * @copyright  2010 Jerome Mouneyrac
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since Moodle 2.2
  */
@@ -298,7 +301,7 @@ class core_enrol_external extends external_api {
      * @return array of courses
      */
     public static function get_users_courses($userid, $returnusercount = true) {
-        global $CFG, $USER, $DB;
+        global $CFG, $USER, $DB, $OUTPUT;
 
         require_once($CFG->dirroot . '/course/lib.php');
         require_once($CFG->dirroot . '/user/lib.php');
@@ -352,11 +355,11 @@ class core_enrol_external extends external_api {
                 $enrolledusercount = $DB->count_records_sql($enrolledsql, $enrolledparams);
             }
 
-            $displayname = external_format_string(get_course_display_name_for_list($course), $context->id);
+            $displayname = \core_external\util::format_string(get_course_display_name_for_list($course), $context);
             list($course->summary, $course->summaryformat) =
-                external_format_text($course->summary, $course->summaryformat, $context->id, 'course', 'summary', null);
-            $course->fullname = external_format_string($course->fullname, $context->id);
-            $course->shortname = external_format_string($course->shortname, $context->id);
+                \core_external\util::format_text($course->summary, $course->summaryformat, $context, 'course', 'summary', null);
+            $course->fullname = \core_external\util::format_string($course->fullname, $context);
+            $course->shortname = \core_external\util::format_string($course->shortname, $context);
 
             $progress = null;
             $completed = null;
@@ -408,6 +411,11 @@ class core_enrol_external extends external_api {
                 );
             }
 
+            $courseimage = \core_course\external\course_summary_exporter::get_course_image($course);
+            if (!$courseimage) {
+                $courseimage = $OUTPUT->get_generated_url_for_course($context);
+            }
+
             $courseresult = [
                 'id' => $course->id,
                 'shortname' => $course->shortname,
@@ -418,6 +426,7 @@ class core_enrol_external extends external_api {
                 'summary' => $course->summary,
                 'summaryformat' => $course->summaryformat,
                 'format' => $course->format,
+                'courseimage' => $courseimage,
                 'showgrades' => $course->showgrades,
                 'lang' => clean_param($course->lang, PARAM_LANG),
                 'enablecompletion' => $course->enablecompletion,
@@ -435,6 +444,7 @@ class core_enrol_external extends external_api {
                 'overviewfiles' => $overviewfiles,
                 'showactivitydates' => $course->showactivitydates,
                 'showcompletionconditions' => $course->showcompletionconditions,
+                'timemodified' => $course->timemodified,
             ];
             if ($returnusercount) {
                 $courseresult['enrolledusercount'] = $enrolledusercount;
@@ -448,7 +458,7 @@ class core_enrol_external extends external_api {
     /**
      * Returns description of method result value
      *
-     * @return external_description
+     * @return \core_external\external_description
      */
     public static function get_users_courses_returns() {
         return new external_multiple_structure(
@@ -465,6 +475,7 @@ class core_enrol_external extends external_api {
                     'summary'   => new external_value(PARAM_RAW, 'summary', VALUE_OPTIONAL),
                     'summaryformat' => new external_format_value('summary', VALUE_OPTIONAL),
                     'format'    => new external_value(PARAM_PLUGIN, 'course format: weeks, topics, social, site', VALUE_OPTIONAL),
+                    'courseimage' => new external_value(PARAM_URL, 'The course image URL', VALUE_OPTIONAL),
                     'showgrades' => new external_value(PARAM_BOOL, 'true if grades are shown, otherwise false', VALUE_OPTIONAL),
                     'lang'      => new external_value(PARAM_LANG, 'forced course language', VALUE_OPTIONAL),
                     'enablecompletion' => new external_value(PARAM_BOOL, 'true if completion is enabled, otherwise false',
@@ -483,6 +494,8 @@ class core_enrol_external extends external_api {
                     'overviewfiles' => new external_files('Overview files attached to this course.', VALUE_OPTIONAL),
                     'showactivitydates' => new external_value(PARAM_BOOL, 'Whether the activity dates are shown or not'),
                     'showcompletionconditions' => new external_value(PARAM_BOOL, 'Whether the activity completion conditions are shown or not'),
+                    'timemodified' => new external_value(PARAM_INT, 'Last time course settings were updated (timestamp).',
+                        VALUE_OPTIONAL),
                 )
             )
         );
@@ -491,7 +504,7 @@ class core_enrol_external extends external_api {
     /**
      * Returns description of method parameters value
      *
-     * @return external_description
+     * @return \core_external\external_description
      */
     public static function get_potential_users_parameters() {
         return new external_function_parameters(
@@ -595,7 +608,7 @@ class core_enrol_external extends external_api {
     /**
      * Returns description of method result value
      *
-     * @return external_description
+     * @return \core_external\external_description
      */
     public static function get_potential_users_returns() {
         global $CFG;
@@ -891,7 +904,7 @@ class core_enrol_external extends external_api {
     /**
      * Returns description of method result value
      *
-     * @return external_description
+     * @return \core_external\external_description
      */
     public static function get_enrolled_users_returns() {
         return new external_multiple_structure(
@@ -1012,7 +1025,7 @@ class core_enrol_external extends external_api {
     /**
      * Returns description of get_course_enrolment_methods() result value
      *
-     * @return external_description
+     * @return \core_external\external_description
      */
     public static function get_course_enrolment_methods_returns() {
         return new external_multiple_structure(
@@ -1030,125 +1043,9 @@ class core_enrol_external extends external_api {
     }
 
     /**
-     * Returns description of edit_user_enrolment() parameters
-     *
-     * @deprecated since 3.8
-     * @return external_function_parameters
-     */
-    public static function edit_user_enrolment_parameters() {
-        return new external_function_parameters(
-            array(
-                'courseid' => new external_value(PARAM_INT, 'User enrolment ID'),
-                'ueid' => new external_value(PARAM_INT, 'User enrolment ID'),
-                'status' => new external_value(PARAM_INT, 'Enrolment status'),
-                'timestart' => new external_value(PARAM_INT, 'Enrolment start timestamp', VALUE_DEFAULT, 0),
-                'timeend' => new external_value(PARAM_INT, 'Enrolment end timestamp', VALUE_DEFAULT, 0),
-            )
-        );
-    }
-
-    /**
-     * External function that updates a given user enrolment.
-     *
-     * @deprecated since 3.8
-     * @param int $courseid The course ID.
-     * @param int $ueid The user enrolment ID.
-     * @param int $status The enrolment status.
-     * @param int $timestart Enrolment start timestamp.
-     * @param int $timeend Enrolment end timestamp.
-     * @return array An array consisting of the processing result, errors and form output, if available.
-     */
-    public static function edit_user_enrolment($courseid, $ueid, $status, $timestart = 0, $timeend = 0) {
-        global $CFG, $DB, $PAGE;
-
-        $params = self::validate_parameters(self::edit_user_enrolment_parameters(), [
-            'courseid' => $courseid,
-            'ueid' => $ueid,
-            'status' => $status,
-            'timestart' => $timestart,
-            'timeend' => $timeend,
-        ]);
-
-        $course = get_course($courseid);
-        $context = context_course::instance($course->id);
-        self::validate_context($context);
-
-        $userenrolment = $DB->get_record('user_enrolments', ['id' => $params['ueid']], '*', MUST_EXIST);
-        $userenroldata = [
-            'status' => $params['status'],
-            'timestart' => $params['timestart'],
-            'timeend' => $params['timeend'],
-        ];
-
-        $result = false;
-        $errors = [];
-
-        // Validate data against the edit user enrolment form.
-        $instance = $DB->get_record('enrol', ['id' => $userenrolment->enrolid], '*', MUST_EXIST);
-        $plugin = enrol_get_plugin($instance->enrol);
-        require_once("$CFG->dirroot/enrol/editenrolment_form.php");
-        $customformdata = [
-            'ue' => $userenrolment,
-            'modal' => true,
-            'enrolinstancename' => $plugin->get_instance_name($instance)
-        ];
-        $mform = new \enrol_user_enrolment_form(null, $customformdata, 'post', '', null, true, $userenroldata);
-        $mform->set_data($userenroldata);
-        $validationerrors = $mform->validation($userenroldata, null);
-        if (empty($validationerrors)) {
-            require_once($CFG->dirroot . '/enrol/locallib.php');
-            $manager = new course_enrolment_manager($PAGE, $course);
-            $result = $manager->edit_enrolment($userenrolment, (object)$userenroldata);
-        } else {
-            foreach ($validationerrors as $key => $errormessage) {
-                $errors[] = (object)[
-                    'key' => $key,
-                    'message' => $errormessage
-                ];
-            }
-        }
-
-        return [
-            'result' => $result,
-            'errors' => $errors,
-        ];
-    }
-
-    /**
-     * Returns description of edit_user_enrolment() result value
-     *
-     * @deprecated since 3.8
-     * @return external_description
-     */
-    public static function edit_user_enrolment_returns() {
-        return new external_single_structure(
-            array(
-                'result' => new external_value(PARAM_BOOL, 'True if the user\'s enrolment was successfully updated'),
-                'errors' => new external_multiple_structure(
-                    new external_single_structure(
-                        array(
-                            'key' => new external_value(PARAM_TEXT, 'The data that failed the validation'),
-                            'message' => new external_value(PARAM_TEXT, 'The error message'),
-                        )
-                    ), 'List of validation errors'
-                ),
-            )
-        );
-    }
-
-    /**
-     * Mark the edit_user_enrolment web service as deprecated.
-     *
-     * @return  bool
-     */
-    public static function edit_user_enrolment_is_deprecated() {
-        return true;
-    }
-
-    /**
      * Returns description of submit_user_enrolment_form parameters.
      *
-     * @return external_function_parameters.
+     * @return external_function_parameters
      */
     public static function submit_user_enrolment_form_parameters() {
         return new external_function_parameters([
@@ -1203,7 +1100,7 @@ class core_enrol_external extends external_api {
     /**
      * Returns description of submit_user_enrolment_form() result value
      *
-     * @return external_description
+     * @return \core_external\external_description
      */
     public static function submit_user_enrolment_form_returns() {
         return new external_single_structure([
@@ -1277,7 +1174,7 @@ class core_enrol_external extends external_api {
     /**
      * Returns description of unenrol_user_enrolment() result value
      *
-     * @return external_description
+     * @return \core_external\external_description
      */
     public static function unenrol_user_enrolment_returns() {
         return new external_single_structure(

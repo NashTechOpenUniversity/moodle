@@ -64,6 +64,8 @@ class assign_grading_table extends table_sql implements renderable {
     private $plugincache = array();
     /** @var array $scale - A list of the keys and descriptions for the custom scale */
     private $scale = null;
+    /** @var bool true if the user has this capability. Otherwise false. */
+    private $hasviewblind;
 
     /**
      * overridden constructor keeps a reference to the assignment class that is displaying this table
@@ -1078,6 +1080,7 @@ class assign_grading_table extends table_sql implements renderable {
         $o = '';
 
         $instance = $this->assignment->get_instance($row->userid);
+        $timelimitenabled = get_config('assign', 'enabletimelimit');
 
         $due = $instance->duedate;
         if ($row->extensionduedate) {
@@ -1120,6 +1123,14 @@ class assign_grading_table extends table_sql implements renderable {
                 $latemessage = get_string('submittedlateshort',
                                           'assign',
                                           $usertime);
+                $o .= $this->output->container($latemessage, 'latesubmission');
+            } else if ($timelimitenabled && $instance->timelimit && !empty($submission->timestarted)
+                && ($timesubmitted - $submission->timestarted > $instance->timelimit)
+                && $status != ASSIGN_SUBMISSION_STATUS_NEW) {
+                $usertime = format_time($timesubmitted - $submission->timestarted - $instance->timelimit);
+                $latemessage = get_string('submittedlateshort',
+                    'assign',
+                    $usertime);
                 $o .= $this->output->container($latemessage, 'latesubmission');
             }
             if ($row->locked) {
@@ -1410,7 +1421,6 @@ class assign_grading_table extends table_sql implements renderable {
 
         $menu = new action_menu();
         $menu->set_owner_selector('.gradingtable-actionmenu');
-        $menu->set_alignment(action_menu::TL, action_menu::BL);
         $menu->set_constraint('.gradingtable > .no-overflow');
         $menu->set_menu_trigger(get_string('edit'));
         foreach ($actions as $action) {

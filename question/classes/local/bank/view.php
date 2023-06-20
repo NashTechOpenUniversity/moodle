@@ -24,9 +24,15 @@
 
 namespace core_question\local\bank;
 
+use core_plugin_manager;
 use core_question\bank\search\condition;
+use core_question\local\statistics\statistics_bulk_loader;
+use qbank_columnsortorder\column_manager;
 use qbank_editquestion\editquestion_helper;
-use qbank_managecategories\helper;
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once($CFG->dirroot . '/question/editlib.php');
 
 /**
  * This class prints a view of the question bank.
@@ -70,7 +76,7 @@ class view {
     protected $editquestionurl;
 
     /**
-     * @var \question_edit_contexts
+     * @var \core_question\local\bank\question_edit_contexts
      */
     protected $contexts;
 
@@ -85,19 +91,19 @@ class view {
     public $course;
 
     /**
-     * @var \question_bank_column_base[] these are all the 'columns' that are
+     * @var column_base[] these are all the 'columns' that are
      * part of the display. Array keys are the class name.
      */
     protected $requiredcolumns;
 
     /**
-     * @var \question_bank_column_base[] these are the 'columns' that are
+     * @var column_base[] these are the 'columns' that are
      * actually displayed as a column, in order. Array keys are the class name.
      */
     protected $visiblecolumns;
 
     /**
-     * @var \question_bank_column_base[] these are the 'columns' that are
+     * @var column_base[] these are the 'columns' that are
      * actually displayed as an additional row (e.g. question text), in order.
      * Array keys are the class name.
      */
@@ -107,6 +113,11 @@ class view {
      * @var array list of column class names for which columns to sort on.
      */
     protected $sort;
+
+    /**
+     * @var int page size to use (when we are not showing all questions).
+     */
+    protected $pagesize = DEFAULT_QUESTIONS_PER_PAGE;
 
     /**
      * @var int|null id of the a question to highlight in the list (if present).
@@ -130,6 +141,15 @@ class view {
     protected $sqlparams;
 
     /**
+     * @var ?array Stores all the average statistics that this question bank view needs.
+     *
+     * This field gets initialised in {@see display_question_list()}. It is a two dimensional
+     * $this->loadedstatistics[$questionid][$fieldname] = $average value of that statistics for that question.
+     * Column classes in qbank plugins can access these values using {@see get_aggregate_statistic()}.
+     */
+    protected $loadedstatistics = null;
+
+    /**
      * @var condition[] search conditions.
      */
     protected $searchconditions = [];
@@ -150,9 +170,14 @@ class view {
     public $customfilterobjects = null;
 
     /**
+     * @var array $bulkactions to identify the bulk actions for the api.
+     */
+    public $bulkactions = [];
+
+    /**
      * Constructor for view.
      *
-     * @param \question_edit_contexts $contexts
+     * @param \core_question\local\bank\question_edit_contexts $contexts
      * @param \moodle_url $pageurl
      * @param object $course course settings
      * @param object $cm (optional) activity settings.
@@ -178,6 +203,38 @@ class view {
         $this->init_columns($this->wanted_columns(), $this->heading_column());
         $this->init_sort();
         $this->init_search_conditions();
+        $this->init_bulk_actions();
+    }
+
+    /**
+     * Initialize bulk actions.
+     */
+    protected function init_bulk_actions(): void {
+        $plugins = \core_component::get_plugin_list_with_class('qbank', 'plugin_feature', 'plugin_feature.php');
+        foreach ($plugins as $componentname => $plugin) {
+            if (!\core\plugininfo\qbank::is_plugin_enabled($componentname)) {
+                continue;
+            }
+
+            $pluginentrypoint = new $plugin();
+            $bulkactions = $pluginentrypoint->get_bulk_actions();
+            if (!is_array($bulkactions)) {
+                debugging("The method {$componentname}::get_bulk_actions() must return an " .
+                    "array of bulk actions instead of a single bulk action. " .
+                    "Please update your implementation of get_bulk_actions() to return an array. " .
+                    "Check out the qbank_bulkmove plugin for a working example.", DEBUG_DEVELOPER);
+                $bulkactions = [$bulkactions];
+            }
+
+            foreach ($bulkactions as $bulkactionobject) {
+                $this->bulkactions[$bulkactionobject->get_key()] = [
+                    'title' => $bulkactionobject->get_bulk_action_title(),
+                    'url' => $bulkactionobject->get_bulk_action_url(),
+                    'capabilities' => $bulkactionobject->get_bulk_action_capabilities()
+                ];
+            }
+
+        }
     }
 
     /**
@@ -211,12 +268,15 @@ class view {
                 'copy_action_column',
                 'tags_action_column',
                 'preview_action_column',
+                'history_action_column',
                 'delete_action_column',
                 'export_xml_action_column',
+                'question_status_column',
+                'version_number_column',
                 'creator_name_column',
-                'modifier_name_column'
+                'comment_count_column'
         ];
-        if (question_get_display_preference('qbshowtext', 0, PARAM_BOOL, new \moodle_url(''))) {
+        if (question_get_display_preference('qbshowtext', 0, PARAM_INT, new \moodle_url(''))) {
             $corequestionbankcolumns[] = 'question_text_row';
         }
 
@@ -232,30 +292,30 @@ class view {
         $plugins = \core_component::get_plugin_list_with_class('qbank', 'plugin_feature', 'plugin_feature.php');
         foreach ($plugins as $componentname => $plugin) {
             $pluginentrypointobject = new $plugin();
-            $pluginobjects = $pluginentrypointobject->get_question_columns($this);
+            $plugincolumnobjects = $pluginentrypointobject->get_question_columns($this);
             // Don't need the plugins without column objects.
-            if (empty($pluginobjects)) {
+            if (empty($plugincolumnobjects)) {
                 unset($plugins[$componentname]);
                 continue;
             }
-            foreach ($pluginobjects as $pluginobject) {
-                $classname = new \ReflectionClass(get_class($pluginobject));
+            foreach ($plugincolumnobjects as $columnobject) {
+                $columnname = $columnobject->get_column_name();
                 foreach ($corequestionbankcolumns as $key => $corequestionbankcolumn) {
                     if (!\core\plugininfo\qbank::is_plugin_enabled($componentname)) {
-                        unset($questionbankclasscolumns[$classname->getShortName()]);
+                        unset($questionbankclasscolumns[$columnname]);
                         continue;
                     }
                     // Check if it has custom preference selector to view/hide.
-                    if ($pluginobject->has_preference()) {
-                        if (!$pluginobject->get_preference()) {
+                    if ($columnobject->has_preference()) {
+                        if (!$columnobject->get_preference()) {
                             continue;
                         }
                     }
-                    if ($corequestionbankcolumn === $classname->getShortName()) {
-                        $questionbankclasscolumns[$classname->getShortName()] = $pluginobject;
+                    if ($corequestionbankcolumn === $columnname) {
+                        $questionbankclasscolumns[$columnname] = $columnobject;
                     } else {
                         // Any community plugin for column/action.
-                        $newpluginclasscolumns[$classname->getShortName()] = $pluginobject;
+                        $newpluginclasscolumns[$columnname] = $columnobject;
                     }
                 }
             }
@@ -266,9 +326,15 @@ class view {
             $questionbankclasscolumns[$key] = $newpluginclasscolumn;
         }
 
+        // Check if qbank_columnsortorder is enabled.
+        if (array_key_exists('columnsortorder', core_plugin_manager::instance()->get_enabled_plugins('qbank'))) {
+            $columnorder = new column_manager();
+            $questionbankclasscolumns = $columnorder->get_sorted_columns($questionbankclasscolumns);
+        }
+
         // Mitigate the error in case of any regression.
         foreach ($questionbankclasscolumns as $shortname => $questionbankclasscolumn) {
-            if (empty($questionbankclasscolumn)){
+            if (empty($questionbankclasscolumn)) {
                 unset($questionbankclasscolumns[$shortname]);
             }
         }
@@ -288,7 +354,7 @@ class view {
             if (empty($classobject)) {
                 continue;
             }
-            $this->requiredcolumns[get_class($classobject)] = $classobject;
+            $this->requiredcolumns[$classobject->get_column_name()] = $classobject;
         }
 
         return $this->requiredcolumns;
@@ -335,9 +401,9 @@ class view {
         $this->extrarows = [];
         foreach ($wanted as $column) {
             if ($column->is_extra_row()) {
-                $this->extrarows[get_class($column)] = $column;
+                $this->extrarows[$column->get_column_name()] = $column;
             } else {
-                $this->visiblecolumns[get_class($column)] = $column;
+                $this->visiblecolumns[$column->get_column_name()] = $column;
             }
         }
 
@@ -529,7 +595,7 @@ class view {
     protected function build_query(): void {
         // Get the required tables and fields.
         $joins = [];
-        $fields = ['q.hidden', 'q.category'];
+        $fields = ['qv.status', 'qc.id as categoryid', 'qv.version', 'qv.id as versionid', 'qbe.id as questionbankentryid'];
         if (!empty($this->requiredcolumns)) {
             foreach ($this->requiredcolumns as $column) {
                 $extrajoins = $column->get_extra_joins();
@@ -552,7 +618,12 @@ class view {
         }
 
         // Build the where clause.
-        $tests = ['q.parent = 0'];
+        $latestversion = 'qv.version = (SELECT MAX(v.version)
+                                          FROM {question_versions} v
+                                          JOIN {question_bank_entries} be
+                                            ON be.id = v.questionbankentryid
+                                         WHERE be.id = qbe.id)';
+        $tests = ['q.parent = 0', $latestversion];
         $this->sqlparams = [];
         foreach ($this->searchconditions as $searchcondition) {
             if ($searchcondition->where()) {
@@ -695,11 +766,6 @@ class view {
         }
 
         echo \html_writer::start_div('questionbankwindow boxwidthwide boxaligncenter');
-
-        // This one will become redundant after implementing bulk actions plugin.
-        if ($this->process_actions_needing_ui()) {
-            return;
-        }
 
         $editcontexts = $this->contexts->having_one_edit_tab_cap($tabname);
 
@@ -878,7 +944,7 @@ class view {
     protected function create_new_question_form($category, $canadd): void {
         if (\core\plugininfo\qbank::is_plugin_enabled('qbank_editquestion')) {
             echo editquestion_helper::create_new_question_button($category->id,
-                    $this->requiredcolumns['qbank_editquestion\edit_action_column']->editquestionurl->params(), $canadd);
+                    $this->requiredcolumns['edit_action_column']->editquestionurl->params(), $canadd);
         }
     }
 
@@ -889,11 +955,11 @@ class view {
      * @param string     $categoryandcontext 'categoryID,contextID'.
      * @param int        $recurse     Whether to include subcategories.
      * @param int        $page        The number of the page to be displayed
-     * @param int        $perpage     Number of questions to show per page
+     * @param int|null   $perpage     Number of questions to show per page
      * @param array      $addcontexts contexts where the user is allowed to add new questions.
      */
     protected function display_question_list($pageurl, $categoryandcontext, $recurse = 1, $page = 0,
-                                                $perpage = 100, $addcontexts = []): void {
+                $perpage = null, $addcontexts = []): void {
         global $OUTPUT;
         // This function can be moderately slow with large question counts and may time out.
         // We probably do not want to raise it to unlimited, so randomly picking 5 minutes.
@@ -901,6 +967,7 @@ class view {
         \core_php_time_limit::raise(300);
 
         $category = $this->get_current_category($categoryandcontext);
+        $perpage = $perpage ?? $this->pagesize;
 
         list($categoryid, $contextid) = explode(',', $categoryandcontext);
         $catcontext = \context::instance_by_id($contextid);
@@ -922,6 +989,11 @@ class view {
             }
         }
         $questionsrs->close();
+
+        // Bulk load any required statistics.
+        $this->load_required_statistics($questions);
+
+        // Bulk load any extra data that any column requires.
         foreach ($this->requiredcolumns as $name => $column) {
             $column->load_additional_data($questions);
         }
@@ -933,7 +1005,7 @@ class view {
         $this->display_top_pagnation($OUTPUT->render($pagingbar));
 
         // This html will be refactored in the bulk actions implementation.
-        echo \html_writer::start_tag('form', ['action' => $pageurl, 'method' => 'post']);
+        echo \html_writer::start_tag('form', ['action' => $pageurl, 'method' => 'post', 'id' => 'questionsubmit']);
         echo \html_writer::start_tag('fieldset', ['class' => 'invisiblefieldset', 'style' => "display: block;"]);
         echo \html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
         echo \html_writer::input_hidden_params($this->baseurl);
@@ -942,10 +1014,64 @@ class view {
 
         $this->display_bottom_pagination($OUTPUT->render($pagingbar), $totalnumber, $perpage, $pageurl);
 
-        $this->display_bottom_controls($totalnumber, $recurse, $category, $catcontext, $addcontexts);
+        $this->display_bottom_controls($catcontext);
 
         echo \html_writer::end_tag('fieldset');
         echo \html_writer::end_tag('form');
+    }
+
+    /**
+     * Work out the list of all the required statistics fields for this question bank view.
+     *
+     * This gathers all the required fields from all columns, so they can all be loaded at once.
+     *
+     * @return string[] the names of all the required fields for this question bank view.
+     */
+    protected function determine_required_statistics(): array {
+        $requiredfields = [];
+        foreach ($this->requiredcolumns as $column) {
+            $requiredfields = array_merge($requiredfields, $column->get_required_statistics_fields());
+        }
+
+        return array_unique($requiredfields);
+    }
+
+    /**
+     * Load the aggregate statistics that all the columns require.
+     *
+     * @param \stdClass[] $questions the questions that will be displayed indexed by question id.
+     */
+    protected function load_required_statistics(array $questions): void {
+        $requiredstatistics = $this->determine_required_statistics();
+        $this->loadedstatistics = statistics_bulk_loader::load_aggregate_statistics(
+                array_keys($questions), $requiredstatistics);
+    }
+
+    /**
+     * Get the aggregated value of a particular statistic for a particular question.
+     *
+     * You can only get values for the questions on the current page of the question bank view,
+     * and only if you declared the need for this statistic in the get_required_statistics_fields()
+     * method of your question bank column.
+     *
+     * @param int $questionid the id of a question
+     * @param string $fieldname the name of a statistics field, e.g. 'facility'.
+     * @return float|null the average (across all users) of this statistic for this question.
+     *      Null if the value is not available right now.
+     */
+    public function get_aggregate_statistic(int $questionid, string $fieldname): ?float {
+        if (!array_key_exists($questionid, $this->loadedstatistics)) {
+            throw new \coding_exception('Question ' . $questionid . ' is not on the current page of ' .
+                    'this question bank view, so its statistics are not available.');
+        }
+
+        // Must be array_key_exists, not isset, because we care about null values.
+        if (!array_key_exists($fieldname, $this->loadedstatistics[$questionid])) {
+            throw new \coding_exception('Statistics field ' . $fieldname . ' was not requested by any ' .
+                    'question bank column in this view, so it is not available.');
+        }
+
+        return $this->loadedstatistics[$questionid][$fieldname];
     }
 
     /**
@@ -976,9 +1102,9 @@ class view {
                 'pagination' => $pagination,
                 'biggertotal' => true,
         );
-        if ($totalnumber > DEFAULT_QUESTIONS_PER_PAGE) {
+        if ($totalnumber > $this->pagesize) {
             $displaydata['showall'] = true;
-            if ($perpage == DEFAULT_QUESTIONS_PER_PAGE) {
+            if ($perpage == $this->pagesize) {
                 $url = new \moodle_url($pageurl, array_merge($pageurl->params(),
                         ['qpage' => 0, 'qperpage' => MAXIMUM_QUESTIONS_PER_PAGE]));
                 if ($totalnumber > MAXIMUM_QUESTIONS_PER_PAGE) {
@@ -989,8 +1115,8 @@ class view {
                 }
             } else {
                 $url = new \moodle_url($pageurl, array_merge($pageurl->params(),
-                        ['qperpage' => DEFAULT_QUESTIONS_PER_PAGE]));
-                $displaydata['totalnumber'] = DEFAULT_QUESTIONS_PER_PAGE;
+                        ['qperpage' => $this->pagesize]));
+                $displaydata['totalnumber'] = $this->pagesize;
             }
             $displaydata['showallurl'] = $url;
         }
@@ -999,53 +1125,44 @@ class view {
 
     /**
      * Display the controls at the bottom of the list of questions.
-     * @param int      $totalnumber Total number of questions that might be shown (if it was not for paging).
-     * @param bool     $recurse     Whether to include subcategories.
-     * @param \stdClass $category    The question_category row from the database.
-     * @param \context  $catcontext  The context of the category being displayed.
-     * @param array    $addcontexts contexts where the user is allowed to add new questions.
+     *
+     * @param \context $catcontext The context of the category being displayed.
      */
-    protected function display_bottom_controls($totalnumber, $recurse, $category, \context $catcontext, array $addcontexts): void {
+    protected function display_bottom_controls(\context $catcontext): void {
         $caneditall = has_capability('moodle/question:editall', $catcontext);
         $canuseall = has_capability('moodle/question:useall', $catcontext);
         $canmoveall = has_capability('moodle/question:moveall', $catcontext);
-
-        echo \html_writer::start_tag('div', ['class' => "modulespecificbuttonscontainer"]);
         if ($caneditall || $canmoveall || $canuseall) {
-            $withselectedcontent = '&nbsp;' . get_string('withselected', 'question') . ':';
-            echo \html_writer::tag('strong', $withselectedcontent);
-            echo \html_writer::empty_tag('br');
+            global $PAGE;
+            $bulkactiondatas = [];
+            $params = $this->base_url()->params();
+            $params['returnurl'] = $this->base_url();
+            foreach ($this->bulkactions as $key => $action) {
+                // Check capabilities.
+                $capcount = 0;
+                foreach ($action['capabilities'] as $capability) {
+                    if (has_capability($capability, $catcontext)) {
+                        $capcount ++;
+                    }
+                }
+                // At least one cap need to be there.
+                if ($capcount === 0) {
+                    unset($this->bulkactions[$key]);
+                    continue;
+                }
+                $actiondata = new \stdClass();
+                $actiondata->actionname = $action['title'];
+                $actiondata->actionkey = $key;
+                $actiondata->actionurl = new \moodle_url($action['url'], $params);
+                $bulkactiondata[] = $actiondata;
 
-            // Print delete and move selected question.
-            if ($caneditall) {
-                echo \html_writer::empty_tag('input', [
-                        'type' => 'submit',
-                        'class' => 'btn btn-secondary mr-1',
-                        'name' => 'deleteselected',
-                        'value' => get_string('delete'),
-                        'data-action' => 'toggle',
-                        'data-togglegroup' => 'qbank',
-                        'data-toggle' => 'action',
-                        'disabled' => true,
-                ]);
+                $bulkactiondatas ['bulkactionitems'] = $bulkactiondata;
             }
-
-            if ($canmoveall && count($addcontexts)) {
-                echo \html_writer::empty_tag('input', [
-                        'type' => 'submit',
-                        'class' => 'btn btn-secondary mr-1',
-                        'name' => 'move',
-                        'value' => get_string('moveto', 'question'),
-                        'data-action' => 'toggle',
-                        'data-togglegroup' => 'qbank',
-                        'data-toggle' => 'action',
-                        'disabled' => true,
-                ]);
-                helper::question_category_select_menu($addcontexts, false, 0, "{$category->id},{$category->contextid}");
+            // We dont need to show this section if none of the plugins are enabled.
+            if (!empty($bulkactiondatas)) {
+                echo $PAGE->get_renderer('core_question', 'bank')->render_bulk_actions_ui($bulkactiondatas);
             }
         }
-
-        echo \html_writer::end_tag('div');
     }
 
     /**
@@ -1067,7 +1184,7 @@ class view {
      */
     protected function print_table($questions): void {
         // Start of the table.
-        echo \html_writer::start_tag('table', ['id' => 'categoryquestions']);
+        echo \html_writer::start_tag('table', ['id' => 'categoryquestions', 'class' => 'table-responsive']);
 
         // Prints the table header.
         echo \html_writer::start_tag('thead');
@@ -1094,11 +1211,11 @@ class view {
      *
      * @deprecated since Moodle 4.0
      * @see print_table()
-     * @todo Final deprecation of this function in moodle 4.4
+     * @todo Final deprecation on Moodle 4.4 MDL-72438
      */
     protected function start_table() {
         debugging('Function start_table() is deprecated, please use print_table() instead.', DEBUG_DEVELOPER);
-        echo '<table id="categoryquestions">' . "\n";
+        echo '<table id="categoryquestions" class="table table-responsive">' . "\n";
         echo "<thead>\n";
         $this->print_table_headers();
         echo "</thead>\n";
@@ -1110,7 +1227,7 @@ class view {
      *
      * @deprecated since Moodle 4.0
      * @see print_table()
-     * @todo Final deprecation of this function in moodle 4.4
+     * @todo Final deprecation on Moodle 4.4 MDL-72438
      */
     protected function end_table() {
         debugging('Function end_table() is deprecated, please use print_table() instead.', DEBUG_DEVELOPER);
@@ -1136,7 +1253,7 @@ class view {
      */
     protected function get_row_classes($question, $rowcount): array {
         $classes = [];
-        if ($question->hidden) {
+        if ($question->status === question_version_status::QUESTION_STATUS_HIDDEN) {
             $classes[] = 'dimmed_text';
         }
         if ($question->id == $this->lastchangedid) {
@@ -1170,126 +1287,27 @@ class view {
 
     /**
      * Process actions for the selected action.
-     *
+     * @deprecated since Moodle 4.0
+     * @todo Final deprecation on Moodle 4.4 MDL-72438
      */
     public function process_actions(): void {
-        global $DB;
-        // Now, check for commands on this page and modify variables as necessary.
-        if (optional_param('move', false, PARAM_BOOL) and confirm_sesskey()) {
-            // Move selected questions to new category.
-            $category = required_param('category', PARAM_SEQUENCE);
-            list($tocategoryid, $contextid) = explode(',', $category);
-            if (! $tocategory = $DB->get_record('question_categories',
-                    ['id' => $tocategoryid, 'contextid' => $contextid])) {
-                throw new \moodle_exception('cannotfindcate', 'question');
-            }
-            $tocontext = \context::instance_by_id($contextid);
-            require_capability('moodle/question:add', $tocontext);
-            $rawdata = (array) data_submitted();
-            $questionids = [];
-            foreach ($rawdata as $key => $value) {
-                // Parse input for question ids.
-                if (preg_match('!^q([0-9]+)$!', $key, $matches)) {
-                    $key = $matches[1];
-                    $questionids[] = $key;
-                }
-            }
-            if ($questionids) {
-                list($usql, $params) = $DB->get_in_or_equal($questionids);
-                $questions = $DB->get_records_sql("
-                        SELECT q.*, c.contextid
-                        FROM {question} q
-                        JOIN {question_categories} c ON c.id = q.category
-                        WHERE q.id {$usql}", $params);
-                foreach ($questions as $question) {
-                    question_require_capability_on($question, 'move');
-                }
-                question_move_questions_to_category($questionids, $tocategory->id);
-                redirect($this->baseurl->out(false, ['category' => "{$tocategoryid},{$contextid}"]));
-            }
-        }
-
-        if (optional_param('deleteselected', false, PARAM_BOOL)) {
-            // Delete selected questions from the category.
-            // If teacher has already confirmed the action.
-            if (($confirm = optional_param('confirm', '', PARAM_ALPHANUM)) and confirm_sesskey()) {
-                $deleteselected = required_param('deleteselected', PARAM_RAW);
-                if ($confirm == md5($deleteselected)) {
-                    if ($questionlist = explode(',', $deleteselected)) {
-                        // For each question either hide it if it is in use or delete it.
-                        foreach ($questionlist as $questionid) {
-                            $questionid = (int)$questionid;
-                            question_require_capability_on($questionid, 'edit');
-                            if (questions_in_use([$questionid])) {
-                                $DB->set_field('question', 'hidden', 1, ['id' => $questionid]);
-                            } else {
-                                question_delete_question($questionid);
-                            }
-                        }
-                    }
-                    redirect($this->baseurl);
-                } else {
-                    throw new \moodle_exception('invalidconfirm', 'question');
-                }
-            }
-        }
-
-        // Unhide a question.
-        if (($unhide = optional_param('unhide', '', PARAM_INT)) and confirm_sesskey()) {
-            question_require_capability_on($unhide, 'edit');
-            $DB->set_field('question', 'hidden', 0, ['id' => $unhide]);
-
-            // Purge these questions from the cache.
-            \question_bank::notify_question_edited($unhide);
-
-            redirect($this->baseurl);
-        }
+        debugging('Function process_actions() is deprecated and its code has been completely deleted.
+         Please, remove the call from your code and check core_question\local\bank\bulk_action_base
+          to learn more about bulk actions in qbank.', DEBUG_DEVELOPER);
+        // Associated code is deleted to make sure any incorrect call doesnt not cause any data loss.
     }
 
     /**
      * Process actions with ui.
      * @return bool
+     * @deprecated since Moodle 4.0
+     * @todo Final deprecation on Moodle 4.4 MDL-72438
      */
     public function process_actions_needing_ui(): bool {
-        global $DB, $OUTPUT;
-        if (optional_param('deleteselected', false, PARAM_BOOL)) {
-            // Make a list of all the questions that are selected.
-            $rawquestions = $_REQUEST; // This code is called by both POST forms and GET links, so cannot use data_submitted.
-            $questionlist = '';  // Comma separated list of ids of questions to be deleted.
-            $questionnames = ''; // String with names of questions separated by <br/> with an asterix
-            // in front of those that are in use.
-            $inuse = false;      // Set to true if at least one of the questions is in use.
-            foreach ($rawquestions as $key => $value) {    // Parse input for question ids.
-                if (preg_match('!^q([0-9]+)$!', $key, $matches)) {
-                    $key = $matches[1];
-                    $questionlist .= $key.',';
-                    question_require_capability_on((int)$key, 'edit');
-                    if (questions_in_use([$key])) {
-                        $questionnames .= '* ';
-                        $inuse = true;
-                    }
-                    $questionnames .= $DB->get_field('question', 'name', ['id' => $key]) . '<br />';
-                }
-            }
-            if (!$questionlist) { // No questions were selected.
-                redirect($this->baseurl);
-            }
-            $questionlist = rtrim($questionlist, ',');
-
-            // Add an explanation about questions in use.
-            if ($inuse) {
-                $questionnames .= '<br />'.get_string('questionsinuse', 'question');
-            }
-            $baseurl = new \moodle_url($this->baseurl, $this->baseurl->params());
-            $deleteurl = new \moodle_url($baseurl, ['deleteselected' => $questionlist, 'confirm' => md5($questionlist),
-                    'sesskey' => sesskey()]);
-
-            $continue = new \single_button($deleteurl, get_string('delete'), 'post');
-            echo $OUTPUT->confirm(get_string('deletequestionscheck', 'question', $questionnames), $continue, $baseurl);
-
-            return true;
-        }
-
+        debugging('Function process_actions_needing_ui() is deprecated and its code has been completely deleted.
+         Please, remove the call from your code and check core_question\local\bank\bulk_action_base
+          to learn more about bulk actions in qbank.', DEBUG_DEVELOPER);
+        // Associated code is deleted to make sure any incorrect call doesnt not cause any data loss.
         return false;
     }
 
@@ -1301,4 +1319,20 @@ class view {
         $this->searchconditions[] = $searchcondition;
     }
 
+    /**
+     * Gets visible columns.
+     * @return array Visible columns.
+     */
+    public function get_visiblecolumns(): array {
+        return $this->visiblecolumns;
+    }
+
+    /**
+     * Is this view showing separate versions of a question?
+     *
+     * @return bool
+     */
+    public function is_listing_specific_versions(): bool {
+        return false;
+    }
 }

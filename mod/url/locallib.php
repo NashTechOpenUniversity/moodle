@@ -75,7 +75,7 @@ function url_fix_submitted_url($url) {
  *
  * This function does not include any XSS protection.
  *
- * @param string $url
+ * @param stdClass $url
  * @param object $cm
  * @param object $course
  * @param object $config
@@ -83,7 +83,7 @@ function url_fix_submitted_url($url) {
  */
 function url_get_full_url($url, $cm, $course, $config=null) {
 
-    $parameters = empty($url->parameters) ? array() : unserialize($url->parameters);
+    $parameters = empty($url->parameters) ? [] : (array) unserialize_array($url->parameters);
 
     // make sure there are no encoded entities, it is ok to do this twice
     $fullurl = html_entity_decode($url->externalurl, ENT_QUOTES, 'UTF-8');
@@ -172,37 +172,22 @@ function url_print_header($url, $cm, $course) {
 }
 
 /**
- * Print url heading.
+ * Get url introduction.
+ *
  * @param object $url
  * @param object $cm
- * @param object $course
- * @param bool $notused This variable is no longer used.
- * @return void
- */
-function url_print_heading($url, $cm, $course, $notused = false) {
-    global $OUTPUT;
-    echo $OUTPUT->heading(format_string($url->name), 2);
-}
-
-/**
- * Print url introduction.
- * @param object $url
- * @param object $cm
- * @param object $course
  * @param bool $ignoresettings print even if not specified in modedit
- * @return void
+ * @return string
  */
-function url_print_intro($url, $cm, $course, $ignoresettings=false) {
-    global $OUTPUT;
-
-    $options = empty($url->displayoptions) ? array() : unserialize($url->displayoptions);
+function url_get_intro(object $url, object $cm, bool $ignoresettings = false): string {
+    $options = empty($url->displayoptions) ? [] : (array) unserialize_array($url->displayoptions);
     if ($ignoresettings or !empty($options['printintro'])) {
         if (trim(strip_tags($url->intro))) {
-            echo $OUTPUT->box_start('mod_introbox', 'urlintro');
-            echo format_module_intro('url', $url, $cm->id);
-            echo $OUTPUT->box_end();
+            return format_module_intro('url', $url, $cm->id);
         }
     }
+
+    return '';
 }
 
 /**
@@ -219,9 +204,11 @@ function url_display_frame($url, $cm, $course) {
 
     if ($frame === 'top') {
         $PAGE->set_pagelayout('frametop');
+        $PAGE->activityheader->set_attrs([
+            'description' => url_get_intro($url, $cm),
+            'title' => format_string($url->name)
+        ]);
         url_print_header($url, $cm, $course);
-        url_print_heading($url, $cm, $course);
-        url_print_intro($url, $cm, $course);
         echo $OUTPUT->footer();
         die;
 
@@ -266,25 +253,17 @@ EOF;
  * @return does not return
  */
 function url_print_workaround($url, $cm, $course) {
-    global $OUTPUT, $USER;
+    global $OUTPUT, $PAGE, $USER;
 
+    $PAGE->activityheader->set_description(url_get_intro($url, $cm, true));
     url_print_header($url, $cm, $course);
-    url_print_heading($url, $cm, $course, true);
-
-    // Display any activity information (eg completion requirements / dates).
-    $cminfo = cm_info::create($cm);
-    $completiondetails = \core_completion\cm_completion_details::get_instance($cminfo, $USER->id);
-    $activitydates = \core\activity_dates::get_dates_for_module($cminfo, $USER->id);
-    echo $OUTPUT->activity_information($cminfo, $completiondetails, $activitydates);
-
-    url_print_intro($url, $cm, $course, true);
 
     $fullurl = url_get_full_url($url, $cm, $course);
 
     $display = url_get_final_display_type($url);
     if ($display == RESOURCELIB_DISPLAY_POPUP) {
         $jsfullurl = addslashes_js($fullurl);
-        $options = empty($url->displayoptions) ? array() : unserialize($url->displayoptions);
+        $options = empty($url->displayoptions) ? [] : (array) unserialize_array($url->displayoptions);
         $width  = empty($options['popupwidth'])  ? 620 : $options['popupwidth'];
         $height = empty($options['popupheight']) ? 450 : $options['popupheight'];
         $wh = "width=$width,height=$height,toolbar=no,location=no,menubar=no,copyhistory=no,status=no,directories=no,scrollbars=yes,resizable=yes";
@@ -313,7 +292,7 @@ function url_print_workaround($url, $cm, $course) {
  * @return does not return
  */
 function url_display_embed($url, $cm, $course) {
-    global $PAGE, $OUTPUT, $USER;
+    global $PAGE, $OUTPUT;
 
     $mimetype = resourcelib_guess_url_mimetype($url->externalurl);
     $fullurl  = url_get_full_url($url, $cm, $course);
@@ -343,18 +322,10 @@ function url_display_embed($url, $cm, $course) {
         $code = resourcelib_embed_general($fullurl, $title, $clicktoopen, $mimetype);
     }
 
+    $PAGE->activityheader->set_description(url_get_intro($url, $cm));
     url_print_header($url, $cm, $course);
-    url_print_heading($url, $cm, $course);
-
-    // Display any activity information (eg completion requirements / dates).
-    $cminfo = cm_info::create($cm);
-    $completiondetails = \core_completion\cm_completion_details::get_instance($cminfo, $USER->id);
-    $activitydates = \core\activity_dates::get_dates_for_module($cminfo, $USER->id);
-    echo $OUTPUT->activity_information($cminfo, $completiondetails, $activitydates);
 
     echo $code;
-
-    url_print_intro($url, $cm, $course);
 
     echo $OUTPUT->footer();
     die;
@@ -571,14 +542,23 @@ function url_guess_icon($fullurl, $size = null) {
         return null;
     }
 
-    $moodleurl = new moodle_url($fullurl);
-    $fullurl = $moodleurl->out_omit_querystring();
+    try {
+        // There can be some cases where the url is invalid making parse_url() to return false.
+        // That will make moodle_url class to throw an exception, so we need to catch the exception to prevent errors.
+        $moodleurl = new moodle_url($fullurl);
+        $fullurl = $moodleurl->out_omit_querystring();
+    } catch (\moodle_exception $e) {
+        // If an exception is thrown, means the url is invalid. No need to log exception.
+        return null;
+    }
+
     $icon = file_extension_icon($fullurl, $size);
     $htmlicon = file_extension_icon('.htm', $size);
     $unknownicon = file_extension_icon('', $size);
+    $phpicon = file_extension_icon('.php', $size); // Exception for php files.
 
     // We do not want to return those icon types, the module icon is more appropriate.
-    if ($icon === $unknownicon || $icon === $htmlicon) {
+    if ($icon === $unknownicon || $icon === $htmlicon || $icon === $phpicon) {
         return null;
     }
 

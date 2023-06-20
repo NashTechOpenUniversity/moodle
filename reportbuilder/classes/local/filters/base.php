@@ -20,6 +20,7 @@ namespace core_reportbuilder\local\filters;
 
 use MoodleQuickForm;
 use core_reportbuilder\local\report\filter;
+use core_reportbuilder\local\models\filter as filter_model;
 
 /**
  * Base class for all report filters
@@ -72,6 +73,26 @@ abstract class base {
     }
 
     /**
+     * Returns the filter's entity name
+     *
+     * @return string
+     */
+    final public function get_entity_name(): string {
+        return $this->filter->get_entity_name();
+    }
+
+    /**
+     * Returns the filter persistent
+     *
+     * Note that filters for system reports don't store a persistent and will return null.
+     *
+     * @return filter_model|null
+     */
+    final public function get_filter_persistent(): ?filter_model {
+        return $this->filter->get_persistent();
+    }
+
+    /**
      * Adds filter-specific form elements
      *
      * @param MoodleQuickForm $mform
@@ -80,6 +101,9 @@ abstract class base {
 
     /**
      * Returns the filter clauses to be used with SQL where
+     *
+     * Ideally the field SQL should be included only once in the returned expression, however if that is unavoidable then
+     * use the {@see filter::get_field_sql_and_params} helper to ensure uniqueness of any parameters included within
      *
      * @param array $values
      * @return array [$sql, [...$params]]
@@ -98,5 +122,15 @@ abstract class base {
         [$filtersql] = $this->get_sql_filter($values);
 
         return $filtersql !== '';
+    }
+
+    /**
+     * Return sample filter values, that when applied to a report would activate the filter - that is, cause the filter to return
+     * SQL snippet. Should be overridden in child classes, to ensure compatibility with stress tests of reports
+     *
+     * @return array
+     */
+    public function get_sample_values(): array {
+        return [];
     }
 }

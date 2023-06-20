@@ -131,7 +131,7 @@ class_alias('\core_badges\badge', 'badge');
 /**
  * Sends notifications to users about awarded badges.
  *
- * @param badge $badge Badge that was issued
+ * @param \core_badges\badge $badge Badge that was issued
  * @param int $userid Recipient ID
  * @param string $issued Unique hash of an issued badge
  * @param string $filepathhash File path hash of an issued badge for attachments
@@ -633,20 +633,6 @@ function badges_download($userid) {
 }
 
 /**
- * Checks if badges can be pushed to external backpack.
- *
- * @deprecated Since Moodle 3.11.
- * @return string Code of backpack accessibility status.
- */
-function badges_check_backpack_accessibility() {
-    // This method was used for OBv1.0. It can be deprecated because OBv1.0 support will be removed.
-    // When this method will be removed, badges/ajax.php can be removed too (if it keeps containing only a call to it).
-    debugging('badges_check_backpack_accessibility() can not be used any more, it was only used for OBv1.0', DEBUG_DEVELOPER);
-
-    return 'curl-request-timeout';
-}
-
-/**
  * Checks if user has external backpack connected.
  *
  * @param int $userid ID of a user.
@@ -685,30 +671,6 @@ function badges_handle_course_deletion($courseid) {
         $toupdate->status = BADGE_STATUS_ARCHIVED;
         $DB->update_record('badge', $toupdate);
     }
-}
-
-/**
- * Loads JS files required for backpack support.
- *
- * @deprecated Since Moodle 3.11.
- * @return void
- */
-function badges_setup_backpack_js() {
-    // This method was used for OBv1.0. It can be deprecated because OBv1.0 support will be removed.
-    debugging('badges_setup_backpack_js() can not be used any more, it was only used for OBv1.0.', DEBUG_DEVELOPER);
-}
-
-/**
- * No js files are required for backpack support.
- * This only exists to directly support the custom V1 backpack api.
- *
- * @deprecated Since Moodle 3.11.
- * @param boolean $checksite Call check site function.
- * @return void
- */
-function badges_local_backpack_js($checksite = false) {
-    // This method was used for OBv1.0. It can be deprecated because OBv1.0 support will be removed.
-    debugging('badges_local_backpack_js() can not be used any more, it was only used for OBv1.0.', DEBUG_DEVELOPER);
 }
 
 /**
@@ -798,6 +760,40 @@ function badges_delete_site_backpack($id) {
  */
 function badges_save_external_backpack(stdClass $data) {
     global $DB;
+    if ($data->apiversion == OPEN_BADGES_V2P1) {
+        // Check if there is an existing issuer for the given backpackapiurl.
+        foreach (core\oauth2\api::get_all_issuers() as $tmpissuer) {
+            if ($data->backpackweburl == $tmpissuer->get('baseurl')) {
+                $issuer = $tmpissuer;
+                break;
+            }
+        }
+
+        // Create the issuer if it doesn't exist yet.
+        if (empty($issuer)) {
+            $issuer = new \core\oauth2\issuer(0, (object) [
+                'name' => $data->backpackweburl,
+                'baseurl' => $data->backpackweburl,
+                // Note: This is required because the DB schema is broken and does not accept a null value when it should.
+                'image' => '',
+            ]);
+            $issuer->save();
+        }
+
+        // This can't be run from PHPUNIT because testing platforms need real URLs.
+        // In the future, this request can be moved to the moodle-exttests repository.
+        if (!PHPUNIT_TEST) {
+            // Create/update the endpoints for the issuer.
+            \core\oauth2\discovery\imsbadgeconnect::create_endpoints($issuer);
+            $data->oauth2_issuerid = $issuer->get('id');
+
+            $apibase = \core\oauth2\endpoint::get_record([
+                'issuerid' => $data->oauth2_issuerid,
+                'name' => 'apiBase',
+            ]);
+            $data->backpackapiurl = $apibase->get('url');
+        }
+    }
     $backpack = new stdClass();
 
     $backpack->apiversion = $data->apiversion;
@@ -881,7 +877,7 @@ function badges_open_badges_backpack_api(?int $backpackid = null) {
  *
  * @param int $id The backpack id.
  * @param int $userid The owner of the backpack, 0 if it's a sitewide backpack else a user's site backpack
- * @return array(stdClass)
+ * @return stdClass
  */
 function badges_get_site_backpack($id, int $userid = 0) {
     global $DB;
@@ -919,7 +915,7 @@ function badges_get_user_backpack(?int $userid = 0) {
 /**
  * Get the primary backpack for the site
  *
- * @return array(stdClass)
+ * @return stdClass
  */
 function badges_get_site_primary_backpack() {
     global $DB;
@@ -1017,7 +1013,7 @@ function badges_get_default_issuer() {
         $issuer['name'] = $SITE->fullname ? $SITE->fullname : $SITE->shortname;
     }
     $issuer['url'] = $issuerurl->out(false);
-    $issuer['email'] = $sitebackpack->backpackemail ?? $CFG->badges_defaultissuercontact;
+    $issuer['email'] = $sitebackpack->backpackemail ?: $CFG->badges_defaultissuercontact;
     $issuer['@context'] = OPEN_BADGES_V2_CONTEXT;
     $issuerid = new moodle_url('/badges/issuer_json.php');
     $issuer['id'] = $issuerid->out(false);
@@ -1330,24 +1326,6 @@ function badges_verify_backpack(int $backpackid) {
     }
 
     return '';
-}
-
-/**
- * Get OAuth2 services for the external backpack.
- *
- * @return array
- * @throws coding_exception
- */
-function badges_get_oauth2_service_options() {
-    global $DB;
-
-    $issuers = core\oauth2\api::get_all_issuers();
-    $options = ['' => 'None'];
-    foreach ($issuers as $issuer) {
-        $options[$issuer->get('id')] = $issuer->get('name');
-    }
-
-    return $options;
 }
 
 /**

@@ -17,8 +17,18 @@
         }
 
         &.active {
-            font-weight: bold;
-            border-bottom: solid 3px $primary;
+            background-color: $gray-100;
+            border-color: transparent;
+            border-bottom-color: $primary;
+            &:focus,
+            &:hover {
+                background-color: $gray-100;
+                border-bottom-color: $primary;
+            }
+        }
+        &.focus,
+        &:focus {
+            position: relative;
         }
         &[data-toggle="tab"] {
             display: inline-flex;
@@ -74,6 +84,24 @@
             .dropdown-divider {
                 display: none;
             }
+        }
+    }
+
+    .dropdown-item[aria-current="true"],
+    .dropdown-item.active {
+        background-color: transparent;
+        color: $dropdown-link-color;
+        &:focus-within,
+        &:hover {
+            background-color: $dropdown-link-active-bg;
+            color: $dropdown-link-active-color;
+            a {
+                color: $dropdown-link-active-color;
+            }
+        }
+        &:before {
+            @extend .fa-solid;
+            content: fa-content($fa-var-check);
         }
     }
 }

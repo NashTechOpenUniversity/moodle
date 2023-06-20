@@ -105,11 +105,12 @@ $string['backpackconnection_help'] = 'Connecting to a backpack enables you to sh
 $string['backpackconnectioncancelattempt'] = 'Connect using a different email address';
 $string['backpackconnectionconnect'] = 'Connect to backpack';
 $string['backpackconnectionresendemail'] = 'Resend verification email';
-$string['backpackconnectionunexpectedresult'] = 'There was a problem connecting to your backpack. Please check the credentials and try again.';
+$string['backpackconnectionunexpectedresult'] = 'There was a problem connecting to your backpack. Your backpack provider is sending this message: \'{$a}\'.';
 $string['backpackconnectionunexpectedmessage'] = 'The backpack returned the error: "{$a}".';
 $string['backpackdetails'] = 'Backpack settings';
 $string['backpackdisconnected'] = 'Backpack is disconnected';
 $string['backpackemail'] = 'Email address';
+$string['backpackemail_required'] = 'Email address can\'t be blank';
 $string['backpackemail_help'] = 'The email address associated with your backpack. While you are connected, any badges earned on this site will be associated with this email address.';
 $string['backpackemailverificationpending'] = 'Verification pending';
 $string['backpackemailverifyemailbody'] = 'Hi,
@@ -129,6 +130,7 @@ $string['backpackemailverifypending'] = 'A verification email has been sent to <
 $string['backpackemailverifysuccess'] = 'Thanks for verifying your email address. You are now connected to your backpack.';
 $string['backpackemailverifytokenmismatch'] = 'The token in the link you clicked does not match the stored token. Make sure you clicked the link in most recent email you received.';
 $string['backpackexporterror'] = 'Can\'t export the badge to backpack';
+$string['backpackexporterrorwithinfo'] = 'Can\'t export the badge "{$a->badgename}" to backpack. Error: {$a->error}';
 $string['backpackimport'] = 'Badge import settings';
 $string['backpackimport_help'] = 'After the backpack connection is successfully established, badges from your backpack can be displayed on your badges page and your profile page.
 
@@ -141,7 +143,7 @@ $string['badges'] = 'Badges';
 $string['badgedetails'] = 'Badge details';
 $string['badgeimage'] = 'Image';
 $string['badgeimage_help'] = 'The image should be at least 300 x 300 pixels in size. It will be displayed as 300 x 300 pixels on the badge page and 100 x 100 pixels on the user\'s profile page.';
-
+$string['badgeissued'] = 'Badge issued';
 $string['badgeprivacysetting'] = 'Badge privacy settings';
 $string['badgeprivacysetting_help'] = 'Badges you earn can be displayed on your account profile page. This setting allows you to automatically set the visibility of the newly earned badges.
 
@@ -154,10 +156,10 @@ Note: For recipient verification purposes, please avoid changing this setting on
 $string['badgesdisabled'] = 'Badges are not enabled on this site.';
 $string['badgesearned'] = 'Number of badges earned: {$a}';
 $string['badgesettings'] = 'Badges settings';
-$string['badgestatus_0'] = 'Not available to users';
-$string['badgestatus_1'] = 'Available to users';
-$string['badgestatus_2'] = 'Not available to users';
-$string['badgestatus_3'] = 'Available to users';
+$string['badgestatus_0'] = 'Not available';
+$string['badgestatus_1'] = 'Available';
+$string['badgestatus_2'] = 'Not available (criteria locked)';
+$string['badgestatus_3'] = 'Available (criteria locked)';
 $string['badgestatus_4'] = 'Archived';
 $string['badgestoearn'] = 'Number of badges available: {$a}';
 $string['badgesview'] = 'Course badges';
@@ -338,7 +340,6 @@ $string['eventbadgelistingviewed'] = 'Badge listing viewed';
 $string['eventbadgerevoked'] = 'Badge revoked';
 $string['eventbadgeupdated'] = 'Badge updated';
 $string['eventbadgeviewed'] = 'Badge viewed';
-$string['evidence'] = 'Evidence';
 $string['existingrecipients'] = 'Existing badge recipients';
 $string['expired'] = 'Expired';
 $string['expiredate'] = 'This badge expires on {$a}.';
@@ -359,6 +360,8 @@ $string['externalbadges_help'] = 'This area displays badges from your external b
 $string['fixed'] = 'Fixed date';
 $string['hidden'] = 'Hidden';
 $string['hiddenbadge'] = 'Unfortunately, the badge owner has not made this information available.';
+$string['hostedurl'] = 'External URL';
+$string['hostedurldescription'] = 'External URL where the badge is hosted';
 $string['imageauthoremail'] = 'Image author\'s email';
 $string['imageauthoremail_help'] = 'If specified, the email address of the badge image author is displayed on the badge page.';
 $string['imageauthorname'] = 'Image author\'s name';
@@ -416,7 +419,7 @@ $string['nobackpack'] = 'There is no backpack service connected to this account.
 $string['nobackpackbadgessummary'] = 'There are no badges in the collections you have selected.';
 $string['nobackpackcollectionssummary'] = 'No badge collections have been selected.';
 $string['nobackpacks'] = 'There are no backpacks available';
-$string['nobadges'] = 'There are no badges available.';
+$string['nobadges'] = 'There are currently no badges available for users to earn.';
 $string['nocompetencies'] = 'No competencies selected.';
 $string['nocriteria'] = 'Criteria for this badge have not been set up yet.';
 $string['noendorsement'] = 'This badge does not have an endorsement.';
@@ -455,6 +458,8 @@ $string['oauth2issuer'] = 'OAuth 2 services';
 $string['openbadgesv1'] = 'Open Badges v1.0';
 $string['openbadgesv2'] = 'Open Badges v2.0';
 $string['openbadgesv2p1'] = 'Open Badges v2.1';
+$string['othernavigation'] = 'Other navigation ...';
+$string['password_required'] = 'Password can\'t be blank';
 $string['potentialrecipients'] = 'Potential badge recipients';
 $string['preferences'] = 'Badge preferences';
 $string['privacy:metadata:backpack'] = 'A record of user\'s backpacks';
@@ -491,10 +496,9 @@ $string['privacy:metadata:manualaward:datemet'] = 'The date when the user was aw
 $string['privacy:metadata:manualaward:issuerid'] = 'The ID of the user awarding the badge';
 $string['privacy:metadata:manualaward:issuerrole'] = 'The role of the user awarding the badge';
 $string['privacy:metadata:manualaward:recipientid'] = 'The ID of the user who is manually awarded a badge';
+$string['recipient'] = 'Badge recipient';
 $string['recipients'] = 'Badge recipients';
-$string['recipientdetails'] = 'Recipient details';
-$string['recipientidentificationproblem'] = 'Cannot find a recipient of this badge among the existing users.';
-$string['recipientvalidationproblem'] = 'Current user cannot be verified as a recipient of this badge.';
+$string['recipientvalidationproblem'] = 'This user cannot be verified as a recipient of this badge.';
 $string['relative'] = 'Relative date';
 $string['relatedbages'] = 'Related badges';
 $string['revoke'] = 'Revoke badge';
@@ -543,6 +547,7 @@ Once a badge has been issued to at least one user, it automatically becomes **LO
 
 We want to make sure that all users complete the same requirements to earn a badge. Currently, it is not possible to revoke badges. If we allowed badges requirements to be modified all the time, we would most likely end up with users having the same badge for meeting completely different requirements.';
 $string['subject'] = 'Message subject';
+$string['tags'] = 'Tags';
 $string['targetname'] = 'Name';
 $string['targetname_help'] = 'The external skill or standard which the badge is aligned with.';
 $string['targeturl'] = 'URL';
@@ -556,6 +561,8 @@ $string['targetcode_help'] = 'A unique string identifier for referencing the ext
 $string['testbackpack'] = 'Test backpack \'{$a}\'';
 $string['testsettings'] = 'Test settings';
 $string['type'] = 'Type';
+$string['tagarea_badge'] = 'Badges';
+$string['userbadges'] = 'User badges';
 $string['variablesubstitution'] = 'Variable substitution in messages.';
 $string['variablesubstitution_help'] = 'In a badge message, certain variables can be inserted into the subject and/or body of a message so that they will be replaced with real values when the message is sent. The variables should be inserted into the text exactly as they are shown below. The following variables can be used:
 
@@ -575,16 +582,7 @@ $string['warnexpired'] = ' (This badge has expired!)';
 $string['year'] = 'Year(s)';
 $string['includeauthdetails'] = "Include authentication details with the backpack";
 
-// Deprecated since Moodle 3.9.
-$string['editsettings'] = 'Edit settings';
-$string['sitebackpackverify'] = 'Backpack connection';
-
-// Deprecated since Moodle 3.10.
-$string['backpackneedsupdate'] = 'The backpack connected to this profile does not match the backpack for the site. You need to disconnect and reconnect the backpack.';
-
-// Deprecated since Moodle 3.11.
-$string['addbackpack'] = 'Add backpack';
-$string['error:backpacknotavailable'] = 'Your site is not accessible from the Internet, so any badges issued from this site cannot be verified by external backpack services.';
-$string['error:backpackproblem'] = 'There was a problem connecting to your backpack service provider. Please try again later.';
-$string['sitebackpack'] = 'Active external backpack';
-$string['sitebackpack_help'] = 'The external backpack that users can connect to from this site. Note that changing this setting after users have connected their backpacks will require each user to go to their backpack settings page and disconnect then reconnect.';
+// Deprecated since Moodle 4.0.
+$string['evidence'] = 'Evidence';
+$string['recipientdetails'] = 'Recipient details';
+$string['recipientidentificationproblem'] = 'Cannot find a recipient of this badge among the existing users.';

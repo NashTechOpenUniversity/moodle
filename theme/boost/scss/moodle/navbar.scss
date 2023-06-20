@@ -1,5 +1,6 @@
 @mixin hover-navbar {
-    background-color: $gray-200;
+    border-color: transparent;
+    background-color: $gray-100;
 }
 
 .navbar.fixed-top {
@@ -8,7 +9,7 @@
     box-shadow: none;
     border-bottom: $gray-300 1px solid;
     align-items: stretch;
-    height: $navbar-height;
+    height: $navbar-height + 1px;
 
     .navbar-brand {
         .logo {
@@ -61,8 +62,8 @@
             .dropdown-item {
                 padding: .25rem 1.75rem .25rem .75rem;
                 &.carousel-navigation-link::after {
-                    font-family: FontAwesome;
-                    content: $fa-var-caret-right;
+                    @extend .fa-solid;
+                    content: fa-content($fa-var-caret-right);
                     font-size: 1rem;
                     right: .75rem;
                     position: absolute;
@@ -82,8 +83,8 @@
                 .items {
                     .dropdown-item {
                         &[aria-current="true"]::before {
-                            font-family: FontAwesome;
-                            content: $fa-var-check;
+                            @extend .fa-solid;
+                            content: fa-content($fa-var-check);
                             font-size: 0.75rem;
                             padding-left: .25rem;
                         }
@@ -122,6 +123,11 @@
                 }
             }
         }
+        @include media-breakpoint-down(sm) {
+            .langbutton {
+                display: none;
+            }
+        }
     }
     .moodle-actionmenu .menubar,
     .action-menu-trigger .dropdown {
@@ -134,7 +140,8 @@
         .dropdown-menu {
             .dropdown-item {
                 &.carousel-navigation-link::after {
-                    content: $fa-var-caret-left;
+                    @extend .fa-solid;
+                    content: fa-content($fa-var-caret-left);
                 }
             }
             .carousel {
@@ -158,4 +165,7 @@
 }
 #page {
     margin-top: $navbar-height;
+}
+.pagelayout-embedded #page {
+    margin-top: 0;
 }

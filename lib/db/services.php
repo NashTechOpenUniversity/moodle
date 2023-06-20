@@ -91,8 +91,8 @@ $functions = array(
         'type'        => 'read',
         'ajax'          => true,
         'loginrequired' => true,
-   ),
-   'core_backup_get_async_backup_links_restore' => array(
+    ),
+    'core_backup_get_async_backup_links_restore' => array(
         'classname'   => 'core_backup_external',
         'classpath' => 'backup/externallib.php',
         'methodname'  => 'get_async_backup_links_restore',
@@ -293,6 +293,12 @@ $functions = array(
         'type'          => 'read',
         'services'      => array(MOODLE_OFFICIAL_MOBILE_SERVICE),
     ],
+    'core_calendar_delete_subscription' => [
+        'classname' => 'core_calendar\external\subscription\delete',
+        'description' => 'Delete the calendar subscription',
+        'type' => 'write',
+        'ajax' => true
+    ],
     'core_cohort_add_cohort_members' => array(
         'classname' => 'core_cohort_external',
         'methodname' => 'add_cohort_members',
@@ -378,6 +384,7 @@ $functions = array(
         'methodname' => 'delete_comments',
         'description' => 'Deletes a comment or comments.',
         'type' => 'write',
+        'ajax' => true,
         'services' => array(MOODLE_OFFICIAL_MOBILE_SERVICE),
     ),
     'core_completion_get_activities_completion_status' => array(
@@ -508,6 +515,12 @@ $functions = array(
         'type'        => 'read',
         'ajax'        => true,
     ),
+    'core_courseformat_file_handlers' => [
+        'classname'     => 'core_courseformat\external\file_handlers',
+        'description'   => 'Get the current course file hanlders.',
+        'type'          => 'read',
+        'ajax'          => true,
+    ],
     'core_courseformat_get_state' => [
         'classname'     => 'core_courseformat\external\get_state',
         'description'   => 'Get the current course state.',
@@ -642,6 +655,15 @@ $functions = array(
         'ajax' => true,
         'services' => array(MOODLE_OFFICIAL_MOBILE_SERVICE),
     ),
+    'core_course_get_enrolled_courses_with_action_events_by_timeline_classification' => array(
+        'classname' => '\core_course\external\get_enrolled_courses_with_action_events_by_timeline_classification',
+        'methodname' => 'execute',
+        'classpath' => '',
+        'description' => 'List of enrolled courses with action events in a given timeframe, for the given timeline classification.',
+        'type' => 'read',
+        'ajax' => true,
+        'services' => array(MOODLE_OFFICIAL_MOBILE_SERVICE),
+    ),
     'core_course_get_recent_courses' => array(
         'classname' => 'core_course_external',
         'methodname' => 'get_recent_courses',
@@ -664,7 +686,7 @@ $functions = array(
         'classname' => 'core_course_external',
         'methodname' => 'get_enrolled_users_by_cmid',
         'classpath' => 'course/externallib.php',
-        'description' => 'List users by course module id & filter by group id.',
+        'description' => 'List users by course module id, filter by group and active enrolment status.',
         'type' => 'read',
         'ajax' => true,
     ),
@@ -761,15 +783,6 @@ $functions = array(
         'type' => 'read',
         'capabilities' => 'moodle/course:viewparticipants',
         'services' => array(MOODLE_OFFICIAL_MOBILE_SERVICE),
-    ),
-    'core_enrol_edit_user_enrolment' => array(
-        'classname' => 'core_enrol_external',
-        'methodname' => 'edit_user_enrolment',
-        'classpath' => 'enrol/externallib.php',
-        'description' => '** DEPRECATED ** Please do not call this function any more.
-                          External function that updates a given user enrolment',
-        'type' => 'write',
-        'ajax' => true,
     ),
     'core_enrol_submit_user_enrolment_form' => array(
         'classname' => 'core_enrol_external',
@@ -900,16 +913,6 @@ $functions = array(
         'type' => 'read',
         'ajax' => true,
     ),
-    'core_grades_get_grades' => array(
-        'classname' => 'core_grades_external',
-        'methodname' => 'get_grades',
-        'description' => '** DEPRECATED ** Please do not call this function any more.
-                                     Returns student course total grade and grades for activities.
-                                     This function does not return category or manual items.
-                                     This function is suitable for managers or teachers not students.',
-        'type' => 'read',
-        'capabilities' => 'moodle/grade:view, moodle/grade:viewall, moodle/grade:viewhidden'
-    ),
     'core_grades_update_grades' => array(
         'classname' => 'core_grades_external',
         'methodname' => 'update_grades',
@@ -946,20 +949,57 @@ $functions = array(
         'ajax' => true,
         'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
-    'core_grades_create_gradecategory' => array (
-        'classname' => 'core_grades_external',
-        'methodname' => 'create_gradecategory',
-        'description' => '** DEPRECATED ** Please do not call this function any more. Use core_grades_create_gradecategories.
-                                     Create a grade category inside a course gradebook.',
-        'type' => 'write',
-        'capabilities' => 'moodle/grade:manage',
-    ),
     'core_grades_create_gradecategories' => array (
         'classname' => 'core_grades\external\create_gradecategories',
         'description' => 'Create grade categories inside a course gradebook.',
         'type' => 'write',
         'capabilities' => 'moodle/grade:manage',
     ),
+    'core_grades_get_enrolled_users_for_search_widget' => array (
+        'classname' => 'core_grades\external\get_enrolled_users_for_search_widget',
+        'description' => '** DEPRECATED ** Please do not call this function any more. ' .
+            'Use core_grades_get_enrolled_users_for_selector instead. ' .
+            'Returns the enrolled users within and map some fields to the returned array of user objects.',
+        'type' => 'read',
+        'ajax' => true,
+        'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ),
+    'core_grades_get_enrolled_users_for_selector' => array (
+        'classname' => 'core_grades\external\get_enrolled_users_for_selector',
+        'description' => 'Returns the enrolled users within and map some fields to the returned array of user objects.',
+        'type' => 'read',
+        'ajax' => true,
+        'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ),
+    'core_grades_get_groups_for_search_widget' => [
+        'classname' => 'core_grades\external\get_groups_for_selector',
+        'description' => '** DEPRECATED ** Please do not call this function any more. ' .
+            'Use core_grades_get_groups_for_selector instead. ' .
+            'Get the group/(s) for a course',
+        'type' => 'read',
+        'ajax' => true,
+        'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+    'core_grades_get_groups_for_selector' => [
+        'classname' => 'core_grades\external\get_groups_for_selector',
+        'description' => 'Get the group/(s) for a course',
+        'type' => 'read',
+        'ajax' => true,
+        'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+    'core_grades_get_feedback' => [
+        'classname' => 'core_grades\external\get_feedback',
+        'description' => 'Get the feedback data for a grade item',
+        'type' => 'read',
+        'ajax' => true,
+        ],
+    'core_grades_get_gradeitems' => [
+        'classname' => 'core_grades\external\get_gradeitems',
+        'description' => 'Get the gradeitems for a course',
+        'type' => 'read',
+        'ajax' => true,
+        'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
     'core_grading_get_definitions' => array(
         'classname' => 'core_grading_external',
         'methodname' => 'get_definitions',
@@ -1708,6 +1748,12 @@ $functions = array(
         'methodname' => 'add_user_device',
         'classpath' => 'user/externallib.php',
         'description' => 'Store mobile user devices information for PUSH Notifications.',
+        'type' => 'write',
+        'services' => array(MOODLE_OFFICIAL_MOBILE_SERVICE),
+    ),
+    'core_user_update_user_device_public_key' => array(
+        'classname' => '\core_user\external\update_user_device_public_key',
+        'description' => 'Store mobile user public key.',
         'type' => 'write',
         'services' => array(MOODLE_OFFICIAL_MOBILE_SERVICE),
     ),
@@ -2673,7 +2719,7 @@ $functions = array(
         'classpath'   => 'customfield/externallib.php',
         'description' => 'Deletes an entry',
         'type'        => 'write',
-        'ajax'        => 'true'
+        'ajax'        => true,
     ),
     'core_customfield_reload_template' => array(
         'classname'   => 'core_customfield_external',
@@ -2681,7 +2727,7 @@ $functions = array(
         'classpath'   => 'customfield/externallib.php',
         'description' => 'Reloads template',
         'type'        => 'read',
-        'ajax'        => 'true'
+        'ajax'        => true,
     ),
     'core_customfield_create_category' => array(
         'classname'   => 'core_customfield_external',
@@ -2689,7 +2735,7 @@ $functions = array(
         'classpath'   => 'customfield/externallib.php',
         'description' => 'Creates a new category',
         'type'        => 'write',
-        'ajax'        => 'true'
+        'ajax'        => true,
     ),
     'core_customfield_delete_category' => array(
         'classname'   => 'core_customfield_external',
@@ -2697,7 +2743,7 @@ $functions = array(
         'classpath'   => 'customfield/externallib.php',
         'description' => 'Deletes a category',
         'type'        => 'write',
-        'ajax'        => 'true'
+        'ajax'        => true,
     ),
     'core_customfield_move_field'   => array(
         'classname'   => 'core_customfield_external',
@@ -2705,7 +2751,7 @@ $functions = array(
         'classpath'   => 'customfield/externallib.php',
         'description' => 'Drag and drop',
         'type'        => 'write',
-        'ajax'        => 'true'
+        'ajax'        => true,
     ),
     'core_customfield_move_category' => array(
         'classname'   => 'core_customfield_external',
@@ -2713,7 +2759,7 @@ $functions = array(
         'classpath'   => 'customfield/externallib.php',
         'description' => 'Drag and drop categories',
         'type'        => 'write',
-        'ajax'        => 'true'
+        'ajax'        => true,
     ),
     'core_h5p_get_trusted_h5p_file' => [
         'classname'     => 'core_h5p\external',
@@ -2721,7 +2767,7 @@ $functions = array(
         'classpath'     => '',
         'description'   => 'Get the H5P file cleaned for Mobile App.',
         'type'          => 'read',
-        'ajax'          => 'true',
+        'ajax'          => true,
         'capabilities'  => '',
         'services'      => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
@@ -2737,16 +2783,50 @@ $functions = array(
         'classpath'     => '',
         'description'   => 'Post an xAPI statement.',
         'type'          => 'write',
-        'ajax'          => 'true',
+        'ajax'          => true,
         'capabilities'  => '',
         'services'      => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+    'core_xapi_post_state' => [
+        'classname' => 'core_xapi\external\post_state',
+        'classpath' => '',
+        'description' => 'Post an xAPI state into an activityId.',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => '',
+        'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+    'core_xapi_get_state' => [
+        'classname' => 'core_xapi\external\get_state',
+        'classpath' => '',
+        'description' => 'Get an xAPI state data from an activityId.',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => '',
+        'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+    'core_xapi_get_states' => [
+        'classname' => 'core_xapi\external\get_states',
+        'description' => 'Get all state ID from an activityId.',
+        'type' => 'read',
+        'ajax' => true,
+        'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+    'core_xapi_delete_state' => [
+        'classname' => 'core_xapi\external\delete_state',
+        'classpath' => '',
+        'description' => 'Delete an xAPI state data from an activityId.',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => '',
+        'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'core_contentbank_delete_content' => [
         'classname'     => 'core_contentbank\external\delete_content',
         'classpath'     => '',
         'description'   => 'Delete a content from the content bank.',
         'type'          => 'write',
-        'ajax'          => 'true',
+        'ajax'          => true,
         'capabilities'  => 'moodle/contentbank:deleteanycontent',
     ],
     'core_contentbank_rename_content' => [
@@ -2754,7 +2834,7 @@ $functions = array(
         'classpath'     => '',
         'description'   => 'Rename a content in the content bank.',
         'type'          => 'write',
-        'ajax'          => 'true',
+        'ajax'          => true,
         'capabilities'  => 'moodle/contentbank:manageowncontent',
     ],
     'core_contentbank_set_content_visibility' => [
@@ -2762,7 +2842,7 @@ $functions = array(
         'classpath'     => '',
         'description'   => 'Set the visibility of a content in the content bank.',
         'type'          => 'write',
-        'ajax'          => 'true',
+        'ajax'          => true,
         'capabilities'  => 'moodle/contentbank:manageowncontent',
     ],
     'core_create_userfeedback_action_record' => [
@@ -2770,7 +2850,7 @@ $functions = array(
         'classpath'     => '',
         'description'   => 'Record the action that the user takes in the user feedback notification for future use.',
         'type'          => 'write',
-        'ajax'          => 'true',
+        'ajax'          => true,
         'capabilities'  => '',
     ],
     'core_payment_get_available_gateways' => [
@@ -2785,6 +2865,12 @@ $functions = array(
         'type'        => 'write',
         'ajax'        => true,
     ],
+    'core_reportbuilder_set_filters' => [
+        'classname'   => 'core_reportbuilder\external\filters\set',
+        'description' => 'Set filter values for given report',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
     'core_dynamic_tabs_get_content' => [
         'classname'   => 'core\external\dynamic_tabs_get_content',
         'description' => 'Returns the content for a dynamic tab',
@@ -2795,6 +2881,174 @@ $functions = array(
         'classname'   => 'core\external\editmode',
         'methodname'   => 'change_editmode',
         'description' => 'Change the editing mode',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_reportbuilder_reports_delete' => [
+        'classname'   => 'core_reportbuilder\external\reports\delete',
+        'description' => 'Delete report',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_reportbuilder_reports_get' => [
+        'classname'   => 'core_reportbuilder\external\reports\get',
+        'description' => 'Get custom report',
+        'type'        => 'read',
+        'ajax'        => true,
+    ],
+    'core_reportbuilder_list_reports' => [
+        'classname'   => 'core_reportbuilder\external\reports\listing',
+        'description' => 'List custom reports for current user',
+        'type'        => 'read',
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+    'core_reportbuilder_retrieve_report' => [
+        'classname'   => 'core_reportbuilder\external\reports\retrieve',
+        'description' => 'Retrieve custom report content',
+        'type'        => 'read',
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+    'core_reportbuilder_view_report' => [
+        'classname'   => 'core_reportbuilder\external\reports\view',
+        'description' => 'Trigger custom report viewed',
+        'type'        => 'write',
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+    'core_reportbuilder_columns_add' => [
+        'classname'   => 'core_reportbuilder\external\columns\add',
+        'description' => 'Add column to report',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_reportbuilder_columns_delete' => [
+        'classname'   => 'core_reportbuilder\external\columns\delete',
+        'description' => 'Delete column from report',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_reportbuilder_columns_reorder' => [
+        'classname'   => 'core_reportbuilder\external\columns\reorder',
+        'description' => 'Re-order column within report',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_reportbuilder_columns_sort_get' => [
+        'classname'   => 'core_reportbuilder\external\columns\sort\get',
+        'description' => 'Retrieve column sorting for report',
+        'type'        => 'read',
+        'ajax'        => true,
+    ],
+    'core_reportbuilder_columns_sort_reorder' => [
+        'classname'   => 'core_reportbuilder\external\columns\sort\reorder',
+        'description' => 'Re-order column sorting within report',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_reportbuilder_columns_sort_toggle' => [
+        'classname'   => 'core_reportbuilder\external\columns\sort\toggle',
+        'description' => 'Toggle sorting of column within report',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_reportbuilder_conditions_add' => [
+        'classname'   => 'core_reportbuilder\external\conditions\add',
+        'description' => 'Add condition to report',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_reportbuilder_conditions_delete' => [
+        'classname'   => 'core_reportbuilder\external\conditions\delete',
+        'description' => 'Delete condition from report',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_reportbuilder_conditions_reorder' => [
+        'classname'   => 'core_reportbuilder\external\conditions\reorder',
+        'description' => 'Re-order condition within report',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_reportbuilder_conditions_reset' => [
+        'classname'   => 'core_reportbuilder\external\conditions\reset',
+        'description' => 'Reset conditions for given report',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_reportbuilder_filters_add' => [
+        'classname'   => 'core_reportbuilder\external\filters\add',
+        'description' => 'Add filter to report',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_reportbuilder_filters_delete' => [
+        'classname'   => 'core_reportbuilder\external\filters\delete',
+        'description' => 'Delete filter from report',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_reportbuilder_filters_reorder' => [
+        'classname'   => 'core_reportbuilder\external\filters\reorder',
+        'description' => 'Re-order filter within report',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_reportbuilder_audiences_delete' => [
+        'classname'   => 'core_reportbuilder\external\audiences\delete',
+        'description' => 'Delete audience from report',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_reportbuilder_schedules_delete' => [
+        'classname'   => 'core_reportbuilder\external\schedules\delete',
+        'description' => 'Delete schedule from report',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_reportbuilder_schedules_send' => [
+        'classname'   => 'core_reportbuilder\external\schedules\send',
+        'description' => 'Send report schedule',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_reportbuilder_schedules_toggle' => [
+        'classname'   => 'core_reportbuilder\external\schedules\toggle',
+        'description' => 'Toggle state of report schedule',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_admin_set_plugin_state' => [
+        'classname' => 'core_admin\external\set_plugin_state',
+        'description' => 'Set the state of a plugin',
+        'type' => 'write',
+        'ajax' => true,
+    ],
+    'core_admin_set_plugin_order' => [
+        'classname' => 'core_admin\external\set_plugin_order',
+        'description' => 'Set the order of a plugin',
+        'type' => 'write',
+        'ajax' => true,
+    ],
+    'core_admin_set_block_protection' => [
+        'classname' => 'core_admin\external\set_block_protection',
+        'description' => 'Set the protection state for a block plugin',
+        'type' => 'write',
+        'ajax' => true,
+    ],
+    'core_moodlenet_send_activity' => [
+        'classname'   => 'core\external\moodlenet_send_activity',
+        'description' => 'Send activity to MoodleNet',
+        'type'        => 'read',
+        'ajax'        => true,
+    ],
+    'core_moodlenet_get_share_info_activity' => [
+        'classname'   => 'core\external\moodlenet_get_share_info_activity',
+        'description' => 'Get information about an activity being shared',
+        'type'        => 'read',
+        'ajax'        => true,
+    ],
+    'core_moodlenet_auth_check' => [
+        'classname'   => 'core\external\moodlenet_auth_check',
+        'description' => 'Check a user has authorized for a given MoodleNet site',
         'type'        => 'write',
         'ajax'        => true,
     ],

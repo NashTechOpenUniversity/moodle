@@ -46,12 +46,12 @@ Feature: Add and configure blocks throughout the site
     And I press "Save changes"
     And I am on "Course 1" course homepage
     # The first block matching the pattern should be top-left block
-    And I should see "Comments" in the "//*[@id='region-pre' or @id='block-region-side-pre']/descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' block ')]" "xpath_element"
+    And I should see "Comments" in the "//*[@id='region-pre' or @id='block-region-side-pre']/descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' block_comments ')]" "xpath_element"
 
   Scenario: Blocks on the dashboard page can have roles assigned to them
     Given I log in as "manager1"
     When I turn editing mode on
-    Then I should see "Assign roles in Private files block"
+    Then I should see "Assign roles in Recently accessed items block"
 
   Scenario: Blocks on courses can have roles assigned to them
     Given I log in as "teacher1"
@@ -64,10 +64,8 @@ Feature: Add and configure blocks throughout the site
     Given I log in as "admin"
     And I am on homepage
     And I turn editing mode on
-    And I add the "Text" block
-    And I configure the "(new text block)" block
-    And I set the following fields to these values:
+    And I add the "Text" block to the default region with:
       | Text block title | Foo " onload="document.getElementsByTagName('body')[0].remove()" alt=" |
       | Content     | Example |
-    When I press "Save changes"
-    Then I should see "Course overview"
+    Then I should see "Example" in the "block_html" "block"
+    Then I should see "document.getElementsByTagName"

@@ -1,4 +1,4 @@
-@block @block_activity_results
+@block @block_activity_results @javascript
 Feature: The activity results block displays student low scores as scales
   In order to be display student scores as scales
   As a user
@@ -41,7 +41,7 @@ Feature: The activity results block displays student low scores as scales
       | Scale | Disappointing, Not good enough, Average, Good, Very good, Excellent! |
     And I press "Save changes"
     And I am on "Course 1" course homepage with editing mode on
-    And I follow "Test assignment"
+    And I am on the "Test assignment" "assign activity" page
     And I navigate to "Settings" in current page administration
     And I set the following fields to these values:
       | id_grade_modgrade_type | Scale |
@@ -58,26 +58,20 @@ Feature: The activity results block displays student low scores as scales
     And I am on "Course 1" course homepage
 
   Scenario: Configure the block on the course page to show 1 low score
-    Given I add the "Activity results" block
-    When I configure the "Activity results" block
-    And I set the following fields to these values:
-      | id_config_showbest | 0 |
-      | id_config_showworst | 1 |
-      | id_config_gradeformat | Percentages |
-      | id_config_nameformat | Display full names |
-      | id_config_decimalpoints | 0 |
-    And I press "Save changes"
+    Given I add the "Activity results" block to the default region with:
+      | config_showbest | 0 |
+      | config_showworst | 1 |
+      | config_gradeformat | Percentages |
+      | config_nameformat | Display full names |
+      | config_decimalpoints | 0 |
     Then I should see "Student 5" in the "Activity results" "block"
     And I should see "Not good enough" in the "Activity results" "block"
 
   Scenario: Try to configure the block on the course page to show multiple low scores using full names
-    Given I add the "Activity results" block
-    When I configure the "Activity results" block
-    And I set the following fields to these values:
-      | id_config_showbest | 0 |
-      | id_config_showworst | 3 |
-      | id_config_nameformat | Display full names |
-    And I press "Save changes"
+    Given I add the "Activity results" block to the default region with:
+      | config_showbest | 0 |
+      | config_showworst | 3 |
+      | config_nameformat | Display full names |
     Then I should see "Student 5" in the "Activity results" "block"
     And I should see "Not good enough" in the "Activity results" "block"
     And I should see "Student 4" in the "Activity results" "block"
@@ -88,13 +82,10 @@ Feature: The activity results block displays student low scores as scales
   Scenario: Try to configure the block on the course page to show multiple low scores using ID numbers
     Given the following config values are set as admin:
       | showuseridentity | idnumber,email |
-    And I add the "Activity results" block
-    When I configure the "Activity results" block
-    And I set the following fields to these values:
-      | id_config_showbest | 0 |
-      | id_config_showworst | 3 |
-      | id_config_nameformat | Display only ID numbers |
-    And I press "Save changes"
+    And I add the "Activity results" block to the default region with:
+      | config_showbest | 0 |
+      | config_showworst | 3 |
+      | config_nameformat | Display only ID numbers |
     Then I should see "User S5" in the "Activity results" "block"
     And I should see "Not good enough" in the "Activity results" "block"
     And I should see "User S4" in the "Activity results" "block"
@@ -103,13 +94,10 @@ Feature: The activity results block displays student low scores as scales
     And I should see "Good" in the "Activity results" "block"
 
   Scenario: Try to configure the block on the course page to show multiple low scores using anonymous names
-    Given I add the "Activity results" block
-    When I configure the "Activity results" block
-    And I set the following fields to these values:
-      | id_config_showbest | 0 |
-      | id_config_showworst | 3 |
-      | id_config_nameformat | Anonymous results |
-    And I press "Save changes"
+    Given I add the "Activity results" block to the default region with:
+      | config_showbest | 0 |
+      | config_showworst | 3 |
+      | config_nameformat | Anonymous results |
     Then I should see "User" in the "Activity results" "block"
     And I should not see "Student 5" in the "Activity results" "block"
     And I should see "Not good enough" in the "Activity results" "block"

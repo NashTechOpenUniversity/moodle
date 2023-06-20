@@ -127,7 +127,7 @@ class publicpaths extends check {
             [
                 'pattern'   => 'readme.txt',
                 '404'       => [
-                    'lib/scssphp/moodle_readme.txt',
+                    'lib/scssphp/readme_moodle.txt',
                     'mod/resource/readme.txt',
                 ],
             ],
@@ -295,7 +295,7 @@ class publicpaths extends check {
     /**
      * Link to the dev docs for more info.
      *
-     * @return action_link|null
+     * @return \action_link|null
      */
     public function get_action_link(): ?\action_link {
         return new \action_link(

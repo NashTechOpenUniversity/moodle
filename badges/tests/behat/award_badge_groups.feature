@@ -30,9 +30,7 @@ Feature: Award badges with separate groups
       | teacher1 | CB |
       | student2 | CA |
       | teacher2 | CA |
-    And I log in as "teacher1"
-    And I am on "Course 1" course homepage
-    And I navigate to "Settings" in current page administration
+    And I am on the "Course 1" "course editing" page logged in as "teacher1"
     And I expand all fieldsets
     And I set the field "Group mode" to "Separate groups"
     And I press "Save and display"
@@ -69,7 +67,8 @@ Feature: Award badges with separate groups
     # Non-editing teacher can award the badge
     And I set the field "potentialrecipients[]" to "Student 2 (student2@example.com)"
     And I press "Award badge"
-    And I follow "Manage badges"
+    And I am on "Course 1" course homepage
+    And I navigate to "Badges > Manage badges" in current page administration
     And I follow "Course Badge"
     And I should see "Recipients (1)"
     And I log out
@@ -82,8 +81,7 @@ Feature: Award badges with separate groups
   @javascript
   Scenario: Award course badge as non-editing teacher with more than one group
     Given I log in as "teacher1"
-    And I am on "Course 1" course homepage
-    And I navigate to "Users > Groups" in current page administration
+    And I am on the "Course 1" "groups" page
     And I set the field "groups" to "Class B (2)"
     And I press "Add/remove users"
     And I set the field "addselect" to "Teacher 2 (teacher2@example.com)"
@@ -107,8 +105,7 @@ Feature: Award badges with separate groups
   @javascript
   Scenario: Award course badge as non-editing teacher without any group
     Given I log in as "teacher1"
-    And I am on "Course 1" course homepage
-    And I navigate to "Users > Groups" in current page administration
+    And I am on the "Course 1" "groups" page
     And I set the field "groups" to "Class A (2)"
     And I press "Add/remove users"
     And I set the field "removeselect" to "Teacher 2 (teacher2@example.com)"

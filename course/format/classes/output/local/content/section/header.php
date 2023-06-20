@@ -24,10 +24,11 @@
 
 namespace core_courseformat\output\local\content\section;
 
+use core\output\named_templatable;
 use core_courseformat\base as course_format;
-use section_info;
+use core_courseformat\output\local\courseformat_named_templatable;
 use renderable;
-use templatable;
+use section_info;
 use stdClass;
 
 /**
@@ -37,7 +38,9 @@ use stdClass;
  * @copyright 2020 Ferran Recio <ferran@moodle.com>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class header implements renderable, templatable {
+class header implements named_templatable, renderable {
+
+    use courseformat_named_templatable;
 
     /** @var course_format the course format class */
     protected $format;
@@ -73,30 +76,29 @@ class header implements renderable, templatable {
             'id' => $section->id,
         ];
 
+        $data->title = $output->section_title_without_link($section, $course);
+
+        $coursedisplay = $format->get_course_display();
+        $data->headerdisplaymultipage = false;
+        if ($coursedisplay == COURSE_DISPLAY_MULTIPAGE) {
+            $data->headerdisplaymultipage = true;
+            $data->title = $output->section_title($section, $course);
+        }
+
         if ($section->section > $format->get_last_section_number()) {
             // Stealth sections (orphaned) has special title.
             $data->title = get_string('orphanedactivitiesinsectionno', '', $section->section);
-        } else if ($section->section && ($section->section == $format->get_section_number())) {
-            // Regular section title.
-            $data->title = $output->section_title_without_link($section, $course);
-            $data->issinglesection = true;
-        } else if ($section->uservisible) {
-            // Regular section title.
-            $data->title = $output->section_title($section, $course);
-        } else {
-            // Regular section title without link.
-            $data->title = $output->section_title_without_link($section, $course);
         }
 
         if (!$section->visible) {
             $data->ishidden = true;
         }
 
-        $coursedisplay = $course->coursedisplay ?? COURSE_DISPLAY_SINGLEPAGE;
-
         if ($course->id == SITEID) {
             $data->sitehome = true;
         }
+
+        $data->editing = $format->show_editor();
 
         if (!$format->show_editor() && $coursedisplay == COURSE_DISPLAY_MULTIPAGE && empty($data->issinglesection)) {
             if ($section->uservisible) {
@@ -104,6 +106,11 @@ class header implements renderable, templatable {
             }
         }
         $data->name = get_section_name($course, $section);
+        $data->selecttext = $format->get_format_string('selectsection', $data->name);
+
+        if (!$format->get_section_number()) {
+            $data->sectionbulk = true;
+        }
 
         return $data;
     }

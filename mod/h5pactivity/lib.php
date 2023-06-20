@@ -26,6 +26,7 @@ defined('MOODLE_INTERNAL') || die();
 
 use mod_h5pactivity\local\manager;
 use mod_h5pactivity\local\grader;
+use mod_h5pactivity\xapi\handler;
 
 /**
  * Checks if H5P activity supports a specific feature.
@@ -41,9 +42,9 @@ use mod_h5pactivity\local\grader;
  * @uses FEATURE_GRADE_OUTCOMES
  * @uses FEATURE_BACKUP_MOODLE2
  * @param string $feature FEATURE_xx constant for requested feature
- * @return mixed True if module supports feature, false if not, null if doesn't know
+ * @return mixed True if module supports feature, false if not, null if doesn't know or string for the module purpose.
  */
-function h5pactivity_supports(string $feature): ?bool {
+function h5pactivity_supports(string $feature) {
     switch($feature) {
         case FEATURE_GROUPS:
             return true;
@@ -63,6 +64,8 @@ function h5pactivity_supports(string $feature): ?bool {
             return true;
         case FEATURE_BACKUP_MOODLE2:
             return true;
+        case FEATURE_MOD_PURPOSE:
+            return MOD_PURPOSE_CONTENT;
         default:
             return null;
     }
@@ -141,6 +144,19 @@ function h5pactivity_delete_instance(int $id): bool {
     $activity = $DB->get_record('h5pactivity', ['id' => $id]);
     if (!$activity) {
         return false;
+    }
+
+    if ($cm = get_coursemodule_from_instance('h5pactivity', $activity->id)) {
+        $context = context_module::instance($cm->id);
+        $xapihandler = handler::create('mod_h5pactivity');
+        $xapihandler->wipe_states($context->id);
+    }
+
+    // Remove activity record, and all associated attempt data.
+    $attemptids = $DB->get_fieldset_select('h5pactivity_attempts', 'id', 'h5pactivityid = ?', [$id]);
+    if ($attemptids) {
+        $DB->delete_records_list('h5pactivity_attempts_results', 'attemptid', $attemptids);
+        $DB->delete_records_list('h5pactivity_attempts', 'id', $attemptids);
     }
 
     $DB->delete_records('h5pactivity', ['id' => $id]);
@@ -233,7 +249,7 @@ function h5pactivity_rescale_activity_grades(stdClass $course, stdClass $cm, flo
  * Implementation of the function for printing the form elements that control
  * whether the course reset functionality affects the H5P activity.
  *
- * @param object $mform form passed by reference
+ * @param MoodleQuickForm $mform form passed by reference
  */
 function h5pactivity_reset_course_form_definition(&$mform): void {
     $mform->addElement('header', 'h5pactivityheader', get_string('modulenameplural', 'mod_h5pactivity'));
@@ -268,6 +284,7 @@ function h5pactivity_reset_userdata(stdClass $data): array {
         $params = ['courseid' => $data->courseid];
         $sql = "SELECT a.id FROM {h5pactivity} a WHERE a.course=:courseid";
         if ($activities = $DB->get_records_sql($sql, $params)) {
+            $xapihandler = handler::create('mod_h5pactivity');
             foreach ($activities as $activity) {
                 $cm = get_coursemodule_from_instance('h5pactivity',
                                                      $activity->id,
@@ -275,6 +292,8 @@ function h5pactivity_reset_userdata(stdClass $data): array {
                                                      false,
                                                      MUST_EXIST);
                 mod_h5pactivity\local\attempt::delete_all_attempts ($cm);
+                $context = context_module::instance($cm->id);
+                $xapihandler->wipe_states($context->id);
             }
         }
         // Remove all grades from gradebook.
@@ -725,7 +744,7 @@ function h5pactivity_print_recent_mod_activity(stdClass $activity, int $courseid
     if ($detail) {
         $modinfo['modname'] = $activity->name;
         $modinfo['modurl'] = new moodle_url('/mod/h5pactivity/view.php', ['id' => $activity->cmid]);
-        $modinfo['modicon'] = $OUTPUT->image_icon('icon', $modnames[$activity->type], 'h5pactivity');
+        $modinfo['modicon'] = $OUTPUT->image_icon('monologo', $modnames[$activity->type], 'h5pactivity');
     }
 
     $userpicture = $OUTPUT->user_picture($activity->user);
@@ -806,7 +825,7 @@ function h5pactivity_fetch_recent_activity(array $submissions, int $courseid) : 
 
             if (!isset($usersgroups[$cm->groupingid][$submission->userid])) {
                 $usersgroups[$cm->groupingid][$submission->userid] =
-                    groups_get_all_groups($course->id, $submission->userid, $cm->groupingid);
+                    groups_get_all_groups($course->id, $submission->userid, $cm->groupingid, 'g.*', false, true);
             }
 
             if (is_array($usersgroups[$cm->groupingid][$submission->userid])) {
@@ -835,18 +854,19 @@ function h5pactivity_fetch_recent_activity(array $submissions, int $courseid) : 
  */
 function h5pactivity_extend_settings_navigation(settings_navigation $settingsnav,
         navigation_node $h5pactivitynode = null) {
-    global $PAGE, $USER;
+    global $USER;
 
-    $manager = manager::create_from_coursemodule($PAGE->cm);
+    $manager = manager::create_from_coursemodule($settingsnav->get_page()->cm);
 
     // Attempts report.
     if ($manager->can_view_all_attempts()) {
-        $attemptsreporturl = new moodle_url('/mod/h5pactivity/report.php', ['a' => $PAGE->cm->instance]);
+        $attemptsreporturl = new moodle_url('/mod/h5pactivity/report.php',
+            ['a' => $settingsnav->get_page()->cm->instance]);
         $h5pactivitynode->add(get_string('attempts_report', 'h5pactivity'), $attemptsreporturl,
             settings_navigation::TYPE_SETTING, '', 'attemptsreport');
     } else if ($manager->can_view_own_attempts() && $manager->count_attempts($USER->id)) {
         $attemptsreporturl = new moodle_url('/mod/h5pactivity/report.php',
-            ['a' => $PAGE->cm->instance, 'userid' => $USER->id]);
+            ['a' => $settingsnav->get_page()->cm->instance, 'userid' => $USER->id]);
         $h5pactivitynode->add(get_string('attempts_report', 'h5pactivity'), $attemptsreporturl,
             settings_navigation::TYPE_SETTING, '', 'attemptsreport');
     }

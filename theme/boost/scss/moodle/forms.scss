@@ -27,6 +27,9 @@
     .custom-select {
         max-width: 100%;
     }
+    textarea.form-control {
+        width: 100%;
+    }
     .form-group {
         margin: 0.1rem 0.25rem 0.1rem 0;
     }
@@ -47,16 +50,12 @@
 }
 
 .mform fieldset {
-    margin-bottom: $spacer / 2;
+    margin-bottom: $spacer * 0.5;
     border-bottom: $border-width solid $table-border-color;
 }
 
 #adminsettings .form-control[size] {
     width: auto;
-}
-
-.jsenabled .mform .collapsed .fcontainer {
-    display: none;
 }
 
 #adminsettings .error {
@@ -265,7 +264,7 @@ fieldset.coursesearchbox label {
     vertical-align: bottom;
 }
 .form-autocomplete-selection {
-    margin: $input-padding-y-sm;
+    margin: $input-padding-y-sm 0;
     // Padding top and bottom, plus mb-1 and the 100% lineheight.
     min-height: 2 * $input-padding-y-sm + 2 * $font-size-base;
 }
@@ -287,7 +286,7 @@ fieldset.coursesearchbox label {
     overflow: auto;
     margin: $dropdown-spacer 0 0;
     padding: $dropdown-padding-y 0;
-    z-index: 1;
+    z-index: 2;
 }
 
 .form-autocomplete-suggestions li {
@@ -328,8 +327,7 @@ fieldset.coursesearchbox label {
 }
 
 .form-autocomplete-selection [data-active-selection=true] {
-    padding: 0.5em;
-    font-size: large;
+    box-shadow: $input-btn-focus-box-shadow;
 }
 
 select.form-control {
@@ -414,7 +412,7 @@ textarea[data-auto-rows] {
     @include border-radius($card-border-radius);
     border: $card-border-width solid $card-border-color;
     padding: $card-spacer-x;
-    margin-left: $grid-gutter-width / 2;
+    margin-left: $grid-gutter-width * 0.5;
     max-width: 30rem;
 }
 
@@ -438,23 +436,13 @@ textarea[data-auto-rows] {
     flex-grow: 1;
 }
 
-@include media-breakpoint-up(sm) {
-    .mform fieldset.collapsible legend a.fheader {
-        padding: 0 5px 0 ($spacer * 1.5);
-        background: url([[pix:t/expanded]]) 0 center no-repeat;
-    }
-
-    .mform fieldset.collapsed legend a.fheader {
-        /*rtl:raw:
-        background-image: url([[pix:t/collapsed_rtl]]);
-        */
-        /*rtl:remove*/
-        background-image: url([[pix:t/collapsed]]);
-    }
-    .mform fieldset.collapsible .col-form-label {
+@include media-breakpoint-up(md) {
+    .mform fieldset .fcontainer.collapseable .col-form-label {
         padding-left: ($spacer * 2.5);
     }
+}
 
+@include media-breakpoint-up(sm) {
     .mform {
         .form-inline {
             .fdefaultcustom {
@@ -462,6 +450,26 @@ textarea[data-auto-rows] {
                     justify-content: initial;
                 }
             }
+        }
+    }
+}
+
+.collapsemenu {
+    .collapseall {
+        display: block;
+    }
+
+    .expandall {
+        display: none;
+    }
+
+    &.collapsed {
+        .collapseall {
+            display: none;
+        }
+
+        .expandall {
+            display: block;
         }
     }
 }

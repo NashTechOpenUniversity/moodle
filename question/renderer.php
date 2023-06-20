@@ -48,7 +48,7 @@ class core_question_bank_renderer extends plugin_renderer_base {
                 foreach ($children as $key => $node) {
                     $tabs[] = new \tabobject($node->key, $node->action, $node->text);
                 }
-                if (empty($active)) {
+                if (empty($active) && $questionnode->find_active_node()) {
                     $active = $questionnode->find_active_node()->key;
                 }
                 return \html_writer::div(print_tabs([$tabs], $active, null, null, true),
@@ -147,13 +147,26 @@ class core_question_bank_renderer extends plugin_renderer_base {
     }
 
     /**
-     * Render question showtext checkbox.
+     * Render the showtext option.
+     *
+     * It's not a checkbox any more! [Name your API after the purpose, not the implementation!]
+     *
+     * @param array $displaydata
+     * @return string
+     */
+    public function render_showtext_checkbox($displaydata) {
+        return $this->render_from_template('core_question/showtext_option',
+                ['selected' . $displaydata['checked'] => true]);
+    }
+
+    /**
+     * Render bulk actions ui.
      *
      * @param array $displaydata
      * @return bool|string
      */
-    public function render_showtext_checkbox($displaydata) {
-        return $this->render_from_template('core_question/showtext_checkbox', $displaydata);
+    public function render_bulk_actions_ui($displaydata) {
+        return $this->render_from_template('core_question/bulk_actions_ui', $displaydata);
     }
 
     /**

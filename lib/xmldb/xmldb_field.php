@@ -90,7 +90,7 @@ class xmldb_field extends xmldb_object {
      * @param bool $notnull XMLDB_NOTNULL or null (or false)
      * @param bool $sequence XMLDB_SEQUENCE or null (or false)
      * @param mixed $default meaningful default o null (or false)
-     * @param xmldb_object $previous
+     * @param string $previous
      */
     public function __construct($name, $type=null, $precision=null, $unsigned=null, $notnull=null, $sequence=null, $default=null, $previous=null) {
         $this->type = null;
@@ -112,28 +112,30 @@ class xmldb_field extends xmldb_object {
      * @param bool $notnull XMLDB_NOTNULL or null (or false)
      * @param bool $sequence XMLDB_SEQUENCE or null (or false)
      * @param mixed $default meaningful default o null (or false)
-     * @param xmldb_object $previous
+     * @param string $previous
      */
     public function set_attributes($type, $precision=null, $unsigned=null, $notnull=null, $sequence=null, $default=null, $previous=null) {
         $this->type = $type;
-    /// Try to split the precision into length and decimals and apply
-    /// each one as needed
-        $precisionarr = explode(',', $precision);
-        if (isset($precisionarr[0])) {
-            $this->length = trim($precisionarr[0]);
+
+        // LOBs (BINARY OR TEXT) don't support any precision (neither length or decimals).
+        if ($type == XMLDB_TYPE_BINARY || $this->type == XMLDB_TYPE_TEXT) {
+            $this->length = null;
+            $this->decimals = null;
+
+        } else if (!is_null($precision)) {
+            // Try to split the not null precision into length and decimals and apply each one as needed.
+            $precisionarr = explode(',', $precision);
+            if (isset($precisionarr[0])) {
+                $this->length = trim($precisionarr[0]);
+            }
+            if (isset($precisionarr[1])) {
+                $this->decimals = trim($precisionarr[1]);
+            }
         }
-        if (isset($precisionarr[1])) {
-            $this->decimals = trim($precisionarr[1]);
-        }
-        $this->precision = $type;
+
         $this->notnull = !empty($notnull) ? true : false;
         $this->sequence = !empty($sequence) ? true : false;
         $this->setDefault($default);
-
-        if ($this->type == XMLDB_TYPE_BINARY || $this->type == XMLDB_TYPE_TEXT) {
-            $this->length = null;
-            $this->decimals = null;
-        }
 
         $this->previous = $previous;
     }
@@ -523,7 +525,7 @@ class xmldb_field extends xmldb_object {
             $o.= ' DECIMALS="' . $this->decimals . '"';
         }
         if ($this->comment) {
-            $o.= ' COMMENT="' . htmlspecialchars($this->comment) . '"';
+            $o.= ' COMMENT="' . htmlspecialchars($this->comment, ENT_COMPAT) . '"';
         }
         $o.= '/>' . "\n";
 
@@ -533,7 +535,7 @@ class xmldb_field extends xmldb_object {
     /**
      * This function will set all the attributes of the xmldb_field object
      * based on information passed in one ADOField
-     * @param string $adofield
+     * @param database_column_info $adofield
      * @return void, sets $this->type
      */
     public function setFromADOField($adofield) {
