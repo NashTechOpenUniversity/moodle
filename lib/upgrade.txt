@@ -5,6 +5,13 @@ information provided here is intended especially for developers.
 
 * The `html_writer::select_time` method has a `$timezone` parameter to use when formatting the time parameter
 * New Behat `heading` named selector to more easily assert the presence of H1-H6 elements on the page
+* The users_search_sql function has been improved to add 1 new optional parameters so that we can improve the search query performance for custom profile fields.
+  object $userfieldssql Object with necessary SQL components for custom profile fields
+  included $userfieldssql->joins, $userfieldssql->mappings, $userfieldssql->params, $userfieldssql->selects
+  users_search_sql function will return two additional elements which is contain
+  a fragment of SQL to go  in the join clause of the query - Which will be empty if we don't use custom profile field showuseridentity config.
+  an associative array containing any required parameters (using named placeholders) - Which will be empty if we don't use custom profile field showuseridentity config.
+  See MDL-77742 for further information
 
 === 4.2.5 ===
 
