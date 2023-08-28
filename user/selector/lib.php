@@ -501,7 +501,8 @@ abstract class user_selector_base {
             : $this->extrafields;
 
         return users_search_sql($search, $u, $this->searchanywhere, $extrafields,
-                $this->exclude, $this->validatinguserids);
+                $this->exclude, $this->validatinguserids, $this->userfieldsmappings,
+                $this->userfieldsjoin, $this->userfieldsparams);
     }
 
     /**
