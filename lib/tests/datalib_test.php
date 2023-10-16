@@ -195,14 +195,14 @@ class datalib_test extends \advanced_testcase {
 
         // Get user 1 base on cf 1.
         [$sql, $params] = users_search_sql('user1', 'u', true, array_values($cfdmapping),
-            [], [], $cfdmapping,  $cfjoins, $cfparams);
+            [], [], $userfieldssql);
         $params = array_merge($cfparams, $params);
         $results = $DB->get_records_sql("SELECT u.id FROM {user} u $cfjoins WHERE $sql", $params);
         $this->assertTrue(array_key_exists($user1->id, $results));
         $this->assertCount(1, $results);
         // Get user 2 base on cf 2.
         [$sql, $params] = users_search_sql('userid2sid2', 'u', false , array_values($cfdmapping),
-            [], [], $cfdmapping, $cfjoins, $cfparams);
+            [], [], $userfieldssql);
         $params = array_merge($cfparams, $params);
         $results = $DB->get_records_sql("SELECT u.id FROM {user} u $cfjoins WHERE $sql", $params);
         $this->assertTrue(array_key_exists($user2->id, $results));

@@ -10,10 +10,9 @@ information provided here is intended especially for developers.
 * New Behat step \behat_general::the_page_title_should_contain() has been added to allow checking of page titles. You can use this
   when writing feature files to check that the page title contains the expected string.
   e.g. `And the page title should contain "Some title"`
-* The users_search_sql function has been improved to add 3 new optional parameters so that we can improve the search query performance for custom profile fields.
-  array $customfieldmappings. Ex: ['profile_field_frog' => 'uf1d_3.data']
-  string $customfieldjoin. The join sql string to get data from custom profile fields.
-  array $customfieldparams. Ex: ['paramnamed' => 'value']
+* The users_search_sql function has been improved to add 1 new optional parameters so that we can improve the search query performance for custom profile fields.
+  object $userfieldssql Object with necessary SQL components for custom profile fields
+  included $userfieldssql->joins, $userfieldssql->mappings, $userfieldssql->params, $userfieldssql->selects
 
 === 4.2.2 ===
 * Added a new render of caption for the table in render_caption. It can be used by

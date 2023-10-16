@@ -138,8 +138,7 @@ class helper {
         }
         $params = array();
         if (!empty($search)) {
-            list($filtersql, $params) = users_search_sql($search, 'u', true, $extrafields, null, null,
-                $userfieldssql->mappings, $userfieldssql->joins, $userfieldssql->params);
+            [$filtersql, $params] = users_search_sql($search, 'u', true, $extrafields, null, null, $userfieldssql);
             $filtersql .= ' AND ';
         } else {
             $filtersql = '';

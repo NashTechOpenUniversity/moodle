@@ -223,17 +223,14 @@ function search_users($courseid, $groupid, $searchtext, $sort='', array $excepti
  * @param array $exclude Array of user ids to exclude (empty = don't exclude)
  * @param array $includeonly If specified, only returns users that have ids
  *     incldued in this array (empty = don't restrict)
- * @param array $customfieldmappings It is an associative array. Ex: ['profile_field_frog' => 'uf1d_3.data']
- * @param string $customfieldjoin the join sql string to get the custom profile fields.
- * @param array $customfieldparams cointain the all the values for the named params in the $customfieldjoin.
- *     Ex: ['paramnamed' => 'value']
+ * @param \stdClass $userfieldssql Object with necessary SQL components for custom profile fields
+ *     included  $userfieldssql->joins, $userfieldssql->mappings, $userfieldssql->params, $userfieldssql->selects
  * @return array an array with two elements, a fragment of SQL to go in the
  *     where clause the query, and an associative array containing any required
  *     parameters (using named placeholders).
  */
 function users_search_sql(string $search, string $u = 'u', bool $searchanywhere = true, array $extrafields = [],
-        array $exclude = null, array $includeonly = null,
-        array $customfieldmappings = [], string $customfieldjoin = '', array $customfieldparams = []): array {
+        array $exclude = null, array $includeonly = null, stdClass $userfieldssql = null): array {
     global $DB, $CFG;
     $params = array();
     $tests = array();
@@ -253,61 +250,61 @@ function users_search_sql(string $search, string $u = 'u', bool $searchanywhere 
             // Add the table alias for the user table if the field doesn't already have an alias.
             $conditions[] = strpos($field, '.') !== false ? $field : $u . $field;
         }
-        $cpfields = [];
-        $userfields = [];
-        // The $customfieldmappings is an associative array from each field
-        // name to an SQL expression for the value of that field, e.g.:
-        // 'profile_field_frog' => 'uf1d_3.data'
-        // 'city' => 'u.city'
-        // We want to use shortname profile fields in a WHERE clause.
-        // So we separate user fields and custom profile fields in two different array.
-        foreach ($customfieldmappings as $fieldname => $selecfield) {
-            if (preg_match(\core_user\fields::PROFILE_FIELD_REGEX, $fieldname, $matches)) {
-                $shortname = $matches[1];
-                $cpfields[$shortname] = $selecfield;
-            } else {
-                $userfields[] = $selecfield;
-            }
-        }
         if ($searchanywhere) {
             $searchparam = '%' . $search . '%';
         } else {
             $searchparam = $search . '%';
         }
-        // Build a where sql to get list of user with custom profile fields in advance.
-        // If we have include custom profile in the selected fields.
-        if ($cpfields && $customfieldjoin && $customfieldparams) {
-            $userfieldconditions = [];
-            $cpfieldconditions = [];
-            $whereparams = [];
-            $i = 0;
-            foreach ($conditions as $key => $condition) {
-                if (in_array($condition, $cpfields)) {
-                    $cpfieldconditions[$key] = $DB->sql_like($condition, ":wherecon{$i}00", false, false);
+        if ($userfieldssql) {
+            $cpfields = [];
+            $userfields = [];
+            // The $userfieldssql->mappings is an associative array from each field
+            // name to an SQL expression for the value of that field, e.g.:
+            // 'profile_field_frog' => 'uf1d_3.data'
+            // 'city' => 'u.city'
+            // So we separate user fields and custom profile fields in two different array.
+            foreach ($userfieldssql->mappings as $fieldname => $selecfield) {
+                if (preg_match(\core_user\fields::PROFILE_FIELD_REGEX, $fieldname, $matches)) {
+                    $shortname = $matches[1];
+                    $cpfields[$shortname] = $selecfield;
                 } else {
-                    $userfieldconditions[$key] = $DB->sql_like($condition, ":wherecon{$i}00", false, false);
+                    $userfields[] = $selecfield;
                 }
-                $whereparams["wherecon{$i}00"] = $searchparam;
-                $i++;
             }
-            // Add the prefix to named params for cpf.
-            foreach ($customfieldparams as $key => $param) {
-                $whereparams["cpf$key"] = $param;
-                $customfieldjoin = str_replace($key, "cpf$key", $customfieldjoin);
-            }
+            // Build a where sql to get list of user with custom profile fields in advance.
+            // If we have include custom profile in the selected fields.
+            if ($cpfields) {
+                $userfieldconditions = [];
+                $cpfieldconditions = [];
+                $whereparams = [];
+                $i = 0;
+                foreach ($conditions as $key => $condition) {
+                    if (in_array($condition, $cpfields)) {
+                        $cpfieldconditions[$key] = $DB->sql_like($condition, ":wherecon{$i}00", false, false);
+                    } else {
+                        $userfieldconditions[$key] = $DB->sql_like($condition, ":wherecon{$i}00", false, false);
+                    }
+                    $whereparams["wherecon{$i}00"] = $searchparam;
+                    $i++;
+                }
+                // Add the prefix to named params for cpf.
+                $customfieldjoin = $userfieldssql->joins;
+                foreach ($userfieldssql->params as $key => $param) {
+                    $whereparams["cpf$key"] = $param;
+                    $customfieldjoin = str_replace($key, "cpf$key", $customfieldjoin);
+                }
+                // Add some additional sensible conditions for user fields.
+                $userfieldwhere = '(' . implode(' OR ', $userfieldconditions) . ')';
+                $userfieldwhere .= " AND {$u}id <> :ufguestid AND {$u}deleted = 0 AND {$u}confirmed = 1 ";
+                $whereparams['ufguestid'] = $CFG->siteguest;
 
-            // Add some additional sensible conditions for user fields.
-            $userfieldwhere = '(' . implode(' OR ', $userfieldconditions) . ')';
-            $userfieldwhere .= " AND {$u}id <> :ufguestid AND {$u}deleted = 0 AND {$u}confirmed = 1 ";
-            $whereparams['ufguestid'] = $CFG->siteguest;
+                // Add some additional sensible conditions for custom profile field.
+                $cpfieldwhere = '(' . implode(' OR ', $cpfieldconditions) . ')';
+                $cpfieldwhere .= " AND {$u}id <> :cpfguestid AND {$u}deleted = 0 AND {$u}confirmed = 1 ";
+                $whereparams['cpfguestid'] = $CFG->siteguest;
 
-            // Add some additional sensible conditions for custom profile field.
-            $cpfieldwhere = '(' . implode(' OR ', $cpfieldconditions) . ')';
-            $cpfieldwhere .= " AND {$u}id <> :cpfguestid AND {$u}deleted = 0 AND {$u}confirmed = 1 ";
-            $whereparams['cpfguestid'] = $CFG->siteguest;
-
-            // Full sql where condition and params to get  list of user id in advance so that we can improve perf for searching.
-            $customprofilefieldsql = "{$u}id IN (SELECT {$u}id
+                // Full sql where condition and params to get  list of user id in advance so that we can improve perf for searching.
+                $customprofilefieldsql = "{$u}id IN (SELECT {$u}id
                                      FROM {user} $tablealias
                                     WHERE $userfieldwhere
                                     UNION
@@ -316,7 +313,8 @@ function users_search_sql(string $search, string $u = 'u', bool $searchanywhere 
                                           $customfieldjoin
                                     WHERE $cpfieldwhere
                                    ) AND ";
-            $params = array_merge($params, $whereparams);
+                $params = array_merge($params, $whereparams);
+            }
         }
 
         $i = 0;
