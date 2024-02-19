@@ -90,7 +90,7 @@ Feature: Preview a quiz as a teacher
     And quiz "Quiz 3" contains the following questions:
       | question         | page |
       | Multi-choice-002 | 1    |
-    And I am on the "Quiz 3" "mod_quiz > View" page logged in as "teacher"
+    When I am on the "Quiz 3" "mod_quiz > View" page logged in as "teacher"
     And I press "Preview quiz"
     And I should see "one_of_four"
     And I should see "v1 (latest)"

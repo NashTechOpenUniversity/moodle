@@ -153,10 +153,11 @@ class attempt_walkthrough_test extends \advanced_testcase {
         $newsa = $questiongenerator->update_question($saq, null, ['name' => 'This is the second version of shortanswer']);
         $newnumbq = $questiongenerator->update_question($numq, null, ['name' => 'This is the second version of numerical']);
         $newmatch = $questiongenerator->update_question($matchq, null, ['name' => 'This is the second version of match']);
-        $newdescription = $questiongenerator->update_question($description, null, ['name' => 'This is the second version of description']);
+        $newdescription = $questiongenerator->update_question($description, null,
+            ['name' => 'This is the second version of description']);
 
         // Update the attempt to use this questions.
-        // (Would not normally be done for a non-preview, but this is just a unit test.)
+        // (Would not normally be done for a non-preview, but this is just a unit test.).
         $attemptobj->update_questions_to_new_version_if_changed();
 
         // Verify.
