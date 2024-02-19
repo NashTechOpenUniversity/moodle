@@ -214,7 +214,7 @@ Feature: Attempt a quiz
   @javascript
   Scenario: Student still sees the same version after the question is edited.
     Given I am on the "Quiz 1" "mod_quiz > View" page logged in as "student"
-    And I press "Attempt quiz"
+    When I press "Attempt quiz"
     And I should see "First question"
     And I click on "False" "radio" in the "First question" "question"
     And I press "Finish attempt ..."
