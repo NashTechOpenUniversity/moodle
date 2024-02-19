@@ -19,6 +19,8 @@ namespace mod_quiz\local\reports;
 use context;
 use context_module;
 use stdClass;
+//use \core_grades\output\action_bar;
+use \mod_quiz\output\action_bar;
 
 /**
  * Base class for quiz report plugins.
@@ -92,5 +94,15 @@ abstract class report_base {
         }
 
         return $currentgroup;
+    }
+
+    public function print_action_bar($reportmode, $url) {
+        global $PAGE, $OUTPUT, $CFG;
+        // Print the page header.
+        $renderer = $PAGE->get_renderer('gradereport_grader', 'report');
+        $renderer->setReportType($reportmode);
+        $actionbar = new action_bar($PAGE->context);
+        $actionbar->setBaseURL($url);
+        echo $renderer->render_action_bar($actionbar);
     }
 }
