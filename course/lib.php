@@ -400,7 +400,7 @@ function course_integrity_check($courseid, $rawmods = null, $sections = null, $f
 function get_module_types_names($plural = false, $resetcache = false) {
     static $modnames = null;
     global $DB, $CFG;
-    if ($modnames === null || $resetcache) {
+    if ($modnames === null || empty($modnames[0]) || $resetcache) {
         $modnames = array(0 => array(), 1 => array());
         if ($allmods = $DB->get_records("modules")) {
             foreach ($allmods as $mod) {
@@ -2484,6 +2484,11 @@ function update_course($data, $editoroptions = NULL) {
         // 'course_updated' and in method format_XXX::update_course_format_options()
         $DB->delete_records('course_format_options',
                 array('courseid' => $course->id, 'format' => $oldcourse->format));
+    }
+
+    // Delete theme usage cache if the theme has been changed.
+    if (isset($data->theme) && ($data->theme != $oldcourse->theme)) {
+        theme_delete_used_in_context_cache($data->theme, $oldcourse->theme);
     }
 }
 
@@ -5078,4 +5083,23 @@ function course_get_communication_instance_data(int $courseid): array {
 function course_update_communication_instance_data(stdClass $data): void {
     $data->id = $data->instanceid; // For correct use in update_course.
     update_course($data);
+}
+
+/**
+ * Trigger course section viewed event.
+ *
+ * @param context_course $context course context object
+ * @param int $sectionid section number
+ * @since Moodle 4.4.
+ */
+function course_section_view(context_course $context, int $sectionid) {
+
+    $eventdata = [
+        'objectid' => $sectionid,
+        'context' => $context,
+    ];
+    $event = \core\event\section_viewed::create($eventdata);
+    $event->trigger();
+
+    user_accesstime_log($context->instanceid);
 }

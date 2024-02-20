@@ -23619,76 +23619,9 @@ table.mod_index {
 /**
 * Tags
 */
-img.user-image {
-  height: 100px;
-  width: 100px;
-}
-
 #tag-search-box {
   text-align: center;
   margin: 10px auto;
-}
-
-.path-tag .tag-index-items .tagarea {
-  border: 1px solid #e3e3e3;
-  border-radius: 4px;
-  padding: 10px;
-  margin-top: 10px;
-}
-
-.path-tag .tag-index-items .tagarea h3 {
-  display: block;
-  padding: 3px 0 10px 0;
-  margin: 0;
-  font-size: 1.1em;
-  font-weight: bold;
-  line-height: 20px;
-  color: #999;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
-  text-transform: uppercase;
-  word-wrap: break-word;
-  border-bottom: solid 1px #e3e3e3;
-  margin-bottom: 10px;
-}
-
-.path-tag .tagarea .controls::after,
-.path-tag .tagarea .taggeditems::after {
-  display: block;
-  clear: both;
-  content: "";
-}
-
-.path-tag .tagarea .controls,
-.path-tag .tag-backtoallitems {
-  text-align: center;
-}
-
-.path-tag .tagarea .controls .gotopage.nextpage {
-  float: right;
-}
-
-.path-tag .tagarea .controls .gotopage.prevpage {
-  float: left;
-}
-
-.path-tag .tagarea .controls .exclusivemode {
-  display: inline-block;
-}
-
-.path-tag .tagarea .controls.controls-bottom {
-  margin-top: 5px;
-}
-
-.path-tag .tagarea .controls .gotopage.nextpage::after {
-  padding-right: 5px;
-  padding-left: 5px;
-  content: "»";
-}
-
-.path-tag .tagarea .controls .gotopage.prevpage::before {
-  padding-right: 5px;
-  padding-left: 5px;
-  content: "«";
 }
 
 span.flagged-tag,
@@ -23703,7 +23636,6 @@ tr.flagged-tag a {
   vertical-align: middle;
   padding: 4px;
 }
-
 .tag-management-table .inplaceeditable.inplaceeditingon input {
   width: 150px;
 }
@@ -23718,49 +23650,101 @@ tr.flagged-tag a {
 .path-tag .tag-relatedtags {
   padding-top: 10px;
 }
-
 .path-tag .tag-management-box {
   text-align: right;
 }
-
 .path-tag .tag-index-toc {
   padding: 10px;
   text-align: center;
 }
-
-.path-tag .tag-index-toc li,
+.path-tag .tag-index-toc li {
+  margin-left: 5px;
+  margin-right: 5px;
+}
 .path-tag .tag-management-box li {
   margin-left: 5px;
   margin-right: 5px;
 }
-
-.path-tag .tag-management-box li a.edittag {
-  background-image: url([[pix:moodle|i/settings]]);
-}
-
-.path-tag .tag-management-box li a.flagasinappropriate {
-  background-image: url([[pix:moodle|i/flagged]]);
-}
-
-.path-tag .tag-management-box li a.removefrommyinterests {
-  background-image: url([[pix:moodle|t/delete]]);
-}
-
-.path-tag .tag-management-box li a.addtomyinterests {
-  background-image: url([[pix:moodle|t/add]]);
-}
-
 .path-tag .tag-management-box li a {
   background-repeat: no-repeat;
   background-position: left;
   padding-left: 17px;
+}
+.path-tag .tag-management-box li a.edittag {
+  background-image: url([[pix:moodle|i/settings]]);
+}
+.path-tag .tag-management-box li a.flagasinappropriate {
+  background-image: url([[pix:moodle|i/flagged]]);
+}
+.path-tag .tag-management-box li a.removefrommyinterests {
+  background-image: url([[pix:moodle|t/delete]]);
+}
+.path-tag .tag-management-box li a.addtomyinterests {
+  background-image: url([[pix:moodle|t/add]]);
+}
+.path-tag .tag-backtoallitems {
+  text-align: center;
+}
+.path-tag .tag-index-items .tagarea {
+  border: 1px solid #e3e3e3;
+  border-radius: 4px;
+  padding: 10px;
+  margin-top: 10px;
+}
+.path-tag .tag-index-items .tagarea h3 {
+  display: block;
+  padding: 3px 0 10px 0;
+  margin: 0;
+  font-size: 1.1em;
+  font-weight: bold;
+  line-height: 20px;
+  color: #999;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  word-wrap: break-word;
+  border-bottom: solid 1px #e3e3e3;
+  margin-bottom: 10px;
+}
+.path-tag .tag-index-items .tagarea .taggeditems::after {
+  display: block;
+  clear: both;
+  content: "";
+}
+.path-tag .tag-index-items .tagarea .controls {
+  text-align: center;
+}
+.path-tag .tag-index-items .tagarea .controls::after {
+  display: block;
+  clear: both;
+  content: "";
+}
+.path-tag .tag-index-items .tagarea .controls.controls-bottom {
+  margin-top: 5px;
+}
+.path-tag .tag-index-items .tagarea .controls .gotopage.nextpage {
+  float: right;
+}
+.path-tag .tag-index-items .tagarea .controls .gotopage.prevpage {
+  float: left;
+}
+.path-tag .tag-index-items .tagarea .controls .exclusivemode {
+  display: inline-block;
+}
+.path-tag .tag-index-items .tagarea .controls .gotopage.prevpage::before {
+  padding-right: 5px;
+  padding-left: 5px;
+  content: "«";
+}
+.path-tag .tag-index-items .tagarea .controls .gotopage.nextpage::after {
+  padding-right: 5px;
+  padding-left: 5px;
+  content: "»";
 }
 
 .tag_feed img {
   max-height: 35px;
   max-width: 35px;
 }
-
 .tag_feed .muted a {
   color: #6a737b;
 }
@@ -23768,116 +23752,89 @@ tr.flagged-tag a {
 .tag_cloud {
   text-align: center;
 }
-
 .tag_cloud .inline-list li {
   padding: 0 0.2em;
 }
-
 .tag_cloud .tag_overflow {
   margin-top: 1em;
   font-style: italic;
 }
-
-.tag_cloud .s20 {
-  font-size: 2.7em;
+.tag_cloud .s0 {
+  font-size: 0.7em;
 }
-
-.tag_cloud .s19 {
-  font-size: 2.6em;
-}
-
-.tag_cloud .s18 {
-  font-size: 2.5em;
-}
-
-.tag_cloud .s17 {
-  font-size: 2.4em;
-}
-
-.tag_cloud .s16 {
-  font-size: 2.3em;
-}
-
-.tag_cloud .s15 {
-  font-size: 2.2em;
-}
-
-.tag_cloud .s14 {
-  font-size: 2.1em;
-}
-
-.tag_cloud .s13 {
-  font-size: 2em;
-}
-
-.tag_cloud .s12 {
-  font-size: 1.9em;
-}
-
-.tag_cloud .s11 {
-  font-size: 1.8em;
-}
-
-.tag_cloud .s10 {
-  font-size: 1.7em;
-}
-
-.tag_cloud .s9 {
-  font-size: 1.6em;
-}
-
-.tag_cloud .s8 {
-  font-size: 1.5em;
-}
-
-.tag_cloud .s7 {
-  font-size: 1.4em;
-}
-
-.tag_cloud .s6 {
-  font-size: 1.3em;
-}
-
-.tag_cloud .s5 {
-  font-size: 1.2em;
-}
-
-.tag_cloud .s4 {
-  font-size: 1.1em;
-}
-
-.tag_cloud .s3 {
-  font-size: 1em;
-}
-
-.tag_cloud .s2 {
-  font-size: 0.9em;
-}
-
 .tag_cloud .s1 {
   font-size: 0.8em;
 }
-
-.tag_cloud .s0 {
-  font-size: 0.7em;
+.tag_cloud .s2 {
+  font-size: 0.9em;
+}
+.tag_cloud .s3 {
+  font-size: 1em;
+}
+.tag_cloud .s4 {
+  font-size: 1.1em;
+}
+.tag_cloud .s5 {
+  font-size: 1.2em;
+}
+.tag_cloud .s6 {
+  font-size: 1.3em;
+}
+.tag_cloud .s7 {
+  font-size: 1.4em;
+}
+.tag_cloud .s8 {
+  font-size: 1.5em;
+}
+.tag_cloud .s9 {
+  font-size: 1.6em;
+}
+.tag_cloud .s10 {
+  font-size: 1.7em;
+}
+.tag_cloud .s11 {
+  font-size: 1.8em;
+}
+.tag_cloud .s12 {
+  font-size: 1.9em;
+}
+.tag_cloud .s13 {
+  font-size: 2em;
+}
+.tag_cloud .s14 {
+  font-size: 2.1em;
+}
+.tag_cloud .s15 {
+  font-size: 2.2em;
+}
+.tag_cloud .s16 {
+  font-size: 2.3em;
+}
+.tag_cloud .s17 {
+  font-size: 2.4em;
+}
+.tag_cloud .s18 {
+  font-size: 2.5em;
+}
+.tag_cloud .s19 {
+  font-size: 2.6em;
+}
+.tag_cloud .s20 {
+  font-size: 2.7em;
 }
 
 .tag_list ul {
   display: inline;
 }
-
-.tag_list.hideoverlimit .overlimit {
-  display: none;
-}
-
 .tag_list .tagmorelink {
   display: none;
 }
-
+.tag_list.hideoverlimit .overlimit {
+  display: none;
+}
 .tag_list.hideoverlimit .tagmorelink {
   display: inline;
 }
-
 .tag_list.hideoverlimit .taglesslink {
   display: none;
 }
@@ -27951,11 +27908,6 @@ table.calendartable caption {
   clear: both;
 }
 
-.section-modchooser {
-  clear: both;
-  margin-top: 0.25rem;
-}
-
 .block_tree .tree_item.branch {
   margin-left: 8px;
 }
@@ -27981,22 +27933,6 @@ table.calendartable caption {
   margin-left: 0.2em;
 }
 
-.sitetopic ul.section {
-  margin: 0;
-}
-
-body:not(.editing) .sitetopic ul.section {
-  padding-left: 0;
-}
-body:not(.editing) .sitetopic ul.section .label .mod-indent-outer {
-  padding-left: 0;
-}
-
-@media (min-width: 576px) {
-  .course-content ul.section {
-    margin: 1rem;
-  }
-}
 .section .side {
   margin-top: 0.5rem;
 }
@@ -28012,8 +27948,6 @@ body:not(.editing) .sitetopic ul.section .label .mod-indent-outer {
   width: 16px;
 }
 .section .activity {
-  list-style: none;
-  padding: 0.25rem 0;
   /* The command block for each activity */
 }
 .section .activity .spinner {
@@ -28097,24 +28031,12 @@ body:not(.editing) .sitetopic ul.section .label .mod-indent-outer {
 .editing .section .activity .activityinstance {
   padding-right: 200px;
 }
-.editing .section .activity .editing_move {
-  position: absolute;
-  display: flex;
-  left: 5px;
-  top: 5px;
-}
 .editing .section .activity .mod-indent-outer {
   /**
    * Add appropriate padding such that nothing overlaps the
    * absolute positioned move icon.
    */
   padding-left: 2rem;
-}
-.editing .activity .editing_move_activity {
-  position: absolute;
-  display: flex;
-  left: 5px;
-  top: 5px;
 }
 .editing .course-content .stateready .section .spinner {
   display: none;
@@ -28261,10 +28183,6 @@ body:not(.editing) .sitetopic ul.section .label .mod-indent-outer {
   margin-top: 5px;
 }
 
-.course-content .single-section {
-  margin-top: 1em;
-}
-
 .course-content .single-section .section-navigation {
   display: block;
   padding: 0.5em;
@@ -28346,6 +28264,11 @@ body:not(.editing) .sitetopic ul.section .label .mod-indent-outer {
   padding: 0 6px 0;
   text-align: right;
   width: auto;
+}
+
+.course-content .single-section ul.topics li.section,
+.course-content .single-section ul.weeks li.section {
+  padding-top: 0;
 }
 
 @media (max-width: 767.98px) {
@@ -28446,12 +28369,6 @@ body:not(.editing) .sitetopic ul.section .label .mod-indent-outer {
   margin-right: 5px;
 }
 
-.path-site li.activity > div:not(.activity-item),
-.path-course-view li.activity > div:not(.activity-item) {
-  position: relative;
-  padding: 0 16px 0 0; /* to accommodate the floated completion icon with highlighting */
-}
-
 .path-course-view li.activity span.autocompletion img {
   vertical-align: text-bottom;
   margin-left: 0;
@@ -28468,9 +28385,8 @@ li.section.hidden span.commands a.editing_show {
   cursor: default;
 }
 
-.single-section h3.sectionname {
-  text-align: center;
-  clear: both;
+.single-section-page .header-action {
+  display: inline-block;
 }
 
 input.titleeditor {
@@ -29082,17 +28998,19 @@ span.editinstructions .alert-link {
 /* Course section */
 .course-section {
   list-style: none;
-  padding-left: 0;
-  border-bottom: 1px solid #dee2e6;
+  padding: 1rem;
+  margin-top: 1rem;
+  border: 1px solid #dee2e6;
+  border-radius: 1rem;
+}
+.course-section.hidden {
+  background-color: #f8f9fa;
 }
 .course-section .sectionname > a {
   color: #1d2125;
 }
 .course-section .sectionname > a:hover {
   text-decoration: none;
-}
-.course-section:last-child:not(.section-summary) {
-  border-bottom: 0;
 }
 .course-section .sectionbadges .badge {
   margin-left: 0.5rem;
@@ -29124,6 +29042,11 @@ span.editinstructions .alert-link {
   font-size: inherit;
   margin-right: 0.25rem;
 }
+.course-section .action-menu .btn.btn-icon {
+  height: 32px;
+  width: 32px;
+  border-radius: 0.25rem;
+}
 .course-section.section-summary {
   padding-left: 1rem;
   padding-right: 1rem;
@@ -29145,6 +29068,15 @@ span.editinstructions .alert-link {
   color: #0f6cbf;
 }
 
+/* Single section page specific styles */
+.single-section > ul > .course-section {
+  padding: 0;
+  border: none;
+}
+.single-section > ul > .course-section.hidden {
+  background-color: inherit;
+}
+
 /* Re-style ordered list in course content */
 .course-content .activity-altcontent ul {
   list-style: disc;
@@ -29157,16 +29089,20 @@ span.editinstructions .alert-link {
 }
 
 /* Activity cards */
+.activity {
+  list-style: none;
+  position: relative;
+}
+
 .activity-item {
   position: relative;
   border-radius: 1rem;
 }
 .activity-item:not(.activityinline) {
-  border: 1px solid #dee2e6;
-  padding: 1rem;
+  padding: 0.75rem;
 }
 .activity-item.activityinline {
-  padding: 1rem 0;
+  padding: 0.75rem 0;
 }
 .activity-item.hiddenactivity {
   background-color: #f8f9fa;
@@ -29180,7 +29116,7 @@ span.editinstructions .alert-link {
   align-items: center;
   grid-template-columns: min-content 1fr min-content min-content min-content;
   grid-template-rows: 1fr repeat(5, min-content);
-  grid-template-areas: "icon          name          groupmode      completion    actions" "icon          visibility    groupmode      completion    actions" "icon          dates         groupmode      completion    actions" "altcontent    altcontent    altcontent     altcontent    altcontent" "afterlink     afterlink     afterlink      afterlink     afterlink" "availability  availability  availability   availability  availability";
+  grid-template-areas: "icon   name          groupmode      completion    actions" "icon   visibility    groupmode      completion    actions" "icon   dates         groupmode      completion    actions" "icon   altcontent    altcontent     altcontent    altcontent" "icon   afterlink     afterlink      afterlink     afterlink" "icon   availability  availability   availability  availability";
 }
 @media (max-width: 575.98px) {
   .activity-item .activity-grid {
@@ -29190,7 +29126,7 @@ span.editinstructions .alert-link {
   }
 }
 .activity-item .activity-grid.noname-grid {
-  grid-template-columns: min-content min-content 1fr min-content;
+  grid-template-columns: min-content 1fr min-content min-content;
   grid-template-areas: "visibility    groupmode        completion    actions" "altcontent    altcontent       altcontent    altcontent" "afterlink     afterlink        afterlink     afterlink" "availability  availability     availability  availability";
 }
 @media (max-width: 575.98px) {
@@ -29204,11 +29140,6 @@ span.editinstructions .alert-link {
 }
 .activity-item .activity-actions .actions {
   position: relative;
-}
-.activity-item .activity-actions .action-menu .btn.btn-icon {
-  height: 32px;
-  width: 32px;
-  border-radius: 0.25rem;
 }
 .activity-item .activity-icon {
   grid-area: icon;
@@ -29759,11 +29690,6 @@ span.editinstructions .alert-link {
 .activity-item .no-overflow {
   width: 100%;
 }
-@media (min-width: 768px) {
-  .activity-item:not(.activityinline) {
-    padding: 1rem;
-  }
-}
 
 /* Activity card in editing mode */
 .editing .activity-item {
@@ -29801,9 +29727,11 @@ span.editinstructions .alert-link {
 }
 
 .activity div.divider {
+  position: absolute;
+  width: 100%;
   height: 2rem;
-  margin-top: -1.25rem;
-  margin-bottom: -0.75rem;
+  margin-top: -1rem;
+  margin-bottom: -1rem;
   z-index: 5;
 }
 .activity div.divider button {
@@ -29865,6 +29793,15 @@ span.editinstructions .alert-link {
   height: 32px;
 }
 
+/* Home page course specific styles */
+.sitetopic .activity:first-of-type hr {
+  display: none;
+}
+.sitetopic .section {
+  margin-bottom: 1.5rem;
+  border-radius: 0.25rem;
+}
+
 /* Anchor link offset fix. This makes hash links scroll 60px down to account for the fixed header. */
 :target {
   scroll-margin-top: 60px;
@@ -29905,12 +29842,14 @@ span.editinstructions .alert-link {
   [data-region=drawer] {
     padding: 20px 20px;
   }
+  .jsenabled .popover-process-monitor,
   .jsenabled .btn-footer-popover,
   .jsenabled .btn-footer-communication {
     transition: 0.2s;
   }
 }
 @media (min-width: 576px) and (prefers-reduced-motion: reduce) {
+  .jsenabled .popover-process-monitor,
   .jsenabled .btn-footer-popover,
   .jsenabled .btn-footer-communication {
     transition: none;
@@ -37003,7 +36942,7 @@ span[data-flexitour=container][x-placement=right] div[data-role=arrow]:after, sp
     margin-right: 315px;
     padding-right: 1rem;
   }
-  .jsenabled #page.drawers.show-drawer-right .btn-footer-popover, .jsenabled #page.drawers.show-drawer-right .btn-footer-communication {
+  .jsenabled #page.drawers.show-drawer-right .popover-process-monitor, .jsenabled #page.drawers.show-drawer-right .btn-footer-popover, .jsenabled #page.drawers.show-drawer-right .btn-footer-communication {
     right: calc(315px + 2rem);
   }
 }

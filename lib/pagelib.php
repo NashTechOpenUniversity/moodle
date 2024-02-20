@@ -78,7 +78,7 @@ use core\output\activity_header;
  *      course table. (Also available as $COURSE global.) If we are not inside
  *      an actual course, this will be the site course.
  * @property-read string $devicetypeinuse The name of the device type in use
- * @property-read string $docspath The path to the Help and documentation.
+ * @property-read string $docspath The path to the Documentation for this page.
  * @property-read string $focuscontrol The id of the HTML element to be focused when the page has loaded.
  * @property-read bool $headerprinted True if the page header has already been printed.
  * @property-read string $heading The main heading that should be displayed at the top of the <body>.
@@ -214,7 +214,7 @@ class moodle_page {
     protected $_subpage = '';
 
     /**
-     * @var string Set a different path to use for the 'Help and documentation' link.
+     * @var string Set a different path to use for the 'Documentation for this page' link.
      * By default, it uses the path of the file for instance mod/quiz/attempt.
      */
     protected $_docspath = null;
@@ -658,7 +658,7 @@ class moodle_page {
 
     /**
      * Please do not call this method directly, use the ->docspath syntax. {@link moodle_page::__get()}.
-     * @return string the path to the Help and documentation.
+     * @return string the path to the Documentation for this page.
      */
     protected function magic_get_docspath() {
         if (is_string($this->_docspath)) {
@@ -1422,9 +1422,10 @@ class moodle_page {
      *
      * @param string $heading the main heading that should be displayed at the top of the <body>.
      * @param bool $applyformatting apply format_string() - by default true.
+     * @param bool $clean whether the heading should be cleaned or not when no formatting is applied - by default true.
      */
-    public function set_heading($heading, bool $applyformatting = true) {
-        $this->_heading = $applyformatting ? format_string($heading) : clean_text($heading);
+    public function set_heading($heading, bool $applyformatting = true, bool $clean = true) {
+        $this->_heading = $applyformatting ? format_string($heading) : ($clean ? clean_text($heading) : $heading);
     }
 
     /**
@@ -1462,7 +1463,7 @@ class moodle_page {
     }
 
     /**
-     * Set a different path to use for the 'Help and documentation' link.
+     * Set a different path to use for the 'Documentation for this page' link.
      *
      * By default, it uses the pagetype, which is normally the same as the
      * script name. So, for example, for mod/quiz/attempt.php, pagetype is
