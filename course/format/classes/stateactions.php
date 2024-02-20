@@ -16,7 +16,6 @@
 
 namespace core_courseformat;
 
-use core_courseformat\stateupdates;
 use core\event\course_module_updated;
 use cm_info;
 use section_info;
@@ -141,6 +140,8 @@ class stateactions {
     /**
      * Move course sections to another location in the same course.
      *
+     * @deprecated since Moodle 4.4 MDL-77038.
+     * @todo MDL-80116 This will be deleted in Moodle 4.8.
      * @param stateupdates $updates the affected course elements track
      * @param stdClass $course the course object
      * @param int[] $ids the list of affected course module ids
@@ -154,6 +155,10 @@ class stateactions {
         ?int $targetsectionid = null,
         ?int $targetcmid = null
     ): void {
+        debugging(
+            'The method stateactions::section_move() has been deprecated, please use stateactions::section_move_after() instead.',
+            DEBUG_DEVELOPER
+        );
         // Validate target elements.
         if (!$targetsectionid) {
             throw new moodle_exception("Action cm_move requires targetsectionid");
@@ -530,9 +535,14 @@ class stateactions {
                 $allowstealth = !empty($CFG->allowstealth) && $format->allow_stealth_module_visibility($cm, $section);
                 $coursevisible = ($allowstealth) ? 0 : 1;
             }
-            set_coursemodule_visible($cm->id, $visible, $coursevisible);
+            set_coursemodule_visible($cm->id, $visible, $coursevisible, false);
             $modcontext = context_module::instance($cm->id);
             course_module_updated::create_from_cm($cm, $modcontext)->trigger();
+        }
+        course_modinfo::purge_course_modules_cache($course->id, $ids);
+        rebuild_course_cache($course->id, false, true);
+
+        foreach ($cms as $cm) {
             $updates->add_cm_put($cm->id);
         }
     }
@@ -697,6 +707,92 @@ class stateactions {
         $cms = $this->get_cm_info($modinfo, $ids);
         list($insql, $inparams) = $DB->get_in_or_equal(array_keys($cms), SQL_PARAMS_NAMED);
         $DB->set_field_select('course_modules', 'indent', $indent, "id $insql", $inparams);
+        rebuild_course_cache($course->id, false, true);
+        foreach ($cms as $cm) {
+            $modcontext = context_module::instance($cm->id);
+            course_module_updated::create_from_cm($cm, $modcontext)->trigger();
+            $updates->add_cm_put($cm->id);
+        }
+    }
+
+    /**
+     * Set NOGROUPS const value to cms groupmode.
+     *
+     * @param stateupdates $updates the affected course elements track
+     * @param stdClass $course the course object
+     * @param int[] $ids cm ids
+     * @param int $targetsectionid not used
+     * @param int $targetcmid not used
+     */
+    public function cm_nogroups(
+        stateupdates $updates,
+        stdClass $course,
+        array $ids = [],
+        ?int $targetsectionid = null,
+        ?int $targetcmid = null
+    ): void {
+        $this->set_cm_groupmode($updates, $course, $ids, NOGROUPS);
+    }
+
+    /**
+     * Set VISIBLEGROUPS const value to cms groupmode.
+     *
+     * @param stateupdates $updates the affected course elements track
+     * @param stdClass $course the course object
+     * @param int[] $ids cm ids
+     * @param int $targetsectionid not used
+     * @param int $targetcmid not used
+     */
+    public function cm_visiblegroups(
+        stateupdates $updates,
+        stdClass $course,
+        array $ids = [],
+        ?int $targetsectionid = null,
+        ?int $targetcmid = null
+    ): void {
+        $this->set_cm_groupmode($updates, $course, $ids, VISIBLEGROUPS);
+    }
+
+    /**
+     * Set SEPARATEGROUPS const value to cms groupmode.
+     *
+     * @param stateupdates $updates the affected course elements track
+     * @param stdClass $course the course object
+     * @param int[] $ids cm ids
+     * @param int $targetsectionid not used
+     * @param int $targetcmid not used
+     */
+    public function cm_separategroups(
+        stateupdates $updates,
+        stdClass $course,
+        array $ids = [],
+        ?int $targetsectionid = null,
+        ?int $targetcmid = null
+    ): void {
+        $this->set_cm_groupmode($updates, $course, $ids, SEPARATEGROUPS);
+    }
+
+    /**
+     * Internal method to define the cm groupmode value.
+     *
+     * @param stateupdates $updates the affected course elements track
+     * @param stdClass $course the course object
+     * @param int[] $ids cm ids
+     * @param int $groupmode new value for groupmode: NOGROUPS, SEPARATEGROUPS, VISIBLEGROUPS
+     */
+    protected function set_cm_groupmode(
+        stateupdates $updates,
+        stdClass $course,
+        array $ids,
+        int $groupmode
+    ): void {
+        global $DB;
+
+        $this->validate_cms($course, $ids, __FUNCTION__, ['moodle/course:manageactivities']);
+        $modinfo = get_fast_modinfo($course);
+        $cms = $this->get_cm_info($modinfo, $ids);
+        list($insql, $inparams) = $DB->get_in_or_equal(array_keys($cms), SQL_PARAMS_NAMED);
+        $DB->set_field_select('course_modules', 'groupmode', $groupmode, "id $insql", $inparams);
         rebuild_course_cache($course->id, false, true);
         foreach ($cms as $cm) {
             $modcontext = context_module::instance($cm->id);

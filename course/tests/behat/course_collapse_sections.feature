@@ -32,18 +32,18 @@ Feature: Collapse course sections
       | teacher1 | C1     | editingteacher |
     And I log in as "admin"
     And I am on "Course 1" course homepage with editing mode on
-    When I edit the section "4"
+    And I hide section "5"
+    And I edit the section "4"
     And I expand all fieldsets
     And I press "Add restriction..."
     And I click on "Date" "button" in the "Add restriction..." "dialogue"
     And I set the field "direction" to "until"
     And I set the field "x[year]" to "2013"
     And I press "Save changes"
-    And I hide section "5"
 
   @javascript
   Scenario: No chevron on site home
-    Given the following activity" exists:
+    Given the following "activity" exists:
       | activity | forum                              |
       | course   | Acceptance test site               |
       | section  | 1                                  |
@@ -51,22 +51,22 @@ Feature: Collapse course sections
     And I log in as "admin"
     And I am on site homepage
     And I turn editing mode on
-    And I click on "Edit summary" "link" in the "region-main" "region"
+    And I click on "Edit" "link" in the "region-main" "region"
     And I click on "Custom" "checkbox"
     And I set the field "New value for Section name" to "New section name"
     When I press "Save changes"
     Then "[data-toggle=collapse]" "css_element" should not exist in the "region-main" "region"
 
   @javascript
-  Scenario: Expand/collapse sections for Topics format.
+  Scenario: Expand/collapse sections for Custom sections format.
     Given I am on the "Course 1" course page logged in as student1
     And "[data-toggle=collapse]" "css_element" should exist in the "region-main" "region"
     And I should see "Assignment 1" in the "region-main" "region"
     And I should see "Assignment 2" in the "region-main" "region"
     And I should see "Book 2" in the "region-main" "region"
     And I should see "Book 3" in the "region-main" "region"
-    And I should see "Available until" in the "#section-4 .availabilityinfo" "css_element"
-    And I should see "2013" in the "#section-4 .availabilityinfo" "css_element"
+    And I should see "Available until" in the "section-4" "core_availability > Section availability"
+    And I should see "2013" in the "section-4" "core_availability > Section availability"
     And I should not see "Forum 4"
     And I should see "Not available" in the "#section-5" "css_element"
     And I should not see "Forum 5"
@@ -83,7 +83,7 @@ Feature: Collapse course sections
     And I should not see "Assignment 2" in the "region-main" "region"
     And I should not see "Book 2" in the "region-main" "region"
     And I should not see "Book 3" in the "region-main" "region"
-    And I should not see "Available until" in the "#section-4 .availabilityinfo" "css_element"
+    And I should not see "Available until" in the "section-4" "core_availability > Section availability"
     And I click on "#collapssesection1" "css_element"
     And I click on "#collapssesection2" "css_element"
     And I click on "#collapssesection3" "css_element"
@@ -93,7 +93,7 @@ Feature: Collapse course sections
     And I should see "Assignment 2" in the "region-main" "region"
     And I should see "Book 2" in the "region-main" "region"
     And I should see "Book 3" in the "region-main" "region"
-    And I should see "Available until" in the "#section-4 .availabilityinfo" "css_element"
+    And I should see "Available until" in the "section-4" "core_availability > Section availability"
 
   @javascript
   Scenario: Expand/collapse sections for Weeks format.
@@ -101,14 +101,14 @@ Feature: Collapse course sections
     When I navigate to "Settings" in current page administration
     And I expand all fieldsets
     And I set the following fields to these values:
-      | Format      | Weekly format     |
+      | Format      | Weekly sections     |
     And I press "Save and display"
     And I should see "Assignment 1" in the "region-main" "region"
     And I should see "Assignment 2" in the "region-main" "region"
     And I should see "Book 2" in the "region-main" "region"
     And I should see "Book 3" in the "region-main" "region"
-    And I should see "Available until" in the "#section-4 .availabilityinfo" "css_element"
-    And I should see "2013" in the "#section-4 .availabilityinfo" "css_element"
+    And I should see "Available until" in the "section-4" "core_availability > Section availability"
+    And I should see "2013" in the "section-4" "core_availability > Section availability"
     And I should see "Forum 4"
     And I should see "Hidden from students" in the "#section-5" "css_element"
     And I should see "Forum 5"
@@ -125,7 +125,7 @@ Feature: Collapse course sections
     And I should not see "Assignment 2" in the "region-main" "region"
     And I should not see "Book 2" in the "region-main" "region"
     And I should not see "Book 3" in the "region-main" "region"
-    And I should not see "Available until" in the "#section-4 .availabilityinfo" "css_element"
+    And I should not see "Available until" in the "section-4" "core_availability > Section availability"
     And I should not see "Not available" in the "#section-5" "css_element"
     And I click on "#collapssesection1" "css_element"
     And I click on "#collapssesection2" "css_element"
@@ -136,14 +136,14 @@ Feature: Collapse course sections
     And I should see "Assignment 2" in the "region-main" "region"
     And I should see "Book 2" in the "region-main" "region"
     And I should see "Book 3" in the "region-main" "region"
-    And I should see "Available until" in the "#section-4 .availabilityinfo" "css_element"
-    And I should see "2013" in the "#section-4 .availabilityinfo" "css_element"
+    And I should see "Available until" in the "section-4" "core_availability > Section availability"
+    And I should see "2013" in the "section-4" "core_availability > Section availability"
     And I should see "Forum 4"
     And I should see "Hidden from students" in the "#section-5" "css_element"
     And I should see "Forum 5"
 
   @javascript
-  Scenario: Users don't see chevron on one section per page for Topics format
+  Scenario: Users don't see chevron on one section per page for Custom sections format
     Given I am on the "Course 1" course page logged in as teacher1
     When I navigate to "Settings" in current page administration
     And I expand all fieldsets
@@ -157,8 +157,8 @@ Feature: Collapse course sections
     Then "Topic 1" "section" should not exist
     And "Topic 3" "section" should not exist
     And I am on "Course 1" course homepage with editing mode on
-    And I should see "Available until" in the "#section-4 .availabilityinfo" "css_element"
-    And I should see "2013" in the "#section-4 .availabilityinfo" "css_element"
+    And I should see "Available until" in the "section-4" "core_availability > Section availability"
+    And I should see "2013" in the "section-4" "core_availability > Section availability"
     And I should see "Forum 4"
     And I should see "Hidden from students" in the "#section-5" "css_element"
     And I should see "Forum 5"
@@ -170,7 +170,7 @@ Feature: Collapse course sections
     And I expand all fieldsets
     And I set the following fields to these values:
       | Course layout | Show one section per page |
-      | Format        | Weekly format             |
+      | Format        | Weekly sections            |
     And I press "Save and display"
     And "[data-toggle=collapse]" "css_element" should not exist in the "region-main" "region"
     And I click on "8 May - 14 May" "link" in the "region-main" "region"
@@ -179,8 +179,8 @@ Feature: Collapse course sections
     Then "1 May - 7 May" "section" should not exist
     And "15 May - 21 May" "section" should not exist
     And I am on the "Course 1" course page logged in as student1
-    And I should see "Available until" in the "#section-4 .availabilityinfo" "css_element"
-    And I should see "2013" in the "#section-4 .availabilityinfo" "css_element"
+    And I should see "Available until" in the "section-4" "core_availability > Section availability"
+    And I should see "2013" in the "section-4" "core_availability > Section availability"
     And I should not see "Forum 4"
     And I should see "Not available" in the "#section-5" "css_element"
     And I should not see "Forum 5"

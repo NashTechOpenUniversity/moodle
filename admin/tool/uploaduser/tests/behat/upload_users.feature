@@ -109,7 +109,7 @@ Feature: Upload users
     And I navigate to "Security > Site security settings" in site administration
     And I click on "Password policy" "checkbox"
     And I click on "Save changes" "button"
-    And I navigate to "Appearance > Themes > Theme settings" in site administration
+    And I navigate to "Appearance > Advanced theme settings" in site administration
     And I click on "Allow user themes" "checkbox"
     And I click on "Save changes" "button"
     # Upload the users.
@@ -240,7 +240,7 @@ Feature: Upload users
     And I am on site homepage
     And I navigate to "Courses > Manage courses and categories" in site administration
     And I click on "permissions" action for "MGMT" in management category listing
-    And I select "Assign roles" from the "jump" singleselect
+    And I set the field "Participants tertiary navigation" to "Assign roles"
     And I should see "Manager"
     And I should see "Tom Jones"
     And I should see "Trent Reznor"
@@ -249,7 +249,7 @@ Feature: Upload users
     And I am on site homepage
     And I navigate to "Courses > Manage courses and categories" in site administration
     And I click on "permissions" action for "Film" in management category listing
-    And I select "Assign roles" from the "jump" singleselect
+    And I set the field "Participants tertiary navigation" to "Assign roles"
     And I should see "Course creator"
     And I should see "Federico Fellini"
 

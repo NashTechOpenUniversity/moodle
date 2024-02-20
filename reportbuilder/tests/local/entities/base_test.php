@@ -50,7 +50,19 @@ class base_test extends advanced_testcase {
      */
     public function test_get_table_alias(): void {
         $entity = new base_test_entity();
-        $this->assertEquals('m', $entity->get_table_alias('mytable'));
+
+        $mytablealias = $entity->get_table_alias('mytable');
+        $this->assertMatchesRegularExpression('/^rbalias(\d+)$/', $mytablealias);
+
+        $myothertablealias = $entity->get_table_alias('myothertable');
+        $this->assertMatchesRegularExpression('/^rbalias(\d+)$/', $myothertablealias);
+
+        // They must differ.
+        $this->assertNotEquals($mytablealias, $myothertablealias);
+
+        // Re-request both, ensure they are identical to what we previously received.
+        $this->assertEquals($mytablealias, $entity->get_table_alias('mytable'));
+        $this->assertEquals($myothertablealias, $entity->get_table_alias('myothertable'));
     }
 
     /**
@@ -63,6 +75,24 @@ class base_test extends advanced_testcase {
         $this->expectExceptionMessage('Coding error detected, it must be fixed by a programmer: ' .
             'Invalid table name (nonexistingalias)');
         $entity->get_table_alias('nonexistingalias');
+    }
+
+    /**
+     * Test getting all table aliases
+     */
+    public function test_get_table_aliases(): void {
+        $entity = new base_test_entity();
+
+        [
+            'mytable' => $mytablealias,
+            'myothertable' => $myothertablealias,
+        ] = $entity->get_table_aliases();
+
+        $this->assertMatchesRegularExpression('/^rbalias(\d+)$/', $mytablealias);
+        $this->assertMatchesRegularExpression('/^rbalias(\d+)$/', $myothertablealias);
+
+        // They must differ.
+        $this->assertNotEquals($mytablealias, $myothertablealias);
     }
 
     /**
@@ -96,8 +126,10 @@ class base_test extends advanced_testcase {
             'mytable' => 'newalias',
             'myothertable' => 'newalias2',
         ]);
-        $this->assertEquals('newalias', $entity->get_table_alias('mytable'));
-        $this->assertEquals('newalias2', $entity->get_table_alias('myothertable'));
+        $this->assertEquals([
+            'mytable' => 'newalias',
+            'myothertable' => 'newalias2',
+        ], $entity->get_table_aliases());
     }
 
     /**
@@ -112,6 +144,27 @@ class base_test extends advanced_testcase {
             'mytable' => 'newalias',
             'nonexistent' => 'newalias2',
         ]);
+    }
+
+    /**
+     * Test setting table join alias
+     */
+    public function test_set_table_join_alias(): void {
+        $entity = new base_test_entity();
+
+        $entity->set_table_join_alias('mytable', 'newalias');
+        $this->assertTrue($entity->has_table_join_alias('mytable'));
+        $this->assertEquals('newalias', $entity->get_table_alias('mytable'));
+    }
+
+    /**
+     * Test that entity doesn't have table join alias by default
+     *
+     * {@see test_set_table_join_alias} for assertion where it does
+     */
+    public function test_has_table_join_alias(): void {
+        $entity = new base_test_entity();
+        $this->assertFalse($entity->has_table_join_alias('mytable'));
     }
 
     /**
@@ -293,10 +346,10 @@ class base_test_entity extends base {
      *
      * @return array
      */
-    protected function get_default_table_aliases(): array {
+    protected function get_default_tables(): array {
         return [
-            'mytable' => 'm',
-            'myothertable' => 'o',
+            'mytable',
+            'myothertable',
         ];
     }
 

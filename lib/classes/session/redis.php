@@ -25,8 +25,7 @@
 namespace core\session;
 
 use RedisException;
-
-defined('MOODLE_INTERNAL') || die();
+use SessionHandlerInterface;
 
 /**
  * Redis based session handler.
@@ -39,7 +38,7 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright  2016 Russell Smith
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class redis extends handler {
+class redis extends handler implements SessionHandlerInterface {
     /**
      * Compressor: none.
      */
@@ -57,6 +56,8 @@ class redis extends handler {
     protected $host = '';
     /** @var int $port The port to connect to */
     protected $port = 6379;
+    /** @var array $sslopts SSL options, if applicable */
+    protected $sslopts = [];
     /** @var string $auth redis password  */
     protected $auth = '';
     /** @var int $database the Redis database to store sesions in */
@@ -103,6 +104,11 @@ class redis extends handler {
 
         if (isset($CFG->session_redis_port)) {
             $this->port = (int)$CFG->session_redis_port;
+        }
+
+        if (isset($CFG->session_redis_encrypt) && $CFG->session_redis_encrypt) {
+            $this->host = 'tls://' . $this->host;
+            $this->sslopts = $CFG->session_redis_encrypt;
         }
 
         if (isset($CFG->session_redis_auth)) {
@@ -197,12 +203,8 @@ class redis extends handler {
 
         $this->connection = new \Redis();
 
-        $result = session_set_save_handler(array($this, 'handler_open'),
-            array($this, 'handler_close'),
-            array($this, 'handler_read'),
-            array($this, 'handler_write'),
-            array($this, 'handler_destroy'),
-            array($this, 'handler_gc'));
+        $result = session_set_save_handler($this);
+
         if (!$result) {
             throw new exception('redissessionhandlerproblem', 'error');
         }
@@ -210,6 +212,11 @@ class redis extends handler {
         // MDL-59866: Add retries for connections (up to 5 times) to make sure it goes through.
         $counter = 1;
         $maxnumberofretries = 5;
+        $opts = [];
+        if ($this->sslopts) {
+            // Do not set $opts['stream'] = [], breaks connect().
+            $opts['stream'] = $this->sslopts;
+        }
 
         while ($counter <= $maxnumberofretries) {
 
@@ -218,7 +225,7 @@ class redis extends handler {
                 $delay = rand(100, 500);
 
                 // One second timeout was chosen as it is long for connection, but short enough for a user to be patient.
-                if (!$this->connection->connect($this->host, $this->port, 1, null, $delay)) {
+                if (!$this->connection->connect($this->host, $this->port, 1, null, $delay, 1, $opts)) {
                     throw new RedisException('Unable to connect to host.');
                 }
 
@@ -238,6 +245,16 @@ class redis extends handler {
                         throw new RedisException('Unable to set Redis Prefix option.');
                     }
                 }
+
+                if ($this->sslopts && !$this->connection->ping()) {
+                    /*
+                     * In case of a TLS connection, if phpredis client does not
+                     * communicate immediately with the server the connection hangs.
+                     * See https://github.com/phpredis/phpredis/issues/2332 .
+                     */
+                    throw new \RedisException("Ping failed");
+                }
+
                 if ($this->database !== 0) {
                     if (!$this->connection->select($this->database)) {
                         throw new RedisException('Unable to select Redis database '.$this->database.'.');
@@ -266,11 +283,11 @@ class redis extends handler {
     /**
      * Update our session search path to include session name when opened.
      *
-     * @param string $savepath  unused session save path. (ignored)
-     * @param string $sessionname Session name for this session. (ignored)
+     * @param string $path  unused session save path. (ignored)
+     * @param string $name Session name for this session. (ignored)
      * @return bool true always as we will succeed.
      */
-    public function handler_open($savepath, $sessionname) {
+    public function open(string $path, string $name): bool {
         return true;
     }
 
@@ -279,7 +296,7 @@ class redis extends handler {
      *
      * @return bool true on success.  false on unable to unlock sessions.
      */
-    public function handler_close() {
+    public function close(): bool {
         $this->lasthash = null;
         try {
             foreach ($this->locks as $id => $expirytime) {
@@ -295,6 +312,7 @@ class redis extends handler {
 
         return true;
     }
+
     /**
      * Read the session data from storage
      *
@@ -303,7 +321,7 @@ class redis extends handler {
      *
      * @throws RedisException when we are unable to talk to the Redis server.
      */
-    public function handler_read($id) {
+    public function read(string $id): string|false {
         try {
             if ($this->requires_write_lock()) {
                 $this->lock_session($id);
@@ -380,7 +398,7 @@ class redis extends handler {
      * @param string $data session data
      * @return bool true on write success, false on failure
      */
-    public function handler_write($id, $data) {
+    public function write(string $id, string $data): bool {
 
         $hash = sha1(base64_encode($data));
 
@@ -416,7 +434,7 @@ class redis extends handler {
      * @param string $id the session id to destroy.
      * @return bool true if the session was deleted, false otherwise.
      */
-    public function handler_destroy($id) {
+    public function destroy(string $id): bool {
         $this->lasthash = null;
         try {
             $this->connection->del($id);
@@ -432,11 +450,12 @@ class redis extends handler {
     /**
      * Garbage collect sessions.  We don't we any as Redis does it for us.
      *
-     * @param integer $maxlifetime All sessions older than this should be removed.
+     * @param integer $max_lifetime All sessions older than this should be removed.
      * @return bool true, as Redis handles expiry for us.
      */
-    public function handler_gc($maxlifetime) {
-        return true;
+    // phpcs:ignore moodle.NamingConventions.ValidVariableName.VariableNameUnderscore
+    public function gc(int $max_lifetime): int|false {
+        return false;
     }
 
     /**
@@ -579,7 +598,7 @@ class redis extends handler {
 
         $rs = $DB->get_recordset('sessions', array(), 'id DESC', 'id, sid');
         foreach ($rs as $record) {
-            $this->handler_destroy($record->sid);
+            $this->destroy($record->sid);
         }
         $rs->close();
     }
@@ -594,6 +613,6 @@ class redis extends handler {
             return;
         }
 
-        $this->handler_destroy($sid);
+        $this->destroy($sid);
     }
 }

@@ -158,6 +158,36 @@ class instance_test extends advanced_testcase {
     }
 
     /**
+     * Test getting Meeting ID from log as Log field (meetingid) is the full meeting id (with courseid, and bigbluebuttonid).
+     *
+     * @covers ::get_from_meetingid
+     */
+    public function test_get_from_meetingid_from_log(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        [
+            'record' => $record,
+            'course' => $course,
+            'cm' => $cm,
+        ] = $this->get_test_instance();
+        $instance = instance::get_from_cmid($cm->id);
+        $instance->set_group_id(1);
+        logger::log_meeting_joined_event($instance, 1);
+
+        // Get the meeting ID from the logged "join" event.
+        $meetingid = $DB->get_field('bigbluebuttonbn_logs', 'meetingid', [
+            'courseid' => $course->id,
+            'bigbluebuttonbnid' => $instance->get_instance_id(),
+            'log' => 'Join',
+        ], MUST_EXIST);
+
+        $retrievedinstance = instance::get_from_meetingid($meetingid);
+        $this->assertEquals($cm->instance, $retrievedinstance->get_instance_id());
+        $this->assertEquals($cm->id, $retrievedinstance->get_cm_id());
+    }
+
+    /**
      * Ensure that invalid meetingids throw an appropriate exception.
      *
      * @dataProvider invalid_meetingid_provider
@@ -589,6 +619,26 @@ class instance_test extends advanced_testcase {
     }
 
     /**
+     * Test private method get_instance_info_retriever
+     *
+     * @covers ::get_instance_info_retriever
+     */
+    public function test_get_instance_info_retriever() {
+        $this->resetAfterTest();
+        [
+            'record' => $record,
+            'cm' => $cm,
+        ] = $this->get_test_instance();
+        $instance = instance::get_from_instanceid($record->id);
+        $instancereflection = new \ReflectionClass($instance);
+        $getinstanceinforetriever = $instancereflection->getMethod('get_instance_info_retriever');
+        $getinstanceinforetriever->setAccessible(true);
+        $this->assertInstanceOf('\mod_bigbluebuttonbn\instance',
+            $getinstanceinforetriever->invoke($instance, $record->id, instance::IDTYPE_INSTANCEID));
+        $this->assertEquals($cm->id, $instance->get_cm_id());
+    }
+
+    /**
      * Test guest access password
      *
      * @covers ::get_guest_access_password
@@ -601,5 +651,4 @@ class instance_test extends advanced_testcase {
         $instance = instance::get_from_instanceid($record->id);
         $this->assertNotEmpty($instance->get_guest_access_password());
     }
-
 }

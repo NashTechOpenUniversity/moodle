@@ -18,7 +18,6 @@ declare(strict_types=1);
 
 namespace core_user\reportbuilder\datasource;
 
-use core_collator;
 use core_reportbuilder_testcase;
 use core_reportbuilder_generator;
 use core_reportbuilder\local\filters\boolean_select;
@@ -81,12 +80,16 @@ class users_test extends core_reportbuilder_testcase {
             'interests' => ['Horses'],
         ]);
 
+        $cohort = $this->getDataGenerator()->create_cohort(['name' => 'My cohort']);
+        cohort_add_member($cohort->id, $user->id);
+
         /** @var core_reportbuilder_generator $generator */
         $generator = $this->getDataGenerator()->get_plugin_generator('core_reportbuilder');
         $report = $generator->create_report(['name' => 'Users', 'source' => users::class, 'default' => 0]);
 
         // User.
-        $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'user:fullnamewithlink']);
+        $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'user:fullnamewithlink',
+            'sortenabled' => 1]);
         $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'user:fullnamewithpicture']);
         $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'user:fullnamewithpicturelink']);
         $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'user:picture']);
@@ -110,17 +113,17 @@ class users_test extends core_reportbuilder_testcase {
         $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'user:confirmed']);
         $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'user:moodlenetprofile']);
         $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'user:timecreated']);
+        $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'user:lastip']);
 
         // Tags.
         $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'tag:name']);
         $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'tag:namewithlink']);
 
+        // Cohort.
+        $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'cohort:name']);
+
         $content = $this->get_custom_report_content($report->get('id'));
         $this->assertCount(2, $content);
-
-        // Consistent order by firstname, just in case.
-        core_collator::asort_array_of_arrays_by_key($content, 'c4_firstname');
-        $content = array_values($content);
 
         [$adminrow, $userrow] = array_map('array_values', $content);
 
@@ -155,8 +158,10 @@ class users_test extends core_reportbuilder_testcase {
         $this->assertEquals('Yes', $userrow[21]);
         $this->assertEquals($user->moodlenetprofile, $userrow[22]);
         $this->assertNotEmpty($userrow[23]);
-        $this->assertEquals('Horses', $userrow[24]);
-        $this->assertStringContainsString('Horses', $userrow[25]);
+        $this->assertEquals('0.0.0.0', $userrow[24]);
+        $this->assertEquals('Horses', $userrow[25]);
+        $this->assertStringContainsString('Horses', $userrow[26]);
+        $this->assertEquals($cohort->name, $userrow[27]);
     }
 
     /**
@@ -259,7 +264,6 @@ class users_test extends core_reportbuilder_testcase {
                 'user:address_operator' => text::IS_EQUAL_TO,
                 'user:address_value' => 'Small Farm',
             ], false],
-
             'Filter city' => ['user:city', [
                 'user:city_operator' => text::IS_EQUAL_TO,
                 'user:city_value' => 'Barcelona',
@@ -361,6 +365,14 @@ class users_test extends core_reportbuilder_testcase {
                 'user:lastaccess_from' => 1619823600,
                 'user:lastaccess_to' => 1622502000,
             ], false],
+            'Filter lastip' => ['user:lastip', [
+                'user:lastip_operator' => text::IS_EQUAL_TO,
+                'user:lastip_value' => '0.0.0.0',
+            ], true],
+            'Filter lastip (no match)' => ['user:lastip', [
+                'user:lastip_operator' => text::IS_EQUAL_TO,
+                'user:lastip_value' => '1.2.3.4',
+            ], false],
 
             // Tags.
             'Filter tag name' => ['tag:name', [
@@ -370,6 +382,16 @@ class users_test extends core_reportbuilder_testcase {
             'Filter tag name not empty' => ['tag:name', [
                 'tag:name_operator' => tags::NOT_EMPTY,
             ], true],
+
+            // Cohort.
+            'Filter cohort name' => ['cohort:name', [
+                'cohort:name_operator' => text::IS_EQUAL_TO,
+                'cohort:name_value' => 'My cohort',
+            ], true],
+            'Filter cohort name (no match)' => ['cohort:name', [
+                'cohort:name_operator' => text::IS_EQUAL_TO,
+                'cohort:name_value' => 'Not my cohort',
+            ], false],
         ];
     }
 
@@ -405,7 +427,11 @@ class users_test extends core_reportbuilder_testcase {
             'description' => 'Hello there',
             'moodlenetprofile' => '@zoe1@example.com',
             'interests' => ['Horses'],
+            'lastip' => '0.0.0.0',
         ]);
+
+        $cohort = $this->getDataGenerator()->create_cohort(['name' => 'My cohort']);
+        cohort_add_member($cohort->id, $user->id);
 
         /** @var core_reportbuilder_generator $generator */
         $generator = $this->getDataGenerator()->get_plugin_generator('core_reportbuilder');
@@ -441,8 +467,7 @@ class users_test extends core_reportbuilder_testcase {
 
         $this->resetAfterTest();
 
-        $this->getDataGenerator()->create_custom_profile_field(['datatype' => 'text', 'name' => 'Hi', 'shortname' => 'hi']);
-        $user = $this->getDataGenerator()->create_user(['profile_field_hi' => 'Hello']);
+        $user = $this->getDataGenerator()->create_user();
 
         $this->datasource_stress_test_columns(users::class);
         $this->datasource_stress_test_columns_aggregation(users::class);

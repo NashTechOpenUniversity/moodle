@@ -58,7 +58,7 @@ define('SQL_QUERY_AUX_READONLY', 6);
 
 /**
  * Abstract class representing moodle database interface.
- * @link http://docs.moodle.org/dev/DML_functions
+ * @link https://moodledev.io/docs/apis/core/dml/ddl
  *
  * @package    core_dml
  * @copyright  2008 Petr Skoda (http://skodak.org)
@@ -652,10 +652,11 @@ abstract class moodle_database {
 
     /**
      * Returns the SQL WHERE conditions.
+     *
      * @param string $table The table name that these conditions will be validated against.
      * @param array $conditions The conditions to build the where clause. (must not contain numeric indexes)
-     * @throws dml_exception
      * @return array An array list containing sql 'where' part and 'params'.
+     * @throws dml_exception
      */
     protected function where_clause($table, array $conditions=null) {
         // We accept nulls in conditions
@@ -891,6 +892,10 @@ abstract class moodle_database {
      * @return array (sql, params, type of params)
      */
     public function fix_sql_params($sql, array $params=null) {
+        global $CFG;
+
+        require_once($CFG->libdir . '/ddllib.php');
+
         $params = (array)$params; // mke null array if needed
         $allowed_types = $this->allowed_param_types();
 
@@ -974,9 +979,9 @@ abstract class moodle_database {
                 if (!array_key_exists($key, $params)) {
                     throw new dml_exception('missingkeyinsql', $key, '');
                 }
-                if (strlen($key) > 30) {
+                if (strlen($key) > xmldb_field::NAME_MAX_LENGTH) {
                     throw new coding_exception(
-                            "Placeholder names must be 30 characters or shorter. '" .
+                            "Placeholder names must be " . xmldb_field::NAME_MAX_LENGTH . " characters or shorter. '" .
                             $key . "' is too long.", $sql);
                 }
                 $finalparams[$key] = $params[$key];
@@ -1755,6 +1760,20 @@ abstract class moodle_database {
 
         $record = (array)$record;
         return reset($record); // first column
+    }
+
+    /**
+     * Selects records and return values of chosen field as an array where all the given conditions met.
+     *
+     * @param string $table the table to query.
+     * @param string $return the field we are intered in
+     * @param array|null $conditions optional array $fieldname=>requestedvalue with AND in between
+     * @return array of values
+     * @throws dml_exception A DML specific exception is thrown for any errors.
+     */
+    public function get_fieldset(string $table, string $return, ?array $conditions = null): array {
+        [$select, $params] = $this->where_clause($table, $conditions);
+        return $this->get_fieldset_select($table, $return, $select, $params);
     }
 
     /**

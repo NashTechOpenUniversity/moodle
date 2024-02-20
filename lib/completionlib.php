@@ -321,35 +321,17 @@ class completion_info {
     }
 
     /**
-     * Displays the 'Your progress' help icon, if completion tracking is enabled.
-     * Just prints the result of display_help_icon().
-     *
      * @deprecated since Moodle 2.0 - Use display_help_icon instead.
      */
     public function print_help_icon() {
-        debugging('The function print_help_icon() is deprecated, please do not use it anymore.',
-            DEBUG_DEVELOPER);
-        print $this->display_help_icon();
+        throw new coding_exception(__FUNCTION__ . '() has been removed.');
     }
 
     /**
-     * Returns the 'Your progress' help icon, if completion tracking is enabled.
-     *
-     * @return string HTML code for help icon, or blank if not needed
      * @deprecated since Moodle 4.0 - The 'Your progress' info isn't displayed any more.
      */
     public function display_help_icon() {
-        global $PAGE, $OUTPUT, $USER;
-        debugging('The function display_help_icon() is deprecated, please do not use it anymore.',
-        DEBUG_DEVELOPER);
-        $result = '';
-        if ($this->is_enabled() && !$PAGE->user_is_editing() && $this->is_tracked_user($USER->id) && isloggedin() &&
-                !isguestuser()) {
-            $result .= html_writer::tag('div', get_string('yourprogress','completion') .
-                    $OUTPUT->help_icon('completionicons', 'completion'), array('id' => 'completionprogressid',
-                    'class' => 'completionprogress'));
-        }
-        return $result;
+        throw new coding_exception(__FUNCTION__ . '() has been removed.');
     }
 
     /**
@@ -720,19 +702,6 @@ class completion_info {
                 /** @var activity_custom_completion $cmcompletion */
                 $cmcompletion = new $cmcompletionclass($cminfo, $userid, $completionstate);
                 $response = $cmcompletion->get_overall_completion_state() != COMPLETION_INCOMPLETE;
-            } else {
-                // Fallback to the get_completion_state callback.
-                $cmcompletionclass = "mod_{$cminfo->modname}\\completion\\custom_completion";
-                $function = $cminfo->modname . '_get_completion_state';
-                if (!function_exists($function)) {
-                    $this->internal_systemerror("Module {$cminfo->modname} claims to support FEATURE_COMPLETION_HAS_RULES " .
-                        "but does not implement the custom completion class $cmcompletionclass which extends " .
-                        "\core_completion\activity_custom_completion.");
-                }
-                debugging("*_get_completion_state() callback functions such as $function have been deprecated and should no " .
-                    "longer be used. Please implement the custom completion class $cmcompletionclass which extends " .
-                    "\core_completion\activity_custom_completion.", DEBUG_DEVELOPER);
-                $response = $function($this->course, $cm, $userid, COMPLETION_AND, $completionstate);
             }
 
             if (!$response) {

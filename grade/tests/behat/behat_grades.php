@@ -42,7 +42,87 @@ class behat_grades extends behat_base {
                 'grade_actions',
                 ["//td[count(//table[@id='user-grades']//th[contains(., %locator%)]/preceding-sibling::th)]//*[@data-type='grade']"]
             ),
+            new behat_component_named_selector(
+                'gradeitem modal',
+                [".//*[contains(concat(' ', @class, ' '), ' modal ')]"]
+            ),
         ];
+    }
+
+    /**
+     * Convert page names to URLs for steps like 'When I am on the "[identifier]" "[page type]" page'.
+     *
+     * Recognised page names are:
+     * | pagetype              | name meaning | description                                       |
+     * | [report] view         | Course name  | The view page for the specified course and report |
+     * | gradebook setup       | Course name  | The gradebook setup page for the specified course |
+     * | course grade settings | Course name  | The grade settings page                           |
+     * | outcomes              | Course name  | The grade outcomes page                           |
+     * | scales                | Course name  | The grade scales page                             |
+     *
+     * @param string $type identifies which type of page this is - for example "Grader > View"
+     * @param string $identifier identifies the particular page - for example "Course name"
+     * @return moodle_url the corresponding URL.
+     */
+    protected function resolve_page_instance_url(string $type, string $identifier): moodle_url {
+        $type = strtolower($type);
+        if (strpos($type, '>') !== false) {
+            [$pluginname, $type] = explode('>', $type);
+            $pluginname = strtolower(trim($pluginname));
+
+            // Fetch the list of plugins.
+            $plugins = \core_component::get_plugin_list('gradereport');
+
+            if (array_key_exists($pluginname, $plugins)) {
+                $plugin = $pluginname;
+            } else {
+                $plugins = array_combine(
+                    array_keys($plugins),
+                    array_keys($plugins),
+                );
+
+                // This plugin is not in the list of plugins. Check the pluginname string.
+                $names = array_map(fn($name) => strtolower(get_string('pluginname', "gradereport_{$name}")), $plugins);
+                $result = array_search($pluginname, $names);
+                if ($result === false) {
+                    throw new \coding_exception("Unknown plugin '{$pluginname}'");
+                }
+                $plugin = $result;
+            }
+        }
+        $type = trim($type);
+
+        switch ($type) {
+            case 'view':
+                return new moodle_url(
+                    "/grade/report/{$plugin}/index.php",
+                    ['id' => $this->get_course_id($identifier)]
+                );
+            case 'gradebook setup':
+                return new moodle_url(
+                    "/grade/edit/tree/index.php",
+                    ['id' => $this->get_course_id($identifier)]
+                );
+            case 'course grade settings':
+                return new moodle_url(
+                    "/grade/edit/settings/index.php",
+                    ['id' => $this->get_course_id($identifier)]
+                );
+            case 'outcomes':
+                return new moodle_url(
+                    "/grade/edit/outcome/course.php",
+                    ['id' => $this->get_course_id($identifier)]
+                );
+            case 'scales':
+                return new moodle_url(
+                    "/grade/edit/scale/index.php",
+                    ['id' => $this->get_course_id($identifier)]
+                );
+            default:
+                throw new \coding_exception(
+                    "Unknown page type '$type' for page identifier '$identifier'"
+                );
+        }
     }
 
     /**
@@ -56,8 +136,13 @@ class behat_grades extends behat_base {
     public function i_select_in_the($value, $element, $selectortype) {
         // Getting the container where the text should be found.
         $container = $this->get_selected_node($selectortype, $element);
-        $node = $this->find('xpath', './/input[@value="' . $value . '"]', false, $container);
-        $node->click();
+        if ($this->getSession()->getPage()->find('xpath', './/input[@value="' . $value . '"]')) {
+            $node = $this->find('xpath', './/input[@value="' . $value . '"]', false, $container);
+            $node->click();
+        } else {
+            $node = $this->find('xpath', './/button[@data-action="' . strtolower($value) . '"]', false, $container);
+            $node->press();
+        }
     }
 
     /**
@@ -152,7 +237,7 @@ class behat_grades extends behat_base {
      * @throws Exception
      */
     public function i_click_on_grade_item_menu(string $itemname, string $itemtype, string $page) {
-
+        $this->execute("behat_navigation::i_close_block_drawer_if_open");
         if ($itemtype == 'gradeitem') {
             $itemid = $this->get_grade_item_id($itemname);
         } else if ($itemtype == 'category') {
@@ -180,6 +265,8 @@ class behat_grades extends behat_base {
         } else {
             throw new Exception('Unknown page: ' . $page);
         }
+        $node = $this->get_selected_node("xpath_element", $this->escape($xpath));
+        $this->execute_js_on_node($node, '{{ELEMENT}}.scrollIntoView({ block: "center", inline: "center" })');
         $this->execute("behat_general::i_click_on", [$this->escape($xpath), "xpath_element"]);
     }
 }

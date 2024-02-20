@@ -352,11 +352,12 @@ function question_delete_question($questionid): void {
                    qv.version,
                    qbe.id as entryid,
                    qc.id as categoryid,
-                   qc.contextid as contextid
+                   ctx.id as contextid
               FROM {question} q
               LEFT JOIN {question_versions} qv ON qv.questionid = q.id
               LEFT JOIN {question_bank_entries} qbe ON qbe.id = qv.questionbankentryid
               LEFT JOIN {question_categories} qc ON qc.id = qbe.questioncategoryid
+              LEFT JOIN {context} ctx ON ctx.id = qc.contextid
              WHERE q.id = ?';
     $questiondata = $DB->get_record_sql($sql, [$question->id]);
 
@@ -389,13 +390,6 @@ function question_delete_question($questionid): void {
     // Delete questiontype-specific data.
     question_bank::get_qtype($question->qtype, false)->delete_question($question->id, $questiondata->contextid);
 
-    // Delete all tag instances.
-    core_tag_tag::remove_all_item_tags('core_question', 'question', $question->id);
-
-    // Delete the custom filed data for the question.
-    $customfieldhandler = qbank_customfields\customfield\question_handler::create();
-    $customfieldhandler->delete_instance($question->id);
-
     // Now recursively delete all child questions
     if ($children = $DB->get_records('question',
             array('parent' => $questionid), '', 'id, qtype')) {
@@ -406,9 +400,6 @@ function question_delete_question($questionid): void {
         }
     }
 
-    // Delete question comments.
-    $DB->delete_records('comments', ['itemid' => $questionid, 'component' => 'qbank_comment',
-                                            'commentarea' => 'question']);
     // Finally delete the question record itself.
     $DB->delete_records('question', ['id' => $question->id]);
     $DB->delete_records('question_versions', ['id' => $questiondata->versionid]);
@@ -421,6 +412,7 @@ function question_delete_question($questionid): void {
     question_bank::notify_question_edited($question->id);
 
     // Log the deletion of this question.
+    // Any qbank plugins storing additional question data should observe this event and perform the necessary deletion.
     $question->category = $questiondata->categoryid;
     $question->contextid = $questiondata->contextid;
     $event = \core\event\question_deleted::create_from_question_instance($question);
@@ -1314,10 +1306,11 @@ function question_categorylist($categoryid): array {
     global $DB;
 
     // Final list of category IDs.
-    $categorylist = array();
+    $categorylist = [];
 
     // A list of category IDs to check for any sub-categories.
-    $subcategories = array($categoryid);
+    $subcategories = [$categoryid];
+    $contextid = $DB->get_field('question_categories', 'contextid', ['id' => $categoryid]);
 
     while ($subcategories) {
         foreach ($subcategories as $subcategory) {
@@ -1328,37 +1321,40 @@ function question_categorylist($categoryid): array {
             $categorylist[$subcategory] = $subcategory;
         }
 
-        list ($in, $params) = $DB->get_in_or_equal($subcategories);
+        [$in, $params] = $DB->get_in_or_equal($subcategories);
+        $params[] = $contextid;
 
-        $subcategories = $DB->get_records_select_menu('question_categories', "parent $in", $params,
-                                                    null, 'id,id AS id2');
+        // Order by id is not strictly needed, but it will be cheap, and makes the results deterministic.
+        $subcategories = $DB->get_records_select_menu('question_categories',
+                "parent $in AND contextid = ?", $params, 'id', 'id,id AS id2');
     }
 
     return $categorylist;
 }
 
 /**
- * Get all parent categories of a given question category in decending order.
+ * Get all parent categories of a given question category in descending order.
+ *
  * @param int $categoryid for which you want to find the parents.
  * @return array of question category ids of all parents categories.
  */
 function question_categorylist_parents(int $categoryid): array {
     global $DB;
-    $parent = $DB->get_field('question_categories', 'parent', array('id' => $categoryid));
-    if (!$parent) {
-        return [];
-    }
-    $categorylist = [$parent];
-    $currentid = $parent;
-    while ($currentid) {
-        $currentid = $DB->get_field('question_categories', 'parent', array('id' => $currentid));
-        if ($currentid) {
-            $categorylist[] = $currentid;
+
+    $category = $DB->get_record('question_categories', ['id' => $categoryid]);
+    $contextid = $category->contextid;
+
+    $categorylist = [];
+    while ($category->parent) {
+        $category = $DB->get_record('question_categories', ['id' => $category->parent]);
+        if (!$category || $category->contextid != $contextid) {
+            break;
         }
+        $categorylist[] = $category->id;
     }
-    // Present the list in decending order (the top category at the top).
-    $categorylist = array_reverse($categorylist);
-    return $categorylist;
+
+    // Present the list in descending order (the top category at the top).
+    return array_reverse($categorylist);
 }
 
 // Import/Export Functions.

@@ -137,9 +137,6 @@ class controlmenu implements named_templatable, renderable {
         $ownerselector = $displayoptions['ownerselector'] ?? '#module-' . $mod->id;
         $menu->set_owner_selector($ownerselector);
 
-        $constraint = $displayoptions['constraintselector'] ?? '.course-content';
-        $menu->set_constraint($constraint);
-
         foreach ($controls as $control) {
             if ($control instanceof action_menu_link) {
                 $control->add_class('cm-edit-action');
@@ -164,7 +161,7 @@ class controlmenu implements named_templatable, renderable {
     protected function cm_control_items() {
         $format = $this->format;
         $mod = $this->mod;
-        $sectionreturn = $format->get_section_number();
+        $sectionreturn = $format->get_sectionnum();
         if (!empty($this->displayoptions['disableindentation']) || !$format->uses_indentation()) {
             $indent = -1;
         } else {

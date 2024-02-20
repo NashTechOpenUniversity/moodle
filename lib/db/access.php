@@ -43,8 +43,8 @@
  * The variable name for the capability definitions array is $capabilities
  *
  * For more information, take a look to the documentation available:
- *     - Access API: {@link http://docs.moodle.org/dev/Access_API}
- *     - Upgrade API: {@link http://docs.moodle.org/dev/Upgrade_API}
+ *     - Access API: {@link https://moodledev.io/docs/apis/subsystems/access}
+ *     - Upgrade API: {@link https://moodledev.io/docs/guides/upgrade}
  *
  * @package   core_access
  * @category  access
@@ -782,6 +782,13 @@ $capabilities = array(
     ),
 
     'moodle/cohort:configurecustomfields' => array(
+        'riskbitmask' => RISK_SPAM,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'clonepermissionsfrom' => 'moodle/site:config'
+    ),
+
+    'moodle/group:configurecustomfields' => array(
         'riskbitmask' => RISK_SPAM,
         'captype' => 'write',
         'contextlevel' => CONTEXT_SYSTEM,
@@ -2599,6 +2606,29 @@ $capabilities = array(
         ]
     ],
 
+    // Allow users to copy content.
+    'moodle/contentbank:copyanycontent' => [
+        'riskbitmask' => RISK_SPAM,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+            'coursecreator' => CAP_ALLOW,
+        ]
+    ],
+
+    // Allow users to copy content.
+    'moodle/contentbank:copycontent' => [
+        'riskbitmask' => RISK_SPAM,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+            'coursecreator' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+        ]
+    ],
+
     // Allow users to download course content.
     'moodle/course:downloadcoursecontent' => [
         'captype' => 'read',
@@ -2656,6 +2686,13 @@ $capabilities = array(
         ],
     ],
 
+    // Allow users to view all custom reports.
+    'moodle/reportbuilder:viewall' => [
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [],
+    ],
+
     // Allow users to create/edit their own custom reports.
     'moodle/reportbuilder:edit' => [
         'captype' => 'write',
@@ -2684,6 +2721,26 @@ $capabilities = array(
 
     // Allow users to share activities to MoodleNet.
     'moodle/moodlenet:shareactivity' => [
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => [
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ]
+    ],
+
+    // Allow users to configure course communication rooms.
+    'moodle/course:configurecoursecommunication' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => [
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ]
+    ],
+
+    // Allow users to share courses to MoodleNet.
+    'moodle/moodlenet:sharecourse' => [
         'captype' => 'read',
         'contextlevel' => CONTEXT_COURSE,
         'archetypes' => [

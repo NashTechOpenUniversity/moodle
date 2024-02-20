@@ -24,6 +24,7 @@ defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
+require_once($CFG->dirroot . '/mod/quiz/tests/quiz_question_helper_test_trait.php');
 
 /**
  * Quiz attempt walk through.
@@ -36,6 +37,8 @@ require_once($CFG->dirroot . '/mod/quiz/locallib.php');
  * @covers \mod_quiz\quiz_attempt
  */
 class attempt_walkthrough_test extends \advanced_testcase {
+
+    use \quiz_question_helper_test_trait;
 
     /**
      * Create a quiz with questions and walk through a quiz attempt.
@@ -58,11 +61,13 @@ class attempt_walkthrough_test extends \advanced_testcase {
         $saq = $questiongenerator->create_question('shortanswer', null, ['category' => $cat->id]);
         $numq = $questiongenerator->create_question('numerical', null, ['category' => $cat->id]);
         $matchq = $questiongenerator->create_question('match', null, ['category' => $cat->id]);
+        $description = $questiongenerator->create_question('description', null, ['category' => $cat->id]);
 
         // Add them to the quiz.
         quiz_add_quiz_question($saq->id, $quiz);
         quiz_add_quiz_question($numq->id, $quiz);
         quiz_add_quiz_question($matchq->id, $quiz);
+        quiz_add_quiz_question($description->id, $quiz);
 
         // Make a user to do the quiz.
         $user1 = $this->getDataGenerator()->create_user();
@@ -77,7 +82,7 @@ class attempt_walkthrough_test extends \advanced_testcase {
         $attempt = quiz_create_attempt($quizobj, 1, false, $timenow, false, $user1->id);
 
         quiz_start_new_attempt($quizobj, $quba, $attempt, 1, $timenow);
-        $this->assertEquals('1,2,3,0', $attempt->layout);
+        $this->assertEquals('1,2,3,4,0', $attempt->layout);
 
         quiz_attempt_save_started($quizobj, $quba, $attempt);
 
@@ -288,7 +293,7 @@ class attempt_walkthrough_test extends \advanced_testcase {
         $numq = $questiongenerator->create_question('numerical', null, ['category' => $cat->id]);
 
         // Add random question to the quiz.
-        quiz_add_random_questions($quiz, 0, $cat->id, 1, false);
+        $this->add_random_questions($quiz->id, 0, $cat->id, 1);
 
         // Make another category.
         $cat2 = $questiongenerator->create_question_category();

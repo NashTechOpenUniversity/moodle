@@ -17,6 +17,7 @@ require_once($CFG->libdir.'/gradelib.php');
 class editsection_form extends moodleform {
 
     function definition() {
+        global $CFG, $OUTPUT;
 
         $mform  = $this->_form;
         $course = $this->_customdata['course'];
@@ -33,8 +34,7 @@ class editsection_form extends moodleform {
 
         /// Prepare course and the editor
 
-        $mform->addElement('editor', 'summary_editor', get_string('summary'), null, $this->_customdata['editoroptions']);
-        $mform->addHelpButton('summary_editor', 'summary');
+        $mform->addElement('editor', 'summary_editor', get_string('description'), null, $this->_customdata['editoroptions']);
         $mform->setType('summary_editor', PARAM_RAW);
 
         $mform->addElement('hidden', 'id');
@@ -47,26 +47,37 @@ class editsection_form extends moodleform {
             $elements = $courseformat->create_edit_form_elements($mform, true);
         }
 
-        $mform->_registerCancelButton('cancel');
-    }
-
-    public function definition_after_data() {
-        global $CFG, $DB;
-
-        $mform  = $this->_form;
-        $course = $this->_customdata['course'];
-        $context = context_course::instance($course->id);
-
         if (!empty($CFG->enableavailability)) {
             $mform->addElement('header', 'availabilityconditions',
-                    get_string('restrictaccess', 'availability'));
+                get_string('restrictaccess', 'availability'));
             $mform->setExpanded('availabilityconditions', false);
 
             // Availability field. This is just a textarea; the user interface
             // interaction is all implemented in JavaScript. The field is named
             // availabilityconditionsjson for consistency with moodleform_mod.
             $mform->addElement('textarea', 'availabilityconditionsjson',
-                    get_string('accessrestrictions', 'availability'));
+                get_string('accessrestrictions', 'availability'),
+                ['class' => 'd-none']
+            );
+            // Availability loading indicator.
+            $loadingcontainer = $OUTPUT->container(
+                $OUTPUT->render_from_template('core/loading', []),
+                'd-flex justify-content-center py-5 icon-size-5',
+                'availabilityconditions-loading'
+            );
+            $mform->addElement('html', $loadingcontainer);
+        }
+
+        $mform->_registerCancelButton('cancel');
+    }
+
+    public function definition_after_data() {
+        global $CFG;
+
+        $mform  = $this->_form;
+        $course = $this->_customdata['course'];
+
+        if (!empty($CFG->enableavailability)) {
             \core_availability\frontend::include_all_javascript($course, null,
                     $this->_customdata['cs']);
         }

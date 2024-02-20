@@ -26,6 +26,8 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+ use core\output\local\action_menu\subpanel;
+
 defined('MOODLE_INTERNAL') || die();
 
 /**
@@ -455,16 +457,24 @@ class help_icon implements renderable, templatable {
     public $linktext = null;
 
     /**
+     * @var mixed An object, string or number that can be used within translation strings
+     */
+    public $a = null;
+
+    /**
      * Constructor
      *
      * @param string $identifier string for help page title,
      *  string with _help suffix is used for the actual help text.
      *  string with _link suffix is used to create a link to further info (if it exists)
      * @param string $component
+     * @param string|object|array|int $a An object, string or number that can be used
+     *      within translation strings
      */
-    public function __construct($identifier, $component) {
+    public function __construct($identifier, $component, $a = null) {
         $this->identifier = $identifier;
         $this->component  = $component;
+        $this->a = $a;
     }
 
     /**
@@ -489,7 +499,7 @@ class help_icon implements renderable, templatable {
     public function export_for_template(renderer_base $output) {
         global $CFG;
 
-        $title = get_string($this->identifier, $this->component);
+        $title = get_string($this->identifier, $this->component, $this->a);
 
         if (empty($this->linktext)) {
             $alt = get_string('helpprefix2', '', trim($title, ". \t"));
@@ -497,7 +507,7 @@ class help_icon implements renderable, templatable {
             $alt = get_string('helpwiththis');
         }
 
-        $data = get_formatted_help_string($this->identifier, $this->component, false);
+        $data = get_formatted_help_string($this->identifier, $this->component, false, $this->a);
 
         $data->alt = $alt;
         $data->icon = (new pix_icon('help', $alt, 'core', ['class' => 'iconhelp']))->export_for_template($output);
@@ -1115,6 +1125,9 @@ class single_select implements renderable, templatable {
      * @var help_icon The help icon for this element.
      */
     var $helpicon = null;
+
+    /** @var component_action[] component action. */
+    public $actions = [];
 
     /**
      * Constructor
@@ -2036,16 +2049,19 @@ class html_writer {
      * @param int $currenttime A default timestamp in GMT
      * @param int $step minute spacing
      * @param array $attributes - html select element attributes
-     * @return HTML fragment
+     * @param float|int|string $timezone the timezone to use to calculate the time
+     *        {@link https://moodledev.io/docs/apis/subsystems/time#timezone}
+     * @return string HTML fragment
      */
-    public static function select_time($type, $name, $currenttime = 0, $step = 5, array $attributes = null) {
+    public static function select_time($type, $name, $currenttime = 0, $step = 5, array $attributes = null, $timezone = 99) {
         global $OUTPUT;
 
         if (!$currenttime) {
             $currenttime = time();
         }
         $calendartype = \core_calendar\type_factory::get_calendar_instance();
-        $currentdate = $calendartype->timestamp_to_date_array($currenttime);
+        $currentdate = $calendartype->timestamp_to_date_array($currenttime, $timezone);
+
         $userdatetype = $type;
         $timeunits = array();
 
@@ -2865,6 +2881,9 @@ class html_table {
 
     /** @var bool Whether to make the table to be scrolled horizontally with ease. Make table responsive across all viewports. */
     public $responsive = true;
+
+    /** @var string class name to add to this html table. */
+    public $class;
 
     /**
      * Constructor
@@ -3792,7 +3811,7 @@ class custom_menu_item implements renderable, templatable {
  * of custom_menu_item nodes that can be rendered by the core renderer.
  *
  * To configure the custom menu:
- *     Settings: Administration > Appearance > Themes > Theme settings
+ *     Settings: Administration > Appearance > Advanced theme settings
  *
  * @copyright 2010 Sam Hemelryk
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -4337,6 +4356,12 @@ class action_menu implements renderable, templatable {
     public $menutrigger = '';
 
     /**
+     * An array of attributes added to the trigger element of the secondary menu.
+     * @var array
+     */
+    public $triggerattributes = [];
+
+    /**
      * Any extra classes for toggling to the secondary menu.
      * @var string
      */
@@ -4409,7 +4434,7 @@ class action_menu implements renderable, templatable {
     /**
      * Classes for the trigger menu
      */
-    const DEFAULT_KEBAB_TRIGGER_CLASSES = 'btn btn-icon d-flex align-items-center justify-content-center';
+    const DEFAULT_KEBAB_TRIGGER_CLASSES = 'btn btn-icon d-flex align-items-center justify-content-center no-caret';
 
     /**
      * Setup trigger as in the kebab menu.
@@ -4457,10 +4482,13 @@ class action_menu implements renderable, templatable {
     /**
      * Adds an action to this action menu.
      *
-     * @param action_menu_link|pix_icon|string $action
+     * @param action_menu_link|pix_icon|subpanel|string $action
      */
     public function add($action) {
-        if ($action instanceof action_link) {
+
+        if ($action instanceof subpanel) {
+            $this->add_secondary_subpanel($action);
+        } else if ($action instanceof action_link) {
             if ($action->primary) {
                 $this->add_primary_action($action);
             } else {
@@ -4471,6 +4499,14 @@ class action_menu implements renderable, templatable {
         } else {
             $this->add_secondary_action($action);
         }
+    }
+
+    /**
+     * Adds a secondary subpanel.
+     * @param subpanel $subpanel
+     */
+    public function add_secondary_subpanel(subpanel $subpanel) {
+        $this->secondaryactions[] = $subpanel;
     }
 
     /**
@@ -4642,10 +4678,28 @@ class action_menu implements renderable, templatable {
      * This is required whenever the action menu is displayed inside any CSS element with the .no-overflow class
      * (flexible_table and any of it's child classes are a likely candidate).
      *
+     * @deprecated since Moodle 4.3
      * @param string $ancestorselector A snippet of CSS used to identify the ancestor to contrain the dialogue to.
      */
     public function set_constraint($ancestorselector) {
-        $this->attributessecondary['data-constraint'] = $ancestorselector;
+        debugging('The method set_constraint() is deprecated. Please use the set_boundary() method instead.', DEBUG_DEVELOPER);
+        $this->set_boundary('window');
+    }
+
+    /**
+     * Set the overflow constraint boundary of the dropdown menu.
+     * @see https://getbootstrap.com/docs/4.6/components/dropdowns/#options The 'boundary' option in the Bootstrap documentation
+     *
+     * @param string $boundary Accepts the values of 'viewport', 'window', or 'scrollParent'.
+     * @throws coding_exception
+     */
+    public function set_boundary(string $boundary) {
+        if (!in_array($boundary, ['viewport', 'window', 'scrollParent'])) {
+            throw new coding_exception("HTMLElement reference boundaries are not supported." .
+                "Accepted boundaries are 'viewport', 'window', or 'scrollParent'.", DEBUG_DEVELOPER);
+        }
+
+        $this->triggerattributes['data-boundary'] = $boundary;
     }
 
     /**
@@ -4724,8 +4778,6 @@ class action_menu implements renderable, templatable {
             $this->attributes['role'] = 'menubar';
         }
         $attributes = $this->attributes;
-        $attributesprimary = $this->attributesprimary;
-        $attributessecondary = $this->attributessecondary;
 
         $data->instance = $this->instance;
 
@@ -4736,15 +4788,35 @@ class action_menu implements renderable, templatable {
             return [ 'name' => $key, 'value' => $value ];
         }, array_keys($attributes), $attributes);
 
+        $data->primary = $this->export_primary_actions_for_template($output);
+        $data->secondary = $this->export_secondary_actions_for_template($output);
+        $data->dropdownalignment = $this->dropdownalignment;
+
+        return $data;
+    }
+
+    /**
+     * Export the primary actions for the template.
+     * @param renderer_base $output
+     * @return stdClass
+     */
+    protected function export_primary_actions_for_template(renderer_base $output): stdClass {
+        $attributes = $this->attributes;
+        $attributesprimary = $this->attributesprimary;
+
         $primary = new stdClass();
         $primary->title = '';
         $primary->prioritise = $this->prioritise;
 
         $primary->classes = isset($attributesprimary['class']) ? $attributesprimary['class'] : '';
         unset($attributesprimary['class']);
-        $primary->attributes = array_map(function($key, $value) {
-            return [ 'name' => $key, 'value' => $value ];
+
+        $primary->attributes = array_map(function ($key, $value) {
+            return ['name' => $key, 'value' => $value];
         }, array_keys($attributesprimary), $attributesprimary);
+        $primary->triggerattributes = array_map(function ($key, $value) {
+            return ['name' => $key, 'value' => $value];
+        }, array_keys($this->triggerattributes), $this->triggerattributes);
 
         $actionicon = $this->actionicon;
         if (!empty($this->menutrigger)) {
@@ -4779,7 +4851,7 @@ class action_menu implements renderable, templatable {
         }
 
         $primary->actiontext = $this->actiontext ? (string) $this->actiontext : '';
-        $primary->items = array_map(function($item) use ($output) {
+        $primary->items = array_map(function ($item) use ($output) {
             $data = (object) [];
             if ($item instanceof action_menu_link) {
                 $data->actionmenulink = $item->export_for_template($output);
@@ -4794,19 +4866,36 @@ class action_menu implements renderable, templatable {
             }
             return $data;
         }, $this->primaryactions);
+        return $primary;
+    }
 
+    /**
+     * Export the secondary actions for the template.
+     * @param renderer_base $output
+     * @return stdClass
+     */
+    protected function export_secondary_actions_for_template(renderer_base $output): stdClass {
+        $attributessecondary = $this->attributessecondary;
         $secondary = new stdClass();
         $secondary->classes = isset($attributessecondary['class']) ? $attributessecondary['class'] : '';
         unset($attributessecondary['class']);
-        $secondary->attributes = array_map(function($key, $value) {
-            return [ 'name' => $key, 'value' => $value ];
+
+        $secondary->attributes = array_map(function ($key, $value) {
+            return ['name' => $key, 'value' => $value];
         }, array_keys($attributessecondary), $attributessecondary);
-        $secondary->items = array_map(function($item) use ($output) {
-            $data = (object) [];
+        $secondary->items = array_map(function ($item) use ($output) {
+            $data = (object) [
+                'simpleitem' => true,
+            ];
             if ($item instanceof action_menu_link) {
                 $data->actionmenulink = $item->export_for_template($output);
+                $data->simpleitem = false;
             } else if ($item instanceof action_menu_filler) {
                 $data->actionmenufiller = $item->export_for_template($output);
+                $data->simpleitem = false;
+            } else if ($item instanceof subpanel) {
+                $data->subpanel = $item->export_for_template($output);
+                $data->simpleitem = false;
             } else if ($item instanceof action_link) {
                 $data->actionlink = $item->export_for_template($output);
             } else if ($item instanceof pix_icon) {
@@ -4816,14 +4905,8 @@ class action_menu implements renderable, templatable {
             }
             return $data;
         }, $this->secondaryactions);
-
-        $data->primary = $primary;
-        $data->secondary = $secondary;
-        $data->dropdownalignment = $this->dropdownalignment;
-
-        return $data;
+        return $secondary;
     }
-
 }
 
 /**
@@ -4874,6 +4957,8 @@ class action_menu_link extends action_link implements renderable {
 
     /**
      * The number of instances of this action menu link (and its subclasses).
+     *
+     * @deprecated since Moodle 4.4.
      * @var int
      */
     protected static $instance = 1;
@@ -4902,7 +4987,6 @@ class action_menu_link extends action_link implements renderable {
      */
     public function export_for_template(renderer_base $output) {
         $data = parent::export_for_template($output);
-        $data->instance = self::$instance++;
 
         // Ignore what the parent did with the attributes, except for ID and class.
         $data->attributes = [];
@@ -5158,7 +5242,7 @@ class progress_bar implements renderable, templatable {
         $this->percent = $percent;
         $this->lastupdate = microtime(true);
 
-        echo $OUTPUT->render_progress_bar_update($this->html_id, sprintf("%.1f", $this->percent), $msg, $estimatemsg);
+        echo $OUTPUT->render_progress_bar_update($this->html_id, $this->percent, $msg, $estimatemsg);
         flush();
     }
 

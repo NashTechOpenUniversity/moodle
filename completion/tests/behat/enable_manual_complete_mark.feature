@@ -11,7 +11,7 @@ Feature: Allow students to manually mark an activity as complete
       | Course 1 | C1 | 0 |
     And the following "users" exist:
       | username | firstname | lastname | email |
-      | teacher1 | Teacher | Frist | teacher1@example.com |
+      | teacher1 | Teacher | First | teacher1@example.com |
       | student1 | Student | First | student1@example.com |
     And the following "course enrolments" exist:
       | user | course | role |
@@ -28,7 +28,7 @@ Feature: Allow students to manually mark an activity as complete
     And I press "Save and display"
     And I am on the "Test forum name" "forum activity editing" page
     And I set the following fields to these values:
-      | completion | 1 |
+      | Students must manually mark the activity as done | 1 |
     And I press "Save and return to course"
     And "Student First" user has not completed "Test forum name" activity
     And I am on the "Course 1" course page logged in as student1

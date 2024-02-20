@@ -1550,7 +1550,7 @@ class core_plugin_manager {
 
         $provider = \core\update\checker::instance();
 
-        if (!$provider->enabled() or during_initial_install()) {
+        if (!$provider->enabled() || $component === '' || during_initial_install()) {
             return null;
         }
 
@@ -1728,6 +1728,7 @@ class core_plugin_manager {
             'editor' => array('tinymce'),
             'enrol' => array('authorize'),
             'filter' => array('censor'),
+            'h5plib' => array('v124'),
             'media' => array('swf'),
             'portfolio' => array('picasa', 'boxnet'),
             'qformat' => array('webct'),
@@ -1826,6 +1827,7 @@ class core_plugin_manager {
             ),
 
             'communication' => [
+                'customlink',
                 'matrix',
             ],
 
@@ -1871,6 +1873,11 @@ class core_plugin_manager {
                 'paypal', 'self', 'fee',
             ),
 
+            'factor' => [
+                'admin', 'auth', 'capability', 'cohort',  'email', 'grace', 'iprange', 'nosetup', 'role',
+                'token', 'totp', 'webauthn', 'sms',
+            ],
+
             'filter' => array(
                 'activitynames', 'algebra', 'emailprotect',
                 'emoticon', 'displayh5p', 'mathjaxloader', 'mediaplugin', 'multilang', 'tex', 'tidy',
@@ -1902,7 +1909,7 @@ class core_plugin_manager {
             ),
 
             'h5plib' => array(
-                'v124'
+                'v126',
             ),
 
             'local' => array(
@@ -2008,7 +2015,8 @@ class core_plugin_manager {
             'report' => array(
                 'backups', 'competency', 'completion', 'configlog', 'courseoverview', 'eventlist',
                 'infectedfiles', 'insights', 'log', 'loglive', 'outline', 'participation', 'progress',
-                'questioninstances', 'security', 'stats', 'status', 'performance', 'usersessions'
+                'questioninstances', 'security', 'stats', 'status', 'performance', 'usersessions',
+                'themeusage',
             ),
 
             'repository' => array(
@@ -2036,7 +2044,10 @@ class core_plugin_manager {
                 'h5p',
                 'media',
                 'recordrtc',
-                'link'
+                'link',
+                'html',
+                'noautolink',
+                'premium',
             ],
 
             'theme' => array(
@@ -2049,7 +2060,7 @@ class core_plugin_manager {
                 'installaddon', 'langimport', 'licensemanager', 'log', 'lp', 'lpimportcsv', 'lpmigrate', 'messageinbound',
                 'mobile', 'moodlenet', 'multilangupgrade', 'monitor', 'oauth2', 'phpunit', 'policy', 'profiling', 'recyclebin',
                 'replace', 'spamcleaner', 'task', 'templatelibrary', 'uploadcourse', 'uploaduser', 'unsuproles',
-                'usertours', 'xmldb'
+                'usertours', 'xmldb', 'mfa'
             ),
 
             'webservice' => array(

@@ -400,15 +400,15 @@ class dml_read_slave_test extends \base_testcase {
 
             $this->assertNull($DB->get_dbhwrite());
 
-            $this->_called = false;
+            $called = false;
             $transaction = $DB->start_delegated_transaction();
             $now = microtime(true);
 
             $observers = [
                 [
                     'eventname'   => '\core_tests\event\unittest_executed',
-                    'callback'    => function (\core_tests\event\unittest_executed $event) use ($DB, $now) {
-                        $this->_called = true;
+                    'callback'    => function (\core_tests\event\unittest_executed $event) use ($DB, $now, &$called) {
+                        $called = true;
                         $this->assertFalse($DB->is_transaction_started());
 
                         // This condition should always evaluate true, however we need to
@@ -448,7 +448,7 @@ class dml_read_slave_test extends \base_testcase {
             $event->trigger();
             $transaction->allow_commit();
 
-            $this->assertTrue($this->_called);
+            $this->assertTrue($called);
         });
     }
 
@@ -562,7 +562,7 @@ class dml_read_slave_test extends \base_testcase {
             $this->assertNull($DB->get_dbhwrite());
 
             $session = new \core\session\database();
-            $session->handler_read('dummy');
+            $session->read('dummy');
 
             $this->assertEquals(0, $DB->perf_get_reads_slave());
             $this->assertTrue($DB->perf_get_reads() > 0);

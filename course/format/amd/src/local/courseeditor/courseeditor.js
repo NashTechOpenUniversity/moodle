@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-import {get_string as getString} from 'core/str';
+import {getString} from 'core/str';
 import {Reactive} from 'core/reactive';
 import notification from 'core/notification';
 import Exporter from 'core_courseformat/local/courseeditor/exporter';
@@ -52,9 +52,9 @@ export default class extends Reactive {
      * The current page section return
      * @attribute sectionReturn
      * @type number
-     * @default 0
+     * @default null
      */
-    sectionReturn = 0;
+    sectionReturn = null;
 
     /**
      * Set up the course editor when the page is ready.

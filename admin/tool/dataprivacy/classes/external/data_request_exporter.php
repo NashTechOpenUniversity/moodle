@@ -104,6 +104,11 @@ class data_request_exporter extends persistent_exporter {
                 'optional' => true,
                 'default' => false
             ],
+            'allowfiltering' => [
+                'type' => PARAM_BOOL,
+                'optional' => true,
+                'default' => false,
+            ],
             'canmarkcomplete' => [
                 'type' => PARAM_BOOL,
                 'optional' => true,
@@ -153,16 +158,18 @@ class data_request_exporter extends persistent_exporter {
 
         $values['canreview'] = false;
         $values['approvedeny'] = false;
+        $values['allowfiltering'] = get_config('tool_dataprivacy', 'allowfiltering');
         $values['statuslabel'] = helper::get_request_status_string($this->persistent->get('status'));
 
         switch ($this->persistent->get('status')) {
             case api::DATAREQUEST_STATUS_PENDING:
-                $values['statuslabelclass'] = 'badge-info';
+            case api::DATAREQUEST_STATUS_PREPROCESSING:
+                $values['statuslabelclass'] = 'bg-info text-white';
                 // Request can be manually completed for general enquiry requests.
                 $values['canmarkcomplete'] = $requesttype == api::DATAREQUEST_TYPE_OTHERS;
                 break;
             case api::DATAREQUEST_STATUS_AWAITING_APPROVAL:
-                $values['statuslabelclass'] = 'badge-info';
+                $values['statuslabelclass'] = 'bg-info text-white';
                 // DPO can review the request once it's ready.
                 $values['canreview'] = true;
                 // Whether the DPO can approve or deny the request.
@@ -173,24 +180,24 @@ class data_request_exporter extends persistent_exporter {
                 }
                 break;
             case api::DATAREQUEST_STATUS_APPROVED:
-                $values['statuslabelclass'] = 'badge-info';
+                $values['statuslabelclass'] = 'bg-info text-white';
                 break;
             case api::DATAREQUEST_STATUS_PROCESSING:
-                $values['statuslabelclass'] = 'badge-info';
+                $values['statuslabelclass'] = 'bg-info text-white';
                 break;
             case api::DATAREQUEST_STATUS_COMPLETE:
             case api::DATAREQUEST_STATUS_DOWNLOAD_READY:
             case api::DATAREQUEST_STATUS_DELETED:
-                $values['statuslabelclass'] = 'badge-success';
+                $values['statuslabelclass'] = 'bg-success text-white';
                 break;
             case api::DATAREQUEST_STATUS_CANCELLED:
-                $values['statuslabelclass'] = 'badge-warning';
+                $values['statuslabelclass'] = 'bg-warning text-dark';
                 break;
             case api::DATAREQUEST_STATUS_REJECTED:
-                $values['statuslabelclass'] = 'badge-danger';
+                $values['statuslabelclass'] = 'bg-danger text-white';
                 break;
             case api::DATAREQUEST_STATUS_EXPIRED:
-                $values['statuslabelclass'] = 'badge-secondary';
+                $values['statuslabelclass'] = 'bg-secondary text-dark';
                 break;
         }
 

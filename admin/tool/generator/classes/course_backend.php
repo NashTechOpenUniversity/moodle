@@ -216,7 +216,7 @@ class tool_generator_course_backend extends tool_generator_backend {
      * @return int Course id
      */
     public function make() {
-        global $DB, $CFG;
+        global $DB, $CFG, $USER;
         require_once($CFG->dirroot . '/lib/phpunit/classes/util.php');
 
         raise_memory_limit(MEMORY_EXTRA);
@@ -250,6 +250,12 @@ class tool_generator_course_backend extends tool_generator_backend {
                     $pluginfunction($this, $this->generator, $this->course->id, self::$paramactivities[$this->size]);
                 }
             }
+        }
+
+        // We are checking 'enroladminnewcourse' setting to decide to enrol admins or not.
+        if (!empty($CFG->creatornewroleid) && !empty($CFG->enroladminnewcourse) && is_siteadmin($USER->id)) {
+            // Deal with course creators - enrol them internally with default role.
+            enrol_try_internal_enrol($this->course->id, $USER->id, $CFG->creatornewroleid);
         }
 
         // Log total time.
@@ -454,7 +460,7 @@ class tool_generator_course_backend extends tool_generator_backend {
 
             // Generate random binary data (different for each file so it
             // doesn't compress unrealistically).
-            $data = random_bytes_emulate($this->limit_filesize(self::$paramsmallfilesize[$this->size]));
+            $data = random_bytes($this->limit_filesize(self::$paramsmallfilesize[$this->size]));
 
             $fs->create_file_from_string($filerecord, $data);
             $this->dot($i, $count);
@@ -495,7 +501,7 @@ class tool_generator_course_backend extends tool_generator_backend {
                 throw new coding_exception('Failed to open temporary file');
             }
             for ($j = 0; $j < $blocks; $j++) {
-                $data = random_bytes_emulate($blocksize);
+                $data = random_bytes($blocksize);
                 fwrite($handle, $data);
                 $this->dot($i * $blocks + $j, $count * $blocks);
             }
