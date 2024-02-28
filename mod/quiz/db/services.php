@@ -231,4 +231,19 @@ $functions = [
         'capabilities'  => 'mod/quiz:manage',
         'ajax'          => true,
     ],
+    'quizreport_get_users_in_report' => [
+        'classname' => 'mod_quiz\\external\\get_users_in_report',
+        'methodname' => 'execute',
+        'description' => 'Returns the dataset of users within the report',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities'  => 'mod/quiz:view',
+    ],
+    'quizreport_get_groups_for_selector_by_cmid' => [
+        'classname' => 'mod_quiz\\external\\get_groups_for_selector_by_cmid',
+        'methodname' => 'execute',
+        'description' => 'Returns group list based on cmid.',
+        'type' => 'read',
+        'ajax' => true,
+    ],
 ];

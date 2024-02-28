@@ -31,6 +31,9 @@ class action_bar extends \core_grades\output\action_bar {
 
     /** @var string $usersearch The content that the current user is looking for. */
     protected string $usersearch = '';
+    /** @var string $userid The userid. */
+    protected string $userid = '';
+
 
     /**
      * The class constructor.
@@ -41,6 +44,7 @@ class action_bar extends \core_grades\output\action_bar {
         parent::__construct($context);
 
         $this->usersearch = optional_param('gpr_search', '', PARAM_NOTAGS);
+        $this->userid = optional_param('grp_userid', '', PARAM_INT);
     }
 
     /**
@@ -73,24 +77,20 @@ class action_bar extends \core_grades\output\action_bar {
         // and the view mode selector (if applicable).
         if (has_capability('moodle/grade:viewall', $this->context)) {
             $course = get_course($courseid);
-            $gradesrenderer = $PAGE->get_renderer('core_grades');
+            $filter = new \stdClass();
+            $filter->usersearch = $this->usersearch;
+            $filter->userid = $this->userid;
+            $params = ['id' => $course->id];
 
-            $initialscontent = $gradesrenderer->initials_selector(
+            $initialselector = \core\output\initials_bar::initials_selector(
                 $course,
                 $this->context,
-                '/grade/report/grader/index.php'
-            );
-            $initialselector = new comboboxsearch(
-                false,
-                $initialscontent->buttoncontent,
-                $initialscontent->dropdowncontent,
-                'initials-selector',
-                'initialswidget',
-                'initialsdropdown',
-                $initialscontent->buttonheader,
+                '/grade/report/grader/index.php',
+                $params,
+                $filter,
             );
             $data['initialselector'] = $initialselector->export_for_template($output);
-            $data['groupselector'] = $gradesrenderer->group_selector($course);
+            $data['groupselector'] = \core\output\initials_bar::group_selector($course, $output);
 
             $resetlink = new moodle_url('/grade/report/grader/index.php', ['id' => $courseid]);
             $searchinput = $OUTPUT->render_from_template('core_user/comboboxsearch/user_selector', [

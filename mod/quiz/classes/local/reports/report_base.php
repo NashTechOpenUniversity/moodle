@@ -93,4 +93,35 @@ abstract class report_base {
 
         return $currentgroup;
     }
+
+    /**
+     * Print action bar filter.
+     *
+     * @param string $reportmode The quiz report type.
+     * @param attempts_report_options $options The current report settings.
+     * @param object $table The table class for each report type.
+     * @param \cm_info $cm Course-module object.
+     */
+    public function print_action_bar(string $reportmode, attempts_report_options $options, object $table,
+            \cm_info $cm = null): void {
+        global $PAGE;
+        // Print the page header.
+        $renderer = $PAGE->get_renderer('core_grades');
+        // Conditionally add the group JS if we have groups enabled.
+        $extra = new stdClass();
+        $extra->path = '/mod/quiz/report.php';
+        $extra->params = $options->get_url()->params();
+        if ($cm->get_course()->groupmode) {
+            $PAGE->requires->js_call_amd('core/comboboxsearch/group', 'init', [$extra]);
+        }
+        $extra->reportmode = $reportmode;
+        $extra->cmid = $cm->id;
+        $extra->optionclass = get_class($options);
+        $extra->service = 'quizreport_get_users_in_report';
+        $extra->tableclass = get_class($table);
+        $PAGE->requires->js_call_amd('core/searchwidget/user', 'init', [$extra]);
+        $actionbar = new \mod_quiz\output\action_bar(\context_module::instance($cm->id),
+            $options, $reportmode, $table);
+        echo $renderer->render_action_bar($actionbar);
+    }
 }

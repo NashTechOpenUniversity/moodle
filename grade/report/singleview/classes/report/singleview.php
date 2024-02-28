@@ -143,15 +143,15 @@ class singleview extends grade_report {
      * @return string
      */
     protected static function groups_course_menu(stdClass $course, moodle_url $urlroot) {
-        global $PAGE;
+        global $PAGE, $OUTPUT;
 
-        $renderer = $PAGE->get_renderer('core_grades');
         $params = $urlroot->params();
         if ($params['item'] == 'user') {
             $params['item'] = 'user_select';
             $urlroot->params($params);
         }
-        return $renderer->group_selector($course, $urlroot->out());
+
+        return \core\output\initials_bar::group_selector($course, $OUTPUT, $urlroot->out());
     }
 
     /**

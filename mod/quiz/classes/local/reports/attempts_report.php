@@ -164,17 +164,16 @@ abstract class attempts_report extends report_base {
      * @param int $currentgroup the current group.
      * @param bool $hasquestions whether there are any questions in the quiz.
      * @param bool $hasstudents whether there are any relevant students.
+     * @param object $table whether there are any relevant students.
      */
     protected function print_standard_header_and_messages($cm, $course, $quiz,
-            $options, $currentgroup, $hasquestions, $hasstudents) {
-        global $OUTPUT;
+            $options, $currentgroup, $hasquestions, $hasstudents, $table) {
+        global $OUTPUT, $PAGE;
 
+        $PAGE->set_navigation_overflow_state(false);
         $this->print_header_and_tabs($cm, $course, $quiz, $this->mode);
-
-        if (groups_get_activity_groupmode($cm)) {
-            // Groups are being used, so output the group selector if we are not downloading.
-            groups_print_activity_menu($cm, $options->get_url());
-        }
+        $PAGE->set_navigation_overflow_state(true);
+        $this->print_action_bar($this->mode, $options, $table, $cm);
 
         // Print information on the number of existing attempts.
         if ($strattemptnum = quiz_num_attempt_summary($quiz, $cm, true, $currentgroup)) {
