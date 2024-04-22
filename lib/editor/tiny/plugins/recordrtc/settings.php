@@ -94,4 +94,14 @@ if ($ADMIN->fulltree) {
         return '';
     });
     $settings->add($setting);
+
+    // Pausing allowed.
+    $options = [
+            '1' => new lang_string('yes'),
+            '0' => new lang_string('no'),
+    ];
+
+    $name = get_string('allowedpausing', 'tiny_recordrtc');
+    $setting = new admin_setting_configselect('tiny_recordrtc/allowedpausing', $name, '', 0, $options);
+    $settings->add($setting);
 }
