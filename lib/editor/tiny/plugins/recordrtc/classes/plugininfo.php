@@ -72,27 +72,41 @@ class plugininfo extends plugin implements plugin_with_buttons, plugin_with_menu
         ?editor $editor = null
     ): array {
         $sesskey = sesskey();
-        $allowedtypes = get_config('tiny_recordrtc', 'allowedtypes');
+        $allowedtypes = explode(',', get_config('tiny_recordrtc', 'allowedtypes'));
         $audiobitrate = get_config('tiny_recordrtc', 'audiobitrate');
         $videobitrate = get_config('tiny_recordrtc', 'videobitrate');
+        $screenbitrate = get_config('tiny_recordrtc', 'screenbitrate');
         $audiotimelimit = get_config('tiny_recordrtc', 'audiotimelimit');
         $videotimelimit = get_config('tiny_recordrtc', 'videotimelimit');
+        $screentimelimit = get_config('tiny_recordrtc', 'screentimelimit');
+        [$videoscreenwidth, $videoscreenheight] = explode(',', get_config('tiny_recordrtc', 'screensize'));
 
         // Update $allowedtypes to account for capabilities.
-        $audioallowed = $allowedtypes === 'audio' || $allowedtypes === 'both';
-        $videoallowed = $allowedtypes === 'video' || $allowedtypes === 'both';
-        $allowedpausing = (bool)get_config('tiny_recordrtc', 'allowedpausing');
-        $audioallowed = $audioallowed && has_capability('tiny/recordrtc:recordaudio', $context);
-        $videoallowed = $videoallowed && has_capability('tiny/recordrtc:recordvideo', $context);
-        if ($audioallowed && $videoallowed) {
-            $allowedtypes = 'both';
-        } else if ($audioallowed) {
-            $allowedtypes = 'audio';
-        } else if ($videoallowed) {
-            $allowedtypes = 'video';
-        } else {
-            $allowedtypes = '';
+        $audioallowed = false;
+        $videoallowed = false;
+        $screenallowed = false;
+        foreach ($allowedtypes as $value) {
+            switch ($value) {
+                case 'audio':
+                    if (has_capability('tiny/recordrtc:recordaudio', $context)) {
+                        $audioallowed = true;
+                    }
+                    break;
+                case 'video':
+                    if (has_capability('tiny/recordrtc:recordvideo', $context)) {
+                        $videoallowed = true;
+                    }
+                    break;
+                case 'screen':
+                    if (has_capability('tiny/recordrtc:recordscreen', $context)) {
+                        $screenallowed = true;
+                    }
+                    break;
+                default:
+                    break;
+            }
         }
+        $allowedpausing = (bool)get_config('tiny_recordrtc', 'allowedpausing');
 
         $maxrecsize = get_max_upload_file_size();
         if (!empty($options['maxbytes'])) {
@@ -104,10 +118,14 @@ class plugininfo extends plugin implements plugin_with_buttons, plugin_with_menu
             'allowedtypes' => $allowedtypes,
             'audiobitrate' => $audiobitrate,
             'videobitrate' => $videobitrate,
+            'screenbitrate' => $screenbitrate,
             'audiotimelimit' => $audiotimelimit,
             'videotimelimit' => $videotimelimit,
+            'screentimelimit' => $screentimelimit,
             'maxrecsize' => $maxrecsize,
             'allowedpausing' => $allowedpausing,
+            'videoscreenwidth' => $videoscreenwidth,
+            'videoscreenheight' => $videoscreenheight,
         ];
 
         $data = [
@@ -119,6 +137,7 @@ class plugininfo extends plugin implements plugin_with_buttons, plugin_with_menu
             'data' => $data,
             'videoAllowed' => $videoallowed,
             'audioAllowed' => $audioallowed,
+            'screenAllowed' => $screenallowed,
         ];
     }
 }
