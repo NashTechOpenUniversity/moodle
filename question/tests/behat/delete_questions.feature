@@ -84,3 +84,32 @@ Feature: A teacher can delete questions in the question bank
     And I press "Delete"
     Then I should not see "Test question to be deleted"
     And I should not see "Test question to be deleted version2"
+
+  @javascript
+  Scenario: Delete the latest question version used in a quiz, the previous version will be display in the question bank
+    Given the following "activities" exist:
+      | activity | course | idnumber | name        |
+      | quiz     | C1     | quiz     | Test quiz   |
+      | quiz     | C1     | quiz1    | Test quiz 1 |
+    And the following "core_question > updated questions" exist:
+      | questioncategory | question                    | questiontext                          |
+      | Test questions   | Test question to be deleted | Test question to be deleted version 2 |
+    And quiz "Test quiz" contains the following questions:
+      | question                    | page | requireprevious |
+      | Test question to be deleted | 1    | 0               |
+    When I reload the page
+    And I should see "Essay question (HTML editor)"
+    And I choose "History" action for "Essay question (HTML editor)" in the question bank
+    And I choose "Delete" action for "Essay question (HTML editor)" in the question bank
+    And I press "Delete"
+    And I am on the "Course 1" "core_question > course question bank" page logged in as "teacher1"
+    Then I should see "Test question to be deleted"
+    And I apply question bank filter "Show hidden questions" with value "Yes"
+    And I should see "Essay question (HTML editor)"
+    And I should not see "Test question to be deleted"
+    # Check new quiz should see the previous version of the question when adding.
+    And I am on the "Test quiz 1" "quiz activity" page
+    And I click on "Add question" "link"
+    And I open the "last" add to quiz menu
+    And I follow "from question bank"
+    And I should see "Test question to be deleted"

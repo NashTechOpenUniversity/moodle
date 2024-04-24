@@ -745,16 +745,17 @@ class view {
             [$colname, $subsort] = $this->parse_subsort($sortname);
             $sorts[] = $this->requiredcolumns[$colname]->sort_expression($sortorder == SORT_DESC, $subsort);
         }
-
-        // Build the where clause.
-        $latestversion = 'qv.version = (SELECT MAX(v.version)
-                                          FROM {question_versions} v
-                                          JOIN {question_bank_entries} be
-                                            ON be.id = v.questionbankentryid
-                                         WHERE be.id = qbe.id)';
         $this->sqlparams = [];
+        $latestversionwhere = '';
+
         $conditions = [];
         foreach ($this->searchconditions as $searchcondition) {
+            if ($searchcondition instanceof \qbank_deletequestion\hidden_condition &&
+                !empty($searchcondition->params())) {
+                $latestversionwhere .= ' AND v.status <> :hidden_condition';
+                $this->sqlparams = array_merge($this->sqlparams, $searchcondition->params());
+                continue;
+            }
             if ($searchcondition->where()) {
                 $conditions[] = '((' . $searchcondition->where() .'))';
             }
@@ -762,6 +763,13 @@ class view {
                 $this->sqlparams = array_merge($this->sqlparams, $searchcondition->params());
             }
         }
+
+        // Build the where clause.
+        $latestversion = 'qv.version = (SELECT MAX(v.version)
+                                          FROM {question_versions} v
+                                          JOIN {question_bank_entries} be
+                                            ON be.id = v.questionbankentryid
+                                         WHERE be.id = qbe.id ' . $latestversionwhere . ')';
         // Get higher level filter condition.
         $jointype = isset($this->pagevars['jointype']) ? (int)$this->pagevars['jointype'] : condition::JOINTYPE_DEFAULT;
         $nonecondition = ($jointype === datafilter::JOINTYPE_NONE) ? ' NOT ' : '';

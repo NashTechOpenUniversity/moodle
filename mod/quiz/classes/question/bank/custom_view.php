@@ -245,9 +245,9 @@ class custom_view extends \core_question\local\bank\view {
                                           FROM {question_versions} v
                                           JOIN {question_bank_entries} be
                                             ON be.id = v.questionbankentryid
-                                         WHERE be.id = qbe.id)';
-        $onlyready = '((' . "qv.status = '" . question_version_status::QUESTION_STATUS_READY . "'" .'))';
-        $this->sqlparams = [];
+                                         WHERE be.id = qbe.id
+                                               AND v.status = :status)';
+        $this->sqlparams = ['status' => question_version_status::QUESTION_STATUS_READY];
         $conditions = [];
         foreach ($this->searchconditions as $searchcondition) {
             if ($searchcondition->where()) {
@@ -257,7 +257,7 @@ class custom_view extends \core_question\local\bank\view {
                 $this->sqlparams = array_merge($this->sqlparams, $searchcondition->params());
             }
         }
-        $majorconditions = ['q.parent = 0', $latestversion, $onlyready];
+        $majorconditions = ['q.parent = 0', $latestversion];
         // Get higher level filter condition.
         $jointype = isset($this->pagevars['jointype']) ? (int)$this->pagevars['jointype'] : condition::JOINTYPE_DEFAULT;
         $nonecondition = ($jointype === datafilter::JOINTYPE_NONE) ? ' NOT ' : '';

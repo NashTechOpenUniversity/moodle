@@ -272,7 +272,9 @@ class helper {
                                 OR (qv.version = (SELECT MAX(v.version)
                                                     FROM {question_versions} v
                                                     JOIN {question_bank_entries} be ON be.id = v.questionbankentryid
-                                                   WHERE be.id = qbe.id)
+                                                   WHERE be.id = qbe.id
+                                                         AND v.status = '" .
+                                                             question_version_status::QUESTION_STATUS_READY . "')
                                    )
                                 )
                             ) AS questioncount
