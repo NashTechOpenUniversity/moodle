@@ -45,15 +45,12 @@ class core_role_admins_potential_selector extends user_selector_base {
 
     public function find_users($search) {
         global $CFG, $DB;
-
-        [$wherecondition, $params] = $this->search_sql($search, 'u');
-        $params = array_merge($params, $this->userfieldsparams);
-
-        $fields = 'SELECT u.id, ' . $this->userfieldsselects;
+        [$select, $joinsql, $wherecondition, $params] = $this->search_sql($search, 'u');
+        $fields = 'SELECT u.id, ' . $select;
         $countfields = 'SELECT COUNT(1)';
 
         $sql = " FROM {user} u
-                      $this->userfieldsjoin
+                      $joinsql
                 WHERE $wherecondition AND mnethostid = :localmnet";
 
         // It could be dangerous to make remote users admins and also this could lead to other problems.

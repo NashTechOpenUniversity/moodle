@@ -42,7 +42,8 @@ class mod_forum_existing_subscriber_selector extends mod_forum_subscriber_select
      */
     public function find_users($search) {
         global $DB;
-        list($wherecondition, $params) = $this->search_sql($search, 'u');
+        // TODO Does not support custom user profile fields in the search (MDL-77742).
+        [, , $wherecondition, $params] = $this->search_sql($search, 'u');
         $params['forumid'] = $this->forumid;
 
         // only active enrolled or everybody on the frontpage

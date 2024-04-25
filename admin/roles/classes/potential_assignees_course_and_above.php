@@ -33,14 +33,13 @@ class core_role_potential_assignees_course_and_above extends core_role_assign_us
     public function find_users($search) {
         global $DB;
 
-        list($wherecondition, $params) = $this->search_sql($search, 'u');
-        $params = array_merge($params, $this->userfieldsparams);
+        [$select, $joinsql, $wherecondition, $params] = $this->search_sql($search, 'u');
 
-        $fields      = 'SELECT u.id, ' . $this->userfieldsselects;
+        $fields      = 'SELECT u.id, ' . $select;
         $countfields = 'SELECT COUNT(1)';
 
         $sql = " FROM {user} u
-                      $this->userfieldsjoin
+                      $joinsql
                 WHERE $wherecondition
                       AND u.id NOT IN (
                          SELECT r.userid

@@ -873,8 +873,8 @@ class external extends external_api {
         $userfieldsapi = \core_user\fields::for_identity($context, false)->with_userpic();
         $fields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
         $extrasearchfields = $userfieldsapi->get_required_fields([\core_user\fields::PURPOSE_IDENTITY]);
-
-        list($wheresql, $whereparams) = users_search_sql($query, 'u', USER_SEARCH_CONTAINS, $extrasearchfields);
+        // TODO Does not support custom user profile fields in the search (MDL-77742).
+        [$wheresql, $whereparams] = $userfieldsapi->get_search_sql($query, 'u', USER_SEARCH_CONTAINS, $extrasearchfields);
         list($sortsql, $sortparams) = users_order_by_sql('u', $query, $context);
 
         $countsql = "SELECT COUNT('x') FROM {user} u WHERE $wheresql AND u.id $filtercapsql";

@@ -160,7 +160,8 @@ class badge_potential_users_selector extends badge_award_selector_base {
         global $DB;
 
         $whereconditions = array();
-        list($wherecondition, $params) = $this->search_sql($search, 'u');
+        // TODO Does not support custom user profile fields in the search (MDL-77742).
+        [, , $wherecondition, $params] = $this->search_sql($search, 'u');
         if ($wherecondition) {
             $whereconditions[] = $wherecondition;
         }
@@ -240,7 +241,8 @@ class badge_existing_users_selector extends badge_award_selector_base {
      */
     public function find_users($search) {
         global $DB;
-        list($wherecondition, $params) = $this->search_sql($search, 'u');
+        // TODO Does not support custom user profile fields in the search (MDL-77742).
+        [, , $wherecondition, $params] = $this->search_sql($search, 'u');
         $params['badgeid'] = $this->badgeid;
         $params['issuerrole'] = $this->issuerrole;
 

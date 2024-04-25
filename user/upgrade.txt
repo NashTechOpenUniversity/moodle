@@ -1,5 +1,19 @@
 This files describes API changes for code that uses the user API.
 
+=== 4.5 ===
+
+* Added new methods:
+ - core_user/fields::get_search_sql for getting the search sql string
+ - core_user/fields::get_custom_fields_search_join_sql for getting the search sql join string to improve the performance
+   when we want to display the custom profile field in the search result.
+* The following user_selector_base variables have been deprecated, please use the `user_selector_base::userfields` instead:
+ user_selector_base::userfieldsselects
+ user_selector_base::userfieldsjoin
+ user_selector_base::userfieldsparams
+ user_selector_base::userfieldsmappings
+* The user_selector_base::search_sql will returns an array with four elements.
+ Please see MDL-77742 for further details.
+
 === 4.4 ===
 
 * The `profile_field_base` class now contains a `show_field_content` method to determine whether the field and

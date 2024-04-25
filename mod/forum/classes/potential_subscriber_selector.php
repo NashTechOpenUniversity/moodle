@@ -80,7 +80,8 @@ class mod_forum_potential_subscriber_selector extends mod_forum_subscriber_selec
         global $DB;
 
         $whereconditions = array();
-        list($wherecondition, $params) = $this->search_sql($search, 'u');
+        // TODO Does not support custom user profile fields in the search (MDL-77742).
+        [, , $wherecondition, $params] = $this->search_sql($search, 'u');
         if ($wherecondition) {
             $whereconditions[] = $wherecondition;
         }

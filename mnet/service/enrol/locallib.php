@@ -477,8 +477,8 @@ class mnetservice_enrol_existing_users_selector extends user_selector_base {
      */
     public function find_users($search) {
         global $DB;
-
-        list($wherecondition, $params)  = $this->search_sql($search, 'u');
+        // TODO Does not support custom user profile fields in the search (MDL-77742).
+        [, , $wherecondition, $params]  = $this->search_sql($search, 'u');
         $params['hostid']               = $this->hostid;
         $params['remotecourseid']       = $this->remotecourseid;
 
@@ -560,8 +560,8 @@ class mnetservice_enrol_potential_users_selector extends user_selector_base {
         }
 
         list($usql, $uparams) = $DB->get_in_or_equal(array_keys($userids), SQL_PARAMS_NAMED, 'uid');
-
-        list($wherecondition, $params) = $this->search_sql($search, 'u');
+        // TODO Does not support custom user profile fields in the search (MDL-77742).
+        [, , $wherecondition, $params] = $this->search_sql($search, 'u');
 
         $params = array_merge($params, $uparams);
         $params['hostid'] = $this->hostid;

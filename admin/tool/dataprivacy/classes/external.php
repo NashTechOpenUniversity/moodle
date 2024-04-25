@@ -707,8 +707,8 @@ class external extends external_api {
         if (!empty($extrafields)) {
             $fields .= ',' . implode(',', $extrafields);
         }
-
-        list($sql, $params) = users_search_sql($query, '', USER_SEARCH_STARTS_WITH, $extrafields, $excludedusers);
+        // TODO Does not support custom user profile fields in the search (MDL-77742).
+        [$sql, $params] = $userfieldsapi->get_search_sql($query, '', USER_SEARCH_STARTS_WITH, $extrafields, $excludedusers);
         $users = $DB->get_records_select('user', $sql, $params, $sort, $fields, 0, 30);
         $useroptions = [];
         foreach ($users as $user) {

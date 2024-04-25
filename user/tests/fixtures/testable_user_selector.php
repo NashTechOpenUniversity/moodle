@@ -43,13 +43,18 @@ class testable_user_selector extends user_selector_base {
     public function find_users($search) {
         global $DB;
 
-        list($wherecondition, $whereparams) = $this->search_sql($search, 'u');
+        [$select, $joinsql, $wherecondition, $params] = $this->search_sql($search, 'u');
         list($sort, $sortparams) = users_order_by_sql('u', $search, $this->accesscontext);
-        $params = array_merge($whereparams, $sortparams);
-        $fields = $this->required_fields_sql('u');
-
+        $params = array_merge($params, $sortparams);
+        // Include and join to get the custom field data.
+        if ($this->includecustomfields) {
+            $fields = $select;
+        } else {
+            $fields = $this->required_fields_sql('u');
+        }
         $sql = "SELECT $fields
                   FROM {user} u
+                       $joinsql
                  WHERE $wherecondition
               ORDER BY $sort";
 
@@ -61,5 +66,4 @@ class testable_user_selector extends user_selector_base {
 
         return [get_string('potusers', 'core_role') => $found];
     }
-
 }

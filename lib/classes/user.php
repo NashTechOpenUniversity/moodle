@@ -22,6 +22,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use core_user\fields;
+
 defined('MOODLE_INTERNAL') || die();
 
 /**
@@ -243,7 +245,8 @@ class core_user {
         }
 
         // Start building the WHERE clause based on name.
-        list ($where, $whereparams) = users_search_sql($query, 'u');
+        // TODO Does not support custom user profile fields in the search (MDL-77742).
+        [$where, $whereparams] = fields::get_search_sql($query, 'u');
 
         // We allow users to search with extra identity fields (as well as name) but only if they
         // have the permission to display those identity fields.
@@ -251,10 +254,10 @@ class core_user {
         $extraparams = [];
 
         // TODO Does not support custom user profile fields (MDL-70456).
-        $userfieldsapi = \core_user\fields::for_identity(null, false)->with_userpic()->with_name()
+        $userfieldsapi = fields::for_identity(null, false)->with_userpic()->with_name()
             ->including('username', 'deleted');
         $selectfields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
-        $extra = $userfieldsapi->get_required_fields([\core_user\fields::PURPOSE_IDENTITY]);
+        $extra = $userfieldsapi->get_required_fields([fields::PURPOSE_IDENTITY]);
 
         $index = 1;
         foreach ($extra as $fieldname) {
@@ -1275,7 +1278,7 @@ class core_user {
                 'alternativefullname' => fullname($USER, true),
             ];
 
-            foreach (\core_user\fields::get_name_fields() as $namefield) {
+            foreach (fields::get_name_fields() as $namefield) {
                 $namefields[$namefield] = $USER->{$namefield};
             }
 
@@ -1307,7 +1310,7 @@ class core_user {
         }
 
         // Get all of the name fields.
-        $allnames = \core_user\fields::get_name_fields();
+        $allnames = fields::get_name_fields();
         if ($CFG->debugdeveloper) {
             $missingfields = [];
             foreach ($allnames as $allname) {
@@ -1477,7 +1480,7 @@ class core_user {
      */
     public static function get_initials(stdClass $user): string {
         // Get the available name fields.
-        $namefields = \core_user\fields::get_name_fields();
+        $namefields = fields::get_name_fields();
         // Build a dummy user to determine the name format.
         $dummyuser = array_combine($namefields, $namefields);
         // Determine the name format by using fullname() and passing the dummy user.

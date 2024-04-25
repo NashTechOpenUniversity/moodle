@@ -160,6 +160,46 @@ class userselector_test extends \advanced_testcase {
     }
 
     /**
+     * Manager can see students' identity custom profile field fields anywhere.
+     * @covers \user_selector_base::search_sql
+     */
+    public function test_customprofile_fields_anywhere_access(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        $env = $this->setup_hidden_siteidentity();
+        self::getDataGenerator()->create_custom_profile_field([
+            'datatype' => 'text',
+            'shortname' => 'specialid1',
+            'name' => 'Special user id',
+        ]);
+        self::getDataGenerator()->create_custom_profile_field([
+            'datatype' => 'text',
+            'shortname' => 'specialid2',
+            'name' => 'Special user id',
+        ]);
+        profile_save_data((object)['id' => $env->student->id, 'profile_field_specialid1' => 'user1sid1']);
+        profile_save_data((object)['id' => $env->student->id, 'profile_field_specialid2' => 'userid2sid2']);
+        $CFG->showuseridentity = 'profile_field_specialid1,profile_field_specialid2';
+
+        $this->setUser($env->manager);
+        $systemselector = new testable_user_selector('userid2sid2', ['includecustomfields' => true]);
+        $courseselector = new testable_user_selector('user1sid1', ['accesscontext' => $env->coursecontext,
+            'includecustomfields' => true]);
+
+        foreach ($systemselector->find_users('userid2sid2') as $found) {
+            foreach ($found as $user) {
+                $this->assertObjectHasProperty('profile_field_specialid2', $user);
+            }
+        }
+
+        foreach ($courseselector->find_users('user1sid1') as $found) {
+            foreach ($found as $user) {
+                $this->assertObjectHasProperty('profile_field_specialid1', $user);
+            }
+        }
+    }
+
+    /**
      * Manager can be prevented from seeing hidden fields outside the course.
      */
     public function test_hidden_siteidentity_fields_schismatic_access() {

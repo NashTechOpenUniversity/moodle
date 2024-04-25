@@ -24,6 +24,8 @@
 
 namespace gradereport_history;
 
+use core_user\fields;
+
 defined('MOODLE_INTERNAL') || die;
 
 /**
@@ -129,19 +131,25 @@ class helper {
      */
     protected static function get_users_sql_and_params($context, $search = '', $count = false) {
         global $DB, $USER;
-        $userfieldsapi = \core_user\fields::for_identity($context)->with_userpic()->including('username');
+        $userfieldsapi = fields::for_identity($context)->with_userpic()->including('username');
         $userfieldssql = $userfieldsapi->get_sql('u', true, '', '', false);
         // Fields we need from the user table.
         $extrafields = [];
-        foreach ($userfieldsapi->get_required_fields([\core_user\fields::PURPOSE_IDENTITY]) as $field) {
+        foreach ($userfieldsapi->get_required_fields([fields::PURPOSE_IDENTITY]) as $field) {
             $extrafields[$field] = $userfieldssql->mappings[$field];
         }
         $params = array();
         if (!empty($search)) {
-            list($filtersql, $params) = users_search_sql($search, 'u', USER_SEARCH_CONTAINS, $extrafields);
+            [$filtersql, $params] = $userfieldsapi->get_search_sql($search,
+                'u', USER_SEARCH_CONTAINS, $extrafields);
+            [$joinsql, $joinparams] = $userfieldsapi->get_custom_fields_search_join_sql($search,
+                'u', USER_SEARCH_CONTAINS, $extrafields);
+
             $filtersql .= ' AND ';
+            $params = array_merge($params , $joinparams);
         } else {
             $filtersql = '';
+            $joinsql = '';
         }
 
         $userfieldjoinssql = $userfieldssql->joins;
@@ -175,6 +183,7 @@ class helper {
                  JOIN {grade_grades_history} ggh ON u.id = ggh.userid
                  JOIN {grade_items} gi ON gi.id = ggh.itemid
                  $userfieldjoinssql
+                 $joinsql
                  $groupjoinsql
                 WHERE $filtersql gi.courseid = :courseid $groupwheresql";
         $sql .= $orderby;
@@ -205,7 +214,7 @@ class helper {
             $groupwheresql = " AND gm.groupid $insql ";
         }
 
-        $userfieldsapi = \core_user\fields::for_name();
+        $userfieldsapi = fields::for_name();
         $ufields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
         $sql = "SELECT u.id, $ufields
                   FROM {user} u

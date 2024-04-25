@@ -49,17 +49,15 @@ class cohort_candidate_selector extends user_selector_base {
         global $DB;
 
         // By default wherecondition retrieves all users except the deleted, not confirmed and guest.
-        list($wherecondition, $params) = $this->search_sql($search, 'u');
-        $params = array_merge($params, $this->userfieldsparams);
-
+        [$select, $joinsql, $wherecondition, $params] = $this->search_sql($search, 'u');
         $params['cohortid'] = $this->cohortid;
 
-        $fields      = 'SELECT u.id, ' . $this->userfieldsselects;
+        $fields      = 'SELECT u.id, ' . $select;
         $countfields = 'SELECT COUNT(1)';
 
         $sql = " FROM {user} u
             LEFT JOIN {cohort_members} cm ON (cm.userid = u.id AND cm.cohortid = :cohortid)
-                $this->userfieldsjoin
+                $joinsql
                 WHERE cm.id IS NULL AND $wherecondition";
 
         list($sort, $sortparams) = users_order_by_sql('u', $search, $this->accesscontext, $this->userfieldsmappings);
@@ -118,17 +116,15 @@ class cohort_existing_selector extends user_selector_base {
         global $DB;
 
         // By default wherecondition retrieves all users except the deleted, not confirmed and guest.
-        list($wherecondition, $params) = $this->search_sql($search, 'u');
-        $params = array_merge($params, $this->userfieldsparams);
-
+        [$select, $joinsql, $wherecondition, $params] = $this->search_sql($search, 'u');
         $params['cohortid'] = $this->cohortid;
 
-        $fields      = 'SELECT u.id, ' . $this->userfieldsselects;
+        $fields      = 'SELECT u.id, ' . $select;
         $countfields = 'SELECT COUNT(1)';
 
         $sql = " FROM {user} u
                  JOIN {cohort_members} cm ON (cm.userid = u.id AND cm.cohortid = :cohortid)
-                 $this->userfieldsjoin
+                 $joinsql
                 WHERE $wherecondition";
 
         list($sort, $sortparams) = users_order_by_sql('u', $search, $this->accesscontext, $this->userfieldsmappings);

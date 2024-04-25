@@ -22,6 +22,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use core_user\fields;
 /**
  * The default size of a user selector.
  */
@@ -40,7 +41,9 @@ define('USER_SELECTOR_DEFAULT_ROWS', 20);
 abstract class user_selector_base {
     /** @var string The control name (and id) in the HTML. */
     protected $name;
-    /** @var array Extra fields to search on and return in addition to firstname and lastname. */
+    /**
+     * @var array Extra fields to search on and return in addition to firstname and lastname.
+     */
     protected $extrafields;
     /** @var object Context used for capability checks regarding this selector (does
      * not necessarily restrict user list) */
@@ -87,14 +90,30 @@ abstract class user_selector_base {
 
     /** @var boolean Whether to include custom user profile fields */
     protected $includecustomfields = false;
-    /** @var string User fields selects for custom fields. */
+    /**
+     * @var string User fields selects for custom fields.
+     * @deprecated since 4.5. Get what you need from $userfields instead.
+     */
     protected $userfieldsselects = '';
-    /** @var string User fields join for custom fields. */
+    /**
+     * @var string User fields join for custom fields.
+     * @deprecated since 4.5. Get what you need from $userfields instead.
+     */
     protected $userfieldsjoin = '';
-    /** @var array User fields params for custom fields. */
+    /**
+     * @var array User fields params for custom fields.
+     * @deprecated since 4.5. Get what you need from $userfields instead.
+     */
     protected $userfieldsparams = [];
-    /** @var array User fields mappings for custom fields. */
+    /**
+     * @var array User fields mappings for custom fields.
+     * @deprecated since 4.5. Get what you need from $userfields instead.
+     */
     protected $userfieldsmappings = [];
+    /**
+     * @var fields information about the profile fields being displayed and searched in this user selector.
+     */
+    protected fields $userfields;
 
     /**
      * Constructor. Each subclass must have a constructor with this signature.
@@ -133,18 +152,10 @@ abstract class user_selector_base {
         }
 
         // Populate the list of additional user identifiers to display.
-        if ($this->includecustomfields) {
-            $userfieldsapi = \core_user\fields::for_identity($this->accesscontext)->with_name();
-            $this->extrafields = $userfieldsapi->get_required_fields([\core_user\fields::PURPOSE_IDENTITY]);
-            [
-                'selects' => $this->userfieldsselects,
-                'joins' => $this->userfieldsjoin,
-                'params' => $this->userfieldsparams,
-                'mappings' => $this->userfieldsmappings
-            ] = (array) $userfieldsapi->get_sql('u', true, '', '', false);
-        } else {
-            $this->extrafields = \core_user\fields::get_identity_fields($this->accesscontext, false);
-        }
+        $this->userfields = fields::for_identity($this->accesscontext, $this->includecustomfields)->with_name();
+
+        // For backwards compatibility, populate deprecated fields.
+        $this->extrafields = $this->userfields->get_required_fields([fields::PURPOSE_IDENTITY]);
 
         if (isset($options['exclude']) && is_array($options['exclude'])) {
             $this->exclude = $options['exclude'];
@@ -471,7 +482,7 @@ abstract class user_selector_base {
         // Raw list of fields.
         $fields = array('id');
         // Add additional name fields.
-        $fields = array_merge($fields, \core_user\fields::get_name_fields(), $this->extrafields);
+        $fields = array_merge($fields, fields::get_name_fields(), $this->extrafields);
 
         // Prepend the table alias.
         if ($u) {
@@ -488,16 +499,28 @@ abstract class user_selector_base {
      * @param string $search the text to search for.
      * @param string $u the table alias for the user table in the query being
      *      built. May be ''.
-     * @return array an array with two elements, a fragment of SQL to go in the
-     *      where clause the query, and an array containing any required parameters.
-     *      this uses ? style placeholders.
+     * @return array an array with four elements:
+     *      1: user fields selects for the sql.
+     *      2: a fragment of SQL to go in the join clause the query
+     *      3: a fragment of SQL to go in the where clause the query
+     *      4: an array containing any required parameters this uses ? style placeholders.
      */
     protected function search_sql(string $search, string $u): array {
-        $extrafields = $this->includecustomfields
-            ? array_values($this->userfieldsmappings)
-            : $this->extrafields;
-        return users_search_sql($search, $u, $this->searchtype, $extrafields,
-                $this->exclude, $this->validatinguserids);
+        $extrafields = $this->extrafields;
+        if ($this->includecustomfields) {
+            [$select, $joinsql, $params, $mapping] = $this->userfields->get_sql('u', true, '', '', false);
+            $extrafields = $mapping;
+        }
+
+        [$wheresql, $whereparams] = $this->userfields->get_search_sql($search, $u, $this->searchtype,
+            $extrafields, $this->exclude, $this->validatinguserids);
+
+        [$cpfjoinsql, $cpfparams] = $this->userfields->get_custom_fields_search_join_sql($search, $u, $this->searchtype,
+            $extrafields);
+
+        $joinsql .= $cpfjoinsql;
+        $params = array_merge($params, $cpfparams, $whereparams);
+        return [$select, $joinsql, $wheresql, $params];
     }
 
     /**
@@ -837,13 +860,13 @@ class group_members_selector extends groups_user_selector_base {
      * @return array
      */
     public function find_users($search) {
-        list($wherecondition, $params) = $this->search_sql($search, 'u');
-
+        [$select, $joinsql, $wherecondition, $params] = $this->search_sql($search, 'u');
         list($sort, $sortparams) = users_order_by_sql('u', $search, $this->accesscontext, $this->userfieldsmappings);
 
         $roles = groups_get_members_by_role($this->groupid, $this->courseid,
-                $this->userfieldsselects . ', gm.component',
-                $sort, $wherecondition, array_merge($params, $sortparams, $this->userfieldsparams), $this->userfieldsjoin);
+                $select . ', gm.component',
+                $sort, $wherecondition, array_merge($params, $sortparams),
+                $joinsql);
 
         return $this->convert_array_format($roles, $search);
     }
@@ -968,7 +991,7 @@ class group_non_members_selector extends groups_user_selector_base {
             $DB->get_in_or_equal($context->get_parent_context_ids(true), SQL_PARAMS_NAMED, 'relatedctx');
 
         // Get the search condition.
-        list($searchcondition, $searchparams) = $this->search_sql($search, 'u');
+        [$select, $joinsql, $wherecondition, $params] = $this->search_sql($search, 'u');
 
         // Build the SQL.
         $enrolledjoin = get_enrolled_join($context, 'u.id');
@@ -978,10 +1001,10 @@ class group_non_members_selector extends groups_user_selector_base {
         $wheres[] = 'u.deleted = 0';
         $wheres[] = 'gm.id IS NULL';
         $wheres = implode(' AND ', $wheres);
-        $wheres .= ' AND ' . $searchcondition;
+        $wheres .= ' AND ' . $wherecondition;
 
         $fields = "SELECT r.id AS roleid, u.id AS userid,
-                          " . $this->userfieldsselects . ",
+                          " . $select . ",
                           (SELECT count(igm.groupid)
                              FROM {groups_members} igm
                              JOIN {groups} ig ON igm.groupid = ig.id
@@ -991,13 +1014,14 @@ class group_non_members_selector extends groups_user_selector_base {
               LEFT JOIN {role_assignments} ra ON (ra.userid = u.id AND ra.contextid $relatedctxsql AND ra.roleid $roleids)
               LEFT JOIN {role} r ON r.id = ra.roleid
               LEFT JOIN {groups_members} gm ON (gm.userid = u.id AND gm.groupid = :groupid)
-              $this->userfieldsjoin
+              $joinsql
                   WHERE $wheres";
 
         list($sort, $sortparams) = users_order_by_sql('u', $search, $this->accesscontext, $this->userfieldsmappings);
         $orderby = ' ORDER BY ' . $sort;
 
-        $params = array_merge($searchparams, $roleparams, $relatedctxparams, $enrolledjoin->params, $this->userfieldsparams);
+        $params = array_merge($params, $roleparams, $relatedctxparams, $enrolledjoin->params,
+            $this->userfieldsparams);
         $params['courseid'] = $this->courseid;
         $params['groupid']  = $this->groupid;
 
