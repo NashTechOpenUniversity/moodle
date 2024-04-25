@@ -80,6 +80,7 @@ class plugininfo extends plugin implements plugin_with_buttons, plugin_with_menu
         $videotimelimit = get_config('tiny_recordrtc', 'videotimelimit');
         $screentimelimit = get_config('tiny_recordrtc', 'screentimelimit');
         [$videoscreenwidth, $videoscreenheight] = explode(',', get_config('tiny_recordrtc', 'screensize'));
+        // TODO.
 
         // Update $allowedtypes to account for capabilities.
         $audioallowed = false;
