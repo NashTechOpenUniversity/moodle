@@ -70,7 +70,7 @@ class get_max_mark extends external_api {
      */
     public static function execute_returns(): ?external_description {
         return new external_single_structure([
-            'instancemaxmark' => new external_value(PARAM_INT, 'Status when check'),
+            'instancemaxmark' => new external_value(PARAM_TEXT, 'Status when check'),
         ]);
     }
 }
