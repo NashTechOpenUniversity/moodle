@@ -293,6 +293,7 @@ Y.extend(RESOURCETOOLBOX, TOOLBOX, {
      */
     initializer: function() {
         M.mod_quiz.quizbase.register_module(this);
+        console.log(SELECTOR.DEPENDENCY_LINK);
         Y.delegate('click', this.handle_data_action, BODY, SELECTOR.ACTIVITYACTION, this);
         Y.delegate('click', this.handle_data_action, BODY, SELECTOR.DEPENDENCY_LINK, this);
         this.initialise_select_multiple();
@@ -307,6 +308,7 @@ Y.extend(RESOURCETOOLBOX, TOOLBOX, {
      * @protected
      */
     initialise_select_multiple: function() {
+        console.log("con chim")
         // Click select multiple button to show the select all options.
         Y.one(SELECTOR.SELECTMULTIPLEBUTTON).on('click', function(e) {
             e.preventDefault();
