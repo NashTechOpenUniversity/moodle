@@ -34,6 +34,7 @@ use core_question\local\bank\column_manager_base;
 use core_question\local\bank\question_version_status;
 use mod_quiz\question\bank\filter\custom_category_condition;
 use qbank_managecategories\category_condition;
+use qbank_managecategories\helper;
 
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 /**
@@ -240,14 +241,17 @@ class custom_view extends \core_question\local\bank\view {
             $sorts[] = $this->requiredcolumns[$colname]->sort_expression($sortorder == SORT_DESC, $subsort);
         }
 
+        [$sqlreadycondition, $paramreadycondition] = helper::retrieve_ready_version();
+
         // Build the where clause.
         $latestversion = 'qv.version = (SELECT MAX(v.version)
                                           FROM {question_versions} v
                                           JOIN {question_bank_entries} be
                                             ON be.id = v.questionbankentryid
                                          WHERE be.id = qbe.id
-                                               AND v.status = :status)';
-        $this->sqlparams = ['status' => question_version_status::QUESTION_STATUS_READY];
+                                               AND v.status <> :draft ' . $sqlreadycondition . ')';
+        $this->sqlparams = ['draft' => question_version_status::QUESTION_STATUS_DRAFT];
+        $this->sqlparams = array_merge($this->sqlparams, $paramreadycondition);
         $conditions = [];
         foreach ($this->searchconditions as $searchcondition) {
             if ($searchcondition->where()) {

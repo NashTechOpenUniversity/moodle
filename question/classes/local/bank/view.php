@@ -750,8 +750,9 @@ class view {
 
         $conditions = [];
         foreach ($this->searchconditions as $searchcondition) {
-            if ($searchcondition instanceof \qbank_deletequestion\hidden_condition &&
-                !empty($searchcondition->params())) {
+            // Check the filter if not show hidden question in $searchcondition.
+            // Then add the condition to the sql to show the previous version.
+            if (($searchcondition->filter['name'] ?? '') === 'hidden' && !empty($searchcondition->params() ?? [])) {
                 $latestversionwhere .= ' AND v.status <> :hidden_condition';
                 $this->sqlparams = array_merge($this->sqlparams, $searchcondition->params());
                 continue;

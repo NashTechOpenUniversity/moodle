@@ -252,4 +252,55 @@ class helper_test extends \advanced_testcase {
             $this->assertCount($count + 1, $categorycontext);
         }
     }
+
+    /**
+     * Test the function get_categories_for_contexts.
+     *
+     * @covers ::get_categories_for_contexts
+     */
+    public function test_get_categories_for_contexts(): void {
+        global $DB;
+
+        // Create question categories and questions.
+        $qcat1 = $this->qgenerator->create_question_category(['contextid' => $this->context->id]);
+        $qcat2 = $this->qgenerator->create_question_category(['contextid' => $this->context->id]);
+
+        // Create questions in the categories.
+        $q1 = $this->qgenerator->create_question('shortanswer', null, ['category' => $qcat1->id]);
+        $q2 = $this->qgenerator->create_question('shortanswer', null, ['category' => $qcat2->id]);
+
+        // Convert context IDs array to a comma-separated string.
+        $contexts = implode(',', [$this->context->id]);
+
+        // Test the function.
+        $categories = helper::get_categories_for_contexts($contexts, 'parent, sortorder, name ASC', false, 0);
+
+        // Assertions.
+        $this->assertArrayHasKey($qcat1->id, $categories);
+        $this->assertArrayHasKey($qcat2->id, $categories);
+        $this->assertEquals(1, $categories[$qcat1->id]->questioncount);
+        $this->assertEquals(1, $categories[$qcat2->id]->questioncount);
+
+        // Create a new version of question 1.
+        $q1v2 = $this->qgenerator->update_question($q1, null, ['name' => 'This is a new version2 of q1']);
+
+        // Set version 1 of question 1 to draft.
+        $DB->set_field('question_versions', 'status',
+            \core_question\local\bank\question_version_status::QUESTION_STATUS_DRAFT, ['questionid' => $q1->id]);
+
+        // Add it to the quiz.
+        quiz_add_quiz_question($q1v2->id, $this->quiz);
+
+        // When delete the version 2. The status of version 2 will be hidden.
+        question_delete_question($q1v2->id);
+
+        // The categories just only count the question of which in state ready.
+        $categories = helper::get_categories_for_contexts($contexts, 'parent, sortorder, name ASC', false, 0);
+
+        // Assertions.
+        $this->assertEquals(0, $categories[$qcat1->id]->questioncount);
+        $this->assertEquals(1, $categories[$qcat2->id]->questioncount);
+        $this->assertArrayHasKey($qcat1->id, $categories);
+        $this->assertArrayHasKey($qcat2->id, $categories);
+    }
 }

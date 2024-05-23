@@ -260,6 +260,7 @@ class helper {
         $statuscondition = "AND (qv.status = '". question_version_status::QUESTION_STATUS_READY . "' " .
             " OR qv.status = '" . question_version_status::QUESTION_STATUS_DRAFT . "' )";
 
+        [$sqlreadycondition, $paramreadycondition] = self::retrieve_ready_version();
         $sql = "SELECT c.*,
                     (SELECT COUNT(1)
                        FROM {question} q
@@ -273,8 +274,7 @@ class helper {
                                                     FROM {question_versions} v
                                                     JOIN {question_bank_entries} be ON be.id = v.questionbankentryid
                                                    WHERE be.id = qbe.id
-                                                         AND v.status = '" .
-                                                             question_version_status::QUESTION_STATUS_READY . "')
+                                                         $sqlreadycondition)
                                    )
                                 )
                             ) AS questioncount
@@ -282,7 +282,7 @@ class helper {
                  WHERE c.contextid IN ($contexts) $topwhere
               ORDER BY $sortorder";
 
-        return $DB->get_records_sql($sql);
+        return $DB->get_records_sql($sql, $paramreadycondition);
     }
 
     /**
@@ -398,5 +398,18 @@ class helper {
         }
 
         return $categories;
+    }
+
+
+    /**
+     * A condition and param of the sql to get the status ready of the question.
+     *
+     * @return array The array with the sql condition and param.
+     */
+    public static function retrieve_ready_version(): array {
+        $sqlcondition = 'AND v.status = :status';
+        $sqlparam = ['status' => question_version_status::QUESTION_STATUS_READY];
+
+        return [$sqlcondition, $sqlparam];
     }
 }

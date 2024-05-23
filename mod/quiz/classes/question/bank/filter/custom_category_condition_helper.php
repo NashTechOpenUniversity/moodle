@@ -104,6 +104,8 @@ class custom_category_condition_helper extends \qbank_managecategories\helper {
         $topwhere = $top ? '' : 'AND c.parent <> 0';
         $statuscondition = "AND qv.status = '". question_version_status::QUESTION_STATUS_READY . "' ";
 
+        [$sqlreadycondition, $paramreadycondition] = self::retrieve_ready_version();
+
         $sql = "SELECT c.*,
                     (SELECT COUNT(1)
                        FROM {question} q
@@ -117,8 +119,7 @@ class custom_category_condition_helper extends \qbank_managecategories\helper {
                                                     FROM {question_versions} v
                                                     JOIN {question_bank_entries} be ON be.id = v.questionbankentryid
                                                    WHERE be.id = qbe.id
-                                                         AND v.status = '".
-                                                             question_version_status::QUESTION_STATUS_READY . "')
+                                                         $sqlreadycondition)
                                    )
                                 )
                             ) AS questioncount
@@ -126,6 +127,6 @@ class custom_category_condition_helper extends \qbank_managecategories\helper {
                  WHERE c.contextid IN ($contexts) $topwhere
               ORDER BY $sortorder";
 
-        return $DB->get_records_sql($sql);
+        return $DB->get_records_sql($sql, $paramreadycondition);
     }
 }
