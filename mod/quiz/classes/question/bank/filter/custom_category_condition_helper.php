@@ -17,7 +17,7 @@
 namespace mod_quiz\question\bank\filter;
 
 use core_question\local\bank\question_version_status;
-
+use question_bank;
 /**
  * A custom filter condition helper for quiz to select question categories.
  *
@@ -104,8 +104,8 @@ class custom_category_condition_helper extends \qbank_managecategories\helper {
         $topwhere = $top ? '' : 'AND c.parent <> 0';
         $statuscondition = "AND qv.status = '". question_version_status::QUESTION_STATUS_READY . "' ";
 
-        [$sqlreadycondition, $paramreadycondition] = self::retrieve_ready_version();
-
+        $latestversionsql = question_bank::get_latest_version_of_question_sql();
+        $params = ['status' => question_version_status::QUESTION_STATUS_READY];
         $sql = "SELECT c.*,
                     (SELECT COUNT(1)
                        FROM {question} q
@@ -115,18 +115,13 @@ class custom_category_condition_helper extends \qbank_managecategories\helper {
                         $statuscondition
                             AND c.id = qbe.questioncategoryid
                             AND ($showallversions = 1
-                                OR (qv.version = (SELECT MAX(v.version)
-                                                    FROM {question_versions} v
-                                                    JOIN {question_bank_entries} be ON be.id = v.questionbankentryid
-                                                   WHERE be.id = qbe.id
-                                                         $sqlreadycondition)
-                                   )
+                                OR (qv.version = ($latestversionsql AND v.status = :status))
                                 )
                             ) AS questioncount
                   FROM {question_categories} c
                  WHERE c.contextid IN ($contexts) $topwhere
               ORDER BY $sortorder";
 
-        return $DB->get_records_sql($sql, $paramreadycondition);
+        return $DB->get_records_sql($sql, $params);
     }
 }

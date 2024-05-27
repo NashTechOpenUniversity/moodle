@@ -89,6 +89,7 @@ if ($requestedqtype) {
     // context. That is, rows of these results can be used as $context objects.
     $ctxpreload = context_helper::get_preload_record_columns_sql('con');
     $ctxgroupby = implode(',', array_keys(context_helper::get_preload_record_columns('con')));
+    $latestversionsql = question_bank::get_latest_version_of_question_sql();
     $counts = $DB->get_records_sql("
             SELECT result.contextid, SUM(numquestions) AS numquestions, SUM(numhidden) AS numhidden, $ctxpreload
               FROM (SELECT data.contextid, data.versionid, COUNT(data.numquestions) AS numquestions,
@@ -103,11 +104,7 @@ if ($requestedqtype) {
                               JOIN {question_categories} qc ON qc.id = qbe.questioncategoryid
                               JOIN {context} con ON con.id = qc.contextid
                               $sqlqtypetest
-                                   AND qv.version = (SELECT MAX(v.version)
-                                                       FROM {question_versions} v
-                                                       JOIN {question_bank_entries} be
-                                                         ON be.id = v.questionbankentryid
-                                                      WHERE be.id = qbe.id)
+                                   AND qv.version = ($latestversionsql)
                                    AND (q.parent = 0 OR q.parent = q.id)) data
                   GROUP BY data.contextid, data.versionid) result
               JOIN {context} con ON con.id = result.contextid

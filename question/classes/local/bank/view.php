@@ -39,6 +39,7 @@ use core_question\local\bank\column_manager_base;
 use qbank_deletequestion\hidden_condition;
 use qbank_editquestion\editquestion_helper;
 use qbank_managecategories\category_condition;
+use question_bank;
 
 /**
  * This class prints a view of the question bank.
@@ -746,14 +747,13 @@ class view {
             $sorts[] = $this->requiredcolumns[$colname]->sort_expression($sortorder == SORT_DESC, $subsort);
         }
         $this->sqlparams = [];
-        $latestversionwhere = '';
-
+        $latestversionsql = question_bank::get_latest_version_of_question_sql();
         $conditions = [];
         foreach ($this->searchconditions as $searchcondition) {
             // Check the filter if not show hidden question in $searchcondition.
             // Then add the condition to the sql to show the previous version.
-            if (($searchcondition->filter['name'] ?? '') === 'hidden' && !empty($searchcondition->params() ?? [])) {
-                $latestversionwhere .= ' AND v.status <> :hidden_condition';
+            if ($searchcondition->get_condition_key() === 'hidden' && !empty($searchcondition->params())) {
+                $latestversionsql .= ' AND v.status <> :hidden_condition';
                 $this->sqlparams = array_merge($this->sqlparams, $searchcondition->params());
                 continue;
             }
@@ -765,12 +765,7 @@ class view {
             }
         }
 
-        // Build the where clause.
-        $latestversion = 'qv.version = (SELECT MAX(v.version)
-                                          FROM {question_versions} v
-                                          JOIN {question_bank_entries} be
-                                            ON be.id = v.questionbankentryid
-                                         WHERE be.id = qbe.id ' . $latestversionwhere . ')';
+        $latestversion = "qv.version = ($latestversionsql)";
         // Get higher level filter condition.
         $jointype = isset($this->pagevars['jointype']) ? (int)$this->pagevars['jointype'] : condition::JOINTYPE_DEFAULT;
         $nonecondition = ($jointype === datafilter::JOINTYPE_NONE) ? ' NOT ' : '';

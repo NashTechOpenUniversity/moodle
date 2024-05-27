@@ -19,6 +19,7 @@ namespace qbank_history;
 use core_question\local\bank\question_edit_contexts;
 use core_question\local\bank\view;
 use moodle_url;
+use question_bank;
 use stdClass;
 
 /**
@@ -147,15 +148,12 @@ class question_history_view extends view {
      */
     public function display_question_bank_header(): void {
         global $PAGE, $DB, $OUTPUT;
+    $latestversionsql = question_bank::get_latest_version_of_question_sql();
         $sql = 'SELECT q.*
                  FROM {question} q
                  JOIN {question_versions} qv ON qv.questionid = q.id
                  JOIN {question_bank_entries} qbe ON qbe.id = qv.questionbankentryid
-                WHERE qv.version  = (SELECT MAX(v.version)
-                                       FROM {question_versions} v
-                                       JOIN {question_bank_entries} be
-                                         ON be.id = v.questionbankentryid
-                                      WHERE be.id = qbe.id)
+                WHERE qv.version  = ($latestversionsql)
                   AND qbe.id = ?';
         $latestquestiondata = $DB->get_record_sql($sql, [$this->entryid]);
         if ($latestquestiondata) {

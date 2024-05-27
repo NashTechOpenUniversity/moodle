@@ -35,6 +35,7 @@ use core_question\local\bank\question_version_status;
 use mod_quiz\question\bank\filter\custom_category_condition;
 use qbank_managecategories\category_condition;
 use qbank_managecategories\helper;
+use question_bank;
 
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 /**
@@ -240,18 +241,10 @@ class custom_view extends \core_question\local\bank\view {
             [$colname, $subsort] = $this->parse_subsort($sortname);
             $sorts[] = $this->requiredcolumns[$colname]->sort_expression($sortorder == SORT_DESC, $subsort);
         }
-
-        [$sqlreadycondition, $paramreadycondition] = helper::retrieve_ready_version();
-
         // Build the where clause.
-        $latestversion = 'qv.version = (SELECT MAX(v.version)
-                                          FROM {question_versions} v
-                                          JOIN {question_bank_entries} be
-                                            ON be.id = v.questionbankentryid
-                                         WHERE be.id = qbe.id
-                                               AND v.status <> :draft ' . $sqlreadycondition . ')';
-        $this->sqlparams = ['draft' => question_version_status::QUESTION_STATUS_DRAFT];
-        $this->sqlparams = array_merge($this->sqlparams, $paramreadycondition);
+        $latestversionsql = question_bank::get_latest_version_of_question_sql();
+        $latestversion = "qv.version = ($latestversionsql AND v.status <> :status)";
+        $this->sqlparams = array_merge($this->sqlparams, ['status' => question_version_status::QUESTION_STATUS_DRAFT]);
         $conditions = [];
         foreach ($this->searchconditions as $searchcondition) {
             if ($searchcondition->where()) {

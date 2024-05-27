@@ -339,6 +339,19 @@ abstract class question_bank {
     }
 
     /**
+     * Get the latest version of questions sql fragment.
+     *
+     * @return string
+     */
+    public static function get_latest_version_of_question_sql(): string {
+        return "SELECT MAX(v.version)
+                  FROM {question_versions} v
+                  JOIN {question_bank_entries} be
+                    ON v.questionbankentryid = be.id
+                 WHERE be.id = qbe.id";
+    }
+
+    /**
      * @return question_finder a question finder.
      */
     public static function get_finder() {
@@ -550,6 +563,7 @@ class question_finder implements cache_data_source {
         }
         $qcparams['readystatus'] = question_version_status::QUESTION_STATUS_READY;
         $qcparams['readystatusqv'] = question_version_status::QUESTION_STATUS_READY;
+        $latestversionsql = question_bank::get_latest_version_of_question_sql();
         $sql = "SELECT q.id, q.id AS id2
                   FROM {question} q
                   JOIN {question_versions} qv ON qv.questionid = q.id
@@ -557,12 +571,7 @@ class question_finder implements cache_data_source {
                  WHERE qbe.questioncategoryid {$qcsql}
                        AND q.parent = 0
                        AND qv.status = :readystatus
-                       AND qv.version = (SELECT MAX(v.version)
-                                          FROM {question_versions} v
-                                          JOIN {question_bank_entries} be
-                                            ON be.id = v.questionbankentryid
-                                         WHERE be.id = qbe.id
-                                           AND v.status = :readystatusqv)
+                       AND qv.version = ($latestversionsql AND v.status = :readystatusqv)
                        {$extraconditions}";
 
         return $DB->get_records_sql_menu($sql, $qcparams + $extraparams);
