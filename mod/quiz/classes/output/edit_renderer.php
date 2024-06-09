@@ -1185,28 +1185,17 @@ class edit_renderer extends \plugin_renderer_base {
         $config->pagehtml = $this->new_page_template($structure, $contexts, $pagevars, $pageurl);
         $config->addpageiconhtml = $this->add_page_icon_template($structure);
 
-        $this->page->requires->yui_module('moodle-mod_quiz-toolboxes',
-                'M.mod_quiz.init_resource_toolbox',
-                [[
-                        'courseid' => $structure->get_courseid(),
-                        'quizid' => $structure->get_quizid(),
-                        'ajaxurl' => $config->resourceurl,
-                        'config' => $config,
-                ]]
-        );
+        $this->page->requires->js_call_amd('mod_quiz/quiz_toolboxes', 'initResourceToolbox', [
+            'courseid' => $structure->get_courseid(),
+            'quizid' => $structure->get_quizid(),
+        ]);
         unset($config->pagehtml);
         unset($config->addpageiconhtml);
 
-        $this->page->requires->strings_for_js(['areyousureremoveselected'], 'quiz');
-        $this->page->requires->yui_module('moodle-mod_quiz-toolboxes',
-                'M.mod_quiz.init_section_toolbox',
-                [[
-                        'courseid' => $structure,
-                        'quizid' => $structure->get_quizid(),
-                        'ajaxurl' => $config->sectionurl,
-                        'config' => $config,
-                ]]
-        );
+        $this->page->requires->js_call_amd('mod_quiz/quiz_toolboxes', 'initSectionToolbox', [
+            'courseid' => $structure->get_courseid(),
+            'quizid' => $structure->get_quizid(),
+        ]);
 
         $this->page->requires->yui_module('moodle-mod_quiz-dragdrop', 'M.mod_quiz.init_section_dragdrop',
                 [[
@@ -1279,7 +1268,7 @@ class edit_renderer extends \plugin_renderer_base {
      * @param \moodle_url $pageurl the canonical URL of this page.
      * @return string HTML for a new page.
      */
-    protected function new_page_template(structure $structure,
+    public function new_page_template(structure $structure,
             \core_question\local\bank\question_edit_contexts $contexts, array $pagevars, \moodle_url $pageurl) {
         if (!$structure->has_questions()) {
             return '';
@@ -1312,7 +1301,7 @@ class edit_renderer extends \plugin_renderer_base {
      * @param structure $structure object containing the structure of the quiz.
      * @return string HTML for a new icon
      */
-    protected function add_page_icon_template(structure $structure) {
+    public function add_page_icon_template(structure $structure) {
 
         if (!$structure->has_questions()) {
             return '';
