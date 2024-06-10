@@ -106,7 +106,7 @@ class edit_renderer extends \plugin_renderer_base {
         $output .= $this->end_section_list();
 
         // Initialise the JavaScript.
-        $this->initialise_editing_javascript($structure, $contexts, $pagevars, $pageurl);
+        $this->initialise_editing_javascript($structure);
 
         // Include the contents of any other popups required.
         if ($structure->can_be_edited()) {
@@ -519,9 +519,9 @@ class edit_renderer extends \plugin_renderer_base {
 
         $output = '';
         foreach ($structure->get_slots_in_section($section->id) as $slot) {
-            $output .= $this->question_row($structure, $slot, $contexts, $pagevars, $pageurl);
+            $output .= $this->question_row($structure, $slot, $contexts, $pagevars, $pageurl, $section->id);
         }
-        return html_writer::tag('ul', $output, ['class' => 'section img-text']);
+        return html_writer::tag('ul', $output, ['class' => 'section img-text', 'data-for' => 'quiz-section']);
     }
 
     /**
@@ -552,7 +552,11 @@ class edit_renderer extends \plugin_renderer_base {
 
         $output .= html_writer::tag('li', $questionhtml . $joinhtml,
                 ['class' => $questionclasses, 'id' => 'slot-' . $structure->get_slot_id_for_slot($slot),
-                        'data-canfinish' => $structure->can_finish_during_the_attempt($slot)]);
+                        'data-canfinish' => $structure->can_finish_during_the_attempt($slot),
+                        'data-for' => 'question',
+                        'data-slotorder' => $slot,
+                        'data-page' => $structure->get_page_number_for_slot($slot),
+                ]);
 
         return $output;
     }
@@ -585,7 +589,7 @@ class edit_renderer extends \plugin_renderer_base {
                     $pagenumber, $pageurl, $pagevars);
 
             $output .= html_writer::tag('li', $page . $addmenu . $addquestionform,
-                    ['class' => 'pagenumber activity yui3-dd-drop page', 'id' => 'page-' . $pagenumber]);
+                    ['class' => 'pagenumber activity page', 'data-for' => 'page', 'id' => 'page-' . $pagenumber]);
         }
 
         return $output;
@@ -861,9 +865,9 @@ class edit_renderer extends \plugin_renderer_base {
      * @return string The markup for the move action.
      */
     public function question_move_icon(structure $structure, $slot) {
-        return html_writer::link(new \moodle_url('#'),
+        return html_writer::span(
             $this->pix_icon('i/dragdrop', get_string('move'), 'moodle', ['class' => 'iconsmall', 'title' => '']),
-            ['class' => 'editing_move', 'data-action' => 'move']
+            'editing_move', ['data-action' => 'move', 'role' => 'button']
         );
     }
 
@@ -1169,49 +1173,20 @@ class edit_renderer extends \plugin_renderer_base {
      * is handled with the specific code for those.)
      *
      * @param structure $structure object containing the structure of the quiz.
-     * @param \core_question\local\bank\question_edit_contexts $contexts the relevant question bank contexts.
-     * @param array $pagevars the variables from {@link \question_edit_setup()}.
-     * @param \moodle_url $pageurl the canonical URL of this page.
-     * @return bool Always returns true
      */
-    public function initialise_editing_javascript(structure $structure,
-            \core_question\local\bank\question_edit_contexts $contexts, array $pagevars, \moodle_url $pageurl) {
-
-        $config = new \stdClass();
-        $config->resourceurl = '/mod/quiz/edit_rest.php';
-        $config->sectionurl = '/mod/quiz/edit_rest.php';
-        $config->pageparams = [];
-        $config->questiondecimalpoints = $structure->get_decimal_places_for_question_marks();
-        $config->pagehtml = $this->new_page_template($structure, $contexts, $pagevars, $pageurl);
-        $config->addpageiconhtml = $this->add_page_icon_template($structure);
+    public function initialise_editing_javascript(structure $structure) {
 
         $this->page->requires->js_call_amd('mod_quiz/quiz_toolboxes', 'initResourceToolbox', [
             'courseid' => $structure->get_courseid(),
             'quizid' => $structure->get_quizid(),
         ]);
-        unset($config->pagehtml);
-        unset($config->addpageiconhtml);
-
         $this->page->requires->js_call_amd('mod_quiz/quiz_toolboxes', 'initSectionToolbox', [
             'courseid' => $structure->get_courseid(),
             'quizid' => $structure->get_quizid(),
         ]);
 
-        $this->page->requires->yui_module('moodle-mod_quiz-dragdrop', 'M.mod_quiz.init_section_dragdrop',
-                [[
-                        'courseid' => $structure,
-                        'quizid' => $structure->get_quizid(),
-                        'ajaxurl' => $config->sectionurl,
-                        'config' => $config,
-                ]], null, true);
-
-        $this->page->requires->yui_module('moodle-mod_quiz-dragdrop', 'M.mod_quiz.init_resource_dragdrop',
-                [[
-                        'courseid' => $structure,
-                        'quizid' => $structure->get_quizid(),
-                        'ajaxurl' => $config->resourceurl,
-                        'config' => $config,
-                ]], null, true);
+        $this->page->requires->js_call_amd('mod_quiz/dragdrop/main', 'init',
+            [$this->page->bodyid, $structure->get_quizid(), $structure->get_courseid()]);
 
         // Require various strings for the command toolbox.
         $this->page->requires->strings_for_js([

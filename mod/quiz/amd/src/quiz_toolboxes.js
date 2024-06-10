@@ -187,21 +187,23 @@ class ResourceToolBox extends ToolBox {
      */
     editMaxMarkEvents = false;
 
-    constructor(courseId, quizId) {
+    constructor(courseId, quizId, addEvent) {
         const config = JSON.parse(document.querySelector(SELECTOR.CONFIGTOOLBOX).dataset.config);
         super(config, courseId, quizId);
         this.courseId = courseId;
         this.quizId = quizId;
         this.config = config;
-        BODY.addEventListener('click', (event) => {
-            // Use event.target.closest to ensure event delegation works
-            if (event.target.closest(SELECTOR.ACTIVITYACTION) ||
+        if (addEvent) {
+            BODY.addEventListener('click', (event) => {
+                // Use event.target.closest to ensure event delegation works
+                if (event.target.closest(SELECTOR.ACTIVITYACTION) ||
                     event.target.closest(SELECTOR.DEPENDENCY_LINK)) {
-                this.handleDataAction(event);
-            }
-        });
+                    this.handleDataAction(event);
+                }
+            });
 
-        this.initialiseSelectMultiple();
+            this.initialiseSelectMultiple();
+        }
     }
 
     /**
@@ -1138,9 +1140,10 @@ class SectionToolBox extends ToolBox {
  *
  * @param {Number} courseId The ID of the Moodle Course being edited.
  * @param {Number} quizId The ID of the quiz being edited.
+ * @param {Boolean} addEvent The flag to add event. True is add event.
  */
-function initResourceToolbox(courseId, quizId) {
-    new ResourceToolBox(courseId, quizId);
+function initResourceToolbox(courseId, quizId, addEvent = true) {
+    return new ResourceToolBox(courseId, quizId, addEvent);
 }
 
 /**

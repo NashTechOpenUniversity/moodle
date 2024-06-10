@@ -154,7 +154,7 @@ class edit_page implements renderable, templatable {
         $data['section'] = $sections;
 
         // Initialize javascript.
-        $editrenderer->initialise_editing_javascript($this->structure, $this->contexts, $this->pagevars, $this->pageurl);
+        $editrenderer->initialise_editing_javascript($this->structure);
 
         // Include the contents of any other popups required.
         if ($this->structure->can_be_edited()) {

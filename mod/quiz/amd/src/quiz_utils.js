@@ -26,6 +26,8 @@ import Templates from 'core/templates';
 import Notification from 'core/notification';
 import {getString, getStrings} from 'core/str';
 import Prefetch from 'core/prefetch';
+import dropZoneElement from 'mod_quiz/dragdrop/dropzone';
+
 
 Prefetch.prefetchStrings('moodle', ['question', 'page']);
 Prefetch.prefetchStrings('quiz', ['removepagebreak', 'addpagebreak', 'questiondependencyremove',
@@ -215,26 +217,23 @@ const slot = {
         const slots = this.getSlots();
 
         // Loop through slots incrementing the number each time.
-        slots.forEach(slot => {
+        slots.forEach((slot, index) => {
             if (!page.getPageFromSlot(slot)) {
                 // Move the next page to the front.
                 const nextPage = slot.nextElementSibling;
-                slot.parentNode.insertBefore(nextPage, slot);
+                if (nextPage) {
+                    slot.parentNode.insertBefore(nextPage, slot);
+                }
             }
-
-            const previousSlot = this.getPreviousNumbered(slot);
-            let previousSlotNumber = 0;
 
             if (slot.classList.contains(this.CSS.QUESTIONTYPEDESCRIPTION)) {
                 return;
             }
 
-            if (previousSlot) {
-                previousSlotNumber = this.getNumber(previousSlot);
-            }
-
             // Set slot number.
-            this.setNumber(slot, previousSlotNumber + 1);
+            this.setNumber(slot, index + 1);
+            slot.dataset.slotorder = index + 1;
+            slot.dataset.page = page.getPageFromSlot(slot).id.replace(/^\D+/g, '');
         });
     },
 
@@ -397,7 +396,9 @@ const slot = {
             // Update slot number.
             params.set('slot', slotNumber + '');
             // Update the anchor.
-            pageBreakLink.href = `${pageBreakLink.href.split('?')[0]}?${params.toString()}`;
+            if (pageBreakLink.href) {
+                pageBreakLink.href = `${pageBreakLink.href.split('?')[0]}?${params.toString()}`;
+            }
         });
     },
 
@@ -651,18 +652,12 @@ const page = {
         page.innerHTML = pageHtmlWithNumber;
         const pageNode = page.firstElementChild;
 
-        // Assign it as a drop target.
-        // YUI().use('dd-drop', function(Y) {
-        //     const drop = new Y.DD.Drop({
-        //         node: pageNode,
-        //         groups: M.mod_quiz.dragres.groups
-        //     });
-        //     pageNode.drop = drop;
-        // });
-
         // Insert in the correct place.
         beforeNode.insertAdjacentElement('afterend', pageNode);
-
+        // Assign it as a drop target.
+        new dropZoneElement({
+            element: pageNode,
+        });
         // Enhance the add menu to make if fully visible and clickable.
         if (typeof M.core.actionmenu !== 'undefined') {
             M.core.actionmenu.newDOMNode(pageNode);
@@ -719,7 +714,7 @@ const page = {
         let currentPageNumber = 0;
         pages.forEach((page) => {
             if (this.isEmpty(page)) {
-                const keepPageBreak = page.nextElementSibling.classList.contains('slot');
+                const keepPageBreak = page.nextElementSibling?.classList?.contains('slot') ?? false;
                 this.remove(page, keepPageBreak);
                 return;
             }
@@ -823,6 +818,10 @@ const util = {
         }
 
         return element;
+    },
+
+    getNumber: function(content) {
+        return content.replace(/^\D+/g, '');
     }
 };
 
