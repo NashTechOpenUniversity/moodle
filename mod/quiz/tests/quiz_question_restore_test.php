@@ -18,6 +18,7 @@ namespace mod_quiz;
 
 use core_question\question_reference_manager;
 use mod_quiz\question\display_options;
+use core_question\local\bank\question_version_status;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -149,8 +150,8 @@ class quiz_question_restore_test extends \advanced_testcase {
                JOIN {question_versions} qv ON qv.questionid = q.id
                JOIN {question_bank_entries} qbe ON qbe.id = qv.questionbankentryid
                JOIN {question_categories} qc on qc.id = qbe.questioncategoryid
-              WHERE qc.contextid = ?
-              $extracondition", [$contextid]);
+              WHERE qc.contextid = :contextid and qv.status <> :hidden
+              $extracondition", ['contextid' => $contextid, 'hidden' => question_version_status::QUESTION_STATUS_HIDDEN]);
     }
 
     /**
