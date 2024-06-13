@@ -130,18 +130,18 @@ class helper_test extends \advanced_testcase {
 
         // First category, should be empty afterwards.
         helper::question_remove_stale_questions_from_category($qcat1->id);
-        $this->assertEquals(0, count($this->qcobject->get_real_question_ids_in_category($qcat1->id)));
+        $this->assertEquals(2, count($this->qcobject->get_real_question_ids_in_category($qcat1->id)));
         $this->assertEquals(3, count($this->qcobject->get_real_question_ids_in_category($qcat2->id)));
-        $this->assertFalse($DB->record_exists('question', ['id' => $q1a->id]));
-        $this->assertFalse($DB->record_exists('question', ['id' => $q1b->id]));
+        $this->assertTrue($DB->record_exists('question', ['id' => $q1a->id]));
+        $this->assertTrue($DB->record_exists('question', ['id' => $q1b->id]));
 
         // Second category, used questions should be left untouched.
         helper::question_remove_stale_questions_from_category($qcat2->id);
-        $this->assertEquals(0, count($this->qcobject->get_real_question_ids_in_category($qcat1->id)));
-        $this->assertEquals(1, count($this->qcobject->get_real_question_ids_in_category($qcat2->id)));
-        $this->assertFalse($DB->record_exists('question', ['id' => $q2a->id]));
+        $this->assertEquals(2, count($this->qcobject->get_real_question_ids_in_category($qcat1->id)));
+        $this->assertEquals(3, count($this->qcobject->get_real_question_ids_in_category($qcat2->id)));
+        $this->assertTrue($DB->record_exists('question', ['id' => $q2a->id]));
         $this->assertTrue($DB->record_exists('question', ['id' => $q2b->id]));
-        $this->assertFalse($DB->record_exists('question', ['id' => $q2c->id]));
+        $this->assertTrue($DB->record_exists('question', ['id' => $q2c->id]));
         $this->assertTrue($DB->record_exists('question_set_references',
             ['id' => $q2d->id, 'component' => 'mod_quiz', 'questionarea' => 'slot']));
     }

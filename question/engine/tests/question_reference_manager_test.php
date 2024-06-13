@@ -20,6 +20,7 @@ use advanced_testcase;
 use context_system;
 use core_question\local\bank\question_version_status;
 use core_question_generator;
+use core_question\local\bank\condition;
 
 /**
  * Unit tests for the {@see question_reference_manager} class.
@@ -118,6 +119,22 @@ class question_reference_manager_test extends advanced_testcase {
                 question_reference_manager::questions_with_references([]));
         $this->assertEqualsCanonicalizing([],
                 question_reference_manager::questions_with_references([-1]));
+
+        // Add data to question_set_references to make a random question with the given category.
+        $filtercondition = new \stdClass();
+        $filtercondition->filters = \question_filter_test_helper::create_filters([$cat->id], true);
+        $DB->insert_record('question_set_references', ['usingcontextid' => $systemcontext->id,
+            'component' => 'mod_quiz', 'questionarea' => 'slot', 'itemid' => 10,
+            'questionscontextid' => $cat->contextid, 'filtercondition' => json_encode($filtercondition)]);
+
+        // Verify which versions of Q1 are used in random question.
+        // A random question will use the latest version of the question that is not in the draft state.
+        $this->assertEqualsCanonicalizing([],
+            question_reference_manager::questions_with_references([$q1v1->id]));
+        $this->assertEqualsCanonicalizing([$q1v2->id],
+            question_reference_manager::questions_with_references([$q1v2->id]));
+        $this->assertEqualsCanonicalizing([],
+            question_reference_manager::questions_with_references([$q1v3->id]));
 
     }
 }
