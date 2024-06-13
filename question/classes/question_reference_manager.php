@@ -50,6 +50,7 @@ class question_reference_manager {
 
         [$qidtest, $params] = $DB->get_in_or_equal($questionids, SQL_PARAMS_NAMED, 'outerqid');
         [$lqidtest, $lparams] = $DB->get_in_or_equal($questionids, SQL_PARAMS_NAMED, 'innerqid');
+        [$rqidtest, $rparams] = $DB->get_in_or_equal($questionids, SQL_PARAMS_NAMED, 'innerqid2');
 
         return $DB->get_fieldset_sql("
             SELECT qv.questionid
@@ -68,11 +69,25 @@ class question_reference_manager {
                      GROUP BY lqv.questionbankentryid
                    ) latestversions ON latestversions.questionbankentryid = qv.questionbankentryid
 
-              JOIN {question_references} qr ON qr.questionbankentryid = qv.questionbankentryid
+         LEFT JOIN {question_references} qr ON qr.questionbankentryid = qv.questionbankentryid
                        AND (qr.version = qv.version OR qr.version IS NULL AND qv.version = latestversions.latestusableversion)
-
              WHERE qv.questionid $qidtest
-            ", array_merge($params, $lparams, ['draft' => question_version_status::QUESTION_STATUS_DRAFT]));
+               AND (
+                    qr.id IS NOT NULL
+                            OR EXISTS (
+                               SELECT 'x'
+                                 FROM {question} mq
+                                 JOIN {question_versions} mqv ON mqv.questionid = mq.id
+                                 JOIN {question_bank_entries} mqbe ON mqbe.id = mqv.questionbankentryid
+                                 JOIN {question_categories} mqc ON mqc.id = mqbe.questioncategoryid
+                                 JOIN {question_set_references} mqsr ON mqsr.questionscontextid = mqc.contextid
+                                WHERE mq.id = qv.questionid
+                                      AND mq.id $rqidtest
+                                      AND mqsr.component = :component
+                                      AND mqv.version = latestversions.latestusableversion)
+                   )
+            ", array_merge($params, $lparams, ['draft' => question_version_status::QUESTION_STATUS_DRAFT,
+                'component' => 'mod_quiz'], $rparams));
     }
 
     /**

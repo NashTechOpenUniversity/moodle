@@ -27,6 +27,7 @@ use moodle_url;
 use qbank_managecategories\form\question_category_edit_form;
 use question_bank;
 use stdClass;
+use core_question\local\bank\question_version_status;
 
 /**
  * Class for performing operations on question categories.
