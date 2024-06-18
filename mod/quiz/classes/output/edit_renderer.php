@@ -205,7 +205,7 @@ class edit_renderer extends \plugin_renderer_base {
      * @param \moodle_url $pageurl the canonical URL of this page.
      * @return string HTML to output.
      */
-    protected function repaginate_button(structure $structure, \moodle_url $pageurl) {
+    public function repaginate_button(structure $structure, \moodle_url $pageurl) {
         $header = html_writer::tag('span', get_string('repaginatecommand', 'quiz'), ['class' => 'repaginatecommand']);
         $form = $this->repaginate_form($structure, $pageurl);
 
@@ -233,7 +233,7 @@ class edit_renderer extends \plugin_renderer_base {
      * @param structure $structure the structure of the quiz being edited.
      * @return string HTML to output.
      */
-    protected function selectmultiple_button(structure $structure) {
+    public function selectmultiple_button(structure $structure) {
         $buttonoptions = [
             'type'  => 'button',
             'name'  => 'selectmultiple',
@@ -254,7 +254,7 @@ class edit_renderer extends \plugin_renderer_base {
      * @param structure $structure the structure of the quiz being edited.
      * @return string HTML to output.
      */
-    protected function selectmultiple_controls(structure $structure) {
+    public function selectmultiple_controls(structure $structure) {
         $output = '';
 
         // Bulk action button delete and bulk action button cancel.
@@ -386,7 +386,7 @@ class edit_renderer extends \plugin_renderer_base {
      * @param \stdClass $section The quiz_section entry from DB
      * @return string HTML to output.
      */
-    protected function start_section($structure, $section) {
+    public function start_section($structure, $section) {
 
         $output = '';
 
@@ -1174,7 +1174,7 @@ class edit_renderer extends \plugin_renderer_base {
      * @param \moodle_url $pageurl the canonical URL of this page.
      * @return bool Always returns true
      */
-    protected function initialise_editing_javascript(structure $structure,
+    public function initialise_editing_javascript(structure $structure,
             \core_question\local\bank\question_edit_contexts $contexts, array $pagevars, \moodle_url $pageurl) {
 
         $config = new \stdClass();
