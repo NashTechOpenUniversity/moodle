@@ -1,10 +1,15 @@
 /**
  * Resource drag and drop.
+ * @deprecated since Moodle 4.5
  *
  * @class M.course.dragdrop.resource
  * @constructor
  * @extends M.core.dragdrop
  */
+
+Y.log("The quiz-dragdrop-resource has been deprecated. " +
+    "Please use mod_quiz/dragdrop instead.", 'moodle-core-notification', 'warn');
+
 var DRAGRESOURCE = function() {
     DRAGRESOURCE.superclass.constructor.apply(this, arguments);
 };

@@ -526,9 +526,9 @@ class edit_renderer extends \plugin_renderer_base {
 
         $output = '';
         foreach ($structure->get_slots_in_section($section->id) as $slot) {
-            $output .= $this->question_row($structure, $slot, $contexts, $pagevars, $pageurl);
+            $output .= $this->question_row($structure, $slot, $contexts, $pagevars, $pageurl, $section->id);
         }
-        return html_writer::tag('ul', $output, ['class' => 'section img-text']);
+        return html_writer::tag('ul', $output, ['class' => 'section img-text', 'data-for' => 'quiz-section']);
     }
 
     /**
@@ -559,7 +559,11 @@ class edit_renderer extends \plugin_renderer_base {
 
         $output .= html_writer::tag('li', $questionhtml . $joinhtml,
                 ['class' => $questionclasses, 'id' => 'slot-' . $structure->get_slot_id_for_slot($slot),
-                        'data-canfinish' => $structure->can_finish_during_the_attempt($slot)]);
+                        'data-canfinish' => $structure->can_finish_during_the_attempt($slot),
+                        'data-for' => 'question',
+                        'data-slotorder' => $slot,
+                        'data-page' => $structure->get_page_number_for_slot($slot),
+                ]);
 
         return $output;
     }
@@ -592,7 +596,7 @@ class edit_renderer extends \plugin_renderer_base {
                     $pagenumber, $pageurl, $pagevars);
 
             $output .= html_writer::tag('li', $page . $addmenu . $addquestionform,
-                    ['class' => 'pagenumber activity yui3-dd-drop page', 'id' => 'page-' . $pagenumber]);
+                    ['class' => 'pagenumber activity page', 'data-for' => 'page', 'id' => 'page-' . $pagenumber]);
         }
 
         return $output;
@@ -869,9 +873,9 @@ class edit_renderer extends \plugin_renderer_base {
      * @return string The markup for the move action.
      */
     public function question_move_icon(structure $structure, $slot) {
-        return html_writer::link(new \moodle_url('#'),
+        return html_writer::span(
             $this->pix_icon('i/dragdrop', get_string('move'), 'moodle', ['class' => 'iconsmall', 'title' => '']),
-            ['class' => 'editing_move', 'data-action' => 'move']
+            'editing_move', ['data-action' => 'move', 'role' => 'button']
         );
     }
 
@@ -1189,13 +1193,8 @@ class edit_renderer extends \plugin_renderer_base {
             'quizid' => $structure->get_quizid(),
         ]);
 
-        $this->page->requires->yui_module('moodle-mod_quiz-dragdrop', 'M.mod_quiz.init_resource_dragdrop',
-                [[
-                        'courseid' => $structure,
-                        'quizid' => $structure->get_quizid(),
-                        'ajaxurl' => $config->resourceurl,
-                        'config' => $config,
-                ]], null, true);
+        $this->page->requires->js_call_amd('mod_quiz/dragdrop/main', 'initDragDrop',
+            [$this->page->bodyid, $structure->get_quizid(), $structure->get_courseid()]);
 
         // Require various strings for the command toolbox.
         $this->page->requires->strings_for_js([
