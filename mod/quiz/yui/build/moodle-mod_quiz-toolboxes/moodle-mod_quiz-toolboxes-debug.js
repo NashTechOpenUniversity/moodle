@@ -9,7 +9,10 @@ YUI.add('moodle-mod_quiz-toolboxes', function (Y, NAME) {
  *
  * @module moodle-course-toolboxes
  * @namespace M.course.toolboxes
+ * @deprecated since Moodle 4.5
  */
+Y.log("The quiz-toolboxs-toolbox has been deprecated. " +
+    "Please use mod_quiz/quiz_toolboxes instead.", 'moodle-core-notification', 'warn');
 
 // The CSS classes we use.
 var CSS = {
@@ -89,6 +92,7 @@ M.mod_quiz = M.mod_quiz || {};
  * @constructor
  * @protected
  * @extends Base
+ * @deprecated since Moodle 4.5
  */
 var TOOLBOX = function() {
     TOOLBOX.superclass.constructor.apply(this, arguments);
@@ -104,6 +108,7 @@ Y.extend(TOOLBOX, Y.Base, {
      * @param {Function} success_callback The callback to use on success
      * @param {Object} [optionalconfig] Any additional configuration to submit
      * @chainable
+     * @deprecated since Moodle 4.5
      */
     send_request: function(data, statusspinner, success_callback, optionalconfig) {
         // Default data structure
@@ -239,6 +244,7 @@ Y.extend(TOOLBOX, Y.Base, {
  *
  * @module mod_quiz-resource-toolbox
  * @namespace M.mod_quiz.resource_toolbox
+ * @deprecated since Moodle 4.5
  */
 
 /**
@@ -253,6 +259,10 @@ Y.extend(TOOLBOX, Y.Base, {
  * @constructor
  * @extends M.course.toolboxes.toolbox
  */
+
+Y.log("The quiz-toolboxs-resource has been deprecated. " +
+    "Please use mod_quiz/quiz_toolboxes instead.", 'moodle-core-notification', 'warn');
+
 var RESOURCETOOLBOX = function() {
     RESOURCETOOLBOX.superclass.constructor.apply(this, arguments);
 };
@@ -827,6 +837,7 @@ M.mod_quiz.init_resource_toolbox = function(config) {
  *
  * @module moodle-mod_quiz-toolboxes
  * @namespace M.mod_quiz.toolboxes
+ * @deprecated since Moodle 4.5
  */
 
 /**
@@ -839,6 +850,10 @@ M.mod_quiz.init_resource_toolbox = function(config) {
  * @constructor
  * @extends M.mod_quiz.toolboxes.toolbox
  */
+
+Y.log("The quiz-toolboxs-section has been deprecated. " +
+    "Please use mod_quiz/quiz_toolboxes instead.", 'moodle-core-notification', 'warn');
+
 var SECTIONTOOLBOX = function() {
     SECTIONTOOLBOX.superclass.constructor.apply(this, arguments);
 };

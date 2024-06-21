@@ -6,6 +6,7 @@
  *
  * @module moodle-mod_quiz-toolboxes
  * @namespace M.mod_quiz.toolboxes
+ * @deprecated since Moodle 4.5
  */
 
 /**
@@ -18,6 +19,10 @@
  * @constructor
  * @extends M.mod_quiz.toolboxes.toolbox
  */
+
+Y.log("The quiz-toolboxs-section has been deprecated. " +
+    "Please use mod_quiz/quiz_toolboxes instead.", 'moodle-core-notification', 'warn');
+
 var SECTIONTOOLBOX = function() {
     SECTIONTOOLBOX.superclass.constructor.apply(this, arguments);
 };
