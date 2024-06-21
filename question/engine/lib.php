@@ -665,6 +665,13 @@ class question_display_options {
     public $questionidentifier = null;
 
     /**
+     * This option is exist when we try to check the slot in an attempt or preview.
+     *
+     * @var int null the slot number that are being checked.
+     */
+    public int $checkedslot = 0;
+
+    /**
      * @var ?bool $versioninfo Should we display the version in the question info?
      */
     public ?bool $versioninfo = null;

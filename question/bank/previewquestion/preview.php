@@ -202,6 +202,10 @@ if (data_submitted() && confirm_sesskey()) {
             if ($mdlscrollto !== '') {
                 $actionurl->param('mdlscrollto', (int) $mdlscrollto);
             }
+            $checkedslot = optional_param('checkedslot', '', PARAM_RAW);
+            if ($checkedslot !== '') {
+                $actionurl->param('checkedslot', (int) $checkedslot);
+            }
             redirect($actionurl);
         }
 

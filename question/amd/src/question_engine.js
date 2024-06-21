@@ -36,6 +36,24 @@ export const initSubmitButton = button => {
 };
 
 /**
+ * Allow check button to pass value to form.
+ *
+ * @param {string} elementId the id of the button in the HTML.
+ */
+export const initCheckButton = elementId => {
+    const button = document.getElementById(elementId);
+    button.addEventListener('click', function(event) {
+        const form = button.closest('form');
+        // Add a hidden input so that we can retain the slot of a quiz or preview that are being checked.
+        const checkedSlotInput = document.createElement('input');
+        checkedSlotInput.type = 'hidden';
+        checkedSlotInput.name = 'checkedslot';
+        checkedSlotInput.value = event.target.dataset.slot;
+        form.appendChild(checkedSlotInput);
+    });
+};
+
+/**
  * Initialise a form that contains questions printed using print_question.
  * This has the effect of:
  * 1. Turning off browser autocomlete.
@@ -83,6 +101,7 @@ export const initForm = (formSelector) => {
 
     // Note: The scrollToSavedPosition function tries to wait until the content has loaded before firing.
     scrollManager.scrollToSavedPosition();
+    announceFeedback(form);
 };
 
 /**
@@ -101,4 +120,32 @@ export const preventRepeatSubmission = (event) => {
         [...form.querySelectorAll('input[type=submit]')].forEach((input) => input.setAttribute('disabled', true));
     });
     form.dataset.formSubmitted = '1';
+};
+
+/**
+ * Announce the all feedback to users when the slot are being checked.
+ *
+ * @param {HTMLElement} form the current form that contain the question that being checked.
+ */
+const announceFeedback = form => {
+    const url = new URL(window.location.href);
+    const checkslot = url.searchParams.get('checkedslot');
+    setTimeout(function() {
+        const checkedQuestion = form.querySelector('.slot-checked-' + checkslot);
+        if (checkedQuestion) {
+            const feedbackElements = checkedQuestion.querySelectorAll('[aria-live="assertive"]');
+            feedbackElements.forEach(function(feedbackElement) {
+                // Note: This is a hacky way to make the screen reader think the content are being modified
+                // so that the feedback can be announce to the user.
+                const html = feedbackElement.innerHTML;
+                // Why we need add an extra div for the feedback ?
+                // Because if the feedback is purely text, even if we change the innerHTML to empty
+                // Then change it back to original feedback, it doesn't count as the feedback is being modified.
+                feedbackElement.innerHTML = '<div>' + html + '</div>';
+            });
+        }
+        // The reason why we need to set an delay because on quiz attempt page
+        // There is an focus event that causing an interuption when the feedback are being read.
+        // So we want to wait for all of event loaded complelely before modified the content of feedback.
+    }, 1000);
 };

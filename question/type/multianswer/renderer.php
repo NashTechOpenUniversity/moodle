@@ -476,7 +476,7 @@ class qtype_multianswer_multichoice_vertical_renderer extends qtype_multianswer_
                 $result .= html_writer::tag('div',
                         $subq->format_text($ans->feedback, $ans->feedbackformat,
                                 $qa, 'question', 'answerfeedback', $ansid),
-                        array('class' => 'specificfeedback'));
+                       ['class' => 'specificfeedback', 'aria-live' => 'assertive']);
             }
 
             $result .= $this->choice_wrapper_end();
@@ -668,7 +668,7 @@ class qtype_multianswer_multiresponse_vertical_renderer extends qtype_multianswe
                 $result .= html_writer::tag('div',
                                             $subq->format_text($ans->feedback, $ans->feedbackformat,
                                                                $qa, 'question', 'answerfeedback', $ansid),
-                                            array('class' => 'specificfeedback'));
+                                            ['class' => 'specificfeedback' , 'aria-live' => 'assertive']);
             }
 
             $result .= $this->choice_wrapper_end();

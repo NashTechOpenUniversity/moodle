@@ -78,6 +78,8 @@ class core_question_renderer extends plugin_renderer_base {
                 $qa->get_question(false)->get_type_name(),
                 $qa->get_behaviour_name(),
                 $qa->get_state_class($options->correctness && $qa->has_marks()),
+                isset($options->checkedslot) && $options->checkedslot == $qa->get_slot()
+                    ? 'slot-checked-' . $options->checkedslot : '',
             ))
         ));
 
@@ -412,11 +414,11 @@ class core_question_renderer extends plugin_renderer_base {
             qtype_renderer $qtoutput, question_display_options $options) {
         $output = '';
         $output .= html_writer::nonempty_tag('div',
-                $qtoutput->feedback($qa, $options), array('class' => 'feedback'));
+                $qtoutput->feedback($qa, $options), ['class' => 'feedback', 'aria-live' => 'assertive']);
         $output .= html_writer::nonempty_tag('div',
-                $behaviouroutput->feedback($qa, $options), array('class' => 'im-feedback'));
+                $behaviouroutput->feedback($qa, $options), ['class' => 'im-feedback', 'aria-live' => 'assertive']);
         $output .= html_writer::nonempty_tag('div',
-                $options->extrainfocontent, array('class' => 'extra-feedback'));
+                $options->extrainfocontent, ['class' => 'extra-feedback', 'aria-live' => 'assertive']);
         return $output;
     }
 

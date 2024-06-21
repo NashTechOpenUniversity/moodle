@@ -1,0 +1,12 @@
+issueNumber: MDL-78952
+notes:
+core_question:
+  - message: >
+      Add new initCheckButton function so we can retain the slot that are being checked.
+      And new announceFeedback function so the feedback can be announced when user check a question.
+      question_display_options has a new checkedslot variable to check if the sloted is being checked.
+    type: changed
+  - message: >
+      You can add 'aria-live' => 'assertive' attribute to any specific feedbacks that need be announced
+      in qtype plugin so they can be read.
+  type: improved

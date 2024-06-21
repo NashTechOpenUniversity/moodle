@@ -89,6 +89,7 @@ class question_preview_options extends question_display_options {
                 'generalfeedback' => PARAM_BOOL,
                 'rightanswer' => PARAM_BOOL,
                 'history' => PARAM_BOOL,
+                'checkedslot' => PARAM_INT,
         ];
     }
 

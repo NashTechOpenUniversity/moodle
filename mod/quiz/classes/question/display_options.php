@@ -82,6 +82,9 @@ class display_options extends \question_display_options {
         $options->numpartscorrect = $options->feedback;
         $options->manualcomment = $options->feedback;
 
+        if ($options->feedback) {
+            $options->checkedslot = optional_param('checkedslot', 0, PARAM_INT);
+        }
         if ($quiz->questiondecimalpoints != -1) {
             $options->markdp = $quiz->questiondecimalpoints;
         } else {

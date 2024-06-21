@@ -125,7 +125,7 @@ abstract class qtype_multichoice_renderer_base extends qtype_with_combined_feedb
                         $question->make_html_inline($question->format_text(
                                 $ans->feedback, $ans->feedbackformat,
                                 $qa, 'question', 'answerfeedback', $ansid)),
-                        array('class' => 'specificfeedback'));
+                        ['class' => 'specificfeedback', 'aria-live' => 'assertive']);
             } else {
                 $feedback[] = '';
             }
