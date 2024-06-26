@@ -304,9 +304,14 @@ class ResourceToolBox extends ToolBox {
      * @return Boolean
      */
     editMaxMark(ev, button, activity) {
+        // Prevent the default actions.
+        ev.preventDefault();
         // Get the element we're working on.
-        const instanceMaxmark = activity.querySelector(SELECTOR.INSTANCEMAXMARK),
-            instance = activity.querySelector(SELECTOR.ACTIVITYINSTANCE),
+        const instanceMaxmark = activity.querySelector(SELECTOR.INSTANCEMAXMARK);
+        if (!instanceMaxmark) {
+            return;
+        }
+        const instance = activity.querySelector(SELECTOR.ACTIVITYINSTANCE),
             anchor = instanceMaxmark, // Grab the anchor so that we can swap it with the edit form.
             oldMaxMark = instanceMaxmark.firstChild.nodeValue,
             data = {
@@ -315,8 +320,6 @@ class ResourceToolBox extends ToolBox {
             };
         let maxMarkText = oldMaxMark;
 
-        // Prevent the default actions.
-        ev.preventDefault();
         this.sendRequest(data, null, 'mod_quiz_get_max_mark')
             .then(response => {
                 if (M.core.actionmenu && M.core.actionmenu.instance) {
@@ -376,8 +379,7 @@ class ResourceToolBox extends ToolBox {
 
                 // Store the event listeners for later removal
                 this.editMaxMarkEvents = true;
-            })
-            .catch(Notification.exception);
+            });
     }
 
     /**
@@ -742,7 +744,8 @@ class ResourceToolBox extends ToolBox {
         // We don't actually want to submit anything.
         ev.preventDefault();
         const editor = activity.querySelector(SELECTOR.ACTIVITYFORM + ' ' + SELECTOR.ACTIVITYMAXMARK);
-        const newMaxMark = editor.value.trim();
+        // The value should cointain only number.
+        const newMaxMark = /^\d+$/.test(editor.value.trim()) ? editor.value.trim() : 0;
         // Try to blur input to trigger event editMaxMarkClear.
         editor.blur();
         // Update the instance max mark content

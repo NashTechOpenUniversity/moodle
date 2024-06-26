@@ -38,25 +38,18 @@ export default class {
      * @param {*} stateManager StateManager instance
      * @param {Object} dragData Id of the column to move
      * @param {Element} dropZoneNode Id ofthe column before (0 means to insert at the left of the board)
+     * @param {Boolean} goingUp true if move up the slot. false if we are move down the slot.
      */
-    async moveQuestion(stateManager, dragData, dropZoneNode) {
-        const goingUp = dragData.slotorder > dropZoneNode.dataset.slotorder;
+    async moveQuestion(stateManager, dragData, dropZoneNode, goingUp) {
+        goingUp = goingUp !== null ? goingUp : dragData.slotorder > dropZoneNode.dataset.slotorder;
         // We want to update the front-end UI first so that we can get the correct previous slot and previous page.
         this.processUpdates(stateManager, dropZoneNode, dragData, goingUp);
         const dragNode = document.getElementById(dragData.id);
         let previousSlot = slot.getPrevious(dragNode, SELECTORS.SLOT_SELECTOR);
         let previousPage = slot.getPrevious(dragNode, SELECTORS.PAGE_SELECTOR);
+        previousSlot = previousSlot ? util.getNumber(previousSlot.id) : 0;
+        previousPage = previousPage ? util.getNumber(previousPage.id) : 0;
 
-        if (previousSlot) {
-            previousSlot = util.getNumber(previousSlot.id);
-        } else {
-            previousSlot = 0;
-        }
-        if (previousPage) {
-            previousPage = util.getNumber(previousPage.id);
-        } else {
-            previousPage = 0;
-        }
         const result = await this._moveQuestionToSlot(dragData.quizid, util.getNumber(dragData.id),
             util.getNumber(dragNode.closest(SELECTORS.MAIN_SECTION).id), previousSlot, previousPage);
         if (result.visible) {

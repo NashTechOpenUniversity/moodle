@@ -528,7 +528,7 @@ class edit_renderer extends \plugin_renderer_base {
         foreach ($structure->get_slots_in_section($section->id) as $slot) {
             $output .= $this->question_row($structure, $slot, $contexts, $pagevars, $pageurl, $section->id);
         }
-        return html_writer::tag('ul', $output, ['class' => 'section img-text', 'data-for' => 'quiz-section']);
+        return html_writer::tag('ul', $output, ['class' => 'section img-text']);
     }
 
     /**
@@ -757,14 +757,13 @@ class edit_renderer extends \plugin_renderer_base {
     public function question(structure $structure, int $slot, \moodle_url $pageurl) {
         // Get the data required by the question_slot template.
         $slotid = $structure->get_slot_id_for_slot($slot);
-
+        $slotobject = $structure->get_slot_by_id($slotid);
         $output = '';
         $output .= html_writer::start_tag('div');
 
         if ($structure->can_be_edited()) {
             $output .= $this->question_move_icon($structure, $slot);
         }
-
         if ($structure->can_display_number_be_customised($slot)) {
             $questionnumber = $this->output->render($structure->make_slot_display_number_in_place_editable(
                     $slotid, $structure->get_context()));
@@ -776,7 +775,8 @@ class edit_renderer extends \plugin_renderer_base {
             'slotid' => $slotid,
             'canbeedited' => $structure->can_be_edited(),
             'checkbox' => $this->get_checkbox_render($structure, $slot),
-            'questionnumber' => $this->question_number($questionnumber, $structure->get_slot_by_number($slot)->defaultnumber),
+            'questionnumber' => $this->question_number($questionnumber, $structure->get_slot_by_number($slot)->defaultnumber,
+                $slotobject->displaynumber),
             'questionname' => $this->get_question_name_for_slot($structure, $slot, $pageurl),
             'questionicons' => $this->get_action_icon($structure, $slot, $pageurl),
             'questiondependencyicon' => ($structure->can_be_edited() ? $this->question_dependency_icon($structure, $slot) : ''),
@@ -884,14 +884,20 @@ class edit_renderer extends \plugin_renderer_base {
      *
      * @param string $editablenumber The, which may be an in-place editable.
      * @param string $uncustomisednumber The un-customised number number, or 'i'.
+     * @param string|null $customnumber The customised number.
      * @return string HTML to output.
      */
-    public function question_number(string $editablenumber, string $uncustomisednumber) {
+    public function question_number(string $editablenumber, string $uncustomisednumber, ?string $customnumber) {
+        if ($customnumber == $uncustomisednumber) {
+            $customnumber = '';
+        }
         if ($editablenumber !== get_string('infoshort', 'quiz')) {
             $editablenumber = html_writer::span(get_string('question'), 'accesshide') . ' ' . $editablenumber;
             $uncustomisednumber = html_writer::span(get_string('question'), 'accesshide') . ' ' . $uncustomisednumber;
         }
-        return html_writer::tag('span', $editablenumber, ['class' => 'slotnumber unshuffled']) .
+
+        return html_writer::tag('span', $editablenumber, ['class' => 'slotnumber unshuffled',
+                'data-customnumber' => $customnumber]) .
                 html_writer::tag('span', $uncustomisednumber, ['class' => 'slotnumber shuffled']);
     }
 

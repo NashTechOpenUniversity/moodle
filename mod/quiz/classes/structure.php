@@ -901,6 +901,16 @@ class structure {
             } else {
                 $headingmovebefore = $moveafterslotnumber;
             }
+            // Move down to different page.
+            if ($page > $movingslot->page) {
+                if ($this->is_first_slot_on_page($moveafterslotnumber)) {
+                    $headingmoveafter = $movingslotnumber;
+                    $headingmovebefore = $moveafterslotnumber + 1;
+                } else {
+                    $headingmoveafter = $movingslotnumber;
+                    $headingmovebefore = $moveafterslotnumber + 2;
+                }
+            }
             $headingmovedirection = -1;
 
         } else if ($moveafterslotnumber < $movingslotnumber - 1) {

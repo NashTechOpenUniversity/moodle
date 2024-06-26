@@ -27,6 +27,7 @@ import Notification from 'core/notification';
 import {getString, getStrings} from 'core/str';
 import Prefetch from 'core/prefetch';
 import dropZoneElement from 'mod_quiz/dragdrop/dropzone';
+import inplaceeditable from 'core/inplace_editable';
 
 Prefetch.prefetchStrings('moodle', ['question', 'page']);
 Prefetch.prefetchStrings('quiz', ['removepagebreak', 'addpagebreak', 'questiondependencyremove',
@@ -134,7 +135,14 @@ const slot = {
      */
     setNumber(slot, number) {
         let numberNode = slot.querySelector(this.SELECTORS.NUMBER);
-        numberNode.innerHTML = '<span class="accesshide">' + this.CONSTANTS.QUESTION + '</span> ' + number;
+        const inplace = inplaceeditable.getInplaceEditable(numberNode);
+        if (inplace) {
+            if (numberNode.dataset.customnumber) {
+                inplace.setValue(numberNode.dataset.customnumber);
+            } else {
+                inplace.setValue(number);
+            }
+        }
     },
 
     /**
@@ -306,7 +314,7 @@ const slot = {
     addPageBreak(slot) {
         let nodeText = config.addpageiconhtml;
         nodeText = nodeText.replace('%%SLOT%%', this.getNumber(slot));
-        let pageBreak = document.createElement('div');
+        let pageBreak = document.createElement('span');
         pageBreak.innerHTML = nodeText;
         slot.querySelector('div').insertAdjacentElement('afterend', pageBreak);
         return pageBreak;

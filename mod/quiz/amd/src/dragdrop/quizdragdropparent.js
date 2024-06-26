@@ -56,15 +56,8 @@ export default class extends BaseComponent {
      * Called once when state is ready, attaching event listeners and initializing drag and drop.
      */
     async stateReady() {
-        const sections = this.getElements(SELECTORS.SECTION);
         const questions = this.getElements(SELECTORS.QUESTION);
         const pageheadings = this.getElements(SELECTORS.PAGE);
-        sections.forEach((section) => {
-            new dropZoneElement({
-                element: section,
-                reactive: this.reactive,
-            });
-        });
         pageheadings.forEach((page) => {
             new dropZoneElement({
                 element: page,

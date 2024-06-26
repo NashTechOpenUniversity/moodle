@@ -68,19 +68,22 @@ export default class extends BaseComponent {
      */
     drop(dropdata) {
         let dropZoneNode = this.element;
+        let goingUp = null;
         // If the dropzone is a section. We will drop the first question of the section.
         if (this.element.classList.contains('section')) {
             dropZoneNode = this.element.querySelector(SELECTORS.QUESTION);
+            goingUp = true;
         }
-        // If the dropzone is a page title. We will drop the previous question of the page.
+        // If the dropzone is a page title. We will drop to previous question of the page.
         if (this.element.classList.contains('page')) {
             dropZoneNode = slot.getPrevious(this.element, SELECTORS.SLOT_SELECTOR);
             if (!dropZoneNode) {
-                // If it is an empty page, we will drop next the first quesiton of the section.
+                // If it is first page, we will drop next the first question of the section.
                 dropZoneNode = this.element.parentNode.querySelector(SELECTORS.QUESTION);
+                goingUp = true;
             }
         }
-        this.reactive.dispatch('moveQuestion', dropdata, dropZoneNode);
+        this.reactive.dispatch('moveQuestion', dropdata, dropZoneNode, goingUp);
     }
 
     /**
