@@ -31,10 +31,40 @@ require_once($CFG->dirroot . '/question/editlib.php');
  * @category   test
  * @copyright  2018 the Open University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers \mod_quiz\question\bank\custom_view
  */
 class quiz_question_bank_view_test extends \advanced_testcase {
+    /**
+     * @var \stdClass
+     */
+    private $cm;
+    /**
+     * @var \StdClass
+     */
+    private $question;
+    /**
+     * @var \stdClass
+     */
+    private $quiz;
+    /**
+     * @var question_edit_contexts
+     */
+    private $contexts;
+    /**
+     * @var \core\context\module
+     */
+    private $context;
+    /**
+     * @var \stdClass
+     */
+    private $course;
+    /**
+     * @var object
+     */
+    private $cat;
 
-    public function test_viewing_question_bank_should_not_load_individual_questions() {
+    public function setUp(): void {
+        parent::setUp();
         $this->resetAfterTest();
         $this->setAdminUser();
         $generator = $this->getDataGenerator();
@@ -42,34 +72,36 @@ class quiz_question_bank_view_test extends \advanced_testcase {
         $questiongenerator = $generator->get_plugin_generator('core_question');
 
         // Create a course and a quiz.
-        $course = $generator->create_course();
-        $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
-        $context = \context_module::instance($quiz->cmid);
-        $cm = get_coursemodule_from_instance('quiz', $quiz->id);
+        $this->course = $generator->create_course();
+        $this->quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $this->course->id]);
+        $this->context = \context_module::instance($this->quiz->cmid);
+        $this->cm = get_coursemodule_from_instance('quiz', $this->quiz->id);
 
         // Create a question in the default category.
-        $contexts = new question_edit_contexts($context);
-        question_make_default_categories($contexts->all());
-        $cat = question_get_default_category($context->id);
-        $questiondata = $questiongenerator->create_question('numerical', null,
-                ['name' => 'Example question', 'category' => $cat->id]);
+        $this->contexts = new question_edit_contexts($this->context);
+        question_make_default_categories($this->contexts->all());
+        $this->cat = question_get_default_category($this->context->id);
+        $this->question = $questiongenerator->create_question('numerical', null,
+            ['name' => 'Example question', 'category' => $this->cat->id]);
+    }
 
+    public function test_viewing_question_bank_should_not_load_individual_questions(): void {
         // Ensure the question is not in the cache.
         $cache = \cache::make('core', 'questiondata');
-        $cache->delete($questiondata->id);
+        $cache->delete($this->question->id);
 
         // Generate the view.
         $params = [
             'qpage' => 0,
             'qperpage' => 20,
-            'cat' => $cat->id . ',' . $context->id,
+            'cat' => $this->cat->id . ',' . $this->context->id,
             'recurse' => false,
             'showhidden' => false,
             'qbshowtext' => false,
             'tabname' => 'editq'
         ];
-        $extraparams = ['cmid' => $cm->id];
-        $view = new custom_view($contexts, new \moodle_url('/'), $course, $cm, $params, $extraparams);
+        $extraparams = ['cmid' => $this->cm->id];
+        $view = new custom_view($this->contexts, new \moodle_url('/'), $this->course, $this->cm, $params, $extraparams);
         ob_start();
         $view->display();
         $html = ob_get_clean();
@@ -78,6 +110,44 @@ class quiz_question_bank_view_test extends \advanced_testcase {
         $this->assertStringContainsString('Example question', $html);
 
         // Verify the question has not been loaded into the cache.
-        $this->assertFalse($cache->has($questiondata->id));
+        $this->assertFalse($cache->has($this->question->id));
+    }
+
+    public function test_viewing_question_bank_should_not_load_hidden_question(): void {
+        $generator = $this->getDataGenerator();
+        /** @var core_question_generator $questiongenerator */
+        $questiongenerator = $generator->get_plugin_generator('core_question');
+
+        // Create another version.
+        $newversion = $questiongenerator->update_question($this->question, null, ['name' => 'This is the latest version']);
+
+        // Add them to the quiz.
+        quiz_add_quiz_question($newversion->id, $this->quiz);
+        // Generate the view.
+        $params = [
+            'qpage' => 0,
+            'qperpage' => 20,
+            'cat' => $this->cat->id . ',' . $this->context->id,
+            'recurse' => false,
+            'showhidden' => false,
+            'qbshowtext' => false,
+            'tabname' => 'editq',
+        ];
+        $extraparams = ['cmid' => $this->cm->id];
+        $view = new custom_view($this->contexts, new \moodle_url('/'), $this->course, $this->cm, $params, $extraparams);
+        ob_start();
+        $view->display();
+        $html = ob_get_clean();
+        // Verify the output should included the latest version.
+        $this->assertStringContainsString('This is the latest version', $html);
+        $this->assertStringNotContainsString('Example question', $html);
+        // Delete the latest version.
+        question_delete_question($newversion->id);
+        // Verify the output should display the old version with status ready.
+        ob_start();
+        $view->display();
+        $html = ob_get_clean();
+        $this->assertStringContainsString('Example question', $html);
+        $this->assertStringNotContainsString('This is the latest version', $html);
     }
 }
