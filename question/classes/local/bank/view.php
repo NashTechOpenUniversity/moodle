@@ -728,15 +728,9 @@ class view {
             [$colname, $subsort] = $this->parse_subsort($sortname);
             $sorts[] = $this->requiredcolumns[$colname]->sort_expression($sortorder == SORT_DESC, $subsort);
         }
-
-        // Build the where clause.
-        $latestversion = 'qv.version = (SELECT MAX(v.version)
-                                          FROM {question_versions} v
-                                          JOIN {question_bank_entries} be
-                                            ON be.id = v.questionbankentryid
-                                         WHERE be.id = qbe.id)';
         $this->sqlparams = [];
         $conditions = [];
+        // Build the where clause.
         foreach ($this->searchconditions as $searchcondition) {
             if ($searchcondition->where()) {
                 $conditions[] = '((' . $searchcondition->where() .'))';
@@ -751,12 +745,42 @@ class view {
         $separator = ($jointype === datafilter::JOINTYPE_ALL) ? ' AND ' : ' OR ';
         // Build the SQL.
         $sql = ' FROM {question} q ' . implode(' ', $joins);
-        $sql .= ' WHERE q.parent = 0 AND ' . $latestversion;
+        $sql .= ' WHERE q.parent = 0 ';
         if (!empty($conditions)) {
             $sql .= ' AND ' . $nonecondition . ' ( ';
             $sql .= implode($separator, $conditions);
             $sql .= ' ) ';
         }
+        // Build the sub query.
+        $latestversion = 'qv.version = (SELECT MAX(v.version)
+                                          FROM {question_versions} v
+                                          JOIN {question_bank_entries} be
+                                            ON be.id = v.questionbankentryid
+                                         WHERE be.id = qbe.id';
+        // We also want to apply the filter conditions to sub query.
+        if (!empty($conditions)) {
+            // Replace main query prefix with subquery prefix.
+            $modifedconditions = array_map(
+                fn($condition) => str_replace(['qv', 'qbe'], ['v', 'be'], $condition),
+                $conditions
+            );
+            // Build and add filter condition to sub query.
+            $latestversion .= ' AND ' . implode($separator, $modifedconditions);
+            // Replace the main query prefix with subquery prefix.
+            $latestversion = preg_replace('/:(\w+)/', ':sub$1', $latestversion);
+
+            // Add sub prefix to sql params so that they are unique.
+            // Then add the sub params to the main sqlparam.
+            $this->sqlparams = array_merge(
+                $this->sqlparams,
+                array_combine(
+                    array_map(fn($key) => 'sub' . $key, array_keys($this->sqlparams)),
+                    array_values($this->sqlparams)
+                )
+            );
+        }
+        $latestversion .= ' ) ';
+        $sql .= ' AND ' . $latestversion;
         $this->countsql = 'SELECT count(1)' . $sql;
         $this->loadsql = 'SELECT ' . implode(', ', $fields) . $sql . ' ORDER BY ' . implode(', ', $sorts);
     }
