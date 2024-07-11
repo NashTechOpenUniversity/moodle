@@ -31,6 +31,7 @@ class action_bar extends \core_grades\output\action_bar {
 
     /** @var string $usersearch The content that the current user is looking for. */
     protected string $usersearch = '';
+
     /** @var int $userid The ID of the user that the current user is looking for. */
     protected int $userid = 0;
 
@@ -89,21 +90,14 @@ class action_bar extends \core_grades\output\action_bar {
             $firstnameinitial = $SESSION->gradereport["filterfirstname-{$this->context->id}"] ?? '';
             $lastnameinitial  = $SESSION->gradereport["filtersurname-{$this->context->id}"] ?? '';
 
-            $initialselector = \core\output\initials_bar::initials_selector(
-                $course,
-                $this->context,
-                '/grade/report/grader/index.php',
-                $params,
-                $filter,
-            );
-
+            $initialselector = new \core\output\name_filter_bar($course,  $this->context, '/grade/report/grader/index.php',
+                $params, $filter);
             $data['initialselector'] = $initialselector->export_for_template($output);
 
-//            if ($course->groupmode) {
-//                $actionbarrenderer = $PAGE->get_renderer('core_course', 'actionbar');
-//                $data['groupselector'] = $actionbarrenderer->render(new \core_course\output\actionbar\group_selector($course));
-//            }
-            $data['groupselector'] = \core\output\groups_bar::group_selector($course, $output);
+            if ($course->groupmode) {
+                $actionbarrenderer = $PAGE->get_renderer('core_course', 'actionbar');
+                $data['groupselector'] = $actionbarrenderer->render(new \core_course\output\actionbar\group_selector($course));
+            }
 
             $resetlink = new moodle_url('/grade/report/grader/index.php', ['id' => $courseid]);
             $userselectorrenderer = new \core_course\output\actionbar\user_selector(
