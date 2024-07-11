@@ -1612,9 +1612,10 @@ class user {
      *
      * @param context $context Context we are in.
      * @param string $usersearch Array of field mappings (fieldname => SQL code for the value)
+     * @param bool $allowcustom Allow search custom profile field.
      * @return array SQL query data in the format ['where' => '', 'params' => []].
      */
-    public static function get_users_search_sql(context $context, string $usersearch = ''): array {
+    public static function get_users_search_sql(context $context, string $usersearch = '', bool $allowcustom = false): array {
         global $DB, $USER;
 
         $userfields = fields::for_identity($context, false)->with_userpic();
@@ -1667,7 +1668,7 @@ class user {
         $conditions[] = $idnumber;
 
         // Search all user identify fields.
-        $extrasearchfields = fields::get_identity_fields(null, false);
+        $extrasearchfields = fields::get_identity_fields(null, $allowcustom);
         foreach ($extrasearchfields as $fieldindex => $extrasearchfield) {
             if (in_array($extrasearchfield, ['email', 'idnumber', 'country'])) {
                 // Already covered above.
