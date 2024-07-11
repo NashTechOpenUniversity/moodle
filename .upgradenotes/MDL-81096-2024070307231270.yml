@@ -1,0 +1,16 @@
+issueNumber: MDL-81096
+notes:
+  core_course:
+    - message: >-
+        - The `core_course/actionbar/group::init` method includes an additional parameter `extraParams`
+        to retain all existing parameters when changing the group.
+        - The `core_course::group_selector` class will receive an additional parameter, which is the course module object,
+        to ensure compatibility not only with courses but also with other activities.
+      type: improved
+  core_group:
+    - message: >-
+        - The `core_group/comboboxsearch/repository::groupFetch` now receives an optional parameter `cmid` to 
+        ensure compatibility not only with courses but also with other activities.
+        - The service `core_group::get_groups_for_selector` now accepts an optional parameter `$cmid` to ensure
+        compatibility not only with courses but also with other activities.
+      type: improved
