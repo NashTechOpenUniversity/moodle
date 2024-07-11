@@ -28,6 +28,10 @@ notes:
         it is available for use in other components.
         - The `core_grades/initials_dropdown_form` mustache form has been relocated to `core/initials_dropdown_form` 
         to ensure it is available for use in other components.
+        - The `core_grades::print_grade_page_head` method will now use the `render()` method to render the action bar
+        instead of the `render_action_bar()` method.
+        - The `core_grades::get_users_search_sql` method has been relocated to `\core_user::get_users_search_sql` to
+        ensure its availability for use in other components.
       type: improved
   gradereport_grader:
     - message: >-
@@ -38,4 +42,21 @@ notes:
         it is available for use in other components.
         - The `gradereport_grader/action_bar` mustache template has been relocated to `core`/action_bar` to ensure
         it is available for use in other components.
+      type: improved
+  core_user:
+    - message: >-
+        - The `core_user::get_users_search_sql` file as been created to replace `core_grades::initials_selector`  to ensure
+        it is available for use in other components.
+      type: improved
+  mod_quiz:
+    - message: >-
+        - The service `mod_quiz\get_users_in_report` has been created to handle user search actions in the quiz report.
+        - The `mod_quiz\attempts_report_options` has a new method `setup_from_params_array` to set necessary dat to the $option object.
+        - The `mod_quiz\local\reports::report_base` class has been added several methods:
+            - The method `print_action_bar` will be responsible for rendering the entire quiz navigation bar in the report.
+            - The method `setup_report_data` allows retrieval of necessary data for the report, such as option objects and table objects.
+            - The method `has_permission` checks whether the user has permission to access this report.
+        - The `mod_quiz\output\action_selector` has been created to take responsibility for rendering the action selector,
+        (a component of the quiz navigation bar), enabling users to switch between quiz reports.
+        - The file `mod_quiz\output\quiz_navigation_bar` has been created to render the quiz navigation bar.
       type: improved

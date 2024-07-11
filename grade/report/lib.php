@@ -485,10 +485,15 @@ abstract class grade_report {
 
         // A user wants to return a subset of learners that match their search criteria.
         if ($this->usersearch !== '' && $this->userid === -1) {
+            // Get the fields for all contexts because there is a special case later where it allows
+            // matches of fields you can't access if they are on your own account.
+            $userfields = fields::for_identity(null, false)->with_userpic();
+            ['mappings' => $mappings]  = (array)$userfields->get_sql('u', true);
             [
                 'where' => $keywordswhere,
                 'params' => $keywordsparams,
-            ] = \core_user::get_users_search_sql($this->context, $this->usersearch);
+            ] = \core_user::get_users_search_sql($mappings, $userfields->get_required_fields(),
+                $this->usersearch, $this->context);
             $this->userwheresql .= " AND $keywordswhere";
             $this->userwheresql_params = array_merge($this->userwheresql_params, $keywordsparams);
         }

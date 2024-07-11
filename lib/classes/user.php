@@ -1500,16 +1500,16 @@ class core_user {
      * Prepare SQL where clause and associated parameters for any user searching being performed.
      * This mostly came from core_user\table\participants_search with some slight modifications four our use case.
      *
-     * @param context $context Context we are in.
-     * @param string $usersearch Array of field mappings (fieldname => SQL code for the value)
+     * @param array $mappings Array of field mappings (fieldname => SQL code for the value)
+     * @param array $userfields An array that we cast from user profile fields to search within.
+     * @param string $usersearch A user search data.
+     * @param \context $context Context object.
+     * @param bool $allowcustom Allow search custom profile field.
      * @return array SQL query data in the format ['where' => '', 'params' => []].
      */
-    public static function get_users_search_sql(context $context, string $usersearch = ''): array {
+    public static function get_users_search_sql(array $mappings, array $userfields, string $usersearch,
+            \context $context, bool $allowcustom = false): array {
         global $DB, $USER;
-
-        $userfields = fields::for_identity($context, false)->with_userpic();
-        ['mappings' => $mappings]  = (array)$userfields->get_sql('u', true);
-        $userfields = $userfields->get_required_fields();
 
         $canviewfullnames = has_capability('moodle/site:viewfullnames', $context);
 
@@ -1557,7 +1557,7 @@ class core_user {
         $conditions[] = $idnumber;
 
         // Search all user identify fields.
-        $extrasearchfields = fields::get_identity_fields(null, false);
+        $extrasearchfields = fields::get_identity_fields(null, $allowcustom);
         foreach ($extrasearchfields as $fieldindex => $extrasearchfield) {
             if (in_array($extrasearchfield, ['email', 'idnumber', 'country'])) {
                 // Already covered above.
