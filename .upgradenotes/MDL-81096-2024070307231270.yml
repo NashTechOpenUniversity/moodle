@@ -14,3 +14,28 @@ notes:
         - The service `core_group::get_groups_for_selector` now accepts an optional parameter `$cmid` to ensure
         compatibility not only with courses but also with other activities.
       type: improved
+  core:
+    - message: >-
+        - The `core\output\name_filter_bar` renderer class has been created to replace `core_grades::initials_selector`  to ensure
+        it is available for use in other components.
+      type: improved
+  core_grades:
+    - message: >-
+        - The `core_grades\general_action_bar` will now use the template `core/navigation_action_bar`
+        instead of `core_grades/general_action_bar`.
+        - The `core_grades::initials_selector` method has been deprecated; use `\core\output\name_filter_bar` instead.
+        - The `core_grades/searchwidget/initials` file has been relocated to `core/searchwidget/initials` to ensure
+        it is available for use in other components.
+        - The `core_grades/initials_dropdown_form` mustache form has been relocated to `core/initials_dropdown_form` 
+        to ensure it is available for use in other components.
+      type: improved
+  gradereport_grader:
+    - message: >-
+        - The `gradereport_grader/user` class has been deprecated; use `core/searchwidget/user` instead.
+        - The `gradereport_grader::action_bar` class now uses the template `core/action_bar`
+        instead of `gradereport_grader/action_bar`.
+        - The `gradereport_grader/group` file has been relocated to `core/comboboxsearch/group` to ensure
+        it is available for use in other components.
+        - The `gradereport_grader/action_bar` mustache template has been relocated to `core`/action_bar` to ensure
+        it is available for use in other components.
+      type: improved
