@@ -27,8 +27,10 @@ import {addIconToContainer} from 'core/loadingicon';
 import Notification from 'core/notification';
 import Pending from 'core/pending';
 import {get_string as getString} from 'core/str';
-import {render as renderTemplate} from 'core/templates';
-import {replaceNode} from 'core/templates';
+import {render as renderTemplate, replaceNode, runTemplateJS, renderForPromise} from 'core/templates';
+import Modal from 'core/modal';
+import {prefetchStrings} from 'core/prefetch';
+import Fragment from 'core/fragment';
 
 /**
  * @type {Object} selectors used in this code.
@@ -47,6 +49,13 @@ const SELECTORS = {
     'slotList': 'table#mod_quiz-slot-list',
     'updateGradeItemLink': (id) => 'tr[data-quiz-grade-item-id="' + id + '"] .quickeditlink',
 };
+
+prefetchStrings('mod_quiz', [
+    'overallfeedback_for',
+    'insertfeedbackbefore',
+]);
+
+let modal;
 
 /**
  * Call the Ajax service to create a quiz grade item.
@@ -160,6 +169,253 @@ const callServicesAndReturnRenderingData = (methodCalls) => {
         });
     return Promise.all(fetchMany(methodCalls))
     .then(results => JSON.parse(results.at(-1)));
+};
+
+const handleGradeItemAddFeedback = async(e) => {
+    e.preventDefault();
+    const pending = new Pending('add-overall-feedback');
+    const tableCell = e.target.closest('td');
+    const tableRow = tableCell.closest('tr');
+    const contextId = Number(e.target.dataset.contextid);
+    const quizId = tableRow.closest('table').dataset.quizId;
+    const gradeItemId = tableRow.dataset.quizGradeItemId;
+    const footerTemplate = await renderForPromise('mod_quiz/overallfeedback_footer_modal', {});
+    const rawName = tableRow.querySelector('th span.inplaceeditable').dataset.rawName;
+    modal = await Modal.create({
+        title: getString('overallfeedback_for', 'mod_quiz', rawName),
+        body: '',
+        footer: footerTemplate.html,
+        show: true,
+        removeOnClose: true,
+        large: true,
+        templateContext: {
+            classes: 'overallfeedback',
+        },
+    });
+
+    const modalBody = modal.getBody()[0];
+    modalBody.dataset.quizid = quizId;
+    modalBody.dataset.gradeItemId = gradeItemId;
+    await addIconToContainer(modalBody, pending);
+    const fragment = Fragment.loadFragment('mod_quiz', 'load_overall_feedback_data', contextId, {
+        quizId,
+        gradeItemId,
+    });
+
+    fragment.done(function(html, js) {
+
+        modalBody.innerHTML = html;
+        // Need to wait util html already appended into DOM.
+        setTimeout(() => {
+            runTemplateJS(js);
+            // Enable submit button.
+            modal.getFooter()[0].querySelectorAll('input').forEach(inputEl => {
+               inputEl.disabled = false;
+            });
+            modalBody.querySelectorAll('.divider button.feedbackadd-button').forEach(addFeedback => {
+                addFeedback.addEventListener('click', e => {
+                    e.preventDefault();
+                    handleAddMoreFeedback(e, modalBody, contextId);
+                });
+            });
+            modal.getFooter()[0].querySelectorAll('input[type="submit"]').forEach(input => {
+                input.addEventListener('click', handleSubmitModal);
+            })
+        }, 100);
+
+        pending.resolve();
+    });
+};
+
+const handleSubmitModal = (e) => {
+    e.preventDefault();
+    const target = e.currentTarget;
+    const action = target.dataset.action;
+    switch (action) {
+        case "cancel":
+            modal.hide();
+            break;
+        case "save":
+            saveFeedback(e);
+            break;
+        default:
+            break;
+    }
+};
+
+const saveFeedback = async() => {
+    const formData = collectFormData();
+    // Remove first 100% data from formData, we don't need to validate it.
+    const firstData = formData.shift();
+
+    const options = {
+        methodname: 'mod_quiz_validate_overall_feedback_per_grade_item',
+        args: {
+            formdata: JSON.stringify(formData),
+            quizid: parseInt(modal.getBody()[0].dataset.quizid),
+        },
+    };
+
+    try {
+        // Server-side validation.
+        const result = await fetchMany([options])[0];
+        // Toggle error messages.
+        displayErrors(JSON.parse(result.errors));
+        if (result.isvalid) {
+            const formatedData = JSON.parse(result.data);
+            formatedData.unshift(firstData);
+            const saveOptions = {
+                methodname: 'mod_quiz_save_overall_feedback_per_grade_item',
+                args: {
+                    formdata: JSON.stringify(formatedData),
+                    quizid: parseInt(modal.getBody()[0].dataset.quizid),
+                    gradeitemid: parseInt(modal.getBody()[0].dataset.gradeItemId),
+                },
+            };
+            await fetchMany([saveOptions])[0];
+            return;
+        }
+    } catch (e) {
+        return Notification.exception(e);
+    }
+};
+
+const displayErrors = (errors) => {
+    const body = modal.getBody()[0];
+    let feedbackTextIndex = 0;
+
+    // We need to go through all the input elements to display error messages
+    // for invalid inputs and clear error messages for valid ones.
+    body.querySelectorAll('form .fitem').forEach(el => {
+        // Check the container type. It can be static, text (boundaries), or editor (feedback).
+        const type = el.querySelector('[data-fieldtype]')?.dataset?.fieldtype;
+        switch (type) {
+            case 'text': {
+                const inputBoundary = el.querySelector('input[name^="feedbackboundaries"]');
+                const errorText = errors[inputBoundary.name];
+                const feedback = inputBoundary.closest('.felement').querySelector('.invalid-feedback');
+                if (errorText) {
+                    // If an error occurs with the feedback boundaries input, we need to display an error message.
+                    inputBoundary.classList.add('is-invalid');
+                    inputBoundary.setAttribute('autofocus', true);
+                    feedback.classList.add('d-block');
+                    feedback.innerText = errorText;
+                    inputBoundary.setAttribute('aria-describedby', feedback.id);
+                } else {
+                    // If the feedback boundaries input is valid, we need to remove the error message.
+                    inputBoundary.classList.remove('is-invalid');
+                    inputBoundary.removeAttribute('autofocus');
+                    feedback.classList.remove('d-block');
+                    feedback.innerText = '';
+                }
+            }
+                break;
+            case 'editor': {
+                const textAreaFeedback = el.querySelector('textarea[name^="feedbacktext"]');
+               // Skip the first editor when the boundary is 100%.
+                if (textAreaFeedback.id === 'id_feedbacktext_0_text') {
+                    break;
+                }
+                const errorText = errors[`feedbacktext[${feedbackTextIndex}]`];
+                const feedbackEl = el.querySelector('.invalid-feedback');
+                if (errorText) {
+                    feedbackEl.innerText = errorText;
+                    feedbackEl.classList.add('d-block');
+                } else {
+                    feedbackEl.innerText = '';
+                    feedbackEl.classList.remove('d-block');
+                }
+                feedbackTextIndex++;
+            }
+                break;
+            default:
+                break;
+        }
+    });
+};
+
+const collectFormData = () => {
+    const items = modal.getBody()[0].querySelectorAll('form .fitem');
+    const formData = [];
+    const itemData = {};
+    items.forEach((el) => {
+        const type = el.querySelector('[data-fieldtype]')?.dataset?.fieldtype;
+        if (type) {
+            switch (type) {
+                case 'static':
+                    itemData.boundary = 11;
+                    break;
+                case 'text':
+                    itemData.boundary = el.querySelector('input[name^="feedbackboundaries"]').value;
+                    break;
+                case 'editor':
+                    itemData.feedback = {
+                        itemid: el.querySelector('input[type="hidden"][name$="[text][itemid]"]').value,
+                        format: el.querySelector('input[type="hidden"][name$="[text][format]"]').value,
+                        text: el.querySelector('textarea[name^="feedbacktext"]').value,
+                    };
+                    formData.push({...itemData});
+                    break;
+                default:
+                    break;
+            }
+        }
+    });
+
+    return formData;
+};
+
+const handleAddMoreFeedback = async (e, modalBody, contextId) => {
+    const target = e.currentTarget;
+    const {after, action} = target.dataset;
+    // Get the order number of the new feedback form. This is necessary to create a unique feedback form.
+    const order = modalBody.querySelectorAll(`textarea[id^="id_feedbacktext_${after}_temporary"`).length;
+    const fragment = Fragment.loadFragment('mod_quiz', 'load_overall_feedback_form', contextId, {
+        after,
+        order,
+    });
+    const divider = modalBody.querySelector(`.modal-body .divider button[data-after="${after}"]`).closest('.divider');
+    fragment.done(function(html, js) {
+        divider.insertAdjacentHTML('afterend', html);
+        runTemplateJS(js);
+        recalculateFeedbackIndex(modalBody, after, contextId);
+        // Set a flag if the button already has an event added.
+        target.dataset.eventAttached = true;
+    });
+};
+
+const recalculateFeedbackIndex = (modalBody, after, contextId) => {
+    const gradeBoundaryEls = modalBody.querySelectorAll('input[name^="feedbackboundaries"]');
+    const dividerButtonEls = modalBody.querySelectorAll('.divider button');
+    gradeBoundaryEls.forEach((el, key) => {
+        if (key <= after) {
+            // Re-update id or label for every elements.
+            const wrapItem = el.closest('.fitem');
+            const label = wrapItem.querySelector('label[id^="id_feedbackboundaries_"]');
+            const inputBoundary = wrapItem.querySelector('input[name^="feedbackboundaries"]');
+            wrapItem.id = 'fitem_id_feedbackboundaries_' + key;
+            label.id = `id_feedbackboundaries_${key}_label`;
+            label.setAttribute('for', `id_feedbackboundaries_${key}`);
+            inputBoundary.id = 'id_feedbackboundaries_' + key;
+            inputBoundary.name = `feedbackboundaries[${key}]`;
+            wrapItem.querySelector('.invalid-feedback').id = 'id_error_feedbackboundaries_' + key;
+        }
+    });
+
+    // Re-update devider.
+    dividerButtonEls.forEach((el, key) => {
+        el.dataset.after = key;
+        getString('insertfeedbackbefore', 'mod_quiz', {afterindex: key}).then(string => {
+            el.setAttribute('aria-label', string);
+        });
+
+        if (el.dataset.eventAttached === 'false') {
+            el.addEventListener('click', e => {
+                e.preventDefault();
+                handleAddMoreFeedback(e, modalBody, contextId);
+            });
+        }
+    });
 };
 
 /**
@@ -378,6 +634,10 @@ const handleGradeItemClick = (e) => {
 
     if (link.dataset.actionEdit) {
         handleGradeItemEditStart(e);
+    }
+
+    if (link.dataset.actionAddFeedback) {
+        handleGradeItemAddFeedback(e);
     }
 };
 

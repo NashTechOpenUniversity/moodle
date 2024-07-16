@@ -41,6 +41,8 @@ use core_question\statistics\questions\all_calculated_for_qubaid_condition;
 use mod_quiz\local\override_cache;
 use mod_quiz\quiz_attempt;
 use mod_quiz\quiz_settings;
+use mod_quiz\form\overallfeedback_form;
+use mod_quiz\form\single_overallfeedback_form;
 
 require_once($CFG->dirroot . '/calendar/lib.php');
 require_once($CFG->dirroot . '/question/editlib.php');
@@ -2494,6 +2496,50 @@ function mod_quiz_output_fragment_question_data(array $args): string {
     ob_start();
     $questionbank->display_question_list();
     return ob_get_clean();
+}
+
+/**
+ * Grade item data fragment to get the overall feedback html via ajax call.
+ *
+ * @param array $args Needed data to generate form.
+ * @return string Form html string.
+ */
+function mod_quiz_output_fragment_load_overall_feedback_data(array $args): string {
+    global $DB;
+    // Return if there is no args.
+    if (empty($args)) {
+        return '';
+    }
+
+    $quizid = clean_param($args['quizId'], PARAM_INT);
+    $gradeitemid = clean_param($args['gradeItemId'], PARAM_INT);
+
+    $overallfeedbacks = $DB->get_records('quiz_grade_item_feedback',
+        ['quizid' => $quizid, 'gradeitemid' => $gradeitemid]);
+    $args['feedbacks'] = $overallfeedbacks;
+    $form = new overallfeedback_form(null, $args);
+    $form->set_data(['feedbacktextconchimnon' => ['text' => 'conchimnon']]);
+
+    return \html_writer::div($form->render(), 'wrap-overall-feedback-from p-3');
+}
+
+/**
+ * Single overall feedback form fragment.
+ *
+ * @param array $args Needed data to generate form.
+ * @return string Form html string.
+ */
+function mod_quiz_output_fragment_load_overall_feedback_form(array $args): string {
+    // Return if there is no args.
+    if (empty($args)) {
+        return '';
+    }
+
+    // This form will be placed right after the given form order number.
+    $afterno = clean_param($args['after'], PARAM_INT);
+    $singleform = new single_overallfeedback_form(null, $args);
+
+    return $singleform->render();
 }
 
 /**

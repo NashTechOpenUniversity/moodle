@@ -62,6 +62,9 @@ class structure {
     /** @var stdClass[] quiz_grade_items for this quiz indexed by id. */
     protected array $gradeitems = [];
 
+    /** @var stdClass[] quiz_grade_item_feedbacks for this quiz. */
+    protected array $gradeitemfeedbacks = [];
+
     /** @var bool caches the results of can_be_edited. */
     protected $canbeedited = null;
 
@@ -744,6 +747,16 @@ class structure {
         $this->sections = $DB->get_records('quiz_sections', ['quizid' => $this->quizobj->get_quizid()], 'firstslot');
         $this->populate_slots_with_sections();
         $this->populate_question_numbers();
+        $this->populate_grade_item_feedbacks();
+    }
+
+    /**
+     * Load all the feedback for the grade items based on quiz ID.
+     */
+    protected function populate_grade_item_feedbacks() {
+        global $DB;
+        $this->gradeitemfeedbacks = $DB->get_records('quiz_grade_item_feedback',
+            ['quizid' => $this->get_quizid()]);
     }
 
     /**
@@ -1439,6 +1452,15 @@ class structure {
         }
 
         return $this->canaddrandom;
+    }
+
+    /**
+     * Get the grade items feedbacks for this quiz.
+     *
+     * @return stdClass[] quiz_grade_item_feedback rows, indexed by id.
+     */
+    public function get_grade_item_feedbacks(): array {
+        return $this->gradeitemfeedbacks;
     }
 
     /**

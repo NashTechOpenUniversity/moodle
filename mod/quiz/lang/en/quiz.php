@@ -1127,3 +1127,10 @@ $string['attemptsdeleted'] = 'Quiz attempts deleted';
 $string['gradesdeleted'] = 'Quiz grades deleted';
 $string['useroverridesdeleted'] = 'User overrides deleted';
 $string['groupoverridesdeleted'] = 'Group overrides deleted';
+
+$string['overallfeedback_for'] = 'Overall feedback for "{$a}"';
+$string['editoverallfeedback1level'] = 'Edit overall feedback (1 level)';
+$string['editoverallfeedbacknlevels'] = 'Edit overall feedback ({$a} levels)';
+$string['addoverallfeedback'] = 'Add overall feedback';
+$string['insertfeedbackbefore'] = 'Insert a feedback after feedback number \'{$a->afterindex}\'';
+$string['editfeedbackgradeitem'] = 'Edit feedback grade item {$a}';

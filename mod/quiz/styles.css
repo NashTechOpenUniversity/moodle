@@ -1090,6 +1090,9 @@ table.quizreviewsummary td.cell {
 #page-mod-quiz-editgrading .inplaceeditable .quickeditlink {
     color: var(--primary);
 }
+#page-mod-quiz-editgrading .modal-dialog.overalfeedback .modal-body {
+    min-height: 640px;
+}
 #page-mod-quiz-edit .inplaceeditable .quickeditlink {
     color: var(--primary);
     text-decoration: none;
