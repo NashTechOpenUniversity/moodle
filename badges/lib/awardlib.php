@@ -160,7 +160,7 @@ class badge_potential_users_selector extends badge_award_selector_base {
         global $DB;
 
         $whereconditions = array();
-        list($wherecondition, $params) = $this->search_sql($search, 'u');
+        [$select, , $wherecondition, $sort, $params] = $this->search_sql_with_custom_field($search, 'u');
         if ($wherecondition) {
             $whereconditions[] = $wherecondition;
         }
@@ -186,7 +186,7 @@ class badge_potential_users_selector extends badge_award_selector_base {
         list($esql, $eparams) = get_enrolled_sql($this->context, 'moodle/badges:earnbadge', 0, true);
         $params = array_merge($params, $eparams, $groupwheresqlparams);
 
-        $fields      = 'SELECT ' . $this->required_fields_sql('u');
+        $fields      = 'SELECT ' . $select;
         $countfields = 'SELECT COUNT(u.id)';
 
         $params['badgeid'] = $this->badgeid;
@@ -199,7 +199,6 @@ class badge_potential_users_selector extends badge_award_selector_base {
                  $wherecondition AND bm.id IS NULL
                  $groupwheresql";
 
-        list($sort, $sortparams) = users_order_by_sql('u', $search, $this->accesscontext);
         $order = ' ORDER BY ' . $sort;
 
         if (!$this->is_validating()) {
@@ -209,7 +208,7 @@ class badge_potential_users_selector extends badge_award_selector_base {
             }
         }
 
-        $availableusers = $DB->get_records_sql($fields . $sql . $order, array_merge($params, $sortparams));
+        $availableusers = $DB->get_records_sql($fields . $sql . $order, $params);
 
         if (empty($availableusers)) {
             return array();
@@ -240,17 +239,14 @@ class badge_existing_users_selector extends badge_award_selector_base {
      */
     public function find_users($search) {
         global $DB;
-        list($wherecondition, $params) = $this->search_sql($search, 'u');
+        [$fields, , $wherecondition, $sort, $params] = $this->search_sql_with_custom_field($search, 'u');
         $params['badgeid'] = $this->badgeid;
         $params['issuerrole'] = $this->issuerrole;
 
         list($esql, $eparams) = get_enrolled_sql($this->context, 'moodle/badges:earnbadge', 0, true);
-        $fields = $this->required_fields_sql('u');
-        list($sort, $sortparams) = users_order_by_sql('u', $search, $this->accesscontext);
-
         list($groupsql, $groupwheresql, $groupwheresqlparams) = $this->get_groups_sql();
 
-        $params = array_merge($params, $eparams, $sortparams, $groupwheresqlparams);
+        $params = array_merge($params, $eparams, $groupwheresqlparams);
         $recipients = $DB->get_records_sql("SELECT $fields
                 FROM {user} u
                 JOIN ($esql) je ON je.id = u.id
