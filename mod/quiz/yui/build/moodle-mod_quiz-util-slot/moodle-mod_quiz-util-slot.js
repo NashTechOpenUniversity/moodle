@@ -5,8 +5,8 @@ YUI.add('moodle-mod_quiz-util-slot', function (Y, NAME) {
  *
  * @module moodle-mod_quiz-util
  * @submodule moodle-mod_quiz-util-slot
+ * @deprecated since Moodle 4.5
  */
-
 Y.namespace('Moodle.mod_quiz.util.slot');
 
 /**

@@ -7,7 +7,10 @@
  *
  * @module moodle-course-toolboxes
  * @namespace M.course.toolboxes
+ * @deprecated since Moodle 4.5
  */
+Y.log("The quiz-toolboxs-toolbox has been deprecated. " +
+    "Please use mod_quiz/quiz_toolboxes instead.", 'moodle-core-notification', 'warn');
 
 // The CSS classes we use.
 var CSS = {
@@ -87,6 +90,7 @@ M.mod_quiz = M.mod_quiz || {};
  * @constructor
  * @protected
  * @extends Base
+ * @deprecated since Moodle 4.5
  */
 var TOOLBOX = function() {
     TOOLBOX.superclass.constructor.apply(this, arguments);
@@ -102,6 +106,7 @@ Y.extend(TOOLBOX, Y.Base, {
      * @param {Function} success_callback The callback to use on success
      * @param {Object} [optionalconfig] Any additional configuration to submit
      * @chainable
+     * @deprecated since Moodle 4.5
      */
     send_request: function(data, statusspinner, success_callback, optionalconfig) {
         // Default data structure

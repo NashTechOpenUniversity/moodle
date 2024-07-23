@@ -5,8 +5,10 @@
  *
  * @module moodle-mod_quiz-util
  * @submodule moodle-mod_quiz-util-page
+ * @deprecated since Moodle 4.5
  */
-
+Y.log("The quiz-toolboxs-util has been deprecated. " +
+    "Please use mod_quiz/quiz_utils instead.", 'moodle-core-notification', 'warn');
 Y.namespace('Moodle.mod_quiz.util.page');
 
 /**

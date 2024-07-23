@@ -157,7 +157,7 @@ class edit_page implements renderable, templatable {
         $data['section'] = $sections;
 
         // Initialize javascript.
-        $editrenderer->initialise_editing_javascript($this->structure, $this->contexts, $this->pagevars, $this->pageurl);
+        $editrenderer->initialise_editing_javascript($this->structure);
 
         // Include the contents of any other popups required.
         if ($this->structure->can_be_edited()) {
@@ -177,6 +177,16 @@ class edit_page implements renderable, templatable {
             // Include the question chooser.
             $data['questionchooser'] = $editrenderer->question_chooser();
         }
+
+        // Bring the config data to the renderer to set it as an attribute element,
+        // thus avoiding warning messages due to passing too much data through JavaScript.
+        $config = new \stdClass();
+        $config->questiondecimalpoints = $this->structure->get_decimal_places_for_question_marks();
+        $config->pagehtml = $editrenderer->new_page_template($this->structure, $this->contexts, $this->pagevars,
+            $this->pageurl);
+        $config->addpageiconhtml = $editrenderer->add_page_icon_template($this->structure);
+        $data['configdata'] = json_encode($config);
+        $data['langstring'] = json_encode(['question' => get_string('question', 'moodle')]);
 
         return $data;
     }

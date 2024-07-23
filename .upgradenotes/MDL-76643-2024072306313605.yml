@@ -13,3 +13,9 @@ notes:
         The mod/quiz/edit_renderer/edit_page function has been deprecated and move to edit_page template.
         Please, use the new template output instead.
       type: deprecated
+  - message:
+        Re-write mod/quiz/yui/src/toolboxes to mod/quiz/amd/src/quiz_toolboxes.js
+        Please, use the new function in mod/quiz/amd/src/quiz_toolboxes.js
+        Re-write mod/quiz/yui/src/util to mod/quiz/amd/src/quiz_utils.js
+        Please, use the new function in mod/quiz/amd/src/quiz_utils.js
+      type: improved
