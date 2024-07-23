@@ -1,0 +1,9 @@
+issueNumber: MDL-76643
+notes:
+  mod_quiz:
+    - message:
+        The mod/quiz/edit_rest.php page has been deprecated and moved functions into external services.
+        All actions will be defined as methods in services.php and implemented in each class within mod_quiz/external/.
+        Please, use those new services instead
+
+      type: deprecated
