@@ -26,6 +26,7 @@ import Templates from 'core/templates';
 import Notification from 'core/notification';
 import {getString, getStrings} from 'core/str';
 import Prefetch from 'core/prefetch';
+import DropZoneElement from 'mod_quiz/dragdrop/dropzone';
 
 Prefetch.prefetchStrings('moodle', ['question', 'page']);
 Prefetch.prefetchStrings('quiz', ['removepagebreak', 'addpagebreak', 'questiondependencyremove',
@@ -635,14 +636,10 @@ const page = {
 
         // Insert in the correct place.
         beforeNode.insertAdjacentElement('afterend', pageNode);
-        // Assign is as a drop target.
-        // YUI().use('dd-drop', function(Y) {
-        //     var drop = new Y.DD.Drop({
-        //         node: page,
-        //         groups: M.mod_quiz.dragres.groups
-        //     });
-        //     page.drop = drop;
-        // });
+        // Assign it as a drop target.
+        new DropZoneElement({
+            element: pageNode,
+        });
         // Enhance the add menu to make if fully visible and clickable.
         if (typeof M.core.actionmenu !== 'undefined') {
             M.core.actionmenu.newDOMNode(pageNode);

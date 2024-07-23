@@ -3,7 +3,11 @@
  * Drag and Drop for Quiz sections and slots.
  *
  * @module moodle-mod-quiz-dragdrop
+ * @deprecated since Moodle 4.5
  */
+
+Y.log("The quiz-dragdrop-dragdrop has been deprecated. " +
+    "Please use mod_quiz/dragdrop instead.", 'moodle-core-notification', 'warn');
 
 var CSS = {
     ACTIONAREA: '.actions',
