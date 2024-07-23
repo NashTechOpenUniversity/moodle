@@ -136,3 +136,27 @@ Feature: Editing question numbering of the existing questions already in a quiz
     And I should see "i" on quiz page "1"
     And I should see "1.a" on quiz page "1"
     And I should see "1.b" on quiz page "1"
+
+  Scenario: Customised number will be kept even when we moving the questions around.
+    Given I am on the "Quiz 1" "mod_quiz > Edit" page logged in as "teacher1"
+    When I move "Question A" to "After Page 2" in the quiz by clicking the move icon
+    Then I should see "1.a" on quiz page "2"
+    And I should see "1.b" on quiz page "1"
+
+  Scenario: Edit a default question number to a customised numbers then move it. The number should be kept.
+    Given I am on the "Quiz 1" "mod_quiz > Edit" page logged in as "teacher1"
+    And I click on "3" "link"
+    And I type "1.c"
+    And I press the enter key
+    When I move "Question C" to "After Page 1" in the quiz by clicking the move icon
+    Then I should see "1.a" on quiz page "1"
+    And I should see "1.b" on quiz page "1"
+    And I should see "1.c" on quiz page "1"
+
+  Scenario: Move questions around should kept the auto numbering and in-place editable.
+    Given I am on the "Quiz 1" "mod_quiz > Edit" page logged in as "teacher1"
+    When I move "Question C" to "After Page 1" in the quiz by clicking the move icon
+    And I move "Question A" to "After Page 2" in the quiz by clicking the move icon
+    And I move "Question D" to "After Page 1" in the quiz by clicking the move icon
+    Then "1" "link" should exist
+    And I should see "Question A" on quiz page "2"

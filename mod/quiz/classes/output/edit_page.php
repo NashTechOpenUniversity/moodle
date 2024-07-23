@@ -38,13 +38,18 @@ class edit_page implements renderable, templatable {
      * @param \moodle_url $pageurl the canonical URL of this page.
      * @param \mod_quiz\quiz_settings $quizobj object containing all the quiz settings information.
      * @param \core_question\local\bank\question_edit_contexts $contexts the relevant question bank contexts.
-     * @param array $pagevars the variables from {@link question_edit_setup()}.
+     * @param array $pagevars the variables from question_edit_setup.
      */
     public function __construct(
+        /** @var structure object containing the structure of the quiz. */
         protected readonly structure $structure,
+        /** @var \moodle_url the canonical URL of this page. */
         protected readonly \moodle_url $pageurl,
+        /** @var \mod_quiz\quiz_settings object containing all the quiz settings information. */
         protected readonly \mod_quiz\quiz_settings $quizobj,
+        /** @var \core_question\local\bank\question_edit_contexts the relevant question bank contexts. */
         protected readonly \core_question\local\bank\question_edit_contexts $contexts,
+        /** @var array the variables from  question_edit_setup. */
         protected readonly array $pagevars,
     ) {
     }
@@ -163,11 +168,14 @@ class edit_page implements renderable, templatable {
         if ($this->structure->can_be_edited()) {
             $thiscontext = $this->contexts->lowest();
             $PAGE->requires->js_call_amd('mod_quiz/modal_quiz_question_bank', 'init', [
-                $thiscontext->id
+                $thiscontext->id,
+                $this->quizobj->get_cm()->id,
+                $this->quizobj->get_cm()->id,
             ]);
 
             $PAGE->requires->js_call_amd('mod_quiz/modal_add_random_question', 'init', [
                 $thiscontext->id,
+                $this->quizobj->get_cm()->id,
                 $this->pagevars['cat'],
                 $this->pageurl->out_as_local_url(true),
                 $this->pageurl->param('cmid'),
@@ -186,7 +194,10 @@ class edit_page implements renderable, templatable {
             $this->pageurl);
         $config->addpageiconhtml = $editrenderer->add_page_icon_template($this->structure);
         $data['configdata'] = json_encode($config);
-        $data['langstring'] = json_encode(['question' => get_string('question', 'moodle')]);
+        $data['langstring'] = json_encode([
+            'question' => get_string('question', 'moodle'),
+            'page' => get_string('page', 'moodle'),
+        ]);
 
         return $data;
     }

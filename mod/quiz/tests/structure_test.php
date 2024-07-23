@@ -314,6 +314,35 @@ final class structure_test extends \advanced_testcase {
         ], $structure);
     }
 
+    /**
+     * Test to move slot down from heading 1 to heading 2.
+     *
+     * @covers ::move_slot
+     */
+    public function test_move_slot_to_another_page_in_another_heading(): void {
+        $quizobj = $this->create_test_quiz([
+            'Heading 1*',
+            ['TF1', 1, 'truefalse'],
+            ['TF2', 2, 'truefalse'],
+            ['TF3', 3, 'truefalse'],
+            'Heading 2*',
+            ['TF4', 4, 'truefalse'],
+        ]);
+        $structure = structure::create_for_quiz($quizobj);
+        $idtomove = $structure->get_question_in_slot(2)->slotid;
+        $idmoveafter = $structure->get_question_in_slot(4)->slotid;
+        $structure->move_slot($idtomove, $idmoveafter, '4');
+        $structure = structure::create_for_quiz($quizobj);
+        $this->assert_quiz_layout([
+            'Heading 1*',
+            ['TF1', 1, 'truefalse'],
+            ['TF3', 2, 'truefalse'],
+            'Heading 2*',
+            ['TF4', 3, 'truefalse'],
+            ['TF2', 3, 'truefalse'],
+        ], $structure);
+    }
+
     public function test_move_last_slot_to_previous_page_emptying_the_last_page(): void {
         $quizobj = $this->create_test_quiz([
                 ['TF1', 1, 'truefalse'],

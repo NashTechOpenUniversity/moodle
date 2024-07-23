@@ -571,7 +571,11 @@ class edit_renderer extends \plugin_renderer_base {
 
         $output .= html_writer::tag('li', $questionhtml . $joinhtml,
                 ['class' => $questionclasses, 'id' => 'slot-' . $structure->get_slot_id_for_slot($slot),
-                        'data-canfinish' => $structure->can_finish_during_the_attempt($slot)]);
+                        'data-canfinish' => $structure->can_finish_during_the_attempt($slot),
+                        'data-for' => 'question',
+                        'data-slotorder' => $slot,
+                        'data-page' => $structure->get_page_number_for_slot($slot),
+                ]);
 
         return $output;
     }
@@ -604,7 +608,7 @@ class edit_renderer extends \plugin_renderer_base {
                     $pagenumber, $pageurl, $pagevars);
 
             $output .= html_writer::tag('li', $page . $addmenu . $addquestionform,
-                    ['class' => 'pagenumber activity yui3-dd-drop page', 'id' => 'page-' . $pagenumber]);
+                    ['class' => 'pagenumber activity page', 'data-for' => 'page', 'id' => 'page-' . $pagenumber]);
         }
 
         return $output;
@@ -798,7 +802,8 @@ class edit_renderer extends \plugin_renderer_base {
             'slotid' => $slotid,
             'canbeedited' => $structure->can_be_edited(),
             'checkbox' => $this->get_checkbox_render($structure, $slot),
-            'questionnumber' => $this->question_number($questionnumber, $structure->get_slot_by_number($slot)->defaultnumber),
+            'questionnumber' => $this->question_number($questionnumber, $structure->get_slot_by_number($slot)->defaultnumber,
+                $structure->get_slot_by_id($slotid)->displaynumber),
             'questionname' => $this->get_question_name_for_slot($structure, $slot, $pageurl),
             'questionicons' => $this->get_action_icon($structure, $slot, $pageurl),
             'questiondependencyicon' => ($structure->can_be_edited() ? $this->question_dependency_icon($structure, $slot) : ''),
@@ -897,9 +902,9 @@ class edit_renderer extends \plugin_renderer_base {
      * @return string The markup for the move action.
      */
     public function question_move_icon(structure $structure, $slot) {
-        return html_writer::link(new \moodle_url('#'),
+        return html_writer::span(
             $this->pix_icon('i/dragdrop', get_string('move'), 'moodle', ['class' => 'iconsmall', 'title' => '']),
-            ['class' => 'editing_move', 'data-action' => 'move']
+            'editing_move', ['data-action' => 'move', 'role' => 'button', 'tabindex' => 0],
         );
     }
 
@@ -908,14 +913,19 @@ class edit_renderer extends \plugin_renderer_base {
      *
      * @param string $editablenumber The, which may be an in-place editable.
      * @param string $uncustomisednumber The un-customised number number, or 'i'.
+     * @param string|null $customisednumber The customised slot number.
      * @return string HTML to output.
      */
-    public function question_number(string $editablenumber, string $uncustomisednumber) {
+    public function question_number(string $editablenumber, string $uncustomisednumber, ?string $customisednumber = null): string {
+        if ($customisednumber === $uncustomisednumber) {
+            $customisednumber = '';
+        }
         if ($editablenumber !== get_string('infoshort', 'quiz')) {
             $editablenumber = html_writer::span(get_string('question'), 'accesshide') . ' ' . $editablenumber;
             $uncustomisednumber = html_writer::span(get_string('question'), 'accesshide') . ' ' . $uncustomisednumber;
         }
-        return html_writer::tag('span', $editablenumber, ['class' => 'slotnumber unshuffled']) .
+        return html_writer::tag('span', $editablenumber, ['class' => 'slotnumber unshuffled',
+                'data-customnumber' => $customisednumber]) .
                 html_writer::tag('span', $uncustomisednumber, ['class' => 'slotnumber shuffled']);
     }
 
@@ -1232,13 +1242,8 @@ class edit_renderer extends \plugin_renderer_base {
             'quizid' => $structure->get_quizid(),
         ]);
 
-        $this->page->requires->yui_module('moodle-mod_quiz-dragdrop', 'M.mod_quiz.init_resource_dragdrop',
-                [[
-                        'courseid' => $structure,
-                        'quizid' => $structure->get_quizid(),
-                        'ajaxurl' => $config->resourceurl,
-                        'config' => $config,
-                ]], null, true);
+        $this->page->requires->js_call_amd('mod_quiz/dragdrop/main', 'initDragDrop',
+            [$this->page->bodyid, $structure->get_quizid(), $structure->get_courseid()]);
 
         // Require various strings for the command toolbox.
         $this->page->requires->strings_for_js([

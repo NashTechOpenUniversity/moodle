@@ -1,4 +1,3 @@
-<?php
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -15,15 +14,22 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Quiz activity version information.
+ * List of selector and css classes use in mod_quiz/dragdrop.
  *
- * @package   mod_quiz
- * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
+ * @module    mod_quiz/dragdrop/quizdragdropparent
+ * @copyright 2024 The Open University
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+const SELECTORS = {
+    QUESTION: '[data-for="question"]',
+    MOVE_ACTION: '[data-action="move"]',
+    PAGE: '[data-for="page"]',
+    MAIN_SECTION: '.section.main',
+    SLOT_SELECTOR: 'li.slot',
+    PAGE_SELECTOR: 'li.page',
+},
+CSS = {
+    DROP_ZONE: 'drop-zone',
+};
 
-defined('MOODLE_INTERNAL') || die();
-
-$plugin->version = 2025041600;
-$plugin->requires = 2025040800;
-$plugin->component = 'mod_quiz';
+export {SELECTORS, CSS};

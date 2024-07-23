@@ -42,7 +42,7 @@
 
 use mod_quiz\output\edit_nav_actions;
 use mod_quiz\quiz_settings;
-use \mod_quiz\output\edit_page;
+use mod_quiz\output\edit_page;
 
 require_once(__DIR__ . '/../../config.php');
 require_once($CFG->dirroot . '/mod/quiz/locallib.php');

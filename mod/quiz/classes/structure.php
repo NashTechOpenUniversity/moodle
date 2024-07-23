@@ -194,7 +194,8 @@ class structure {
 
     /**
      * Make slot display number in place editable api call.
-
+     * If you want to update the code, you also need to update setNumber function in mod/quiz/yui/src/util/js/slot.js
+     *
      * @param int $slotid
      * @param \context $context
      * @return \core\output\inplace_editable
@@ -904,6 +905,16 @@ class structure {
                 $headingmovebefore = $moveafterslotnumber + 1;
             } else {
                 $headingmovebefore = $moveafterslotnumber;
+            }
+            // Move down to different page.
+            if ($page > $movingslot->page) {
+                if ($this->is_first_slot_on_page($moveafterslotnumber)) {
+                    $headingmoveafter = $movingslotnumber;
+                    $headingmovebefore = $moveafterslotnumber + 1;
+                } else {
+                    $headingmoveafter = $movingslotnumber;
+                    $headingmovebefore = $moveafterslotnumber + 2;
+                }
             }
             $headingmovedirection = -1;
 

@@ -19,3 +19,7 @@ notes:
         Re-write mod/quiz/yui/src/util to mod/quiz/amd/src/quiz_utils.js
         Please, use the new function in mod/quiz/amd/src/quiz_utils.js
       type: improved
+  - message:
+        Re-write mod/quiz/yui/src/dragdrop to mod/quiz/amd/dragdrop
+        Please, use the new function in mod/quiz/amd/dragdrop
+      type: improved

@@ -26,8 +26,9 @@ import Templates from 'core/templates';
 import Notification from 'core/notification';
 import {getString, getStrings} from 'core/str';
 import Prefetch from 'core/prefetch';
+import DropZoneElement from 'mod_quiz/dragdrop/dropzone';
+import InplaceEditable from 'core/inplace_editable';
 
-Prefetch.prefetchStrings('moodle', ['question', 'page']);
 Prefetch.prefetchStrings('quiz', ['removepagebreak', 'addpagebreak', 'questiondependencyremove',
     'questiondependsonprevious', 'questiondependencyadd', 'questiondependencyfree']);
 
@@ -112,9 +113,15 @@ const slot = {
         if (!slot) {
             return false;
         }
-        // We perform a simple substitution operation to get the number.
-        let number = slot.querySelector(this.SELECTORS.NUMBER).textContent.replace(
-            this.CONSTANTS.QUESTION, '');
+        let number;
+        const numberElement = slot.querySelector(this.SELECTORS.NUMBER);
+        // Check if the current slot number is available in the dataset
+        if (numberElement.dataset.currentslotnumber) {
+            number = numberElement.dataset.currentslotnumber;
+        } else {
+            // We perform a simple substitution operation to get the number.
+            number = numberElement.textContent.replace(this.CONSTANTS.QUESTION, '');
+        }
         // Attempt to validate the ID.
         number = parseInt(number, 10);
         if (!isNaN(number)) {
@@ -125,14 +132,52 @@ const slot = {
 
     /**
      * Updates the slot number for the provided slot.
+     * If you want to update the code, you also need to update
+     * make_slot_display_number_in_place_editable in mod/quiz/classes/structure.php
      *
      * @method setNumber
      * @param {HTMLElement} slot The slot to update the number for.
      * @param {Number} number The slot number.
      */
     setNumber(slot, number) {
+        const thisQ = this;
         let numberNode = slot.querySelector(this.SELECTORS.NUMBER);
-        numberNode.innerHTML = '<span class="accesshide">' + this.CONSTANTS.QUESTION + '</span> ' + number;
+        // We store the number on a data attribute on the containing span, so it is always available,
+        // even when the inplace editable is being re-rendered asynchronously via a promise.
+        numberNode.dataset.currentslotnumber = number;
+        const inplaceElement = InplaceEditable.getInplaceEditable(numberNode);
+            // If slot already have a customised number, then we shouldn't re-render inplace editable element.
+        if (inplaceElement && !numberNode.dataset.customnumber) {
+                // Get the required strings for the template.
+                getStrings([
+                    {key: 'edit_slotdisplaynumber_hint', component: 'mod_quiz'},
+                    {key: 'edit_slotdisplaynumber_label', component: 'mod_quiz', param: number},
+                ]).then(function(strings) {
+                    var context = {
+                        displayvalue: number,
+                        value: number,
+                        itemid: inplaceElement.getItemId(),
+                        component: 'mod_quiz',
+                        itemtype: 'slotdisplaynumber',
+                        edithint: strings[0],
+                        editlabel: strings[1],
+                        editicon: {
+                            'key': 't/editstring',
+                            'component': 'core',
+                            'title': strings[1],
+                        },
+                        linkeverything: true,
+                    };
+                    return Templates.render('core/inplace_editable', context);
+                }).then(function(html, js) {
+                    // Replace the existing node with the new inplace editable element that have a new slot number.
+                    js = typeof js === 'undefined' ? '' : js;
+                    Templates.replaceNodeContents(
+                        numberNode,
+                        '<span class="accesshide">' + thisQ.CONSTANTS.QUESTION + '</span>' + html, js);
+                    return true;
+                }).catch(Notification.exception);
+        }
     },
 
     /**
@@ -175,6 +220,23 @@ const slot = {
         return false;
     },
 
+    /**
+     * Returns the next sibling to the given node that matches a selector.
+     *
+     * @param {HTMLElement} node - The node we want to get the next sibling for.
+     * @param {string} selector - The selector we want to match with the sibling.
+     * @return {HTMLElement|false} The next sibling node that matches the selector, or false.
+     */
+    getNext: function(node, selector) {
+        let nextSlot = node.nextElementSibling;
+        while (nextSlot) {
+            if (nextSlot.matches(selector)) {
+                return nextSlot;
+            }
+            nextSlot = nextSlot.nextElementSibling;
+        }
+        return false;
+    },
 
     /**
      * Returns the previous numbered slot to the given slot.
@@ -472,7 +534,7 @@ const page = {
         ACTIONMENUBARIDSUFFIX: '-menubar',
         ACTIONMENUMENUIDSUFFIX: '-menu',
         PAGEIDPREFIX: 'page-',
-        PAGENUMBERPREFIX: getString('page', 'moodle') + ' '
+        PAGENUMBERPREFIX: JSON.parse(document.querySelector('.config-toolbox').dataset.lang).page + ' '
     },
     SELECTORS: {
         ACTIONMENU: 'div.moodle-actionmenu',
@@ -591,6 +653,9 @@ const page = {
         if (numberElement) {
             getString('page', 'moodle').then(string => {
                 numberElement.textContent = string + ' ' + number;
+                return true;
+            }).catch(() => {
+                // Can't get lang string.
             });
         }
     },
@@ -635,14 +700,10 @@ const page = {
 
         // Insert in the correct place.
         beforeNode.insertAdjacentElement('afterend', pageNode);
-        // Assign is as a drop target.
-        // YUI().use('dd-drop', function(Y) {
-        //     var drop = new Y.DD.Drop({
-        //         node: page,
-        //         groups: M.mod_quiz.dragres.groups
-        //     });
-        //     page.drop = drop;
-        // });
+        // Assign it as a drop target.
+        new DropZoneElement({
+            element: pageNode,
+        });
         // Enhance the add menu to make if fully visible and clickable.
         if (typeof M.core.actionmenu !== 'undefined') {
             M.core.actionmenu.newDOMNode(pageNode);

@@ -1,4 +1,3 @@
-<?php
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -15,15 +14,28 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Quiz activity version information.
+ * Reactive instance for mod_quiz/dragdrop.
  *
- * @package   mod_quiz
- * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
+ * @module    mod_quiz/dragdrop/reactive
+ * @copyright 2024 The Open University
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+import {Reactive} from 'core/reactive';
+import {SELECTORS} from 'mod_quiz/dragdrop/selectors';
 
-$plugin->version = 2025041600;
-$plugin->requires = 2025040800;
-$plugin->component = 'mod_quiz';
+export default class extends Reactive {
+
+    /**
+     * Set initial state for all the questions.
+     */
+    async loadQuizDragDrop() {
+
+        const questions = document.querySelectorAll(SELECTORS.QUESTION);
+        let initialData = [];
+        questions.forEach((question) => {
+            initialData.push({id: question.id, ismove: false});
+        });
+        this.setInitialState({question: initialData});
+    }
+}
