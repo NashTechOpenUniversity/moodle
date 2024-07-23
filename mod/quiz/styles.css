@@ -1133,6 +1133,12 @@ table.quizreviewsummary td.cell {
     text-align: right;
 }
 
+#page-mod-quiz-edit .mod-quiz-edit-content .loading-icon.icon-no-margin {
+    position: absolute;
+    left: 100%;
+    float: left;
+}
+
 @media (max-width: 576px) {
     #page-mod-quiz-edit ul.slots li.section li.activity .mod-indent {
         display: none;

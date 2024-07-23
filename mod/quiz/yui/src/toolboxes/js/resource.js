@@ -6,6 +6,7 @@
  *
  * @module mod_quiz-resource-toolbox
  * @namespace M.mod_quiz.resource_toolbox
+ * @deprecated since Moodle 4.5
  */
 
 /**
@@ -20,6 +21,10 @@
  * @constructor
  * @extends M.course.toolboxes.toolbox
  */
+
+Y.log("The quiz-toolboxs-resource has been deprecated. " +
+    "Please use mod_quiz/quiz_toolboxes instead.", 'moodle-core-notification', 'warn');
+
 var RESOURCETOOLBOX = function() {
     RESOURCETOOLBOX.superclass.constructor.apply(this, arguments);
 };

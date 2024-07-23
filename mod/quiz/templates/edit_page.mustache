@@ -67,6 +67,14 @@
                "lastsectionmenu": "<div class=\"action-menu moodle-actionmenu\">sectiomenuhtml</div>"
            }
        ],
+       "configdata": {
+           "questiondecimalpoints": 0,
+           "pagehtml": "<html></html>",
+           "addpageiconhtml": ""
+       },
+       "langstring": {
+           "question": "question"
+       },
        "questionchooser": "<div class=\"createnewquestion\"></div>"
    }
 }}
@@ -104,6 +112,7 @@
             {{{totalmark}}}
         </div>
     </div>
+    <div class="d-none config-toolbox" data-config="{{configdata}}" data-lang="{{langstring}}"></div>
     {{{selectmultiplecontrols}}}
     <ul class="{{sectionlistclass}}" role="presentation">
         {{#section}}
