@@ -51,8 +51,16 @@ class edit_renderer extends \plugin_renderer_base {
      * @param \core_question\local\bank\question_edit_contexts $contexts the relevant question bank contexts.
      * @param \moodle_url $pageurl the canonical URL of this page.
      * @param array $pagevars the variables from {@link question_edit_setup()}.
+     * @deprecated since 4.5, use quiz::edit_page instead.
+     *
      * @return string HTML to output.
      */
+    #[\core\attribute\deprecated(
+    replacement: '\mod_quiz\output\edit_page',
+    since: '4.5',
+    reason: 'No longer required',
+    mdl: 'MDL-76643',
+    )]
     public function edit_page(
         \mod_quiz\quiz_settings $quizobj,
         structure $structure,
@@ -214,7 +222,7 @@ class edit_renderer extends \plugin_renderer_base {
      * @param \moodle_url $pageurl the canonical URL of this page.
      * @return string HTML to output.
      */
-    protected function repaginate_button(structure $structure, \moodle_url $pageurl) {
+    public function repaginate_button(structure $structure, \moodle_url $pageurl) {
         $header = html_writer::tag('span', get_string('repaginatecommand', 'quiz'), ['class' => 'repaginatecommand']);
         $form = $this->repaginate_form($structure, $pageurl);
 
@@ -242,7 +250,7 @@ class edit_renderer extends \plugin_renderer_base {
      * @param structure $structure the structure of the quiz being edited.
      * @return string HTML to output.
      */
-    protected function selectmultiple_button(structure $structure) {
+    public function selectmultiple_button(structure $structure) {
         $buttonoptions = [
             'type'  => 'button',
             'name'  => 'selectmultiple',
@@ -263,7 +271,7 @@ class edit_renderer extends \plugin_renderer_base {
      * @param structure $structure the structure of the quiz being edited.
      * @return string HTML to output.
      */
-    protected function selectmultiple_controls(structure $structure) {
+    public function selectmultiple_controls(structure $structure) {
         $output = '';
 
         // Bulk action button delete and bulk action button cancel.
@@ -395,7 +403,7 @@ class edit_renderer extends \plugin_renderer_base {
      * @param \stdClass $section The quiz_section entry from DB
      * @return string HTML to output.
      */
-    protected function start_section($structure, $section) {
+    public function start_section($structure, $section) {
 
         $output = '';
 
@@ -1217,7 +1225,7 @@ class edit_renderer extends \plugin_renderer_base {
      * @param \moodle_url $pageurl the canonical URL of this page.
      * @return bool Always returns true
      */
-    protected function initialise_editing_javascript(structure $structure,
+    public function initialise_editing_javascript(structure $structure,
             \core_question\local\bank\question_edit_contexts $contexts, array $pagevars, \moodle_url $pageurl) {
 
         $config = new \stdClass();
@@ -1322,7 +1330,7 @@ class edit_renderer extends \plugin_renderer_base {
      * @param \moodle_url $pageurl the canonical URL of this page.
      * @return string HTML for a new page.
      */
-    protected function new_page_template(structure $structure,
+    public function new_page_template(structure $structure,
             \core_question\local\bank\question_edit_contexts $contexts, array $pagevars, \moodle_url $pageurl) {
         if (!$structure->has_questions()) {
             return '';
@@ -1355,7 +1363,7 @@ class edit_renderer extends \plugin_renderer_base {
      * @param structure $structure object containing the structure of the quiz.
      * @return string HTML for a new icon
      */
-    protected function add_page_icon_template(structure $structure) {
+    public function add_page_icon_template(structure $structure) {
 
         if (!$structure->has_questions()) {
             return '';
