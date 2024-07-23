@@ -27,6 +27,7 @@ import Notification from 'core/notification';
 import {getString, getStrings} from 'core/str';
 import Prefetch from 'core/prefetch';
 import DropZoneElement from 'mod_quiz/dragdrop/dropzone';
+import InplaceEditable from 'core/inplace_editable';
 
 Prefetch.prefetchStrings('moodle', ['question', 'page']);
 Prefetch.prefetchStrings('quiz', ['removepagebreak', 'addpagebreak', 'questiondependencyremove',
@@ -132,8 +133,15 @@ const slot = {
      * @param {Number} number The slot number.
      */
     setNumber(slot, number) {
-        let numberNode = slot.querySelector(this.SELECTORS.NUMBER);
-        numberNode.innerHTML = '<span class="accesshide">' + this.CONSTANTS.QUESTION + '</span> ' + number;
+        const numberNode = slot.querySelector(this.SELECTORS.NUMBER);
+        const inplace = InplaceEditable.getInplaceEditable(numberNode);
+        if (inplace) {
+            if (numberNode.dataset.customnumber) {
+                inplace.setValue(numberNode.dataset.customnumber);
+            } else {
+                inplace.setValue(number);
+            }
+        }
     },
 
     /**
