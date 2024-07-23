@@ -1,0 +1,148 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_quiz/edit_page
+    Display the quiz edit page, from below tertiary nav, to above the footer.
+    Classes required for JS:
+    * none
+    Data attributes required for JS:
+    * none
+    Context variables required for this template:
+    * overridesnav - must alwasy be present.
+    * addoverridebutton - should only be present if the user has permission to add a new override.
+    Example context (json):
+   {
+       "heading": "<h2>Questions</h2>",
+       "warnings": "",
+       "currentstatus": "This quiz is open",
+       "explanation": "Always available",
+       "quesitoncount": 3,
+       "hiddenparam": "<input type=\"hidden\" name=\"cmid\" value=\"2\" />",
+       "size": 4,
+       "value": "3112.00",
+       "sesskey": "zKGKYBp0Fo",
+       "repaginatebutton": "<input type=\"submit\" name=\"repaginate\" id=\"repaginatecommand\" />",
+       "selectmultiplebutton": "<button type=\"button\" name=\"selectmultiple\" id=\"selectmultiplecommand\" />",
+       "totalmark": "<span class=\"totalpoints\">Total of marks: <span class=\"mod_quiz_summarks\">3.00</span></span>",
+       "selectmultiplecontrols": "<div class=\"btn-group selectmultiplecommand actions m-1\" role=\"group\"></div>",
+       "sectionlistclass": "slots",
+       "section": [
+           {
+               "sectionstyle": "only-has-one-slot",
+               "sectionheadingclass": "instancesection",
+               "sectionheadingtext": "Section 1",
+               "editsectionheadingicon": true,
+               "removeicon": true,
+               "removeicontitle": "Remove heading Section 1",
+               "removeiconurl": "http://example.com/removeicon",
+               "sectionid": "1",
+               "shufflequestion": "<span class=\"instanceshufflequestions\" data-action=\"shuffle_questions\"></span>",
+               "questions": "<li class=\"pagenumber activity yui3-dd-drop page\" id=\"page-1\">questionhtml</li>",
+               "lastsection": true,
+               "lastsectionmenu": "<div class=\"action-menu moodle-actionmenu\">sectiomenuhtml</div>"
+           },
+           {
+               "sectionstyle": "only-has-one-slot",
+               "sectionheadingclass": "instancesection",
+               "sectionheadingtext": "Section 2",
+               "editsectionheadingicon": true,
+               "removeicon": true,
+               "removeicontitle": "Remove heading Section 2",
+               "removeiconurl": "http://example.com/removeicon",
+               "sectionid": "2",
+               "shufflequestion": "<span class=\"instanceshufflequestions\" data-action=\"shuffle_questions\"></span>",
+               "questions": "<li class=\"pagenumber activity yui3-dd-drop page\" id=\"page-2\">questionhtml</li>",
+               "lastsection": true,
+               "lastsectionmenu": "<div class=\"action-menu moodle-actionmenu\">sectiomenuhtml</div>"
+           }
+       ],
+       "questionchooser": "<div class=\"createnewquestion\"></div>"
+   }
+}}
+{{{heading}}}
+{{{warnings}}}
+<div class="mod_quiz-edit-top-controls">
+    <div class="d-flex justify-content-between flex-wrap mb-1">
+        <div class="d-flex align-items-center justify-content-around">
+            <div class="statusbar">
+                <span class="numberofquestions">{{#str}}numquestionsx, quiz, {{quesitoncount}}{{/str}}</span> | <span
+                    class="quizopeningstatus" title="{{explanation}}">{{currentstatus}}</span>
+            </div>
+        </div>
+        <div class="mt-2 mt-sm-0 maxgrade">
+            <form method="post" action="edit.php" class="quizsavegradesform">
+                <fieldset class="invisiblefieldset d-flex align-items-center">
+                    <input type="hidden" name="sesskey" value={{sesskey}} />
+                    {{{hiddenparam}}}
+                    <label for="inputmaxgrade" class="d-inline-block w-auto mb-0">
+                        {{#str}} maximumgrade {{/str}}
+                    </label>
+                    <input type="text" id="inputmaxgrade" name="maxgrade" size="{{size}}" value="{{value}}"
+                        class="form-control d-inline-block align-middle w-auto ml-1" />
+                    <input type="submit" class="btn btn-secondary ml-1 d-inline-block w-auto " name="savechanges"
+                        value="{{#str}}save, quiz{{/str}}" />
+                </fieldset>
+            </form>
+        </div>
+    </div>
+    <div class="d-flex justify-content-between flex-wrap mb-1">
+        <div class="mod_quiz-edit-action-buttons btn-group edit-toolbar" role="group">
+            {{{repaginatebutton}}}{{{selectmultiplebutton}}}
+        </div>
+        <div class="d-flex flex-column justify-content-around">
+            {{{totalmark}}}
+        </div>
+    </div>
+    {{{selectmultiplecontrols}}}
+    <ul class="{{sectionlistclass}}" role="presentation">
+        {{#section}}
+        <li id="section-{{sectionid}}" class="section main clearfix {{sectionstyle}}" role="presentation"
+            data-sectionname="{{sectionheadingtext}}">
+            <div class="content">
+                <div class="section-heading">
+                    <div class="instancesectioncontainer">
+                        <h3>
+                            <span class="sectioninstance">
+                                <span class="{{sectionheadingclass}}"> {{sectionheadingtext}} </span>
+                            </span>
+                        </h3>
+                        {{#editsectionheadingicon}}
+                        <a class="editing_section" data-action="edit_section_title" role="button" href="#">
+                            {{#pix}} t/editstring, moodle, {{#str}}sectionheadingedit, quiz, {{sectionheadingtext}}{{/str}} {{/pix}}
+                        </a>
+                        {{/editsectionheadingicon}}
+                    </div>
+                    {{#removeicon}}
+                    <a href="{{removeiconurl}}" class="cm-edit-action editing_delete" data-action="deletesection">
+                        {{#pix}} t/delete, core, {{removeicontitle}} {{/pix}}
+                    </a>
+                    {{/removeicon}}
+                    {{{shufflequestion}}}
+                </div>
+                <ul class="section img-text">
+                    {{{questions}}}
+                </ul>
+                {{#lastsection}}
+                <div class="last-add-menu">
+                    <span class="add-menu-outer">
+                        {{{lastsectionmenu}}}
+                    </span>
+                </div>
+                {{/lastsection}}
+            </div>
+        </li>
+        {{/section}}
+    </ul>
+</div>
+{{{questionchooser}}}
