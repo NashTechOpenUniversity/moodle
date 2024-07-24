@@ -23,8 +23,8 @@
 
 import {BaseComponent} from 'core/reactive';
 import {SELECTORS} from 'mod_quiz/dragdrop/selectors';
-import dragDropElement from 'mod_quiz/dragdrop/dragdrop';
-import dropZoneElement from 'mod_quiz/dragdrop/dropzone';
+import DragDropElement from 'mod_quiz/dragdrop/dragdrop';
+import DropZoneElement from 'mod_quiz/dragdrop/dropzone';
 
 export default class extends BaseComponent {
 
@@ -59,23 +59,23 @@ export default class extends BaseComponent {
         const questions = this.getElements(SELECTORS.QUESTION);
         const pageheadings = this.getElements(SELECTORS.PAGE);
         pageheadings.forEach((page) => {
-            new dropZoneElement({
+            new DropZoneElement({
                 element: page,
                 reactive: this.reactive,
             });
         });
         questions.forEach((question) => {
-            new dropZoneElement({
+            new DropZoneElement({
                 element: question,
                 reactive: this.reactive,
                 quizid: this.reactive.quizid,
-                courseid : this.reactive.courseid,
+                courseid: this.reactive.courseid,
             });
-            new dragDropElement({
+            new DragDropElement({
                 element: question.querySelector(SELECTORS.MOVE_ACTION),
                 reactive: this.reactive,
                 quizid: this.quizid,
-                courseid : this.courseid,
+                courseid: this.courseid,
                 id: question.id,
             });
         });

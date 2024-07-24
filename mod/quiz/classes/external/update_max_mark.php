@@ -87,7 +87,7 @@ class update_max_mark extends external_api {
     public static function execute_returns(): ?external_description {
         return new external_single_structure([
             'instancemaxmark' => new external_value(PARAM_TEXT, 'The max mark'),
-            'newsummarks' =>  new external_value(PARAM_TEXT, 'Round a grade to the correct number of decimal place'),
+            'newsummarks' => new external_value(PARAM_TEXT, 'Round a grade to the correct number of decimal place'),
         ]);
     }
 }

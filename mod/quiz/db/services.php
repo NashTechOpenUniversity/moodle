@@ -390,5 +390,5 @@ $functions = [
         'type' => 'write',
         'capabilities' => 'mod/quiz:manage',
         'ajax' => true,
-    ]
+    ],
 ];

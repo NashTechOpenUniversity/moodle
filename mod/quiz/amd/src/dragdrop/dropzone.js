@@ -59,8 +59,6 @@ export default class extends BaseComponent {
         return true;
     }
 
-
-
     /**
      * Executed when a valid dropdata is dropped over the drop-zone.
      *

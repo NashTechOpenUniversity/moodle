@@ -600,6 +600,9 @@ const page = {
         if (numberElement) {
             getString('page', 'moodle').then(string => {
                 numberElement.textContent = string + ' ' + number;
+                return true;
+            }).catch(() => {
+                // Can't get lang string.
             });
         }
     },

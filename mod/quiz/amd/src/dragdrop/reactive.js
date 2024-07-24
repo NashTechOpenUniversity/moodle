@@ -34,7 +34,7 @@ export default class extends Reactive {
         const questions = document.querySelectorAll(SELECTORS.QUESTION);
         let initialData = [];
         questions.forEach((question) => {
-            initialData.push({id: question.id, ismove: false}, );
+            initialData.push({id: question.id, ismove: false});
         });
         this.setInitialState({question: initialData});
     }

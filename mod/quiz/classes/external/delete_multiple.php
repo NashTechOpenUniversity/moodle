@@ -51,8 +51,8 @@ class delete_multiple extends external_api {
     /**
      * Delete multiple quiz slots(multiple resource).
      *
-     * @param string $ids The ids of multiple question slots.
      * @param int $quizid The quiz id.
+     * @param string $ids The ids of multiple question slots.
      * @return array An array of the properties of multiple resource.
      */
     public static function execute(int $quizid, string $ids = ''): array {
@@ -77,7 +77,7 @@ class delete_multiple extends external_api {
         return [
             'newsummarks' => quiz_format_grade($quiz, $quiz->sumgrades),
             'deleted' => true,
-            'newnumquestions' => $structure->get_question_count()
+            'newnumquestions' => $structure->get_question_count(),
         ];
     }
 
@@ -90,7 +90,7 @@ class delete_multiple extends external_api {
         return new external_single_structure([
             'newsummarks' => new external_value(PARAM_TEXT, 'The new sum mark'),
             'deleted' => new external_value(PARAM_BOOL, 'Whether it have been delete'),
-            'newnumquestions' => new external_value(PARAM_INT, 'The number of questions')
+            'newnumquestions' => new external_value(PARAM_INT, 'The number of questions'),
         ]);
     }
 }

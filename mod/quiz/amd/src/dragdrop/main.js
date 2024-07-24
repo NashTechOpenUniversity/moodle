@@ -31,7 +31,7 @@ const stateChangedEventName = 'mod_quiz_dragdrop:stateChanged';
  * @param {string} domElementId Id of render container
  * @param {number} quizId Course module id of the kanban board
  * @param {number} courseId Id of the board to display
- * @returns {KanbanComponent}
+ * @returns {QuizDragDropParent}
  */
 export const initDragDrop = (domElementId, quizId, courseId) => {
     const reactiveInstance = new Reactive({
@@ -46,7 +46,7 @@ export const initDragDrop = (domElementId, quizId, courseId) => {
         element: document.getElementById(domElementId),
         reactive: reactiveInstance,
         quizid: quizId,
-        courseid : courseId,
+        courseid: courseId,
     });
 };
 

@@ -314,14 +314,19 @@ class structure_test extends \advanced_testcase {
         ], $structure);
     }
 
-    public function test_move_slot_to_another_page_in_another_heading() {
+    /**
+     * Test to move slot down from heading 1 to heading 2.
+     *
+     * @covers ::move_slot
+     */
+    public function test_move_slot_to_another_page_in_another_heading(): void {
         $quizobj = $this->create_test_quiz([
             'Heading 1*',
             ['TF1', 1, 'truefalse'],
             ['TF2', 2, 'truefalse'],
             ['TF3', 3, 'truefalse'],
             'Heading 2*',
-            ['TF4', 4, 'truefalse']
+            ['TF4', 4, 'truefalse'],
         ]);
         $structure = structure::create_for_quiz($quizobj);
         $idtomove = $structure->get_question_in_slot(2)->slotid;
@@ -334,7 +339,7 @@ class structure_test extends \advanced_testcase {
             ['TF3', 2, 'truefalse'],
             'Heading 2*',
             ['TF4', 3, 'truefalse'],
-            ['TF2', 3, 'truefalse']
+            ['TF2', 3, 'truefalse'],
         ], $structure);
     }
 

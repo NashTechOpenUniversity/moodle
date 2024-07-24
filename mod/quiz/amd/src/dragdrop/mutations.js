@@ -89,7 +89,7 @@ export default class {
      * @param {Object} dragData
      * @param {Boolean} goingup
      */
-    async processUpdates(stateManager, dropZoneNode , dragData, goingup) {
+    async processUpdates(stateManager, dropZoneNode, dragData, goingup) {
         const updateUI = {
             name: 'question',
             action: 'put',

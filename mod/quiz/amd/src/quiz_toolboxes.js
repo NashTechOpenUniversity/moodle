@@ -156,6 +156,9 @@ class ToolBox {
             if (response.newnumquestions) {
                 getString('numquestionsx', 'quiz', response.newnumquestions).then(string => {
                     document.querySelector(SELECTOR.NUMQUESTIONS).innerHTML = string;
+                    return true;
+                }).catch(() => {
+                    // Can't get lang string.
                 });
             }
             if (response.newsummarks) {
@@ -334,6 +337,9 @@ class ResourceToolBox extends ToolBox {
 
                 getString('edittitleinstructions', 'moodle').then(string => {
                     editInstructions.innerHTML = string;
+                    return true;
+                }).catch(() => {
+                    // Can't get lang string.
                 });
 
                 const editor = util.createElement('input', {
@@ -363,17 +369,19 @@ class ResourceToolBox extends ToolBox {
                 editor.select();
 
                 // Cancel the edit if we lose focus or the escape key is pressed.
-                editor.addEventListener('blur', event => this.handleMaxMarkEditorBlur
-                    .call(this, event, activity, false));
-                editor.addEventListener('keydown', event => this.handleMaxMarkEditorType
-                    .call(this, event, activity, true));
+                editor.addEventListener('blur', event =>
+                    this.handleMaxMarkEditorBlur(event, activity, false));
+                editor.addEventListener('keydown', event =>
+                    this.handleMaxMarkEditorType(event, activity, true));
                 // Handle form submission.
-                editForm.addEventListener('submit', event => this.handleMaxMarkFormSubmit
-                    .call(this, event, activity, oldMaxMark));
+                editForm.addEventListener('submit', event =>
+                    this.handleMaxMarkFormSubmit(event, activity, oldMaxMark));
 
                 // Store the event listeners for later removal
                 this.editMaxMarkEvents = true;
-            });
+
+                return true;
+            }).catch(Notification.exception);
     }
 
     /**
@@ -477,7 +485,9 @@ class ResourceToolBox extends ToolBox {
                     // Remove the select multiple options.
                     document.body.classList.remove(CSS.SELECTMULTIPLE);
                 }
-            });
+                return true;
+            }).catch(Notification.exception);
+            return true;
         }).catch(() => {
             // User cancelled.
         });
@@ -562,7 +572,8 @@ class ResourceToolBox extends ToolBox {
                         M.core.actionmenu.instance.hideMenu(ev);
                     }
                 }
-            });
+                return true;
+            }).catch(Notification.exception);
         } catch (e) {
             // User cancelled.
         }
@@ -651,7 +662,9 @@ class ResourceToolBox extends ToolBox {
             if (response.hasOwnProperty('requireprevious')) {
                 slot.updateDependencyIcon(activity, response.requireprevious);
             }
-        });
+
+            return true;
+        }).catch(Notification.exception);
     }
 
 
@@ -753,6 +766,7 @@ class ResourceToolBox extends ToolBox {
                 if (response.instancemaxmark) {
                     activity.querySelector(SELECTOR.INSTANCEMAXMARK).textContent = response.instancemaxmark;
                 }
+                return true;
             }).catch(Notification.exception);
         }
     }
@@ -768,7 +782,6 @@ class ResourceToolBox extends ToolBox {
         const actionArea = activity.querySelector(SELECTOR.ACTIONAREA);
         if (actionArea) {
             return util.addSpinner(actionArea);
-            // return addIconToContainerWithPromise(actionArea);
         }
 
         return null;
@@ -896,7 +909,9 @@ class SectionToolBox extends ToolBox {
                 if (response.deleted) {
                     window.location.reload(true);
                 }
-            });
+                return true;
+            }).catch(Notification.exception);
+            return true;
         }).catch(() => {
             // User cancelled.
         });
@@ -933,6 +948,9 @@ class SectionToolBox extends ToolBox {
                 id: 'id_editinstructions'});
             getString('edittitleinstructions', 'moodle').then(string => {
                 editInstructions.innerHTML = string;
+                return true;
+            }).catch(() => {
+                // Can't get lang string.
             });
             const editor = util.createElement('input', {name: 'section', type: 'text', value: oldText,
                 autocomplete: 'off', 'aria-describedby': 'id_editinstructions', maxLength: 255});
@@ -956,7 +974,8 @@ class SectionToolBox extends ToolBox {
             // Handle form submission.
             editForm.addEventListener('submit', (event) => this.editSectionTitleSubmit(event, activity, oldText));
             this.editSectionEvents = true;
-        });
+            return true;
+        }).catch(Notification.exception);
     }
 
     /**
@@ -1025,7 +1044,7 @@ class SectionToolBox extends ToolBox {
                 }
             }
         } catch (error) {
-            // ignore.
+            // Ignore.
         }
     }
 

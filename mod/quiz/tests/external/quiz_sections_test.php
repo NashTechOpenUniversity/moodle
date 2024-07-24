@@ -36,7 +36,7 @@ use mod_quiz\quiz_settings;
  * @covers \mod_quiz\external\update_shuffle_questions
  * @covers \mod_quiz\external\delete_section
  */
-class quiz_sections_test extends externallib_advanced_testcase {
+final class quiz_sections_test extends externallib_advanced_testcase {
 
     /**
      * Test the behavior of get section title.
@@ -59,7 +59,7 @@ class quiz_sections_test extends externallib_advanced_testcase {
     /**
      * Test the behavior of update section title.
      */
-    public function test_update_section_title() {
+    public function test_update_section_title(): void {
         $quizobj = $this->create_quiz_with_two_grade_items();
         $structure = $quizobj->get_structure();
         $defaultsection = array_values($structure->get_sections())[0];
@@ -71,7 +71,7 @@ class quiz_sections_test extends externallib_advanced_testcase {
     /**
      * Test the behavior of update shuffle questions.
      */
-    public function test_update_shuffle_questions() {
+    public function test_update_shuffle_questions(): void {
         $this->setAdminUser();
 
         $quizobj = $this->create_quiz_with_two_grade_items();
@@ -85,7 +85,7 @@ class quiz_sections_test extends externallib_advanced_testcase {
     /**
      * Test the behavior of delete section.
      */
-    public function test_delete_section() {
+    public function test_delete_section(): void {
         $quizobj = $this->create_quiz_with_two_grade_items();
         $structure = $quizobj->get_structure();
 
@@ -107,7 +107,7 @@ class quiz_sections_test extends externallib_advanced_testcase {
         $sections = $structure->get_sections();
         $section1 = array_values($sections)[0];
 
-        // The section when delete we just have section 1 left
+        // The section when delete we just have section 1 left.
         $this->assertCount(1, $sections);
         $this->assertEquals('', $section1->heading);
     }
@@ -138,7 +138,6 @@ class quiz_sections_test extends externallib_advanced_testcase {
         // Add them to the quiz.
         quiz_add_quiz_question($saq1->id, $quiz, 0, 1);
         quiz_add_quiz_question($saq2->id, $quiz, 0, 1);
-
 
         // Create two quiz grade items.
         $listeninggrade = $quizgenerator->create_grade_item(['quizid' => $quiz->id, 'name' => 'Listening']);

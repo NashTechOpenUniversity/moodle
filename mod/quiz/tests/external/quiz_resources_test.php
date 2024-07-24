@@ -39,7 +39,7 @@ use mod_quiz\quiz_settings;
  * @covers \mod_quiz\external\update_question_dependency
  * @covers \mod_quiz\external\delete_resource
  */
-class quiz_resources_test extends externallib_advanced_testcase {
+final class quiz_resources_test extends externallib_advanced_testcase {
 
 
     /**
@@ -57,7 +57,7 @@ class quiz_resources_test extends externallib_advanced_testcase {
     /**
      * Test the behavior of update max mark.
      */
-    public function test_update_max_mark() {
+    public function test_update_max_mark(): void {
         $quizobj = $this->create_quiz_with_two_grade_items();
 
         $structure = $quizobj->get_structure();
@@ -76,7 +76,7 @@ class quiz_resources_test extends externallib_advanced_testcase {
     /**
      * Test the behavior of update page break.
      */
-    public function test_update_page_break() {
+    public function test_update_page_break(): void {
         $quizobj = $this->create_quiz_with_two_grade_items();
         $structure = $quizobj->get_structure();
 
@@ -89,7 +89,7 @@ class quiz_resources_test extends externallib_advanced_testcase {
         // Get the result value.
         $resultvalue = $result['slots'];
 
-        // Decode the JSON string into an associative array
+        // Decode the JSON string into an associative array.
         $resultvaluedecoded = json_decode($resultvalue, true);
         $this->assertEquals(1, $resultvaluedecoded[2]['page']);
     }
@@ -97,7 +97,7 @@ class quiz_resources_test extends externallib_advanced_testcase {
     /**
      * Test the behavior of move question slot.
      */
-    public function test_move_slot() {
+    public function test_move_slot(): void {
         $quizobj = $this->create_quiz_with_two_grade_items();
         $structure = $quizobj->get_structure();
         $defaultsection = array_values($structure->get_sections())[0];
@@ -111,7 +111,7 @@ class quiz_resources_test extends externallib_advanced_testcase {
     /**
      * Test the behavior of delete multiple resource(question slots).
      */
-    public function test_delete_multiple() {
+    public function test_delete_multiple(): void {
         $quizobj = $this->create_quiz_with_two_grade_items();
         $structure = $quizobj->get_structure();
         $ids = $structure->get_slot_id_for_slot(1) . ',' . $structure->get_slot_id_for_slot(2);
@@ -129,7 +129,7 @@ class quiz_resources_test extends externallib_advanced_testcase {
     /**
      * Test the behavior of update question dependency.
      */
-    public function test_update_question_dependency() {
+    public function test_update_question_dependency(): void {
         $quizobj = $this->create_quiz_with_two_grade_items();
         $structure = $quizobj->get_structure();
 
@@ -144,7 +144,7 @@ class quiz_resources_test extends externallib_advanced_testcase {
     /**
      * Test the behavior of delete a single resource(question slots).
      */
-    public function test_delete_resource() {
+    public function test_delete_resource(): void {
         $quizobj = $this->create_quiz_with_two_grade_items();
         $structure = $quizobj->get_structure();
         // Two question have been created before delete.

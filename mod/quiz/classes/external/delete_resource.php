@@ -78,7 +78,7 @@ class delete_resource extends external_api {
         return [
             'newsummarks' => quiz_format_grade($quiz, $quiz->sumgrades),
             'deleted' => true,
-            'newnumquestions' => $structure->get_question_count()
+            'newnumquestions' => $structure->get_question_count(),
         ];
     }
 
