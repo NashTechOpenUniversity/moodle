@@ -621,7 +621,7 @@ class fields {
                 'mappings' => $userfields,
             ] = (array) $this->get_sql($tablealias, true, '', '', false);
         } else {
-            $userfields = array_merge(['id'], $this->get_required_fields([self::PURPOSE_IDENTITY]));
+            $userfields = array_merge(['id'], self::get_name_fields(), $this->get_required_fields([self::PURPOSE_IDENTITY]));
             // Build the SELECT fragment SQL if we don't have any.
             foreach ($userfields as &$field) {
                 $field = $tablealias . '.' . $field;
