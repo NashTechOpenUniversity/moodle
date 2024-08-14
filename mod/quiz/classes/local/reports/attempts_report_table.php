@@ -605,8 +605,8 @@ abstract class attempts_report_table extends \table_sql {
             [
                 'where' => $keywordswhere,
                 'params' => $keywordsparams,
-            ] = \core_user::get_users_search_sql($mappings, $userfieldsapi->get_required_fields(),
-                    $this->options->usersearch, $this->context, true);
+            ] = \core_user::get_users_search_sql($this->context, $this->options->usersearch,true,
+                    $userfieldsapi->get_required_fields());
 
             $where .= " AND $keywordswhere";
             $params = array_merge($params, $keywordsparams);

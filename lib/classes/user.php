@@ -1618,7 +1618,7 @@ class user {
     public static function get_users_search_sql(context $context, string $usersearch = '', bool $allowcustom = false): array {
         global $DB, $USER;
 
-        $userfields = fields::for_identity($context, false)->with_userpic();
+        $userfields = fields::for_identity($context, $allowcustom)->with_userpic();
         ['mappings' => $mappings]  = (array)$userfields->get_sql('u', true);
         $userfields = $userfields->get_required_fields();
 
