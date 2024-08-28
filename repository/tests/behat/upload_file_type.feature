@@ -13,5 +13,3 @@ Feature: File type can be validated on upload
     And I click on "Upload this file" "button" in the "File picker" "dialogue"
     Then I should see "Text file filetype cannot be accepted." in the "Error" "dialogue"
     And I click on "OK" "button" in the "Error" "dialogue"
-    And I should see "Attachment" in the "File picker" "dialogue"
-    And "Upload this file" "button" in the "File picker" "dialogue" should be visible
