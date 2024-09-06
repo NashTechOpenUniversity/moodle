@@ -77,6 +77,7 @@ class overallfeedback_form extends \moodleform {
             'gradeboundarystatic2', get_string('gradeboundary', 'quiz'), '0%');
     }
 
+    #[\Override]
     public function set_data($defaultvalues) {
         if (is_object($defaultvalues)) {
             $defaultvalues = (array) $defaultvalues;
@@ -133,6 +134,7 @@ class overallfeedback_form extends \moodleform {
         }
     }
 
+    #[\Override]
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
         $grade = $data['grade'];

@@ -659,6 +659,7 @@ class restore_quiz_activity_structure_step extends restore_questions_activity_st
         $this->add_related_files('mod_quiz', 'intro', null);
         // Add feedback related files, matching by itemname = 'quiz_feedback'.
         $this->add_related_files('mod_quiz', 'feedback', 'quiz_feedback');
+        $this->add_related_files('mod_quiz', 'grade_item_feedback', 'quiz_grade_item_feedback');
 
         if (!$this->sectioncreated) {
             $DB->insert_record('quiz_sections', [
