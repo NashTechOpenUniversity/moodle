@@ -306,8 +306,6 @@ $string['gradeimport'] = 'Grade import';
 $string['gradeimportfailed'] = 'Grade Import failed during commit. Details:';
 $string['gradeitem'] = 'Grade item';
 $string['gradeitemaddusers'] = 'Exclude from grading';
-$string['gradeitemadvanced'] = 'Advanced grade item options';
-$string['gradeitemadvanced_help'] = 'Select all elements that should be displayed as advanced when editing grade items.';
 $string['gradeitemislocked'] = 'This activity is locked in the gradebook. Changes that are made to grades in this activity will not be copied to the gradebook until it is unlocked.';
 $string['gradeitemlocked'] = 'Grading locked';
 $string['gradeitemminmax'] = 'Min and max grades as specified in grade item settings';
@@ -717,9 +715,9 @@ $string['recovergradesdefault'] = 'Recover grades default';
 $string['recovergradesdefault_help'] = 'By default recover old grades when re-enrolling a user in a course.';
 $string['refreshpreview'] = 'Refresh preview';
 $string['regradeanyway'] = 'Regrade anyway';
-$string['removeallcoursegrades'] = 'Delete all grades';
+$string['removeallcoursegrades'] = 'All grades';
 $string['removeallcoursegrades_help'] = 'If ticked, all grade items and grades that were manually added to the gradebook will be deleted, as well as data on overridden, excluded, hidden and locked grades. Only grade items and grades associated with activities will remain.';
-$string['removeallcourseitems'] = 'Delete all items and categories';
+$string['removeallcourseitems'] = 'All items and categories';
 $string['removeallcourseitems_help'] = 'If ticked, all categories and grade items which were manually added to the gradebook will be deleted, together with grades and data on overridden, excluded, hidden and locked grades. Only grade items associated with activities will remain.';
 $string['report'] = 'Report';
 $string['reportdefault'] = 'Report default ({$a})';
@@ -891,15 +889,6 @@ $string['xml'] = 'XML';
 $string['yes'] = 'Yes';
 $string['yourgrade'] = 'Your grade';
 
-$string['aria-toggledropdown'] = 'Toggle the following dropdown';
-$string['aria:dropdowngrades'] = 'Grade items found';
-
-// Deprecated since Moodle 4.0.
-$string['navmethod'] = 'Navigation method';
-$string['dropdown'] = 'Drop-down menu';
-$string['tabs'] = 'Tabs';
-$string['combo'] = 'Tabs and drop-down menu';
-
 // Deprecated since Moodle 4.2.
 $string['showanalysisicon'] = 'Show grade analysis icon';
 $string['showanalysisicon_desc'] = 'Whether to show grade analysis icon by default. If the activity module supports it, the grade analysis icon links to a page with more detailed explanation of the grade and how it was obtained.';
@@ -924,3 +913,7 @@ $string['studentsperpage_help'] = 'This setting determines the number of student
 
 // Deprecated since Moodle 4.4.
 $string['grade'] = 'Grade';
+$string['gradeitemadvanced'] = 'Advanced grade item options';
+$string['gradeitemadvanced_help'] = 'Select all elements that should be displayed as advanced when editing grade items.';
+$string['aria-toggledropdown'] = 'Toggle the following dropdown';
+$string['aria:dropdowngrades'] = 'Grade items found';

@@ -140,12 +140,13 @@ $string['csvdownload'] = 'Download in spreadsheet format (UTF-8 .csv)';
 $string['datepassed'] = 'Date passed';
 $string['days'] = 'Days';
 $string['daysoftotal'] = '{$a->days} of {$a->total}';
-$string['daysuntilcompletion'] = 'Days until completion';
+$string['daystakingcourse'] = 'Time taking course';
+$string['daysuntilcompletion'] = 'Time until completion';
 $string['defaultactivitycompletionsite'] = 'These are the default completion conditions for activities in all courses.';
 $string['defaultactivitycompletioncourse'] = 'These are the default completion conditions for activities in this course.';
 $string['defaultcompletion'] = 'Default activity completion';
 $string['defaultcompletionupdated'] = 'Changes saved';
-$string['deletecompletiondata'] = 'Delete completion data';
+$string['deletecompletiondata'] = 'Completion data';
 $string['dependencies'] = 'Dependencies';
 $string['dependenciescompleted'] = 'Completion of other courses';
 $string['detail_desc:receivegrade'] = 'Receive a grade';
@@ -176,6 +177,7 @@ $string['failed'] = 'Failed';
 $string['fraction'] = 'Fraction';
 $string['graderequired'] = 'Required course grade';
 $string['gradexrequired'] = '{$a} required';
+$string['incompatibleplugin'] = 'This activity does not support default completion settings. Completion conditions must be manually set for each use.';
 $string['inprogress'] = 'In progress';
 $string['manual'] = 'Manual';
 $string['manualcompletionby'] = 'Manual completion by others';
@@ -254,9 +256,6 @@ $string['withconditions'] = 'With conditions';
 $string['writingcompletiondata'] = 'Writing completion data';
 $string['xdays'] = '{$a} days';
 $string['youmust'] = 'You must';
-
-// Deprecated since Moodle 4.0.
-$string['yourprogress'] = 'Your progress';
 
 // Deprecated since Moodle 4.3.
 $string['editcoursecompletionsettings'] = 'Edit course completion settings';

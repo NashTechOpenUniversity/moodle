@@ -116,6 +116,8 @@ class navigation_node implements renderable {
     public $forceopen = false;
     /** @var array An array of CSS classes for the node */
     public $classes = array();
+    /** @var array An array of HTML attributes for the node */
+    public $attributes = [];
     /** @var navigation_node_collection An array of child nodes */
     public $children = array();
     /** @var bool If set to true the node will be recognised as active */
@@ -336,7 +338,7 @@ class navigation_node implements renderable {
      * @return navigation_node
      */
     public static function create($text, $action=null, $type=self::TYPE_CUSTOM,
-            $shorttext=null, $key=null, pix_icon $icon=null) {
+            $shorttext=null, $key=null, ?pix_icon $icon=null) {
         if ($action && !($action instanceof moodle_url || $action instanceof action_link)) {
             debugging(
                 "It is required that the action provided be either an action_url|moodle_url." .
@@ -370,13 +372,13 @@ class navigation_node implements renderable {
      *
      * @param string $text
      * @param moodle_url|action_link|string $action
-     * @param int $type
+     * @param ?int $type
      * @param string $shorttext
      * @param string|int $key
      * @param pix_icon $icon
      * @return navigation_node
      */
-    public function add($text, $action=null, $type=self::TYPE_CUSTOM, $shorttext=null, $key=null, pix_icon $icon=null) {
+    public function add($text, $action=null, $type=self::TYPE_CUSTOM, $shorttext=null, $key=null, ?pix_icon $icon=null) {
         if ($action && is_string($action)) {
             $action = new moodle_url($action);
         }
@@ -441,7 +443,7 @@ class navigation_node implements renderable {
      * use the get method instead.
      *
      * @param int|string $key The key of the node we are looking for
-     * @param int $type One of navigation_node::TYPE_*
+     * @param ?int $type One of navigation_node::TYPE_*
      * @return navigation_node|false
      */
     public function find($key, $type) {
@@ -557,6 +559,16 @@ class navigation_node implements renderable {
             $this->classes[] = $class;
         }
         return true;
+    }
+
+    /**
+     * Adds an HTML attribute to this node.
+     *
+     * @param string $name
+     * @param string $value
+     */
+    public function add_attribute(string $name, string $value): void {
+        $this->attributes[] = ['name' => $name, 'value' => $value];
     }
 
     /**
@@ -872,7 +884,7 @@ class navigation_node implements renderable {
      *      If an array is given then nodes will only be hidden if their type mtatches an element in the array.
      *          e.g. array(navigation_node::TYPE_COURSE) would hide only course nodes.
      */
-    public function hide(array $typestohide = null) {
+    public function hide(?array $typestohide = null) {
         if ($typestohide === null || in_array($this->type, $typestohide)) {
             $this->display = false;
             if ($this->has_children()) {
@@ -1153,7 +1165,7 @@ class navigation_node_collection implements IteratorAggregate, Countable {
      *
      * @param string|int $key The key of the node we want to find.
      * @param int $type One of navigation_node::TYPE_*.
-     * @return navigation_node|null
+     * @return navigation_node|null|false
      */
     public function get($key, $type=null) {
         if ($type !== null) {
@@ -1340,14 +1352,14 @@ class global_navigation extends navigation_node {
         }
 
         $homepage = get_home_page();
-        if ($homepage == HOMEPAGE_SITE) {
-            // We are using the site home for the root element.
+        if ($homepage == HOMEPAGE_MY) {
+            // We are using the users my moodle for the root element.
             $properties = array(
-                'key' => 'home',
+                'key' => 'myhome',
                 'type' => navigation_node::TYPE_SYSTEM,
-                'text' => get_string('home'),
-                'action' => new moodle_url('/'),
-                'icon' => new pix_icon('i/home', '')
+                'text' => get_string('myhome'),
+                'action' => new moodle_url('/my/'),
+                'icon' => new pix_icon('i/dashboard', ''),
             );
         } else if ($homepage == HOMEPAGE_MYCOURSES) {
             // We are using the user's course summary page for the root element.
@@ -1359,13 +1371,13 @@ class global_navigation extends navigation_node {
                 'icon' => new pix_icon('i/course', '')
             );
         } else {
-            // We are using the users my moodle for the root element.
+            // We are using the site home for the root element.
             $properties = array(
-                'key' => 'myhome',
+                'key' => 'home',
                 'type' => navigation_node::TYPE_SYSTEM,
-                'text' => get_string('myhome'),
-                'action' => new moodle_url('/my/'),
-                'icon' => new pix_icon('i/dashboard', '')
+                'text' => get_string('home'),
+                'action' => new moodle_url('/'),
+                'icon' => new pix_icon('i/home', ''),
             );
         }
 
@@ -1957,7 +1969,7 @@ class global_navigation extends navigation_node {
      * @param int $categoryid The category id to load or null/0 to load all base level categories
      * @param bool $showbasecategories If set to true all base level categories will be loaded as well
      *        as the requested category and any parent categories.
-     * @return navigation_node|void returns a navigation node if a category has been loaded.
+     * @return true|void
      */
     protected function load_all_categories($categoryid = self::LOAD_ROOT_CATEGORIES, $showbasecategories = false) {
         global $CFG, $DB;
@@ -2283,13 +2295,24 @@ class global_navigation extends navigation_node {
                     continue;
                 }
 
+                $parentnode = $coursenode;
+
+                // Set the parent node to the parent section if this is a delegated section.
+                if ($section->is_delegated()) {
+                    $parentsection = $section->get_component_instance()->get_parent_section();
+                    if ($parentsection) {
+                        $parentnode = $coursenode->find($parentsection->id, self::TYPE_SECTION) ?: $coursenode;
+                    }
+                }
+
                 $sectionname = get_section_name($course, $section);
                 $url = course_get_url($course, $section->section, array('navigation' => true));
 
-                $sectionnode = $coursenode->add($sectionname, $url, navigation_node::TYPE_SECTION,
+                $sectionnode = $parentnode->add($sectionname, $url, navigation_node::TYPE_SECTION,
                     null, $section->id, new pix_icon('i/section', ''));
                 $sectionnode->nodetype = navigation_node::NODETYPE_BRANCH;
                 $sectionnode->hidden = (!$section->visible || !$section->available);
+                $sectionnode->add_attribute('data-section-name-for', $section->id);
                 if ($this->includesectionnum !== false && $this->includesectionnum == $section->section) {
                     $this->load_section_activities($sectionnode, $section->section, $activities);
                 }
@@ -2564,16 +2587,6 @@ class global_navigation extends navigation_node {
                 } else {
                     $usernode->add(get_string('viewprofile'), new moodle_url('/user/view.php', $baseargs));
                 }
-            }
-
-            if (!empty($CFG->navadduserpostslinks)) {
-                // Add nodes for forum posts and discussions if the user can view either or both
-                // There are no capability checks here as the content of the page is based
-                // purely on the forums the current user has access too.
-                $forumtab = $usernode->add(get_string('forumposts', 'forum'));
-                $forumtab->add(get_string('posts', 'forum'), new moodle_url('/mod/forum/user.php', $baseargs));
-                $forumtab->add(get_string('discussions', 'forum'), new moodle_url('/mod/forum/user.php',
-                        array_merge($baseargs, array('mode' => 'discussions'))));
             }
 
             // Add blog nodes.
@@ -2955,11 +2968,14 @@ class global_navigation extends navigation_node {
             }
         } else if (count($this->extendforuser) > 0) {
             $coursenode->add(get_string('participants'), null, self::TYPE_CONTAINER, get_string('participants'), 'participants');
+        } else if ($siteparticipantsnode = $this->rootnodes['site']->get('participants', self::TYPE_CUSTOM)) {
+            // The participants node was added for the site, but cannot be viewed inside the course itself, so remove.
+            $siteparticipantsnode->remove();
         }
 
         // Badges.
         if ($navoptions->badges) {
-            $url = new moodle_url('/badges/view.php', array('type' => 2, 'id' => $course->id));
+            $url = new moodle_url('/badges/index.php', ['type' => 2, 'id' => $course->id]);
 
             $coursenode->add(get_string('coursebadges', 'badges'), $url,
                     navigation_node::TYPE_SETTING, null, 'badgesview',
@@ -3043,7 +3059,7 @@ class global_navigation extends navigation_node {
 
         // Badges.
         if ($navoptions->badges) {
-            $url = new moodle_url($CFG->wwwroot . '/badges/view.php', array('type' => 1));
+            $url = new moodle_url($CFG->wwwroot . '/badges/index.php', ['type' => 1]);
             $coursenode->add(get_string('sitebadges', 'badges'), $url, navigation_node::TYPE_CUSTOM);
         }
 
@@ -3192,7 +3208,7 @@ class global_navigation extends navigation_node {
      * may be of more use to you.
      *
      * @param string|int $key The key of the node you wish to receive.
-     * @param int $type One of navigation_node::TYPE_*
+     * @param ?int $type One of navigation_node::TYPE_*
      * @return navigation_node|false
      */
     public function find($key, $type) {
@@ -3643,7 +3659,7 @@ class navbar extends navigation_node {
         global $CFG;
         if (during_initial_install()) {
             $this->duringinstall = true;
-            return false;
+            return;
         }
         $this->page = $page;
         $this->text = get_string('home');
@@ -3874,7 +3890,7 @@ class navbar extends navigation_node {
      * @param pix_icon $icon An optional icon to use for this node.
      * @return navigation_node
      */
-    public function add($text, $action=null, $type=self::TYPE_CUSTOM, $shorttext=null, $key=null, pix_icon $icon=null) {
+    public function add($text, $action=null, $type=self::TYPE_CUSTOM, $shorttext=null, $key=null, ?pix_icon $icon=null) {
         if ($this->content !== null) {
             debugging('Nav bar items must be printed before $OUTPUT->header() has been called', DEBUG_DEVELOPER);
         }
@@ -3920,7 +3936,7 @@ class navbar extends navigation_node {
      * @param pix_icon $icon An optional icon to use for this node.
      * @return navigation_node
      */
-    public function prepend($text, $action=null, $type=self::TYPE_CUSTOM, $shorttext=null, $key=null, pix_icon $icon=null) {
+    public function prepend($text, $action=null, $type=self::TYPE_CUSTOM, $shorttext=null, $key=null, ?pix_icon $icon=null) {
         if ($this->content !== null) {
             debugging('Nav bar items must be printed before $OUTPUT->header() has been called', DEBUG_DEVELOPER);
         }
@@ -4161,7 +4177,7 @@ class flat_navigation extends navigation_node_collection {
      */
     public function __construct(moodle_page &$page) {
         if (during_initial_install()) {
-            return false;
+            return;
         }
         debugging("Flat navigation has been deprecated in favour of primary/secondary navigation concepts");
         $this->page = $page;
@@ -4314,7 +4330,7 @@ class settings_navigation extends navigation_node {
      */
     public function __construct(moodle_page &$page) {
         if (during_initial_install()) {
-            return false;
+            return;
         }
         $this->page = $page;
         // Initialise the main navigation. It is most important that this is done
@@ -4452,7 +4468,7 @@ class settings_navigation extends navigation_node {
      * @param pix_icon $icon An icon that appears next to the node.
      * @return navigation_node with the new node added to it.
      */
-    public function add($text, $url=null, $type=null, $shorttext=null, $key=null, pix_icon $icon=null) {
+    public function add($text, $url=null, $type=null, $shorttext=null, $key=null, ?pix_icon $icon=null) {
         $node = parent::add($text, $url, $type, $shorttext, $key, $icon);
         $node->add_class('root_node');
         return $node;
@@ -4470,7 +4486,7 @@ class settings_navigation extends navigation_node {
      * @param pix_icon $icon An icon that appears next to the node.
      * @return navigation_node $node with the new node added to it.
      */
-    public function prepend($text, $url=null, $type=null, $shorttext=null, $key=null, pix_icon $icon=null) {
+    public function prepend($text, $url=null, $type=null, $shorttext=null, $key=null, ?pix_icon $icon=null) {
         $children = $this->children;
         $childrenclass = get_class($children);
         $this->children = new $childrenclass;
@@ -4515,7 +4531,7 @@ class settings_navigation extends navigation_node {
      *      tree and start at the beginning
      * @return mixed A key to access the admin tree by
      */
-    protected function load_administration_settings(navigation_node $referencebranch=null, part_of_admin_tree $adminbranch=null) {
+    protected function load_administration_settings(?navigation_node $referencebranch=null, ?part_of_admin_tree $adminbranch=null) {
         global $CFG;
 
         // Check if we are just starting to generate this navigation.
@@ -5174,16 +5190,6 @@ class settings_navigation extends navigation_node {
             // Add the user profile to the dashboard.
             $profilenode = $mainpage->add(get_string('profile'), new moodle_url('/user/profile.php',
                     array('id' => $user->id)), self::TYPE_SETTING, null, 'myprofile');
-
-            if (!empty($CFG->navadduserpostslinks)) {
-                // Add nodes for forum posts and discussions if the user can view either or both
-                // There are no capability checks here as the content of the page is based
-                // purely on the forums the current user has access too.
-                $forumtab = $profilenode->add(get_string('forumposts', 'forum'));
-                $forumtab->add(get_string('posts', 'forum'), new moodle_url('/mod/forum/user.php', $baseargs), null, 'myposts');
-                $forumtab->add(get_string('discussions', 'forum'), new moodle_url('/mod/forum/user.php',
-                        array_merge($baseargs, array('mode' => 'discussions'))), null, 'mydiscussions');
-            }
 
             // Add blog nodes.
             if (!empty($CFG->enableblogs)) {

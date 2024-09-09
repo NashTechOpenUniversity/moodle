@@ -113,6 +113,7 @@ function quiz_report_get_significant_questions($quiz) {
         $slotreport->qtype = $slot->qtype;
         $slotreport->length = $slot->length;
         $slotreport->number = $number;
+        $slotreport->displaynumber = $slot->displaynumber ?? $number;
         $number += $slot->length;
         $slotreport->maxmark = $slot->maxmark;
         $slotreport->category = $slot->category;
@@ -199,7 +200,7 @@ function quiz_report_grade_method_sql($grademethod, $quizattemptsalias = 'quiza'
  * @param \core\dml\sql_join $usersjoins (joins, wheres, params) to get enrolled users
  * @return array band number => number of users with scores in that band.
  */
-function quiz_report_grade_bands($bandwidth, $bands, $quizid, \core\dml\sql_join $usersjoins = null) {
+function quiz_report_grade_bands($bandwidth, $bands, $quizid, ?\core\dml\sql_join $usersjoins = null) {
     global $DB;
     if (!is_int($bands)) {
         debugging('$bands passed to quiz_report_grade_bands must be an integer. (' .

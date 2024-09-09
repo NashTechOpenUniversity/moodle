@@ -21,18 +21,23 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 import UserSearch from 'core_user/comboboxsearch/user';
-import Url from 'core/url';
 import {renderForPromise, replaceNodeContents} from 'core/templates';
 import * as Repository from 'core_grades/searchwidget/repository';
 
 export default class User extends UserSearch {
 
-    constructor() {
+    /**
+     * Construct the class.
+     *
+     * @param {string} baseUrl The base URL for the page.
+     */
+    constructor(baseUrl) {
         super();
+        this.baseUrl = baseUrl;
     }
 
-    static init() {
-        return new User();
+    static init(baseUrl) {
+        return new User(baseUrl);
     }
 
     /**
@@ -40,11 +45,14 @@ export default class User extends UserSearch {
      */
     async renderDropdown() {
         const {html, js} = await renderForPromise('core_user/comboboxsearch/resultset', {
+            instance: this.instance,
             users: this.getMatchedResults().slice(0, 5),
             hasresults: this.getMatchedResults().length > 0,
             searchterm: this.getSearchTerm(),
         });
         replaceNodeContents(this.getHTMLElements().searchDropdown, html, js);
+        // Remove aria-activedescendant when the available options change.
+        this.searchInput.removeAttribute('aria-activedescendant');
     }
 
     /**
@@ -62,12 +70,11 @@ export default class User extends UserSearch {
      * @returns {string|*}
      */
     selectOneLink(userID) {
-        return Url.relativeUrl('/grade/report/singleview/index.php', {
-            id: this.courseID,
-            searchvalue: this.getSearchTerm(),
-            item: 'user',
-            userid: userID,
-        }, false);
+        const url = new URL(this.baseUrl);
+        url.searchParams.set('searchvalue', this.getSearchTerm());
+        url.searchParams.set('item', 'user');
+        url.searchParams.set('userid', userID);
+        return url.toString();
     }
 
     /**

@@ -70,6 +70,9 @@ class section implements named_templatable, renderable {
     /** @var optional move here output class */
     protected $movehereclass;
 
+    /** @var optional visibility output class */
+    protected $visibilityclass;
+
     /** @var bool if the title is hidden for some reason */
     protected $hidetitle = false;
 
@@ -104,6 +107,7 @@ class section implements named_templatable, renderable {
         $this->controlmenuclass = $format->get_output_classname('content\\section\\controlmenu');
         $this->availabilityclass = $format->get_output_classname('content\\section\\availability');
         $this->movehereclass = $format->get_output_classname('content\\section\\movehere');
+        $this->visibilityclass = $format->get_output_classname('content\\section\\visibility');
     }
 
     /**
@@ -142,13 +146,15 @@ class section implements named_templatable, renderable {
         $data = (object)[
             'num' => $section->section ?? '0',
             'id' => $section->id,
-            'sectionreturnid' => $format->get_sectionnum(),
+            'sectionreturnnum' => $format->get_sectionnum(),
             'insertafter' => false,
             'summary' => $summary->export_for_template($output),
             'highlightedlabel' => $format->get_section_highlighted_name(),
             'sitehome' => $course->id == SITEID,
             'editing' => $PAGE->user_is_editing(),
-            'displayonesection' => ($course->id != SITEID && !is_null($format->get_sectionid())),
+            'displayonesection' => ($course->id != SITEID && $format->get_sectionid() == $section->id),
+            // Section name is used as data attribute is to facilitate behat locators.
+            'sectionname' => $format->get_section_name($section),
         ];
 
         $haspartials = [];
@@ -256,8 +262,6 @@ class section implements named_templatable, renderable {
     protected function add_visibility_data(stdClass &$data, renderer_base $output): bool {
         global $USER;
         $result = false;
-        $course = $this->format->get_course();
-        $context = context_course::instance($course->id);
         // Check if it is a stealth sections (orphaned).
         if ($this->isstealth) {
             $data->isstealth = true;
@@ -266,13 +270,16 @@ class section implements named_templatable, renderable {
         }
         if (!$this->section->visible) {
             $data->ishidden = true;
-            $data->notavailable = true;
+            $course = $this->format->get_course();
+            $context = context_course::instance($course->id);
             if (has_capability('moodle/course:viewhiddensections', $context, $USER)) {
-                $data->hiddenfromstudents = true;
-                $data->notavailable = false;
                 $result = true;
             }
         }
+        /* @var \core_courseformat\output\local\content\section\visibility $visibility By default the visibility class used
+         * here but can be overriden by any course format */
+        $visibility = new $this->visibilityclass($this->format, $this->section);
+        $data->visibility = $visibility->export_for_template($output);
         return $result;
     }
 
@@ -294,7 +301,8 @@ class section implements named_templatable, renderable {
             return false;
         }
 
-        if (empty($this->hidecontrols)) {
+        // In a single section page the control menu is located in the page header.
+        if (empty($this->hidecontrols) && $this->format->get_sectionid() != $this->section->id) {
             $controlmenu = new $this->controlmenuclass($this->format, $this->section);
             $data->controlmenu = $controlmenu->export_for_template($output);
         }

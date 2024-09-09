@@ -86,6 +86,15 @@ class factor extends object_factor_base {
     }
 
     /**
+     * Gets the string for manage button on preferences page.
+     *
+     * @return string
+     */
+    public function get_manage_string(): string {
+        return get_string('managefactorbutton', 'factor_sms');
+    }
+
+    /**
      * Defines setup_factor form definition page for SMS Factor.
      *
      * @param \MoodleQuickForm $mform
@@ -159,7 +168,7 @@ class factor extends object_factor_base {
             get_string('editphonenumber', 'factor_sms'),
             ['class' => 'btn btn-secondary', 'type' => 'button']);
 
-        $mform->addElement('html', \html_writer::tag('div', $editphonenumber, ['class' => 'float-sm-left col-md-4']));
+        $mform->addElement('html', \html_writer::tag('div', $editphonenumber, ['class' => 'float-sm-start col-md-4']));
 
         // Disable the form check prompt.
         $mform->disable_form_change_checker();
@@ -349,13 +358,7 @@ class factor extends object_factor_base {
      * @return bool
      */
     public function show_setup_buttons(): bool {
-        global $DB, $USER;
-
-        // If there is already a factor setup, don't allow multiple (for now).
-        $record = $DB->get_record('tool_mfa',
-            ['userid' => $USER->id, 'factor' => $this->name, 'secret' => '', 'revoked' => 0]);
-
-        return empty($record);
+        return true;
     }
 
     /**

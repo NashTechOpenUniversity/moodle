@@ -117,6 +117,13 @@ abstract class base {
     }
 
     /**
+     * Return user friendly name of the report
+     *
+     * @return string
+     */
+    abstract public static function get_name(): string;
+
+    /**
      * Initialise report. Specify which columns, filters, etc should be present
      *
      * To set the base query use:
@@ -365,6 +372,41 @@ abstract class base {
         [$entityname, $columnname] = explode(':', $uniqueidentifier, 2);
 
         return $this->add_column($this->get_entity($entityname)->get_column($columnname));
+    }
+
+    /**
+     * Add columns from the given entity name to be available to use in a custom report
+     *
+     * Wildcard matching is supported with '*' in both $include and $exclude, e.g. ['customfield*']
+     *
+     * @param string $entityname
+     * @param string[] $include Include only these columns, if omitted then include all
+     * @param string[] $exclude Exclude these columns, if omitted then exclude none
+     * @throws coding_exception If both $include and $exclude are non-empty
+     */
+    final protected function add_columns_from_entity(string $entityname, array $include = [], array $exclude = []): void {
+        if (!empty($include) && !empty($exclude)) {
+            throw new coding_exception('Cannot specify columns to include and exclude simultaneously');
+        }
+
+        $entity = $this->get_entity($entityname);
+
+        // Retrieve filtered columns from entity, respecting given $include/$exclude parameters.
+        $columns = array_filter($entity->get_columns(), function(column $column) use ($include, $exclude): bool {
+            if (!empty($include)) {
+                return $this->report_element_search($column->get_name(), $include);
+            }
+
+            if (!empty($exclude)) {
+                return !$this->report_element_search($column->get_name(), $exclude);
+            }
+
+            return true;
+        });
+
+        foreach ($columns as $column) {
+            $this->add_column($column);
+        }
     }
 
     /**
@@ -630,6 +672,41 @@ abstract class base {
     }
 
     /**
+     * Add filters from the given entity name to be available to use in a custom report
+     *
+     * Wildcard matching is supported with '*' in both $include and $exclude, e.g. ['customfield*']
+     *
+     * @param string $entityname
+     * @param string[] $include Include only these filters, if omitted then include all
+     * @param string[] $exclude Exclude these filters, if omitted then exclude none
+     * @throws coding_exception If both $include and $exclude are non-empty
+     */
+    final protected function add_filters_from_entity(string $entityname, array $include = [], array $exclude = []): void {
+        if (!empty($include) && !empty($exclude)) {
+            throw new coding_exception('Cannot specify filters to include and exclude simultaneously');
+        }
+
+        $entity = $this->get_entity($entityname);
+
+        // Retrieve filtered filters from entity, respecting given $include/$exclude parameters.
+        $filters = array_filter($entity->get_filters(), function(filter $filter) use ($include, $exclude): bool {
+            if (!empty($include)) {
+                return $this->report_element_search($filter->get_name(), $include);
+            }
+
+            if (!empty($exclude)) {
+                return !$this->report_element_search($filter->get_name(), $exclude);
+            }
+
+            return true;
+        });
+
+        foreach ($filters as $filter) {
+            $this->add_filter($filter);
+        }
+    }
+
+    /**
      * Add given filters to the report from one or more entities
      *
      * Each entity must have already been added to the report before calling this method
@@ -732,11 +809,11 @@ abstract class base {
      * Set if the report can be downloaded.
      *
      * @param bool $downloadable
-     * @param string $downloadfilename If the report is downloadable, then a filename should be provided here
+     * @param string|null $downloadfilename If downloadable, then the name of the file (defaults to the name of the current report)
      */
-    final public function set_downloadable(bool $downloadable, string $downloadfilename = 'export'): void {
+    final public function set_downloadable(bool $downloadable, ?string $downloadfilename = null): void {
         $this->downloadable = $downloadable;
-        $this->downloadfilename = $downloadfilename;
+        $this->downloadfilename = $downloadfilename ?? static::get_name();
     }
 
     /**
@@ -778,8 +855,9 @@ abstract class base {
     /**
      * Set the default lang string for the notice used when no results are found.
      *
+     * Note this should be called from within the report class instance itself (ideally it would be protected)
+     *
      * @param lang_string|null $notice string, or null to tell the report to omit the notice entirely.
-     * @return void
      */
     public function set_default_no_results_notice(?lang_string $notice): void {
         $this->noresultsnotice = $notice;
@@ -821,5 +899,29 @@ abstract class base {
      */
     public function get_attributes(): array {
         return $this->attributes;
+    }
+
+    /**
+     * Search for given element within list of search items, supporting '*' wildcards
+     *
+     * @param string $element
+     * @param string[] $search
+     * @return bool
+     */
+    final protected function report_element_search(string $element, array $search): bool {
+        foreach ($search as $item) {
+            // Simple matching.
+            if ($element === $item) {
+                return true;
+            }
+
+            // Wildcard matching.
+            if (strpos($item, '*') !== false) {
+                $pattern = '/^' . str_replace('\*', '.*', preg_quote($item)) . '$/';
+                return (bool) preg_match($pattern, $element);
+            }
+        }
+
+        return false;
     }
 }

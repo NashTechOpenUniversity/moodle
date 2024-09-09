@@ -23,6 +23,9 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use core\di;
+use core\hook;
+
 require_once(__DIR__.'/../../testing/classes/util.php');
 require_once(__DIR__ . "/coverage_info.php");
 
@@ -105,7 +108,7 @@ class phpunit_util extends testing_util {
         global $DB, $CFG, $USER, $SITE, $COURSE, $PAGE, $OUTPUT, $SESSION, $FULLME, $FILTERLIB_PRIVATE;
 
         // Stop all hook redirections.
-        \core\hook\manager::get_instance()->phpunit_stop_redirections();
+        di::get(hook\manager::class)->phpunit_stop_redirections();
 
         // Stop any message redirection.
         self::stop_message_redirection();
@@ -526,6 +529,7 @@ class phpunit_util extends testing_util {
         $template = <<<EOF
             <testsuite name="@component@_testsuite">
               <directory suffix="_test.php">@dir@</directory>
+              <exclude>@dir@/classes</exclude>
             </testsuite>
 
         EOF;
@@ -618,6 +622,7 @@ class phpunit_util extends testing_util {
             <testsuites>
               <testsuite name="@component@_testsuite">
                 <directory suffix="_test.php">.</directory>
+                <exclude>./classes</exclude>
               </testsuite>
             </testsuites>
           EOT;
@@ -693,8 +698,29 @@ class phpunit_util extends testing_util {
         // we need normal debugging outside of tests to find problems in our phpunit integration.
         $backtrace = debug_backtrace();
 
+        // Only for advanced_testcase, database_driver_testcase (and descendants). Others aren't
+        // able to manage the debugging sink, so any debugging has to be output normally and, hopefully,
+        // PHPUnit execution will catch that unexpected output properly.
+        $sinksupport = false;
         foreach ($backtrace as $bt) {
-            if (isset($bt['object']) and is_object($bt['object'])
+            if (isset($bt['object']) && is_object($bt['object'])
+                && (
+                    $bt['object'] instanceof advanced_testcase ||
+                    $bt['object'] instanceof database_driver_testcase)
+            ) {
+                $sinksupport = true;
+                break;
+            }
+        }
+        if (!$sinksupport) {
+            return false;
+        }
+
+        // Verify that we are inside a PHPUnit test (little bit redundant, because
+        // we already have checked above that this is an advanced/database_driver
+        // testcase, but let's keep things double safe for now).
+        foreach ($backtrace as $bt) {
+            if (isset($bt['object']) && is_object($bt['object'])
                     && $bt['object'] instanceof PHPUnit\Framework\TestCase) {
                 $debug = new stdClass();
                 $debug->message = $message;
@@ -952,7 +978,6 @@ class phpunit_util extends testing_util {
     public static function call_internal_method($object, $methodname, array $params, $classname) {
         $reflection = new \ReflectionClass($classname);
         $method = $reflection->getMethod($methodname);
-        $method->setAccessible(true);
         return $method->invokeArgs($object, $params);
     }
 
@@ -963,8 +988,18 @@ class phpunit_util extends testing_util {
      * @param   int     $level The number of levels of indentation to pad
      * @return  string
      */
-    protected static function pad(string $string, int $level) : string {
+    protected static function pad(string $string, int $level): string {
         return str_repeat(" ", $level * 2) . "{$string}\n";
+    }
+
+    /**
+     * Normalise any text to always use unix line endings (line-feeds).
+     *
+     * @param   string  $text The text to normalize
+     * @return  string
+     */
+    public static function normalise_line_endings(string $text): string {
+        return str_replace(["\r\n", "\r"], "\n", $text);
     }
 
     /**
@@ -974,7 +1009,7 @@ class phpunit_util extends testing_util {
      * @param   string[] $excludelists The list of files/folders in the excludelist.
      * @return  string
      */
-    protected static function get_coverage_config(array $includelists, array $excludelists) : string {
+    protected static function get_coverage_config(array $includelists, array $excludelists): string {
         $coverages = '';
         if (!empty($includelists)) {
             $coverages .= self::pad("<include>", 2);

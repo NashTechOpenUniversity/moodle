@@ -25,16 +25,16 @@ require_once(__DIR__.'/../extlib/OTPHP/ParameterTrait.php');
 require_once(__DIR__.'/../extlib/OTPHP/OTP.php');
 require_once(__DIR__.'/../extlib/OTPHP/TOTP.php');
 
-require_once(__DIR__.'/../extlib/Assert/Assertion.php');
-require_once(__DIR__.'/../extlib/Assert/AssertionFailedException.php');
-require_once(__DIR__.'/../extlib/Assert/InvalidArgumentException.php');
 require_once(__DIR__.'/../extlib/ParagonIE/ConstantTime/EncoderInterface.php');
 require_once(__DIR__.'/../extlib/ParagonIE/ConstantTime/Binary.php');
 require_once(__DIR__.'/../extlib/ParagonIE/ConstantTime/Base32.php');
 
+use MoodleQuickForm;
 use tool_mfa\local\factor\object_factor_base;
 use OTPHP\TOTP;
 use stdClass;
+use core\clock;
+use core\di;
 
 /**
  * TOTP factor class.
@@ -65,6 +65,19 @@ class factor extends object_factor_base {
     /** @var string Factor icon */
     protected $icon = 'fa-mobile-screen';
 
+    /** @var clock */
+    private readonly clock $clock;
+
+    /**
+     * Constructor.
+     *
+     * @param string $name
+     */
+    public function __construct(string $name) {
+        parent::__construct($name);
+        $this->clock = di::get(clock::class);
+    }
+
 
     /**
      * Generates TOTP URI for given secret key.
@@ -79,7 +92,7 @@ class factor extends object_factor_base {
         $host = parse_url($CFG->wwwroot, PHP_URL_HOST);
         $sitename = str_replace(':', '', $SITE->fullname);
         $issuer = $sitename.' '.$host;
-        $totp = TOTP::create($secret);
+        $totp = TOTP::create($secret, clock: $this->clock);
         $totp->setLabel($USER->username);
         $totp->setIssuer($issuer);
         return $totp->getProvisioningUri();
@@ -95,8 +108,7 @@ class factor extends object_factor_base {
         $uri = $this->generate_totp_uri($secret);
         $qrcode = new \TCPDF2DBarcode($uri, 'QRCODE');
         $image = $qrcode->getBarcodePngData(7, 7);
-        $html = \html_writer::tag('p', get_string('setupfactor:scanwithapp', 'factor_totp'));
-        $html .= \html_writer::img('data:image/png;base64,' . base64_encode($image), '', ['width' => '150px']);
+        $html = \html_writer::img('data:image/png;base64,' . base64_encode($image), '', ['width' => '150px']);
         return $html;
     }
 
@@ -120,10 +132,10 @@ class factor extends object_factor_base {
     /**
      * TOTP Factor implementation.
      *
-     * @param \MoodleQuickForm $mform
-     * @return \MoodleQuickForm $mform
+     * @param MoodleQuickForm $mform
+     * @return MoodleQuickForm $mform
      */
-    public function setup_factor_form_definition(\MoodleQuickForm $mform): \MoodleQuickForm {
+    public function setup_factor_form_definition(MoodleQuickForm $mform): MoodleQuickForm {
         $secret = $this->generate_secret_code();
         $mform->addElement('hidden', 'secret', $secret);
         $mform->setType('secret', PARAM_ALPHANUM);
@@ -134,42 +146,45 @@ class factor extends object_factor_base {
     /**
      * TOTP Factor implementation.
      *
-     * @param \MoodleQuickForm $mform
-     * @return \MoodleQuickForm $mform
+     * @param MoodleQuickForm $mform
+     * @return MoodleQuickForm $mform
      */
-    public function setup_factor_form_definition_after_data(\MoodleQuickForm $mform): \MoodleQuickForm {
+    public function setup_factor_form_definition_after_data(MoodleQuickForm $mform): MoodleQuickForm {
         global $OUTPUT, $SITE, $USER;
 
         // Array of elements to allow XSS.
         $xssallowedelements = [];
 
-        $mform->addElement('html', $OUTPUT->heading(get_string('setupfactor', 'factor_totp'), 2));
-        $mform->addElement('html', \html_writer::tag('p', get_string('info', 'factor_totp')));
-        $mform->addElement('html', \html_writer::tag('hr', ''));
+        $headingstring = $mform->elementExists('replaceid') ? 'replacefactor' : 'setupfactor';
+        $mform->addElement('html', $OUTPUT->heading(get_string($headingstring, 'factor_totp'), 2));
 
-        $mform->addElement('text', 'devicename', get_string('devicename', 'factor_totp'), [
+        $html = \html_writer::tag('p', get_string('setupfactor:intro', 'factor_totp'));
+        $mform->addElement('html', $html);
+
+        // Device name.
+        $html = \html_writer::tag('p', get_string('setupfactor:instructionsdevicename', 'factor_totp'), ['class' => 'bold']);
+        $mform->addElement('html', $html);
+
+        $mform->addElement('text', 'devicename', get_string('setupfactor:devicename', 'factor_totp'), [
             'placeholder' => get_string('devicenameexample', 'factor_totp'),
             'autofocus' => 'autofocus',
         ]);
-        $mform->addHelpButton('devicename', 'devicename', 'factor_totp');
         $mform->setType('devicename', PARAM_TEXT);
         $mform->addRule('devicename', get_string('required'), 'required', null, 'client');
 
-        // Scan.
+        $html = \html_writer::tag('p', get_string('setupfactor:devicenameinfo', 'factor_totp'));
+        $mform->addElement('static', 'devicenameinfo', '', $html);
+
+        // Scan QR code.
+        $html = \html_writer::tag('p', get_string('setupfactor:instructionsscan', 'factor_totp'), ['class' => 'bold']);
+        $mform->addElement('html', $html);
+
         $secretfield = $mform->getElement('secret');
         $secret = $secretfield->getValue();
         $qrcode = $this->generate_qrcode($secret);
 
         $html = \html_writer::tag('p', $qrcode);
-        $xssallowedelements[] = $mform->addElement('static', 'scan', get_string('setupfactor:scan', 'factor_totp'), $html);
-
-        // Link.
-        if (get_config('factor_totp', 'totplink')) {
-            $uri = $this->generate_totp_uri($secret);
-            $html = $OUTPUT->action_link($uri, get_string('setupfactor:linklabel', 'factor_totp'));
-            $xssallowedelements[] = $mform->addElement('static', 'link', get_string('setupfactor:link', 'factor_totp'), $html);
-            $mform->addHelpButton('link', 'setupfactor:link', 'factor_totp');
-        }
+        $mform->addElement('static', 'scan', '', $html);
 
         // Enter manually.
         $secret = wordwrap($secret, 4, ' ', true) . '</code>';
@@ -186,19 +201,15 @@ class factor extends object_factor_base {
         ];
 
         $html = \html_writer::table($manualtable);
-        $html = \html_writer::tag('p', get_string('setupfactor:enter', 'factor_totp')) . $html;
         // Wrap the table in a couple of divs to be controlled via bootstrap.
-        $html = \html_writer::div($html, 'card card-body', ['style' => 'padding-left: 0 !important;']);
         $html = \html_writer::div($html, 'collapse', ['id' => 'collapseManualAttributes']);
 
-        $togglelink = \html_writer::tag('btn', get_string('setupfactor:scanfail', 'factor_totp'), [
-            'class' => 'btn btn-secondary',
-            'type' => 'button',
+        $togglelink = \html_writer::tag('a', get_string('setupfactor:link', 'factor_totp'), [
             'data-toggle' => 'collapse',
             'data-target' => '#collapseManualAttributes',
             'aria-expanded' => 'false',
             'aria-controls' => 'collapseManualAttributes',
-            'style' => 'font-size: 14px;',
+            'href' => '#',
         ]);
 
         $html = $togglelink . $html;
@@ -211,9 +222,17 @@ class factor extends object_factor_base {
             }
         }
 
-        $mform->addElement(new \tool_mfa\local\form\verification_field(null, false));
+        // Verification.
+        $html = \html_writer::tag('p', get_string('setupfactor:instructionsverification', 'factor_totp'), ['class' => 'bold']);
+        $mform->addElement('html', $html);
+
+        $verificationfield = new \tool_mfa\local\form\verification_field(
+            attributes: ['class' => 'tool-mfa-verification-code'],
+            auth: false,
+            elementlabel: get_string('setupfactor:verificationcode', 'factor_totp'),
+        );
+        $mform->addElement($verificationfield);
         $mform->setType('verificationcode', PARAM_ALPHANUM);
-        $mform->addHelpButton('verificationcode', 'verificationcode', 'factor_totp');
         $mform->addRule('verificationcode', get_string('required'), 'required', null, 'client');
 
         return $mform;
@@ -228,8 +247,8 @@ class factor extends object_factor_base {
     public function setup_factor_form_validation(array $data): array {
         $errors = [];
 
-        $totp = TOTP::create($data['secret']);
-        if (!$totp->verify($data['verificationcode'], time(), 1)) {
+        $totp = TOTP::create($data['secret'], clock: $this->clock);
+        if (!$totp->verify($data['verificationcode'], $this->clock->time(), 1)) {
             $errors['verificationcode'] = get_string('error:wrongverification', 'factor_totp');
         }
 
@@ -239,10 +258,10 @@ class factor extends object_factor_base {
     /**
      * TOTP Factor implementation.
      *
-     * @param \MoodleQuickForm $mform
-     * @return \MoodleQuickForm $mform
+     * @param MoodleQuickForm $mform
+     * @return MoodleQuickForm $mform
      */
-    public function login_form_definition(\MoodleQuickForm $mform): \MoodleQuickForm {
+    public function login_form_definition(MoodleQuickForm $mform): MoodleQuickForm {
 
         $mform->disable_form_change_checker();
         $mform->addElement(new \tool_mfa\local\form\verification_field());
@@ -261,14 +280,12 @@ class factor extends object_factor_base {
         global $USER;
         $factors = $this->get_active_user_factors($USER);
         $result = ['verificationcode' => get_string('error:wrongverification', 'factor_totp')];
-        $windowconfig = get_config('factor_totp', 'window');
+        $window = get_config('factor_totp', 'window');
 
         foreach ($factors as $factor) {
-            $totp = TOTP::create($factor->secret);
-            // Convert seconds to windows.
-            $window = (int) floor($windowconfig / $totp->getPeriod());
+            $totp = TOTP::create($factor->secret, clock: $this->clock);
             $factorresult = $this->validate_code($data['verificationcode'], $window, $totp, $factor);
-            $time = userdate(time(), get_string('systimeformat', 'factor_totp'));
+            $time = userdate($this->clock->time(), get_string('systimeformat', 'factor_totp'));
 
             switch ($factorresult) {
                 case self::TOTP_USED:
@@ -308,23 +325,27 @@ class factor extends object_factor_base {
             return self::TOTP_USED;
         }
 
-        // The window in which to check for clock skew, 5 increments past valid window.
-        $skewwindow = $window + 5;
-        $pasttimestamp = time() - ($skewwindow * $totp->getPeriod());
-        $futuretimestamp = time() + ($skewwindow * $totp->getPeriod());
-
-        if ($totp->verify($code, time(), $window)) {
+        // Check if the code is valid, returning early.
+        if ($totp->verify($code, $this->clock->time(), $window)) {
             return self::TOTP_VALID;
-        } else if ($totp->verify($code, $pasttimestamp, $skewwindow)) {
-            // Check for clock skew in the past 10 periods.
-            return self::TOTP_OLD;
-        } else if ($totp->verify($code, $futuretimestamp, $skewwindow)) {
-            // Check for clock skew in the future 10 periods.
-            return self::TOTP_FUTURE;
-        } else {
-            // In all other cases, code is invalid.
-            return self::TOTP_INVALID;
         }
+
+        // Check for clock skew in the past and future 10 periods.
+        for ($i = 1; $i <= 10; $i++) {
+            $pasttimestamp = $this->clock->time() - $i * $totp->getPeriod();
+            $futuretimestamp = $this->clock->time() + $i * $totp->getPeriod();
+
+            if ($totp->verify($code, $pasttimestamp, $window)) {
+                return self::TOTP_OLD;
+            }
+
+            if ($totp->verify($code, $futuretimestamp, $window)) {
+                return self::TOTP_FUTURE;
+            }
+        }
+
+        // In all other cases, the code is invalid.
+        return self::TOTP_INVALID;
     }
 
     /**
@@ -333,7 +354,7 @@ class factor extends object_factor_base {
      * @return string
      */
     public function generate_secret_code(): string {
-        $totp = TOTP::create();
+        $totp = TOTP::create(clock: $this->clock);
         return substr($totp->getSecret(), 0, 16);
     }
 
@@ -352,9 +373,9 @@ class factor extends object_factor_base {
             $row->factor = $this->name;
             $row->secret = $data->secret;
             $row->label = $data->devicename;
-            $row->timecreated = time();
+            $row->timecreated = $this->clock->time();
             $row->createdfromip = $USER->lastip;
-            $row->timemodified = time();
+            $row->timemodified = $this->clock->time();
             $row->lastverified = 0;
             $row->revoked = 0;
 
@@ -366,7 +387,7 @@ class factor extends object_factor_base {
             ], '*', IGNORE_MULTIPLE);
             if ($record) {
                 \core\notification::warning(get_string('error:alreadyregistered', 'factor_totp'));
-                return $record;
+                return null;
             }
 
             $id = $DB->insert_record('tool_mfa', $row);
@@ -377,6 +398,35 @@ class factor extends object_factor_base {
         }
 
         return null;
+    }
+
+    /**
+     * TOTP Factor implementation with replacement of existing factor.
+     *
+     * @param stdClass $data The new factor data.
+     * @param int $id The id of the factor to replace.
+     * @return stdClass|null the factor record, or null.
+     */
+    public function replace_user_factor(stdClass $data, int $id): stdClass|null {
+        global $DB, $USER;
+
+        $oldrecord = $DB->get_record('tool_mfa', ['id' => $id]);
+        $newrecord = null;
+
+        // Ensure we have a valid existing record before setting the new one.
+        if ($oldrecord) {
+            $newrecord = $this->setup_user_factor($data);
+        }
+        // Ensure the new record was created before revoking the old.
+        if ($newrecord) {
+            $this->revoke_user_factor($id);
+        } else {
+            \core\notification::warning(get_string('error:couldnotreplace', 'tool_mfa'));
+            return null;
+        }
+        $this->create_event_after_factor_setup($USER);
+
+        return $newrecord ?? null;
     }
 
     /**
@@ -396,6 +446,13 @@ class factor extends object_factor_base {
      * {@inheritDoc}
      */
     public function has_revoke(): bool {
+        return true;
+    }
+
+    /**
+     * TOTP Factor implementation.
+     */
+    public function has_replace(): bool {
         return true;
     }
 
@@ -447,6 +504,15 @@ class factor extends object_factor_base {
      * {@inheritDoc}
      */
     public function get_setup_string(): string {
-        return get_string('factorsetup', 'factor_totp');
+        return get_string('setupfactorbutton', 'factor_totp');
+    }
+
+    /**
+     * Gets the string for manage button on preferences page.
+     *
+     * @return string
+     */
+    public function get_manage_string(): string {
+        return get_string('managefactorbutton', 'factor_totp');
     }
 }

@@ -24,6 +24,8 @@
 
 namespace customfield_textarea;
 
+use backup_nested_element;
+
 defined('MOODLE_INTERNAL') || die;
 
 /**
@@ -39,7 +41,7 @@ class data_controller extends \core_customfield\data_controller {
      * Return the name of the field where the information is stored
      * @return string
      */
-    public function datafield() : string {
+    public function datafield(): string {
         return 'value';
     }
 
@@ -59,7 +61,7 @@ class data_controller extends \core_customfield\data_controller {
      *
      * @return string
      */
-    public function get_form_element_name() : string {
+    public function get_form_element_name(): string {
         return parent::get_form_element_name() . '_editor';
     }
 
@@ -151,7 +153,7 @@ class data_controller extends \core_customfield\data_controller {
     /**
      * Checks if the value is empty, overriding the base method to ensure it's the "text" element of our value being compared
      *
-     * @param mixed $value
+     * @param string|string[] $value
      * @return bool
      */
     protected function is_empty($value): bool {
@@ -192,6 +194,35 @@ class data_controller extends \core_customfield\data_controller {
     }
 
     /**
+     * Implement the backup callback for the custom field element.
+     * This includes any embedded files in the custom field element.
+     *
+     * @param \backup_nested_element $customfieldelement The custom field element to be backed up.
+     */
+    public function backup_define_structure(backup_nested_element $customfieldelement): void {
+        $annotations = $customfieldelement->get_file_annotations();
+
+        if (!isset($annotations['customfield_textarea']['value'])) {
+            $customfieldelement->annotate_files('customfield_textarea', 'value', 'id');
+        }
+    }
+
+    /**
+     * Implement the restore callback for the custom field element.
+     * This includes restoring any embedded files in the custom field element.
+     *
+     * @param \restore_structure_step $step The restore step instance.
+     * @param int $newid The new ID for the custom field data after restore.
+     * @param int $oldid The original ID of the custom field data before backup.
+     */
+    public function restore_define_structure(\restore_structure_step $step, int $newid, int $oldid): void {
+        if (!$step->get_mappingid('customfield_data', $oldid)) {
+            $step->set_mapping('customfield_data', $oldid, $newid, true);
+            $step->add_related_files('customfield_textarea', 'value', 'customfield_data');
+        }
+    }
+
+    /**
      * Returns value in a human-readable format
      *
      * @return mixed|null value or null if empty
@@ -201,6 +232,9 @@ class data_controller extends \core_customfield\data_controller {
         require_once($CFG->libdir . '/filelib.php');
 
         $value = $this->get_value();
+        if ($this->is_empty($value)) {
+            return null;
+        }
 
         if ($dataid = $this->get('id')) {
             $context = $this->get_context();

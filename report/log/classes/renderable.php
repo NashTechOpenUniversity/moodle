@@ -93,7 +93,11 @@ class report_log_renderable implements renderable {
     /** @var table_log table log which will be used for rendering logs */
     public $tablelog;
 
-    /** @var array group ids */
+    /**
+     * @var array group ids
+     * @deprecated since Moodle 4.4 - please do not use this public property
+     * @todo MDL-81155 remove this property as it is not used anymore.
+     */
     public $grouplist;
 
     /**
@@ -192,47 +196,98 @@ class report_log_renderable implements renderable {
      * @return array list of activities.
      */
     public function get_activities_list() {
-        $activities = array();
+        $activities = [];
+        $disabled = [];
 
         // For site just return site errors option.
         $sitecontext = context_system::instance();
         if ($this->course->id == SITEID && has_capability('report/log:view', $sitecontext)) {
             $activities["site_errors"] = get_string("siteerrors");
-            return $activities;
+            return [$activities, $disabled];
         }
 
         $modinfo = get_fast_modinfo($this->course);
+        $delegatedsections = $modinfo->get_sections_delegated_by_cm();
+
         if (!empty($modinfo->cms)) {
             $section = 0;
             $thissection = array();
             foreach ($modinfo->cms as $cm) {
-                // Exclude activities that aren't visible or have no view link (e.g. label). Account for folders displayed inline.
-                if (!$cm->uservisible || (!$cm->has_view() && strcmp($cm->modname, 'folder') !== 0)) {
+                if (!$modname = $this->get_activity_name($cm)) {
                     continue;
                 }
+
                 if ($cm->sectionnum > 0 and $section <> $cm->sectionnum) {
+                    $sectioninfo = $modinfo->get_section_info($cm->sectionnum);
+
+                    // Don't show subsections here. We are showing them in the corresponding module.
+                    if ($sectioninfo->is_delegated()) {
+                        continue;
+                    }
+
                     $activities[] = $thissection;
                     $thissection = array();
                 }
                 $section = $cm->sectionnum;
-                $modname = strip_tags($cm->get_formatted_name());
-                if (core_text::strlen($modname) > 55) {
-                    $modname = core_text::substr($modname, 0, 50)."...";
-                }
-                if (!$cm->visible) {
-                    $modname = "(".$modname.")";
-                }
                 $key = get_section_name($this->course, $cm->sectionnum);
                 if (!isset($thissection[$key])) {
-                    $thissection[$key] = array();
+                    $thissection[$key] = [];
                 }
                 $thissection[$key][$cm->id] = $modname;
+                // Check if the module is delegating a section.
+                if (array_key_exists($cm->id, $delegatedsections)) {
+                    $delegated = $delegatedsections[$cm->id];
+                    $modules = (empty($delegated->sequence)) ? [] : explode(',', $delegated->sequence);
+                    $thissection[$key] = $thissection[$key] + $this->get_delegated_section_activities($modinfo, $modules);
+                    $disabled[] = $cm->id;
+                }
             }
             if (!empty($thissection)) {
                 $activities[] = $thissection;
             }
         }
+        return [$activities, $disabled];
+    }
+
+    /**
+     * Helper function to return list of activities in a delegated section.
+     *
+     * @param course_modinfo $modinfo
+     * @param array $cms List of cm ids in the section.
+     * @return array list of activities.
+     */
+    protected function get_delegated_section_activities(course_modinfo $modinfo, array $cmids): array {
+        $activities = [];
+        $indenter = '&nbsp;&nbsp;&nbsp;&nbsp;';
+        foreach ($cmids as $cmid) {
+            $cm = $modinfo->cms[$cmid];
+            if ($modname = $this->get_activity_name($cm)) {
+                $activities[$cmid] = $indenter.$modname;
+            }
+        }
         return $activities;
+    }
+
+    /**
+     * Helper function to return the name to show in the dropdown.
+     *
+     * @param cm_info $cm
+     * @return string The name.
+     */
+    private function get_activity_name(cm_info $cm): string {
+        // Exclude activities that aren't visible or have no view link (e.g. label). Account for folders displayed inline.
+        if (!$cm->uservisible || (!$cm->has_view() && strcmp($cm->modname, 'folder') !== 0)) {
+            return '';
+        }
+        $modname = strip_tags($cm->get_formatted_name());
+        if (core_text::strlen($modname) > 55) {
+            $modname = core_text::substr($modname, 0, 50)."...";
+        }
+        if (!$cm->visible) {
+            $modname = "(".$modname.")";
+        }
+
+        return $modname;
     }
 
     /**
@@ -254,26 +309,14 @@ class report_log_renderable implements renderable {
         // Setup for group handling.
         $groupmode = groups_get_course_groupmode($this->course);
         if ($groupmode == SEPARATEGROUPS and !has_capability('moodle/site:accessallgroups', $context)) {
-            $selectedgroup = -1;
-        } else if ($groupmode) {
-            $selectedgroup = $this->groupid;
-        } else {
-            $selectedgroup = 0;
-        }
-
-        if ($selectedgroup === -1) {
             if (isset($SESSION->currentgroup[$this->course->id])) {
                 $selectedgroup = $SESSION->currentgroup[$this->course->id];
-            } else {
-                $selectedgroup = groups_get_all_groups($this->course->id, $USER->id);
-                if (is_array($selectedgroup)) {
-                    $groupids = array_keys($selectedgroup);
-                    $selectedgroup = array_shift($groupids);
-                    $SESSION->currentgroup[$this->course->id] = $selectedgroup;
-                } else {
-                    $selectedgroup = 0;
-                }
+            } else if ($this->groupid > 0) {
+                $SESSION->currentgroup[$this->course->id] = $this->groupid;
+                $selectedgroup = $this->groupid;
             }
+        } else if ($groupmode) {
+            $selectedgroup = $this->groupid;
         }
         return $selectedgroup;
     }
@@ -357,29 +400,24 @@ class report_log_renderable implements renderable {
     public function get_group_list() {
         global $USER;
 
-        if ($this->grouplist !== null) {
-            return $this->grouplist;
-        }
         // No groups for system.
         if (empty($this->course)) {
-            $this->grouplist = [];
-            return $this->grouplist;
+            return [];
         }
 
         $context = context_course::instance($this->course->id);
-        $this->grouplist = [];
         $groupmode = groups_get_course_groupmode($this->course);
-        $cgroups = [];
-        if (($groupmode == VISIBLEGROUPS) ||
-            ($groupmode == SEPARATEGROUPS && has_capability('moodle/site:accessallgroups', $context))) {
-            $cgroups = groups_get_all_groups($this->course->id);
-        } else if ($groupmode == SEPARATEGROUPS && !has_capability('moodle/site:accessallgroups', $context)) {
-            $cgroups = groups_get_all_groups($this->course->id, $USER->id);
+        $grouplist = [];
+        $userid = $groupmode == SEPARATEGROUPS ? $USER->id : 0;
+        if (has_capability('moodle/site:accessallgroups', $context)) {
+            $userid = 0;
         }
-        foreach ($cgroups as $cgroup) {
-            $this->grouplist[$cgroup->id] = $cgroup->name;
+        $cgroups = groups_get_all_groups($this->course->id, $userid);
+        if (!empty($cgroups)) {
+            $grouplist = array_column($cgroups, 'name', 'id');
         }
-        return $this->grouplist;
+        $this->grouplist = $grouplist; // Keep compatibility with MDL-41465.
+        return $grouplist;
     }
 
     /**
@@ -396,31 +434,33 @@ class report_log_renderable implements renderable {
         }
         $context = context_course::instance($courseid);
         $limitfrom = empty($this->showusers) ? 0 : '';
-        $limitnum  = empty($this->showusers) ? COURSE_MAX_USERS_PER_DROPDOWN + 1 : '';
+        $limitnum = empty($this->showusers) ? COURSE_MAX_USERS_PER_DROPDOWN + 1 : '';
         $userfieldsapi = \core_user\fields::for_name();
 
-        // Get the groups of that course.
+        // Get the groups of that course that the user can see.
         $groups = $this->get_group_list();
-        // Check here if we are not in group mode, or in group mode but narrow the group selection
-        // to the group of the user.
-        if (empty($groups) || !empty($this->groupid) && isset($groups[(int)$this->groupid])) {
-            // No groups are used in that course, therefore get all users (maybe limited to one group).
-            $courseusers = get_enrolled_users($context, '', $this->groupid, 'u.id, ' .
-                $userfieldsapi->get_sql('u', false, '', '', false)->selects,
-                null, $limitfrom, $limitnum);
-        } else {
-            // The course uses groups, get the users from these groups.
-            $groupids = array_keys($groups);
-            try {
-                $enrolments = enrol_get_course_users($courseid, false, [], [], $groupids);
-                $courseusers = [];
-                foreach ($enrolments as $enrolment) {
-                    $courseusers[$enrolment->id] = $enrolment;
-                }
-            } catch (Exception $e) {
-                $courseusers = [];
+        $groupids = array_keys($groups);
+        // Now doublecheck the value of groupids and deal with special case like USERWITHOUTGROUP.
+        $groupmode = groups_get_course_groupmode($this->course);
+        if (
+            has_capability('moodle/site:accessallgroups', $context)
+            || $groupmode != SEPARATEGROUPS
+            || empty($groupids)
+        ) {
+            $groupids[] = USERSWITHOUTGROUP;
+        }
+        // First case, the user has selected a group and user is in this group.
+        if ($this->groupid > 0) {
+            if (!isset($groups[$this->groupid])) {
+                // The user is not in this group, so we will ignore the group selection.
+                $groupids = 0;
+            } else {
+                $groupids = [$this->groupid];
             }
         }
+        $courseusers = get_enrolled_users($context, '', $groupids, 'u.id, ' .
+            $userfieldsapi->get_sql('u', false, '', '', false)->selects,
+            null, $limitfrom, $limitnum);
 
         if (count($courseusers) < COURSE_MAX_USERS_PER_DROPDOWN && !$this->showusers) {
             $this->showusers = 1;

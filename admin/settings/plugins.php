@@ -102,6 +102,8 @@ if ($hassiteconfig) {
         new lang_string('limitconcurrentlogins_desc', 'core_auth'), 0, $options));
     $temp->add(new admin_setting_configtext('alternateloginurl', new lang_string('alternateloginurl', 'auth'),
                                             new lang_string('alternatelogin', 'auth', htmlspecialchars(get_login_url(), ENT_COMPAT)), ''));
+    $temp->add(new admin_setting_configcheckbox('showloginform', new lang_string('showloginform', 'core_auth'),
+                                                new lang_string('showloginform_desc', 'core_auth'), 1));
     $temp->add(new admin_setting_configtext('forgottenpasswordurl', new lang_string('forgottenpasswordurl', 'auth'),
                                             new lang_string('forgottenpassword', 'auth'), '', PARAM_URL));
     $temp->add(new admin_setting_confightmleditor('auth_instructions', new lang_string('instructions', 'auth'),
@@ -134,6 +136,18 @@ if ($hassiteconfig) {
     $setting->set_force_ltr(true);
     $temp->add($setting);
     $ADMIN->add('authsettings', $temp);
+
+    // Toggle password visiblity icon.
+    $temp->add(new admin_setting_configselect('loginpasswordtoggle',
+        new lang_string('auth_loginpasswordtoggle', 'auth'),
+        new lang_string('auth_loginpasswordtoggle_desc', 'auth'),
+        TOGGLE_SENSITIVE_SMALL_SCREENS_ONLY,
+        [
+            TOGGLE_SENSITIVE_DISABLED => get_string('disabled', 'admin'),
+            TOGGLE_SENSITIVE_ENABLED => get_string('enabled', 'admin'),
+            TOGGLE_SENSITIVE_SMALL_SCREENS_ONLY => get_string('smallscreensonly', 'admin'),
+        ],
+    ));
 
     $temp = new admin_externalpage('authtestsettings', get_string('testsettings', 'core_auth'), new moodle_url("/auth/test_settings.php"), 'moodle/site:config', true);
     $ADMIN->add('authsettings', $temp);
@@ -273,7 +287,7 @@ if ($hassiteconfig) {
         $items[] = new admin_setting_configcheckbox('filtermatchonepertext', new lang_string('filtermatchonepertext', 'admin'), new lang_string('configfiltermatchonepertext', 'admin'), 0);
         $items[] = new admin_setting_configcheckbox('filternavigationwithsystemcontext',
                 new lang_string('filternavigationwithsystemcontext', 'admin'),
-                new lang_string('configfilternavigationwithsystemcontext', 'admin'), 0);
+                new lang_string('configfilternavigationwithsystemcontext', 'admin'), 1);
         foreach ($items as $item) {
             $item->set_updatedcallback('reset_text_filters_cache');
             $temp->add($item);
@@ -529,6 +543,18 @@ if ($hassiteconfig || has_capability('moodle/question:config', $systemcontext)) 
 
     $settings->add(new admin_setting_configselect('question_preview/history',
             get_string('responsehistory', 'question'), '', 0, $hiddenofvisible));
+
+    // Question editing settings.
+    $settings = new admin_settingpage('qediting',
+            get_string('questionediting', 'question'),
+            'moodle/question:config');
+    $ADMIN->add('qtypesettings', $settings);
+
+    $settings->add(new admin_setting_heading('qediting_options',
+            '', get_string('questionediting_desc', 'question')));
+
+    $settings->add(new admin_setting_configcheckbox('questiondefaultssave',
+            get_string('questiondefaultssave', 'question'), get_string('questiondefaultssave_desc', 'question'), 1));
 
     // Settings for particular question types.
     $plugins = core_plugin_manager::instance()->get_plugins_of_type('qtype');
@@ -816,6 +842,12 @@ if ($hassiteconfig) {
     $temp = new admin_settingpage('managecontentbanktypes', new lang_string('managecontentbanktypes'));
     $temp->add(new admin_setting_managecontentbankcontenttypes());
     $ADMIN->add('contentbanksettings', $temp);
+    $ADMIN->add('contentbanksettings',
+        new admin_externalpage('contentbank', new lang_string('contentbankcustomfields', 'contentbank'),
+            $CFG->wwwroot . '/contentbank/customfield.php',
+            'moodle/contentbank:configurecustomfields'
+        )
+    );
     $plugins = core_plugin_manager::instance()->get_plugins_of_type('contenttype');
     foreach ($plugins as $plugin) {
         /** @var \core\plugininfo\contentbank $plugin */

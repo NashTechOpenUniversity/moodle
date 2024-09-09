@@ -1,8 +1,17 @@
+=== 4.5 Onwards ===
+
+This file has been replaced by UPGRADING.md. See MDL-81125 for further information.
+
+===
 This files describes API changes for course formats
 
 Overview of this plugin type at https://moodledev.io/docs/apis/plugintypes/format
 
 === 4.4 ===
+* The core_courseformat\output\local\content\section::export_for_template() is not returning hiddenfromstudents and notavailable
+  directly in the data array anymore. Instead, it returns the visibility data in the 'visibility' key. It means that templates
+  derived from core should be adjusted to use $data->visibility->hiddenfromstudents and $data->visibility->notavailable instead
+  of $data->hiddenfromstudents and $data->notavailable.
 * The state mutations sectionMove is deprecated. From now on sectionMoveAfter is the only
   valid section move mutation.
 * The state action core_courseformat\stateactions::section_move is deprecated and
@@ -52,6 +61,11 @@ and replaced by core_courseformat\base::set_sectionnum() and core_courseformat\b
 value when all the sections must be displayed (instead of 0). That way, section 0 (General), can be displayed on a single page too.
 * The course format setting has been updated to use a choice dropdown form element instead of a select element. Third-party
 plugins can now include the string 'plugin_description' to provide a description of the course format.
+* A new item, initsections, has been added to the testing_data_generator::create_course() function, to let the generator rename
+the sections to "Section X".
+* The core_courseformat\base::get_format_string last parameter has been removed because it was erroneous.
+* New core_courseformat\base::add_section_preference_ids() to add the section ids to course format preferences.
+* New core_courseformat\base::remove_section_preference_ids() to remove the section ids out of course format preferences.
 
 === 4.3 ===
 * New core_courseformat\output\activitybadge class that can be extended by any module to display content near the activity name.

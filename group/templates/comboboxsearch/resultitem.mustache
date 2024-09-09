@@ -19,23 +19,21 @@
     Context variables required for this template:
     * id - Group system ID.
     * name - Groups' name.
-    * link - The link used to redirect upon self to show only this specific group.
     * groupimageurl - The link of the groups picture.
 
     Example context (json):
     {
         "id": 2,
         "name": "Foo bar",
-        "link": "http://foo.bar/grade/report/grader/index.php?id=42&userid=2",
         "groupimageurl": "http://foo.bar/grade/report/grader/index.php?id=42&userid=2"
     }
 }}
 {{<core/local/comboboxsearch/resultitem }}
     {{$content}}
-        <div class="pr-2 pl-1 w-25">
+        <div class="pe-2 ps-1 w-25">
             <img class="rounded-circle mx-auto img-fluid" src="{{groupimageurl}}" alt=""/>
         </div>
-        <div class="pr-3 w-75">
+        <div class="pe-3 w-75">
             <span class="d-block w-100 p-0 text-truncate">
                 {{name}}
             </span>

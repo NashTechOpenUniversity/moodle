@@ -839,7 +839,7 @@ class auth_plugin_ldap extends auth_plugin_base {
                     $updateuser->suspended = 1;
                     user_update_user($updateuser, false);
                     echo "\t"; print_string('auth_dbsuspenduser', 'auth_db', array('name'=>$user->username, 'id'=>$user->id)); echo "\n";
-                    \core\session\manager::kill_user_sessions($user->id);
+                    \core\session\manager::destroy_user_sessions($user->id);
                 }
             } else {
                 print_string('nouserentriestoremove', 'auth_ldap');
@@ -1467,7 +1467,7 @@ class auth_plugin_ldap extends auth_plugin_base {
      * @param string $user_dn User distinguished name for the user we are checking password expiration (only needed for Active Directory).
      * @return timestamp
      */
-    function ldap_expirationtime2unix ($time, $ldapconnection, $user_dn) {
+    function ldap_expirationtime2unix($time, $ldapconnection, $user_dn) {
         $result = false;
         switch ($this->config->user_type) {
             case 'edir':
@@ -1520,7 +1520,7 @@ class auth_plugin_ldap extends auth_plugin_base {
      * @return array
      */
 
-    function ldap_attributes () {
+    function ldap_attributes() {
         $moodleattributes = array();
         // If we have custom fields then merge them with user fields.
         $customfields = $this->get_custom_user_profile_fields();

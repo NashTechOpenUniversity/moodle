@@ -405,7 +405,7 @@ function file_get_unused_draft_itemid() {
  * @param string $text some html content that needs to have embedded links rewritten to point to the draft area.
  * @return string|null returns string if $text was passed in, the rewritten $text is returned. Otherwise NULL.
  */
-function file_prepare_draft_area(&$draftitemid, $contextid, $component, $filearea, $itemid, array $options=null, $text=null) {
+function file_prepare_draft_area(&$draftitemid, $contextid, $component, $filearea, $itemid, ?array $options=null, $text=null) {
     global $CFG, $USER;
 
     $options = (array)$options;
@@ -482,14 +482,14 @@ function file_prepare_draft_area(&$draftitemid, $contextid, $component, $fileare
  * @param   int     $contextid This parameter and the next two identify the file area to use.
  * @param   string  $component
  * @param   string  $filearea helps identify the file area.
- * @param   int     $itemid helps identify the file area.
+ * @param   ?int    $itemid helps identify the file area.
  * @param   array   $options
  *          bool    $options.forcehttps Force the user of https
  *          bool    $options.reverse Reverse the behaviour of the function
  *          mixed   $options.includetoken Use a token for authentication. True for current user, int value for other user id.
  *          string  The processed text.
  */
-function file_rewrite_pluginfile_urls($text, $file, $contextid, $component, $filearea, $itemid, array $options=null) {
+function file_rewrite_pluginfile_urls($text, $file, $contextid, $component, $filearea, $itemid, ?array $options=null) {
     global $CFG, $USER;
 
     $options = (array)$options;
@@ -848,7 +848,7 @@ function file_get_drafarea_files($draftitemid, $filepath = '/') {
  * @param  string $filepath path for the uploaded files.
  * @return array An array of files associated with this draft item id.
  */
-function file_get_all_files_in_draftarea(int $draftitemid, string $filepath = '/') : array {
+function file_get_all_files_in_draftarea(int $draftitemid, string $filepath = '/'): array {
     $files = [];
     $draftfiles = file_get_drafarea_files($draftitemid, $filepath);
     file_get_drafarea_folders($draftitemid, $filepath, $draftfiles);
@@ -926,7 +926,7 @@ function file_restore_source_field_from_draft_file($storedfile) {
 /**
  * Removes those files from the user drafts filearea which are not referenced in the editor text.
  *
- * @param stdClass $editor The online text editor element from the submitted form data.
+ * @param array $editor The online text editor element from the submitted form data.
  */
 function file_remove_editor_orphaned_files($editor) {
     global $CFG, $USER;
@@ -1104,7 +1104,7 @@ function file_copy_file_to_file_area($file, $filename, $itemid) {
  * @param bool $forcehttps force https urls.
  * @return string|null if $text was passed in, the rewritten $text is returned. Otherwise NULL.
  */
-function file_save_draft_area_files($draftitemid, $contextid, $component, $filearea, $itemid, array $options=null, $text=null, $forcehttps=false) {
+function file_save_draft_area_files($draftitemid, $contextid, $component, $filearea, $itemid, ?array $options=null, $text=null, $forcehttps=false) {
     global $USER;
 
     // Do not merge files, leave it as it was.
@@ -1475,7 +1475,7 @@ function format_array_postdata_for_curlcall($arraydata, $currentdata, &$data) {
  * Transform a PHP array into POST parameter
  * (see the recursive function format_array_postdata_for_curlcall)
  * @param array $postdata
- * @return array containing all POST parameters  (1 row = 1 POST parameter)
+ * @return string containing all POST parameters  (1 row = 1 POST parameter)
  */
 function format_postdata_for_curlcall($postdata) {
         $data = array();
@@ -1860,7 +1860,7 @@ function mimeinfo_from_type($element, $mimetype) {
  *
  * @param stored_file|file_info|stdClass|array $file (in case of object attributes $file->filename
  *     and $file->mimetype are expected)
- * @param null $unused This parameter has been deprecated since 4.3 and should not be used anymore.
+ * @param mixed $unused This parameter has been deprecated since 4.3 and should not be used anymore.
  * @return string
  */
 function file_file_icon($file, $unused = null) {
@@ -1911,7 +1911,7 @@ function file_file_icon($file, $unused = null) {
  * echo $OUTPUT->pix_icon(file_folder_icon(), '');
  * </code>
  *
- * @param null $unused This parameter has been deprecated since 4.3 and should not be used anymore.
+ * @param mixed $unused This parameter has been deprecated since 4.3 and should not be used anymore.
  * @return string
  */
 function file_folder_icon($unused = null) {
@@ -1940,7 +1940,7 @@ function file_folder_icon($unused = null) {
  * @todo MDL-31074 When an $OUTPUT->icon method is available this function should be altered
  * to conform with that.
  * @param string $mimetype The mimetype to fetch an icon for
- * @param null $unused This parameter has been deprecated since 4.3 and should not be used anymore.
+ * @param mixed $unused This parameter has been deprecated since 4.3 and should not be used anymore.
  * @return string The relative path to the icon
  */
 function file_mimetype_icon($mimetype, $unused = null) {
@@ -1964,7 +1964,7 @@ function file_mimetype_icon($mimetype, $unused = null) {
  * @todo MDL-31074 Implement $size
  * @category files
  * @param string $filename The filename to get the icon for
- * @param null $unused This parameter has been deprecated since 4.3 and should not be used anymore.
+ * @param mixed $unused This parameter has been deprecated since 4.3 and should not be used anymore.
  * @return string
  */
 function file_extension_icon($filename, $unused = null) {
@@ -2971,7 +2971,7 @@ function file_overwrite_existing_draftfile(stored_file $newfile, stored_file $ex
  * @since Moodle 3.2
  */
 function file_merge_files_from_draft_area_into_filearea($draftitemid, $contextid, $component, $filearea, $itemid,
-                                                        array $options = null) {
+                                                        ?array $options = null) {
     // We use 0 here so file_prepare_draft_area creates a new one, finaldraftid will be updated with the new draft id.
     $finaldraftid = 0;
     file_prepare_draft_area($finaldraftid, $contextid, $component, $filearea, $itemid, $options);
@@ -3114,23 +3114,23 @@ function get_moodle_proxy_url() {
  */
 class curl {
     /** @var curl_cache|false Caches http request contents */
-    public  $cache    = false;
+    public $cache    = false;
     /** @var bool Uses proxy, null means automatic based on URL */
-    public  $proxy    = null;
+    public $proxy    = null;
     /** @var string library version */
-    public  $version  = '0.4 dev';
+    public $version  = '0.4 dev';
     /** @var array http's response */
-    public  $response = array();
+    public $response = array();
     /** @var array Raw response headers, needed for BC in download_file_content(). */
     public $rawresponse = array();
     /** @var array http header */
-    public  $header   = array();
+    public $header   = array();
     /** @var array cURL information */
-    public  $info;
+    public $info;
     /** @var string error */
-    public  $error;
+    public $error;
     /** @var int error code */
-    public  $errno;
+    public $errno;
     /** @var bool Perform redirects at PHP level instead of relying on native cURL functionality. Always true now. */
     public $emulateredirects = null;
 
@@ -3149,7 +3149,7 @@ class curl {
     private $cookie   = false;
     /** @var bool tracks multiple headers in response - redirect detection */
     private $responsefinished = false;
-    /** @var security helper class, responsible for checking host/ports against allowed/blocked entries.*/
+    /** @var ?\core\files\curl_security_helper security helper class, responsible for checking host/ports against allowed/blocked entries.*/
     private $securityhelper;
     /** @var bool ignoresecurity a flag which can be supplied to the constructor, allowing security to be bypassed. */
     private $ignoresecurity;
@@ -3177,7 +3177,7 @@ class curl {
         if (!function_exists('curl_init')) {
             $this->error = 'cURL module must be enabled!';
             trigger_error($this->error, E_USER_ERROR);
-            return false;
+            return;
         }
 
         // All settings of this class should be init here.
@@ -3379,7 +3379,7 @@ class curl {
     /**
      * Set HTTP Request Header
      *
-     * @param array $header
+     * @param array|string $header
      */
     public function setHeader($header) {
         if (is_array($header)) {
@@ -3513,7 +3513,6 @@ class curl {
         if (empty($this->header)) {
             $this->setHeader(array(
                 'User-Agent: ' . $useragent,
-                'Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7',
                 'Connection: keep-alive'
                 ));
         } else if (!in_array('User-Agent: ' . $useragent, $this->header)) {
@@ -3719,7 +3718,7 @@ class curl {
      * This augments all installed plugin's security helpers if there is any.
      *
      * @param string $url the url to check.
-     * @return string - an error message if URL is blocked or null if URL is not blocked.
+     * @return ?string - an error message if URL is blocked or null if URL is not blocked.
      */
     protected function check_securityhelper_blocklist(string $url): ?string {
 
@@ -3761,7 +3760,7 @@ class curl {
      *
      * @param string $url The URL to request
      * @param array $options
-     * @return bool
+     * @return string
      */
     protected function request($url, $options = array()) {
         // Reset here so that the data is valid when result returned from cache, or if we return due to a blocked URL hit.
@@ -3840,6 +3839,7 @@ class curl {
 
                 $redirects++;
 
+                $currenturl = $redirecturl ?? $url;
                 $redirecturl = null;
                 if (isset($this->info['redirect_url'])) {
                     if (preg_match('|^https?://|i', $this->info['redirect_url'])) {
@@ -3898,6 +3898,25 @@ class curl {
                 }
 
                 curl_setopt($curl, CURLOPT_URL, $redirecturl);
+
+                // If CURLOPT_UNRESTRICTED_AUTH is empty/false, don't send credentials to other hosts.
+                // Ref: https://curl.se/libcurl/c/CURLOPT_UNRESTRICTED_AUTH.html.
+                $isdifferenthost = parse_url($currenturl)['host'] !== parse_url($redirecturl)['host'];
+                $sendauthentication = !empty($this->options['CURLOPT_UNRESTRICTED_AUTH']);
+                if ($isdifferenthost && !$sendauthentication) {
+                    curl_setopt($curl, CURLOPT_HTTPAUTH, null);
+                    curl_setopt($curl, CURLOPT_USERPWD, null);
+                    // Check whether the CURLOPT_HTTPHEADER is specified.
+                    if (!empty($this->options['CURLOPT_HTTPHEADER'])) {
+                        // Remove the "Authorization:" header, if any.
+                        $headerredirect = array_filter(
+                            $this->options['CURLOPT_HTTPHEADER'],
+                            fn($header) => strpos($header, 'Authorization:') === false
+                        );
+                        curl_setopt($curl, CURLOPT_HTTPHEADER, $headerredirect);
+                    }
+                }
+
                 $ret = curl_exec($curl);
 
                 $this->info  = curl_getinfo($curl);
@@ -3962,14 +3981,14 @@ class curl {
         $event->trigger();
     }
 
-     /**
+    /**
      * HTTP HEAD method
      *
      * @see request()
      *
      * @param string $url
      * @param array $options
-     * @return bool
+     * @return string
      */
     public function head($url, $options = array()) {
         $options['CURLOPT_HTTPGET'] = 0;
@@ -3984,7 +4003,7 @@ class curl {
      * @param string $url
      * @param array|string $params
      * @param array $options
-     * @return bool
+     * @return string
      */
     public function patch($url, $params = '', $options = array()) {
         $options['CURLOPT_CUSTOMREQUEST'] = 'PATCH';
@@ -4012,7 +4031,7 @@ class curl {
      * @param string $url
      * @param array|string $params
      * @param array $options
-     * @return bool
+     * @return string
      */
     public function post($url, $params = '', $options = array()) {
         $options['CURLOPT_POST']       = 1;
@@ -4038,9 +4057,9 @@ class curl {
      * HTTP GET method
      *
      * @param string $url
-     * @param array $params
+     * @param ?array $params
      * @param array $options
-     * @return bool
+     * @return string
      */
     public function get($url, $params = array(), $options = array()) {
         $options['CURLOPT_HTTPGET'] = 1;
@@ -4113,7 +4132,7 @@ class curl {
      * @param string $url
      * @param array $params
      * @param array $options
-     * @return bool
+     * @return ?string
      */
     public function put($url, $params = array(), $options = array()) {
         $file = '';
@@ -4150,7 +4169,7 @@ class curl {
      * @param string $url
      * @param array $param
      * @param array $options
-     * @return bool
+     * @return string
      */
     public function delete($url, $param = array(), $options = array()) {
         $options['CURLOPT_CUSTOMREQUEST'] = 'DELETE';
@@ -4166,7 +4185,7 @@ class curl {
      *
      * @param string $url
      * @param array $options
-     * @return bool
+     * @return string
      */
     public function trace($url, $options = array()) {
         $options['CURLOPT_CUSTOMREQUEST'] = 'TRACE';
@@ -4179,7 +4198,7 @@ class curl {
      *
      * @param string $url
      * @param array $options
-     * @return bool
+     * @return string
      */
     public function options($url, $options = array()) {
         $options['CURLOPT_CUSTOMREQUEST'] = 'OPTIONS';
@@ -4728,8 +4747,7 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null, $offlin
                 $filename = 'f1';
             }
 
-            if ((!empty($CFG->forcelogin) and !isloggedin()) ||
-                    (!empty($CFG->forceloginforprofileimage) && (!isloggedin() || isguestuser()))) {
+            if (!\core\output\user_picture::allow_view($context->instanceid)) {
                 // protect images if login required and not logged in;
                 // also if login is required for profile images and is not logged in or guest
                 // do not use require_login() because it is expensive and not suitable here anyway

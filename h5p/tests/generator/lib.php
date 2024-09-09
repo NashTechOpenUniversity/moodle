@@ -247,8 +247,8 @@ class core_h5p_generator extends \component_generator_base {
      * @return stdClass An object representing the added library record
      */
     public function create_library_record(string $machinename, string $title, int $majorversion = 1,
-            int $minorversion = 0, int $patchversion = 1, string $semantics = '', string $addto = null,
-            string $tutorial = null, string $example = null, bool $enabled = true, int $runnable = 1): stdClass {
+            int $minorversion = 0, int $patchversion = 1, string $semantics = '', ?string $addto = null,
+            ?string $tutorial = null, ?string $example = null, bool $enabled = true, int $runnable = 1): stdClass {
         global $DB;
 
         $content = [
@@ -283,7 +283,7 @@ class core_h5p_generator extends \component_generator_base {
      * @param array|null $filerecord The file associated to the H5P entry.
      * @return int The ID of the added record
      */
-    public function create_h5p_record(int $mainlibid, string $jsoncontent = null, string $filtered = null,
+    public function create_h5p_record(int $mainlibid, ?string $jsoncontent = null, ?string $filtered = null,
             ?array $filerecord = null): int {
         global $DB;
 
@@ -554,7 +554,6 @@ class core_h5p_generator extends \component_generator_base {
         // Call the method. We need the id of the new H5P content.
         $rc = new \ReflectionClass(player::class);
         $rcp = $rc->getProperty('h5pid');
-        $rcp->setAccessible(true);
         $h5pid = $rcp->getValue($h5pplayer);
 
         // Get the info export file.

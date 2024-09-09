@@ -20,9 +20,14 @@ Feature: Course activity controls works as expected
     Given the following "users" exist:
       | username | firstname | lastname | email                |
       | teacher1 | Teacher   | 1        | teacher1@example.com |
-    And the following "courses" exist:
-      | fullname | shortname | format         | coursedisplay   | numsections | startdate |
-      | Course 1 | C1        | <courseformat> | <coursedisplay> | 5           | 0         |
+    And the following "course" exists:
+      | fullname     | Course 1        |
+      | shortname    | C1              |
+      | format       | <courseformat>  |
+      |coursedisplay | <coursedisplay> |
+      | numsections  | 5               |
+      | startdate    | 0               |
+      | initsections | <initsections>  |
     And the following "course enrolments" exist:
       | user | course | role           |
       | teacher1 | C1 | editingteacher |
@@ -34,10 +39,6 @@ Feature: Course activity controls works as expected
     And I am on the "Course 1" course page logged in as "teacher1"
     When I click on <targetpage> "link" in the "region-main" "region"
     And I turn editing mode on
-    And I add the "Recent activity" block
-    And I open the action menu in "Recent activity" "block"
-    And I click on "Delete Recent activity block" "link"
-    And I click on "Delete" "button" in the "Delete block?" "dialogue"
     And <belowpage> "section" should not exist
     And I open "Test forum name 1" actions menu
     And I click on "Edit settings" "link" in the "Test forum name 1" activity
@@ -50,7 +51,7 @@ Feature: Course activity controls works as expected
     And I click on "Cancel" "button"
     And <belowpage> "section" should not exist
     And I open "Test forum name 1" actions menu
-    And I choose "Availability > Hide on course page" in the open action menu
+    And I choose "Hide" in the open action menu
     And <belowpage> "section" should not exist
     And I delete "Test forum name 1" activity
     And I should not see "Test forum name 1" in the "region-main" "region"
@@ -66,8 +67,7 @@ Feature: Course activity controls works as expected
     And all activities in section "1" should be hidden
     And I show section "1"
     And section "1" should be visible
-    And I open section "1" edit menu
-    And I click on "View" "link" in the <firstsection> "section"
+    And I am on the "C1 > Section 1" "course > section" page
     And <belowpage> "section" should not exist
     And the following config values are set as admin:
       | unaddableblocks | | theme_boost|
@@ -78,23 +78,28 @@ Feature: Course activity controls works as expected
     And I should not see "Test forum name 2"
 
     Examples:
-      | courseformat | coursedisplay | targetsectionnum | targetpage              | belowpage                | firstsection            |
-      | topics       | 0             | 0                | "General"               | "Topic 2"                | "Topic 1"               |
-      | topics       | 1             | 0                | "General"               | "Topic 2"                | "Topic 1"               |
-      | topics       | 0             | 1                | "Topic 1"               | "Topic 2"                | "Topic 1"               |
-      | topics       | 1             | 1                | "Topic 1"               | "Topic 2"                | "Topic 1"               |
-      | weeks        | 0             | 0                | "General"               | "8 January - 14 January" | "1 January - 7 January" |
-      | weeks        | 1             | 0                | "General"               | "8 January - 14 January" | "1 January - 7 January" |
-      | weeks        | 0             | 1                | "1 January - 7 January" | "8 January - 14 January" | "1 January - 7 January" |
-      | weeks        | 1             | 1                | "1 January - 7 January" | "8 January - 14 January" | "1 January - 7 January" |
+      | courseformat | coursedisplay | initsections | targetsectionnum | targetpage              | belowpage                |
+      | topics       | 0             | 1            | 0                | "General"               | "Section 2"              |
+      | topics       | 1             | 1            | 0                | "General"               | "Section 2"              |
+      | topics       | 0             | 1            | 1                | "Section 1"             | "Section 2"              |
+      | topics       | 1             | 1            | 1                | "Section 1"             | "Section 2"              |
+      | weeks        | 0             | 0            | 0                | "General"               | "8 January - 14 January" |
+      | weeks        | 1             | 0            | 0                | "General"               | "8 January - 14 January" |
+      | weeks        | 0             | 0            | 1                | "1 January - 7 January" | "8 January - 14 January" |
+      | weeks        | 1             | 0            | 1                | "1 January - 7 January" | "8 January - 14 January" |
 
   Scenario Outline: Check, without javascript, activities using topics and weeks formats, and paged mode and not paged mode
     Given the following "users" exist:
       | username | firstname   | lastname | email                |
       | teacher1 | Teacher     | 1        | teacher1@example.com |
-    And the following "courses" exist:
-      | fullname | shortname | format         | coursedisplay   | numsections | startdate |
-      | Course 1 | C1        | <courseformat> | <coursedisplay> | 5           | 0         |
+    And the following "course" exists:
+      | fullname     | Course 1        |
+      | shortname    | C1              |
+      | format       | <courseformat>  |
+      |coursedisplay | <coursedisplay> |
+      | numsections  | 5               |
+      | startdate    | 0               |
+      | initsections | <initsections>  |
     And the following "course enrolments" exist:
       | user | course | role |
       | teacher1 | C1 | editingteacher |
@@ -106,17 +111,13 @@ Feature: Course activity controls works as expected
     And I am on the "Course 1" course page logged in as "teacher1"
     When I click on <targetpage> "link" in the "region-main" "region"
     And I turn editing mode on
-    And I add the "Recent activity" block
-    And I open the action menu in "Recent activity" "block"
-    And I click on "Delete Recent activity block" "link"
-    And I press "Yes"
     And <belowpage> "section" should not exist
     And I click on "Edit settings" "link" in the "Test forum name 1" activity
     And I should see "Edit settings"
     And I should see "Display description on course page"
     And I press "Save and return to course"
     And <belowpage> "section" should not exist
-    And I click on "Hide on course page" "link" in the "Test forum name 1" activity
+    And I click on "Hide" "link" in the "Test forum name 1" activity
     And <belowpage> "section" should not exist
     And I delete "Test forum name 1" activity
     And <belowpage> "section" should not exist
@@ -141,15 +142,15 @@ Feature: Course activity controls works as expected
     And I should not see "Test forum name 2"
 
     Examples:
-      | courseformat | coursedisplay | targetsectionnum | targetpage              | belowpage                | firstsection            |
-      | topics       | 0             | 0                | "General"               | "Topic 2"                | "Topic 1"               |
-      | topics       | 1             | 0                | "General"               | "Topic 2"                | "Topic 1"               |
-      | topics       | 0             | 1                | "Topic 1"               | "Topic 2"                | "Topic 1"               |
-      | topics       | 1             | 1                | "Topic 1"               | "Topic 2"                | "Topic 1"               |
-      | weeks        | 0             | 0                | "General"               | "8 January - 14 January" | "1 January - 7 January" |
-      | weeks        | 1             | 0                | "General"               | "8 January - 14 January" | "1 January - 7 January" |
-      | weeks        | 0             | 1                | "1 January - 7 January" | "8 January - 14 January" | "1 January - 7 January" |
-      | weeks        | 1             | 1                | "1 January - 7 January" | "8 January - 14 January" | "1 January - 7 January" |
+      | courseformat | coursedisplay | initsections | targetsectionnum | targetpage              | belowpage                |
+      | topics       | 0             | 1            | 0                | "General"               | "Section 2"              |
+      | topics       | 1             | 1            | 0                | "General"               | "Section 2"              |
+      | topics       | 0             | 1            | 1                | "Section 1"             | "Section 2"              |
+      | topics       | 1             | 1            | 1                | "Section 1"             | "Section 2"              |
+      | weeks        | 0             | 0            | 0                | "General"               | "8 January - 14 January" |
+      | weeks        | 1             | 0            | 0                | "General"               | "8 January - 14 January" |
+      | weeks        | 0             | 0            | 1                | "1 January - 7 January" | "8 January - 14 January" |
+      | weeks        | 1             | 0            | 1                | "1 January - 7 January" | "8 January - 14 January" |
 
   @javascript
   Scenario Outline: Indentation should allow one level only

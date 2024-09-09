@@ -131,27 +131,9 @@ M.mod_assign.init_grading_options = function(Y) {
         paginationelement.on('change', function(e) {
             Y.one('form.gradingoptionsform').submit();
         });
-        var filterelement = Y.one('#id_filter');
-        if (filterelement) {
-            filterelement.on('change', function(e) {
-                Y.one('form.gradingoptionsform').submit();
-            });
-        }
         var markerfilterelement = Y.one('#id_markerfilter');
         if (markerfilterelement) {
             markerfilterelement.on('change', function(e) {
-                Y.one('form.gradingoptionsform').submit();
-            });
-        }
-        var workflowfilterelement = Y.one('#id_workflowfilter');
-        if (workflowfilterelement) {
-            workflowfilterelement.on('change', function(e) {
-                Y.one('form.gradingoptionsform').submit();
-            });
-        }
-        var quickgradingelement = Y.one('#id_quickgrading');
-        if (quickgradingelement) {
-            quickgradingelement.on('change', function(e) {
                 Y.one('form.gradingoptionsform').submit();
             });
         }

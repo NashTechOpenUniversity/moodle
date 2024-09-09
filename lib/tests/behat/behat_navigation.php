@@ -725,6 +725,9 @@ class behat_navigation extends behat_base {
             case 'Admin notifications':
                 return new moodle_url('/admin/');
 
+            case 'Content bank':
+                return new moodle_url('/contentbank/');
+
             case 'My private files':
                 return new moodle_url('/user/files.php');
 
@@ -1532,8 +1535,8 @@ class behat_navigation extends behat_base {
         string $item,
         bool $not,
         string $dropdown,
-        string $container = null,
-        string $containertype = null,
+        ?string $container = null,
+        ?string $containertype = null,
     ): void {
         $containernode = null;
         if ($container && $containertype) {

@@ -1,3 +1,9 @@
+=== 4.5 Onwards ===
+
+This file has been replaced by UPGRADING.md. See MDL-81125 for further information.
+
+===
+
 This files describes API changes in core libraries and APIs,
 information provided here is intended especially for developers.
 
@@ -15,6 +21,8 @@ information provided here is intended especially for developers.
   drag/drop, which can be used to add transition effects in calling code
 * course_modinfo now has a purge_course_modules_cache() method, which takes a list of cmids and purges
   them all in a single cache set.
+* The `core_plugin_manager::plugintype_name[_plural]` methods now require language strings for subplugin types always
+  be defined in plugins (via `subplugintype_<type>` and `subplugintype_<type>_plural` language strings)
 * Behat generators can now implement the function finish_generate_ to detect when the whole list of elements have been generated.
 * New return value 'icon' has been added to the 'external_files' webservice structure. This return value represents the
   relative path to the relevant file type icon based on the file's mime type.
@@ -33,11 +41,21 @@ information provided here is intended especially for developers.
       By default, tasks will be retried until they succeed, other tasks can override this method to change this behaviour.
     - set_attempts_available(): Used to set the number of attempts available for the task
     - get_attempts_available(): Used to get the number of attempts available for the task.
+* Support for blocking tasks has been removed. See MDL-67667 for further information.
+  Please note that this feature never worked correctly and can cause serious performance issues.
+  It is also not possible to deprecate this feature in a notifiable way.
 * There is a new DML method $DB->get_fieldset. For some reason, this did not exist even though get_fieldset_select etc. did.
 * The following callbacks have been migrated to hooks:
-  - before_standard_html_head() -> core\hook\output\standard_head_html_prepend
+  - before_standard_html_head() -> core\hook\output\before_standard_head_html_generation
+  - bulk_user_actions() -> core_user\hook\extend_bulk_user_actions
+  - before_http_headers() -> core\hook\output\before_http_headers
+  - before_standard_top_of_body_html() -> core\hook\output\before_standard_top_of_body_html_generation
+  - standard_after_main_region_html() -> core\hook\output\after_standard_main_region_html_generation
+  - before_footer() -> core\hook\output\before_footer_html_generation
+  - standard_footer_html() -> core\hook\output\before_standard_footer_html_generation
+  - add_htmlattributes() -> core\hook\output\before_html_attributes
 * Deprecated PARAM_ types with the exception of PARAM_CLEAN now emit a deprecation exception. These were all deprecated in Moodle 2.0.
-* A new \core\deprecated attribute can be used to more clearly describe deprecated methods.
+* A new \core\attribute\deprecated attribute can be used to more clearly describe deprecated methods.
 * A new \core\deprecation class can be used to inspect for deprecated attributes:
   - `\core\deprecation::is_deprecated(example::class);`
   - `\core\deprecation::emit_deprecation_if_present([self::class, 'some_method']);`
@@ -55,6 +73,90 @@ information provided here is intended especially for developers.
 * The nocache option for format_text has been removed. It was deprecated in Moodle 2.3.
 * The set_heading() method has a new parameter, $clean, to define whether the heading should be cleaned or not when no formatting
   is applied.
+* The Horde library has been removed from core. It was only used by the tool_messageinbound. Now tool_messageinbound
+  uses the new RoundCube library.
+* Visibility of internal properties of the \core\task\manager have been changed from public to protected. These should not have been accessible.
+  - $miniqueue
+  - $numtasks
+  - $mode
+* Removed \zip_writer::sanitise_filepath and \zipwriter::sanitise_filename as they are now automatically sanitised in the zipstream.
+* Plugins implementing callback `bulk_user_actions()` should be aware that bulk user actions can be executed
+  from /admin/user.php as well as from the bulk actions page. The 'returnurl' parameter will be passed in the request.
+* A new attribute helper has been created at \core\attribute_helper.
+  This helper contains methods to fetch a single \ReflectionAttribute, or an array of \ReflectionAttribute for an item,
+  or an instance, or a set of instances.
+* New generic attributes have been added for:
+ - \core\attribute\label - An untranslated text label of an object
+ - \core\attribute\tags - A set of tags for an object
+* The hook API now supports the use of \core\attribute\label and \core\attribute\tags
+  as an alternative to implementing the \core\hook\described_hook interface.
+* The hook API now supports the use of the new \core\attribute\hook\replaces_callbacks() attribute
+  as an alternative to implementing the \core\hook\deprecated_callback_replacement interface.
+* The following previously deprecated methods have been removed and can no longer be used:
+  - `question_preview_url`
+  - `question_preview_popup_params`
+  - `question_hash`
+  - `question_make_export_url`
+  - `question_get_export_single_question_url`
+  - `question_remove_stale_questions_from_category`
+  - `flatten_category_tree`
+  - `add_indented_names`
+  - `question_category_select_menu`
+  - `get_categories_for_contexts`
+  - `question_category_options`
+  - `question_add_context_in_key`
+  - `question_fix_top_names`
+* Added a new parameter to `core_renderer::container` and `core_renderer::container_start` to allow for the addition of
+  custom attributes.
+* Added a new method `navigation_node::add_attribute()` to allow adding HTML attributes to the node.
+* Deprecated core\hook\manager::is_deprecated_plugin_callback() in favour of ::get_hooks_deprecating_plugin_callback(),
+  which will return the classnames of hooks deprecating a callback, or null if it's not deprecated. The return value can be cast
+  to bool if the original functionality is desired.
+* The triggerSelector method in the `core/comboboxsearch/search_combobox` JS module is deprecated. It was not used.
+* PHPUnit has been upgraded to 9.6 (see MDL-81266 for details).
+  The main goal of the update is to allow developers to know in advance,
+  via deprecations, which stuff is going to stop working (because of being removed)
+  with PHPUnit 10 (see MDL-80969 for details). Other than that, the changes are minimal.
+  This is the list of noticeable changes:
+  - Deprecation: MDL-81281. A number of attribute-related assertions have been deprecated, will
+    be removed with PHPUnit 10. Alternatives for *some* of them are available:
+      - assertClassHasAttribute()
+      - assertClassNotHasAttribute()
+      - assertClassHasStaticAttribute()
+      - assertClassNotHasStaticAttribute()
+      - assertObjectHasAttribute()         => assertObjectHasProperty()
+      - assertObjectNotHasAttribute()      => assertObjectNotHasProperty()
+  - Deprecation: MDL-81266. A number of deprecation/notice/warning/error expectations have
+    been deprecated, will be removed with PHPUnit 10. No alternative exists. A working
+    replacement is available in the linked issue, hopefully there aren't many cases.
+      - expectDeprecation()
+      - expectDeprecationMessage()
+      - expectDeprecationMessageMatches()
+      - expectError()
+      - expectErrorMessage()
+      - expectErrorMessageMatches()
+      - expectNotice()
+      - expectNoticeMessage()
+      - expectNoticeMessageMatches()
+      - expectWarning()
+      - expectWarningMessage()
+      - expectWarningMessageMatches()
+  - Deprecation: MDL-81308. The ->withConsecutive() functionality on PHPUnit mocks
+    has been *silently* deprecated, will be removed with PHPUnit 10. Note that this
+    won't affect PHPUnit 9.6 runs and an alternative path will be
+    proposed in the linked issue, part of the PHPUnit 10 epic.
+  - Deprecation: PHPUnit\Framework\TestCase::getMockClass() has been deprecated, will
+    be removed with PHPUnit 10. No clear alternative exists and won't be investigated,
+    because there aren't cases in core.
+  - Deprecation: Cannot use the "Test" suffix on abstract test case classes. Proceed to
+    rename them to end with "TestCase" instead.
+* A new hook called after_failed_task_max_delay has been created. This hook will be triggered when an Ad-hoc or Scheduled task reaches its maximum failure delay.
+* There is a new method called enrol_plugin::get_welcome_message_contact() that returns the contact details for the course welcome message.
+* There is a new method called enrol_plugin::send_course_welcome_message_to_user() that sends the course welcome message to a user.
+* The list of standard, and deleted, plugins is now located as JSON at lib/plugins.json.
+* groups_get_user_groups() in grouplib has a new $includehidden paramater, which will return groups for user even if they have
+  GROUP_VISIBILITY_NONE. This is false by default, and should be used with care. The calling code must ensure that these groups
+  are not exposed to the user as this may be a privacy issue.
 
 === 4.3 ===
 
@@ -413,7 +515,7 @@ being forced open in all behat tests.
     - upgrade_analytics_fix_contextids_defaults()
     - upgrade_convert_hub_config_site_param_names()
     - upgrade_rename_prediction_actions_useful_incorrectly_flagged()
-* The method ensure_adhoc_task_qos() in lib/classes/task/manager.php  has been deprecated, please use get_next_adhoc_task()
+* The method ensure_adhoc_task_qos() in lib/classes/task/manager.php has been deprecated, please use get_next_adhoc_task()
   instead.
 * New setting $CFG->enrolments_sync_interval controls the minimum time in seconds between re-synchronization of enrollment via enrol_check_plugins.
   This only applies to web requests without a session such as webservice calls, tokenpluginfile.php and rss links Function

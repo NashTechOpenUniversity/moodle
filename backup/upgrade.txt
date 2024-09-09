@@ -1,5 +1,14 @@
+=== 4.5 Onwards ===
+
+This file has been replaced by UPGRADING.md. See MDL-81125 for further information.
+
+===
 This files describes API changes in /backup/*,
 information provided here is intended especially for developers.
+
+=== 4.4 ===
+
+* New \core_backup\hook\before_course_modified_check hook which can be used to exclude events from automated backup has been implemented (See MDL-73926 and MDL-81044).
 
 === 4.3 ===
 
@@ -7,7 +16,6 @@ information provided here is intended especially for developers.
   async backups (See MDL-69983).
 * During restore the function create_included_users has been updated to convert backups containing
   legacy MD5 hashed passwords to the new password hashing scheme (See MDL-79134).
-* New get_excluded_events hook for excluding events from automated backup has been implemented (See MDL-73926).
 
 === 4.1 ===
 

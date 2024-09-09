@@ -38,8 +38,8 @@ Feature: Within the User report, a teacher can search for users.
     And I should see "Search for a user to view their report"
     When I set the field "Search users" to "Turtle"
     And "View all results (5)" "option_role" should exist
-    And I confirm "Turtle Manatee" in "user" search within the gradebook widget exists
-    And I confirm "User Example" in "user" search within the gradebook widget does not exist
+    And I confirm "Turtle Manatee" exists in the "Search users" search combo box
+    And I confirm "User Example" does not exist in the "Search users" search combo box
     And I click on "Turtle Manatee" "list_item"
     # Business case: This will trigger a page reload and can not dynamically update the table.
     And I wait until the page is ready
@@ -56,7 +56,7 @@ Feature: Within the User report, a teacher can search for users.
 
   Scenario: A teacher can search the user report to find specified users
     # Case: Standard search.
-    Given I click on "Dummy" in the "user" search widget
+    Given I click on "Dummy" in the "Search users" search combo box
     And "Dummy User" "heading" should exist
     And "Teacher 1" "heading" should not exist
     And "Student 1" "heading" should not exist
@@ -77,14 +77,14 @@ Feature: Within the User report, a teacher can search for users.
     # Case: Multiple users found and select only one result.
     Then I set the field "Search users" to "User"
     And "View all results (5)" "option_role" should exist
-    And I confirm "Dummy User" in "user" search within the gradebook widget exists
-    And I confirm "User Example" in "user" search within the gradebook widget exists
-    And I confirm "User Test" in "user" search within the gradebook widget exists
-    And I confirm "Turtle Manatee" in "user" search within the gradebook widget does not exist
+    And I confirm "Dummy User" exists in the "Search users" search combo box
+    And I confirm "User Example" exists in the "Search users" search combo box
+    And I confirm "User Test" exists in the "Search users" search combo box
+    And I confirm "Turtle Manatee" does not exist in the "Search users" search combo box
     # Check if the matched field names (by lines) includes some identifiable info to help differentiate similar users.
-    And I confirm "User (student2@example.com)" in "user" search within the gradebook widget exists
-    And I confirm "User (student3@example.com)" in "user" search within the gradebook widget exists
-    And I confirm "User (student4@example.com)" in "user" search within the gradebook widget exists
+    And I confirm "User (student2@example.com)" exists in the "Search users" search combo box
+    And I confirm "User (student3@example.com)" exists in the "Search users" search combo box
+    And I confirm "User (student4@example.com)" exists in the "Search users" search combo box
     And I click on "Dummy User" "list_item"
     And I wait until the page is ready
     And "Dummy User" "heading" should exist
@@ -107,8 +107,7 @@ Feature: Within the User report, a teacher can search for users.
     And "Student 1" "heading" should exist
     And "Turtle Manatee" "heading" should exist
     And "Teacher 1" "heading" should not exist
-    And I click on "Clear" "link" in the ".user-search" "css_element"
-    And I wait until the page is ready
+    And "Clear" "link" should not exist in the ".user-search" "css_element"
     And "Dummy User" "heading" should exist
     And "User Example" "heading" should exist
     And "User Test" "heading" should exist
@@ -122,13 +121,13 @@ Feature: Within the User report, a teacher can search for users.
     And I should see "No results for \"a\""
 
   Scenario: A teacher can quickly tell that a search is active on the current table
-    Given I click on "Turtle" in the "user" search widget
-    # The search input remains in the field on reload this is in keeping with other search implementations.
-    When the field "Search users" matches value "Turtle"
+    When I click on "Turtle" in the "Search users" search combo box
+    # The search input should contain the name of the user we have selected, so that it is clear that the result pertains to a specific user.
+    Then the field "Search users" matches value "Turtle Manatee"
     And I wait until "View all results (5)" "link" does not exist
     # Test if we can then further retain the turtle result set and further filter from there.
-    Then I set the field "Search users" to "Turtle plagiarism"
-    And "Turtle Manatee" "list_item" should not exist
+    And I set the field "Search users" to "Turtle plagiarism"
+    And I wait until "Turtle Manatee" "list_item" does not exist
     And I should see "No results for \"Turtle plagiarism\""
 
   Scenario: A teacher can search for values besides the users' name
@@ -138,55 +137,56 @@ Feature: Within the User report, a teacher can search for users.
     And I set the field "Search users" to "@example.com"
     And "View all results (5)" "option_role" should exist
     # Note: All learners match this email & showing emails is current default.
-    And I confirm "Dummy User" in "user" search within the gradebook widget exists
-    And I confirm "User Example" in "user" search within the gradebook widget exists
-    And I confirm "User Test" in "user" search within the gradebook widget exists
-    And I confirm "Student 1" in "user" search within the gradebook widget exists
-    And I confirm "Turtle Manatee" in "user" search within the gradebook widget exists
+    And I confirm "Dummy User" exists in the "Search users" search combo box
+    And I confirm "User Example" exists in the "Search users" search combo box
+    And I confirm "User Test" exists in the "Search users" search combo box
+    And I confirm "Student 1" exists in the "Search users" search combo box
+    And I confirm "Turtle Manatee" exists in the "Search users" search combo box
 
     # Search on the country field.
     When I set the field "Search users" to "JP"
     And "View all results (5)" "option_role" should exist
     And I wait until "Turtle Manatee" "list_item" does not exist
-    And I confirm "Dummy User" in "user" search within the gradebook widget exists
-    And I confirm "User Test" in "user" search within the gradebook widget exists
+    And I confirm "Dummy User" exists in the "Search users" search combo box
+    And I confirm "User Test" exists in the "Search users" search combo box
 
     # Search on the city field.
     And I set the field "Search users" to "Hanoi"
     And I wait until "User Test" "list_item" does not exist
-    Then I confirm "Student 1" in "user" search within the gradebook widget exists
+    Then I confirm "Student 1" exists in the "Search users" search combo box
 
     # Search on the institution field.
     And I set the field "Search users" to "ABCD"
     And "Dummy User" "list_item" should exist
-    And I confirm "User Example" in "user" search within the gradebook widget exists
-    And I confirm "User Test" in "user" search within the gradebook widget exists
-    And I confirm "Student 1" in "user" search within the gradebook widget exists
-    And I confirm "Turtle Manatee" in "user" search within the gradebook widget exists
+    And I confirm "User Example" exists in the "Search users" search combo box
+    And I confirm "User Test" exists in the "Search users" search combo box
+    And I confirm "Student 1" exists in the "Search users" search combo box
+    And I confirm "Turtle Manatee" exists in the "Search users" search combo box
 
       # Search on the department field.
     And I set the field "Search users" to "ABC3"
     And I wait until "User Example" "list_item" does not exist
-    And I confirm "User Test" in "user" search within the gradebook widget exists
-    And I confirm "Turtle Manatee" in "user" search within the gradebook widget exists
+    And I confirm "User Test" exists in the "Search users" search combo box
+    And I confirm "Turtle Manatee" exists in the "Search users" search combo box
 
     # Search on the phone1 field.
     And I set the field "Search users" to "4365899871"
     And I wait until "User Test" "list_item" does not exist
-    And I confirm "Dummy User" in "user" search within the gradebook widget exists
+    And I confirm "Dummy User" exists in the "Search users" search combo box
 
     # Search on the phone2 field.
     And I set the field "Search users" to "2149871323"
     And I wait until "Dummy User" "list_item" does not exist
-    And I confirm "User Test" in "user" search within the gradebook widget exists
+    And I confirm "User Test" exists in the "Search users" search combo box
 
     # Search on the institution field then press enter to show the record set.
     And I set the field "Search users" to "ABC"
     And "Turtle Manatee" "list_item" should exist
-    And I confirm "Dummy User" in "user" search within the gradebook widget exists
-    And I confirm "User Example" in "user" search within the gradebook widget exists
-    And I confirm "User Test" in "user" search within the gradebook widget exists
-    And I confirm "Student 1" in "user" search within the gradebook widget exists
+    And I confirm "Dummy User" exists in the "Search users" search combo box
+    And I confirm "User Example" exists in the "Search users" search combo box
+    And I confirm "User Test" exists in the "Search users" search combo box
+    And I confirm "Student 1" exists in the "Search users" search combo box
+    And I press the up key
     And I press the enter key
     And I wait until the page is ready
     And "Student 1" "heading" should exist
@@ -196,25 +196,39 @@ Feature: Within the User report, a teacher can search for users.
     And "Turtle Manatee" "heading" should exist
     And "Teacher 1" "heading" should not exist
 
+  Scenario: A teacher can only search for fields that he allowed to see
+    Given the following "permission overrides" exist:
+      | capability                         | permission | role             | contextlevel | reference |
+      | moodle/course:viewhiddenuserfields | Prohibit   | editingteacher   | System       |           |
+    And the following config values are set as admin:
+      | hiddenuserfields | email |
+    And I am on the "Course 1" "grades > User report > View" page logged in as "teacher1"
+    When I set the field "Search users" to "User"
+    And "View all results (5)" "option_role" should exist
+    And I confirm "Dummy User" exists in the "Search users" search combo box
+    And I confirm "User Example" exists in the "Search users" search combo box
+    And I confirm "User Test" exists in the "Search users" search combo box
+    # Email is not shown in results.
+    And I confirm "User" exists in the "Search users" search combo box
+    And I confirm "example.com" does not exist in the "Search users" search combo box
+    # Email is not searchable.
+    And I set the field "Search users" to "student5@example.com"
+    And "View all results (5)" "option_role" should not exist
+    And I confirm "No results for \"student5@example.com\"" exists in the "Search users" search combo box
+
   @accessibility
   Scenario: A teacher can set focus and search using the input are with a keyboard
     Given I set the field "Search users" to "ABC"
     # Basic tests for the page.
-    And the page should meet accessibility standards
-    And the page should meet "wcag131, wcag141, wcag412" accessibility standards
     And the page should meet accessibility standards with "wcag131, wcag141, wcag412" extra tests
     # Move onto general keyboard navigation testing.
     When "Turtle Manatee" "option_role" should exist
     And I press the down key
-    And the focused element is "Student 1" "option_role"
-    And I press the end key
-    And the focused element is "View all results (5)" "option_role"
-    And I press the home key
-    And the focused element is "Student 1" "option_role"
+    And ".active" "css_element" should exist in the "Student 1" "option_role"
     And I press the up key
-    And the focused element is "View all results (5)" "option_role"
+    And ".active" "css_element" should exist in the "View all results (5)" "option_role"
     And I press the down key
-    And the focused element is "Student 1" "option_role"
+    And ".active" "css_element" should exist in the "Student 1" "option_role"
     And I press the escape key
     And the focused element is "Search users" "field"
     Then I set the field "Search users" to "Goodmeme"
@@ -225,15 +239,14 @@ Feature: Within the User report, a teacher can search for users.
     And I set the field "Search users" to "ABC"
     And "Turtle Manatee" "option_role" should exist
     And I press the down key
-    And the focused element is "Student 1" "option_role"
+    And ".active" "css_element" should exist in the "Student 1" "option_role"
 
     # Lets check the tabbing order.
     And I set the field "Search users" to "ABC"
-    And "View all results (5)" "option_role" should exist
+    And I wait until "Clear search input" "button" exists
+    And I click on "Search users" "field"
     And I press the tab key
     And the focused element is "Clear search input" "button" in the ".user-search" "css_element"
-    And I press the tab key
-    And the focused element is "View all results (5)" "option_role"
     And I press the tab key
     And ".groupsearchwidget" "css_element" should exist
     # Ensure we can interact with the input & clear search options with the keyboard.
@@ -248,12 +261,3 @@ Feature: Within the User report, a teacher can search for users.
     And "User Test" "heading" should not exist
     And "Teacher 1" "heading" should not exist
     And "Turtle Manatee" "heading" should not exist
-    # Sometimes with behat we get unattached nodes causing spurious failures.
-    And I wait "1" seconds
-    And I set the field "Search users" to "ABC"
-    And "Turtle Manatee" "option_role" should exist
-    And I press the tab key
-    And the focused element is "Clear search input" "button" in the ".user-search" "css_element"
-    And I press the enter key
-    And I wait until the page is ready
-    And I confirm "Turtle Manatee" in "user" search within the gradebook widget does not exist

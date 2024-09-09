@@ -77,9 +77,9 @@ class availability implements named_templatable, renderable {
      * Export this data so it can be used as the context for a mustache template.
      *
      * @param \renderer_base $output typically, the renderer that's calling this function
-     * @return stdClass data context for a mustache template
+     * @return stdClass|null data context for a mustache template
      */
-    public function export_for_template(\renderer_base $output): stdClass {
+    public function export_for_template(\renderer_base $output): ?stdClass {
         $this->build_export_data($output);
         return $this->data;
     }
@@ -209,7 +209,7 @@ class availability implements named_templatable, renderable {
         $text = info::format_info($availabilityinfo, $course);
         $data = ['text' => $text];
 
-        if (strlen(html_to_text($text)) > self::AVAILABILITY_EXCERPT_MAXSIZE) {
+        if (strlen(html_to_text($text, 0, false)) > self::AVAILABILITY_EXCERPT_MAXSIZE) {
             $data['excerpt'] = shorten_text($text, self::AVAILABILITY_EXCERPT_MAXSIZE);
         }
 

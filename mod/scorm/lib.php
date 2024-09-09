@@ -776,6 +776,7 @@ function scorm_option2text($scorm) {
  */
 function scorm_reset_course_form_definition(&$mform) {
     $mform->addElement('header', 'scormheader', get_string('modulenameplural', 'scorm'));
+    $mform->addElement('static', 'scormdelete', get_string('delete'));
     $mform->addElement('advcheckbox', 'reset_scorm', get_string('deleteallattempts', 'scorm'));
 }
 
@@ -845,7 +846,7 @@ function scorm_reset_userdata($data) {
     // Any changes to the list of dates that needs to be rolled should be same during course restore and course reset.
     // See MDL-9367.
     shift_course_mod_dates('scorm', array('timeopen', 'timeclose'), $data->timeshift, $data->courseid);
-    $status[] = ['component' => $componentstr, 'item' => get_string('datechanged'), 'error' => false];
+    $status[] = ['component' => $componentstr, 'item' => get_string('date'), 'error' => false];
 
     return $status;
 }
@@ -1042,7 +1043,8 @@ function scorm_supports($feature) {
         case FEATURE_GRADE_OUTCOMES:          return true;
         case FEATURE_BACKUP_MOODLE2:          return true;
         case FEATURE_SHOW_DESCRIPTION:        return true;
-        case FEATURE_MOD_PURPOSE:             return MOD_PURPOSE_CONTENT;
+        case FEATURE_MOD_PURPOSE:
+            return MOD_PURPOSE_INTERACTIVECONTENT;
 
         default: return null;
     }
@@ -1459,20 +1461,20 @@ function scorm_check_updates_since(cm_info $cm, $from, $filter = array()) {
  */
 function mod_scorm_get_fontawesome_icon_map() {
     return [
-        'mod_scorm:assetc' => 'fa-file-archive-o',
-        'mod_scorm:asset' => 'fa-file-archive-o',
+        'mod_scorm:asset' => 'fa-regular fa-file-zipper',
+        'mod_scorm:assetc' => 'fa-regular fa-file-zipper',
         'mod_scorm:browsed' => 'fa-book',
-        'mod_scorm:completed' => 'fa-check-square-o',
-        'mod_scorm:failed' => 'fa-times',
-        'mod_scorm:incomplete' => 'fa-pencil-square-o',
+        'mod_scorm:completed' => 'fa-check',
+        'mod_scorm:failed' => 'fa-xmark',
+        'mod_scorm:incomplete' => 'fa-pen-to-square',
         'mod_scorm:minus' => 'fa-minus',
-        'mod_scorm:notattempted' => 'fa-square-o',
-        'mod_scorm:passed' => 'fa-check',
+        'mod_scorm:notattempted' => 'fa-regular fa-square',
+        'mod_scorm:passed' => 'fa-check-double',
         'mod_scorm:plus' => 'fa-plus',
-        'mod_scorm:popdown' => 'fa-window-close-o',
-        'mod_scorm:popup' => 'fa-window-restore',
+        'mod_scorm:popdown' => 'fa-regular fa-rectangle-xmark',
+        'mod_scorm:popup' => 'fa-regular fa-window-restore',
         'mod_scorm:suspend' => 'fa-pause',
-        'mod_scorm:wait' => 'fa-clock-o',
+        'mod_scorm:wait' => 'fa-spinner fa-spin',
     ];
 }
 
@@ -1800,7 +1802,7 @@ function mod_scorm_core_calendar_get_valid_event_timestart_range(\calendar_event
  * @param  array  $args The path (the part after the filearea and before the filename).
  * @return array The itemid and the filepath inside the $args path, for the defined filearea.
  */
-function mod_scorm_get_path_from_pluginfile(string $filearea, array $args) : array {
+function mod_scorm_get_path_from_pluginfile(string $filearea, array $args): array {
     // SCORM never has an itemid (the number represents the revision but it's not stored in database).
     array_shift($args);
 

@@ -1121,7 +1121,7 @@ class calendar_information {
      *                                  If a courseid is specified, this value is ignored.
      * @return  calendar_information
      */
-    public static function create($time, int $courseid, int $categoryid = null) : calendar_information {
+    public static function create($time, int $courseid, ?int $categoryid = null): calendar_information {
         $calendar = new static(0, 0, 0, $time);
         if ($courseid != SITEID && !empty($courseid)) {
             // Course ID must be valid and existing.
@@ -1201,7 +1201,7 @@ class calendar_information {
      * @param   stdClass[]  $courses The list of all courses currently accessible.
      * @param   stdClass    $category The current category to show.
      */
-    public function set_sources(stdClass $course, array $courses, stdClass $category = null) {
+    public function set_sources(stdClass $course, array $courses, ?stdClass $category = null) {
         global $USER;
 
         // A cousre must always be specified.
@@ -2139,7 +2139,7 @@ function calendar_events_by_day($events, $month, $year, &$eventsbyday, &$duratio
  * @param stdClass $user The user object. This defaults to the global $USER object.
  * @return array An array of courses, groups, and user to load calendar events for based upon filters
  */
-function calendar_set_filters(array $courseeventsfrom, $ignorefilters = false, stdClass $user = null) {
+function calendar_set_filters(array $courseeventsfrom, $ignorefilters = false, ?stdClass $user = null) {
     global $CFG, $USER;
 
     if (is_null($user)) {
@@ -2177,29 +2177,27 @@ function calendar_set_filters(array $courseeventsfrom, $ignorefilters = false, s
     }
 
     if (!empty($courseeventsfrom) && (calendar_show_event_type(CALENDAR_EVENT_GROUP, $user) || $ignorefilters)) {
-
-        if (count($courseeventsfrom) == 1) {
-            $course = reset($courseeventsfrom);
-            if (has_any_capability($allgroupscaps, \context_course::instance($course->id))) {
-                $coursegroups = groups_get_all_groups($course->id, 0, 0, 'g.id');
-                $group = array_keys($coursegroups);
-            }
-        }
-        if ($group === false) {
-            if (!empty($CFG->calendar_adminseesall) && has_any_capability($allgroupscaps, \context_system::instance())) {
-                $group = true;
-            } else if ($isvaliduser) {
-                $groupids = array();
-                foreach ($courseeventsfrom as $courseid => $course) {
-                    if ($course->groupmode != NOGROUPS || !$course->groupmodeforce) {
-                        // If this course has groups, show events from all of those related to the current user.
+        if (!empty($CFG->calendar_adminseesall) && has_any_capability($allgroupscaps, \context_system::instance())) {
+            $group = true;
+        } else if ($isvaliduser) {
+            $groupids = [];
+            foreach ($courseeventsfrom as $courseid => $course) {
+                if ($course->groupmode != NOGROUPS || !$course->groupmodeforce) {
+                    if (has_all_capabilities($allgroupscaps, \context_course::instance($courseid))) {
+                        // User can access all groups in this course.
+                        // Get all the groups in this course.
+                        $coursegroups = groups_get_all_groups($course->id, 0, 0, 'g.id');
+                        $groupids = array_merge($groupids, array_keys($coursegroups));
+                    } else {
+                        // User can only access their own groups.
+                        // Get the groups the user is in.
                         $coursegroups = groups_get_user_groups($course->id, $user->id);
                         $groupids = array_merge($groupids, $coursegroups['0']);
                     }
                 }
-                if (!empty($groupids)) {
-                    $group = $groupids;
-                }
+            }
+            if (!empty($groupids)) {
+                $group = $groupids;
             }
         }
     }
@@ -2457,7 +2455,7 @@ function calendar_delete_event_allowed($event) {
  *                        By default the current user.
  * @return array $courses Array of courses to display
  */
-function calendar_get_default_courses($courseid = null, $fields = '*', $canmanage = false, int $userid = null) {
+function calendar_get_default_courses($courseid = null, $fields = '*', $canmanage = false, ?int $userid = null) {
     global $CFG, $USER;
 
     if (!$userid) {
@@ -3111,7 +3109,7 @@ function calendar_get_icalendar($url) {
  * @param int|null $subscriptionid The subscription ID.
  * @return array A log of the import progress, including errors.
  */
-function calendar_import_events_from_ical(iCalendar $ical, int $subscriptionid = null): array {
+function calendar_import_events_from_ical(iCalendar $ical, ?int $subscriptionid = null): array {
     global $DB;
 
     $errors = [];
@@ -3588,6 +3586,18 @@ function calendar_get_view(\calendar_information $calendar, $view, $includenavig
         }
     }
 
+    // Check if $data has events.
+    if (isset($data->events)) {
+        // Let's check and sanitize all "name" in $data->events before it's sent to front end.
+        foreach ($data->events as $d) {
+            $name = $d->name ?? null;
+            // Encode special characters if our decoded name does not match the original name.
+            if ($name && (html_entity_decode($name) !== $name)) {
+                $d->name = htmlspecialchars(html_entity_decode($name), ENT_QUOTES, 'utf-8');
+            }
+        }
+    }
+
     return [$data, $template];
 }
 
@@ -3823,7 +3833,7 @@ function calendar_is_valid_eventtype($type) {
  * @param int|null $courseid The course id.
  * @return array The array of allowed types.
  */
-function calendar_get_allowed_event_types(int $courseid = null) {
+function calendar_get_allowed_event_types(?int $courseid = null) {
     global $DB, $CFG, $USER;
 
     $types = [

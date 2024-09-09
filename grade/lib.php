@@ -985,7 +985,8 @@ function print_grade_page_head(int $courseid, string $active_type, ?string $acti
         $renderer = $PAGE->get_renderer('core_grades');
         // If the user is viewing their own grade report, no need to show the "Message"
         // and "Add to contact" buttons in the user heading.
-        $showuserbuttons = $user->id != $USER->id;
+        $showuserbuttons = $user->id != $USER->id && !empty($CFG->messaging) &&
+            has_capability('moodle/site:sendmessage', $PAGE->context);
         $output = $renderer->user_heading($user, $courseid, $showuserbuttons);
     } else if (!empty($heading)) {
         $output = $OUTPUT->heading($heading);
@@ -1606,7 +1607,7 @@ class grade_structure {
      * @param grade_grade $grade A grade_grade object
      * @return string
      */
-    public function get_grade_action_menu(grade_grade $grade) : string {
+    public function get_grade_action_menu(grade_grade $grade): string {
         global $OUTPUT;
 
         $menuitems = [];
@@ -1620,7 +1621,7 @@ class grade_structure {
         if ($menuitems) {
             $menu = new action_menu($menuitems);
             $icon = $OUTPUT->pix_icon('i/moremenu', get_string('actions'));
-            $extraclasses = 'btn btn-link btn-icon icon-size-3 d-flex align-items-center justify-content-center';
+            $extraclasses = 'btn btn-link btn-icon icon-size-3 d-flex align-items-center justify-content-center no-caret';
             $menu->set_menu_trigger($icon, $extraclasses);
             $menu->set_menu_left();
 
@@ -4088,21 +4089,15 @@ abstract class grade_helper {
     }
 
     /**
-     * Returns a link to grading page if grade.php exists in the module or link to activity
+     * Returns a link to activity
      *
      * @param array $element An array representing an element in the grade_tree
-     *
-     * @return string|null link to grading page|activity or null if not found
+     * @return moodle_url|null link to activity or null if not found
      */
-    public static function get_activity_link(array $element): ?string {
-        global $CFG;
-        /** @var array static cache of the grade.php file existence flags */
-        static $hasgradephp = [];
-
+    public static function get_activity_link(array $element): ?moodle_url {
         $itemtype = $element['object']->itemtype;
         $itemmodule = $element['object']->itemmodule;
         $iteminstance = $element['object']->iteminstance;
-        $itemnumber = $element['object']->itemnumber;
 
         // Links only for module items that have valid instance, module and are
         // called from grade_tree with valid modinfo.
@@ -4123,23 +4118,6 @@ abstract class grade_helper {
             return null;
         }
 
-        if (!array_key_exists($itemmodule, $hasgradephp)) {
-            if (file_exists($CFG->dirroot . '/mod/' . $itemmodule . '/grade.php')) {
-                $hasgradephp[$itemmodule] = true;
-            } else {
-                $hasgradephp[$itemmodule] = false;
-            }
-        }
-
-        // If module has grade.php, link to that, otherwise view.php.
-        if ($hasgradephp[$itemmodule]) {
-            $args = ['id' => $cm->id, 'itemnumber' => $itemnumber];
-            if (isset($element['userid'])) {
-                $args['userid'] = $element['userid'];
-            }
-            return new moodle_url('/mod/' . $itemmodule . '/grade.php', $args);
-        } else {
-            return new moodle_url('/mod/' . $itemmodule . '/view.php', ['id' => $cm->id]);
-        }
+        return new moodle_url('/mod/' . $itemmodule . '/view.php', ['id' => $cm->id]);
     }
 }

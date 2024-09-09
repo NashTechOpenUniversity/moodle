@@ -40,6 +40,7 @@ class upload_users_test extends advanced_testcase {
         global $CFG;
 
         require_once("{$CFG->dirroot}/{$CFG->admin}/tool/uploaduser/locallib.php");
+        parent::setUpBeforeClass();
     }
 
     /**
@@ -202,8 +203,8 @@ EOF;
 
         // We should get the debugging from the user class itself, as well as warning in the output regarding the same.
         $this->assertDebuggingCalled('The property \'country\' has invalid data and has been cleaned.');
-        $this->assertStringContainsString('Invalid data detected for user \'student1\' (country), ' .
-            'which has been automatically cleaned.', $output);
+        $this->assertStringContainsString('Incorrect data (country) found for user student1. ' .
+            'This data has been corrected or deleted.', $output);
     }
 
     /**

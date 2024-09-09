@@ -54,8 +54,8 @@ Feature: Within the grader report, test that we can search for users
       | Teacher 1          |
     When I set the field "Search users" to "Turtle"
     And I wait until "View all results (1)" "option_role" exists
-    And I confirm "Turtle Manatee" in "user" search within the gradebook widget exists
-    And I confirm "User Example" in "user" search within the gradebook widget does not exist
+    And I confirm "Turtle Manatee" exists in the "Search users" search combo box
+    And I confirm "User Example" does not exist in the "Search users" search combo box
     And I click on "Turtle Manatee" "list_item"
     # Business case: This will trigger a page reload and can not dynamically update the table.
     And I wait until the page is ready
@@ -76,7 +76,7 @@ Feature: Within the grader report, test that we can search for users
 
   Scenario: A teacher can search the grader report to find specified users
     # Case: Standard search.
-    Given I click on "Dummy" in the "user" search widget
+    Given I click on "Dummy" in the "Search users" search combo box
     And the following should exist in the "user-grades" table:
       | -1-                |
       | Dummy User         |
@@ -106,14 +106,14 @@ Feature: Within the grader report, test that we can search for users
     # Case: Multiple users found and select only one result.
     Then I set the field "Search users" to "User"
     And I wait until "View all results (3)" "option_role" exists
-    And I confirm "Dummy User" in "user" search within the gradebook widget exists
-    And I confirm "User Example" in "user" search within the gradebook widget exists
-    And I confirm "User Test" in "user" search within the gradebook widget exists
-    And I confirm "Turtle Manatee" in "user" search within the gradebook widget does not exist
+    And I confirm "Dummy User" exists in the "Search users" search combo box
+    And I confirm "User Example" exists in the "Search users" search combo box
+    And I confirm "User Test" exists in the "Search users" search combo box
+    And I confirm "Turtle Manatee" does not exist in the "Search users" search combo box
     # Check if the matched field names (by lines) includes some identifiable info to help differentiate similar users.
-    And I confirm "User (student2@example.com)" in "user" search within the gradebook widget exists
-    And I confirm "User (student3@example.com)" in "user" search within the gradebook widget exists
-    And I confirm "User (student4@example.com)" in "user" search within the gradebook widget exists
+    And I confirm "User (student2@example.com)" exists in the "Search users" search combo box
+    And I confirm "User (student3@example.com)" exists in the "Search users" search combo box
+    And I confirm "User (student4@example.com)" exists in the "Search users" search combo box
     And I click on "Dummy User" "list_item"
     And I wait until the page is ready
     And the following should exist in the "user-grades" table:
@@ -156,13 +156,12 @@ Feature: Within the grader report, test that we can search for users
       | Dummy User         |
 
   Scenario: A teacher can quickly tell that a search is active on the current table
-    Given I click on "Turtle" in the "user" search widget
-    # The search input remains in the field on reload this is in keeping with other search implementations.
-    When the field "Search users" matches value "Turtle"
-    And I wait until "View all results (1)" "link" does not exist
+    When I click on "Turtle" in the "Search users" search combo box
+    # The search input should contain the name of the user we have selected, so that it is clear that the result pertains to a specific user.
+    Then the field "Search users" matches value "Turtle Manatee"
     # Test if we can then further retain the turtle result set and further filter from there.
-    Then I set the field "Search users" to "Turtle plagiarism"
-    And "Turtle Manatee" "list_item" should not exist
+    And I set the field "Search users" to "Turtle plagiarism"
+    And "Turtle Manatee" "list_item" should not be visible
     And I should see "No results for \"Turtle plagiarism\""
 
   Scenario: A teacher can search for values besides the users' name
@@ -172,54 +171,54 @@ Feature: Within the grader report, test that we can search for users
     And I set the field "Search users" to "@example.com"
     And I wait until "View all results (5)" "option_role" exists
     # Note: All learners match this email & showing emails is current default.
-    And I confirm "Dummy User" in "user" search within the gradebook widget exists
-    And I confirm "User Example" in "user" search within the gradebook widget exists
-    And I confirm "User Test" in "user" search within the gradebook widget exists
-    And I confirm "Student 1" in "user" search within the gradebook widget exists
-    And I confirm "Turtle Manatee" in "user" search within the gradebook widget exists
+    And I confirm "Dummy User" exists in the "Search users" search combo box
+    And I confirm "User Example" exists in the "Search users" search combo box
+    And I confirm "User Test" exists in the "Search users" search combo box
+    And I confirm "Student 1" exists in the "Search users" search combo box
+    And I confirm "Turtle Manatee" exists in the "Search users" search combo box
 
     # Search on the country field.
     When I set the field "Search users" to "JP"
     And I wait until "Turtle Manatee" "list_item" does not exist
-    And I confirm "Dummy User" in "user" search within the gradebook widget exists
-    And I confirm "User Test" in "user" search within the gradebook widget exists
+    And I confirm "Dummy User" exists in the "Search users" search combo box
+    And I confirm "User Test" exists in the "Search users" search combo box
 
     # Search on the city field.
     And I set the field "Search users" to "Hanoi"
     And I wait until "User Test" "list_item" does not exist
-    Then I confirm "Student 1" in "user" search within the gradebook widget exists
+    Then I confirm "Student 1" exists in the "Search users" search combo box
 
     # Search on the institution field.
     And I set the field "Search users" to "ABCD"
     And I wait until "Dummy User" "list_item" exists
-    And I confirm "User Example" in "user" search within the gradebook widget exists
-    And I confirm "User Test" in "user" search within the gradebook widget exists
-    And I confirm "Student 1" in "user" search within the gradebook widget exists
-    And I confirm "Turtle Manatee" in "user" search within the gradebook widget exists
+    And I confirm "User Example" exists in the "Search users" search combo box
+    And I confirm "User Test" exists in the "Search users" search combo box
+    And I confirm "Student 1" exists in the "Search users" search combo box
+    And I confirm "Turtle Manatee" exists in the "Search users" search combo box
 
       # Search on the department field.
     And I set the field "Search users" to "ABC3"
     And I wait until "User Example" "list_item" does not exist
-    And I confirm "User Test" in "user" search within the gradebook widget exists
-    And I confirm "Turtle Manatee" in "user" search within the gradebook widget exists
+    And I confirm "User Test" exists in the "Search users" search combo box
+    And I confirm "Turtle Manatee" exists in the "Search users" search combo box
 
     # Search on the phone1 field.
     And I set the field "Search users" to "4365899871"
     And I wait until "User Test" "list_item" does not exist
-    And I confirm "Dummy User" in "user" search within the gradebook widget exists
+    And I confirm "Dummy User" exists in the "Search users" search combo box
 
     # Search on the phone2 field.
     And I set the field "Search users" to "2149871323"
     And I wait until "Dummy User" "list_item" does not exist
-    And I confirm "User Test" in "user" search within the gradebook widget exists
+    And I confirm "User Test" exists in the "Search users" search combo box
 
     # Search on the institution field then press enter to show the record set.
     And I set the field "Search users" to "ABC"
     And I wait until "Turtle Manatee" "list_item" exists
-    And I confirm "Dummy User" in "user" search within the gradebook widget exists
-    And I confirm "User Example" in "user" search within the gradebook widget exists
-    And I confirm "User Test" in "user" search within the gradebook widget exists
-    And I confirm "Student 1" in "user" search within the gradebook widget exists
+    And I confirm "Dummy User" exists in the "Search users" search combo box
+    And I confirm "User Example" exists in the "Search users" search combo box
+    And I confirm "User Test" exists in the "Search users" search combo box
+    And I confirm "Student 1" exists in the "Search users" search combo box
     And I press the down key
     And I press the enter key
     And I wait "1" seconds
@@ -244,15 +243,11 @@ Feature: Within the grader report, test that we can search for users
     And the page should meet "wcag131, wcag141, wcag412" accessibility standards
     And the page should meet accessibility standards with "wcag131, wcag141, wcag412" extra tests
     And I press the down key
-    And the focused element is "Student 1" "option_role"
-    And I press the end key
-    And the focused element is "View all results (5)" "option_role"
-    And I press the home key
-    And the focused element is "Student 1" "option_role"
+    And ".active" "css_element" should exist in the "Student 1" "option_role"
     And I press the up key
-    And the focused element is "View all results (5)" "option_role"
+    And ".active" "css_element" should exist in the "View all results (5)" "option_role"
     And I press the down key
-    And the focused element is "Student 1" "option_role"
+    And ".active" "css_element" should exist in the "Student 1" "option_role"
     And I press the escape key
     And the focused element is "Search users" "field"
     Then I set the field "Search users" to "Goodmeme"
@@ -263,22 +258,24 @@ Feature: Within the grader report, test that we can search for users
     And I set the field "Search users" to "ABC"
     And I wait until "Turtle Manatee" "option_role" exists
     And I press the down key
-    And the focused element is "Student 1" "option_role"
+    And ".active" "css_element" should exist in the "Student 1" "option_role"
 
     # Lets check the tabbing order.
     And I set the field "Search users" to "ABC"
-    And I wait until "View all results (5)" "option_role" exists
+    And I click on "Search users" "field"
+    And I wait until "Turtle Manatee" "option_role" exists
     And I press the tab key
     And the focused element is "Clear search input" "button"
-    And I press the tab key
-    And the focused element is "View all results (5)" "option_role"
     And I press the tab key
     And ".groupsearchwidget" "css_element" should exist
     # Ensure we can interact with the input & clear search options with the keyboard.
     # Space & Enter have the same handling for triggering the two functionalities.
     And I set the field "Search users" to "User"
+    And I press the up key
     And I press the enter key
     And I wait to be redirected
+    # Sometimes with behat we get unattached nodes causing spurious failures.
+    And I wait "1" seconds
     And the following should exist in the "user-grades" table:
       | -1-                |
       | Dummy User         |
@@ -289,15 +286,13 @@ Feature: Within the grader report, test that we can search for users
       | Teacher 1          |
       | Student 1          |
       | Turtle Manatee     |
-    # Sometimes with behat we get unattached nodes causing spurious failures.
-    And I wait "1" seconds
     And I set the field "Search users" to "ABC"
     And I wait until "Turtle Manatee" "option_role" exists
     And I press the tab key
     And the focused element is "Clear search input" "button"
     And I press the enter key
     And I wait until the page is ready
-    And I confirm "Turtle Manatee" in "user" search within the gradebook widget does not exist
+    And I confirm "Turtle Manatee" does not exist in the "Search users" search combo box
 
   Scenario: Once a teacher searches, it'll apply the currently set filters and inform the teacher as such
     # Set up a basic filtering case.
@@ -319,7 +314,7 @@ Feature: Within the grader report, test that we can search for users
 
     # Begin the search checking if we are adhering the filters.
     When I set the field "Search users" to "Turtle"
-    Then I confirm "Turtle Manatee" in "user" search within the gradebook widget does not exist
+    Then I confirm "Turtle Manatee" does not exist in the "Search users" search combo box
 
   Scenario: A teacher can reset the search and filters all at once
     Given I set the field "Search users" to "Turtle"
@@ -334,7 +329,7 @@ Feature: Within the grader report, test that we can search for users
     And the following should exist in the "user-grades" table:
       | -1-                |
       | Turtle Manatee     |
-    And I click on "Default group" in the "group" search widget
+    And I click on "Default group" in the "Search groups" search combo box
     And the following should exist in the "user-grades" table:
       | -1-                |
       | Turtle Manatee     |
@@ -357,8 +352,8 @@ Feature: Within the grader report, test that we can search for users
     And the field "perpage" matches value "20"
     When I set the field "Search users" to "42"
     # One of the users' phone numbers also matches.
-    And I wait until "View all results (2)" "link" exists
-    Then I confirm "Student s42" in "user" search within the gradebook widget exists
+    And I wait until "View all results (2)" "option_role" exists
+    Then I confirm "Student s42" exists in the "Search users" search combo box
 
   Scenario: As a teacher I save grades using search and pagination
     Given "42" "users" exist with the following data:
@@ -373,17 +368,18 @@ Feature: Within the grader report, test that we can search for users
     And I reload the page
     And I turn editing mode on
     And the field "perpage" matches value "20"
-    And I click on "Last name" "link"
+    And I click on user profile field menu "fullname"
+    And I choose "Ascending" in the open action menu
     And I wait until the page is ready
     # Search for a single user on second page and save grades.
     When I set the field "Search users" to "test32"
-    And I wait until "View all results (1)" "link" exists
+    And I wait until "View all results (1)" "option_role" exists
     And I click on "Student test32" "option_role"
     And I wait until the page is ready
     And I give the grade "80.00" to the user "Student test32" for the grade item "Test assignment one"
     And I press "Save changes"
     And I wait until the page is ready
-    Then the field "Search users" matches value "test32"
+    Then the field "Search users" matches value "Student test32"
     And the following should exist in the "user-grades" table:
       | -1-                   |
       | Student test32        |
@@ -393,7 +389,7 @@ Feature: Within the grader report, test that we can search for users
     And I give the grade "70.00" to the user "Student test31" for the grade item "Test assignment one"
     And I press "Save changes"
     And I wait until the page is ready
-    Then the field "Search users" matches value "test3"
+    Then the field "Search users" matches value "Student test31"
     And the following should exist in the "user-grades" table:
       | -1-                   |
       | Student test31        |
@@ -422,7 +418,7 @@ Feature: Within the grader report, test that we can search for users
       | Student test32        |
     # Search for multiple users on second page and save grades.
     And I set the field "Search users" to "test3"
-    And I wait until "View all results (11)" "link" exists
+    And I wait until "View all results (11)" "option_role" exists
     And I click on "View all results (11)" "option_role"
     And I wait until the page is ready
     And I give the grade "10.00" to the user "Student test32" for the grade item "Test assignment one"

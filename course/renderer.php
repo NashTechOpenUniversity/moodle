@@ -101,7 +101,7 @@ class core_course_renderer extends plugin_renderer_base {
      * @param array $ignored argument ignored
      * @return string
      */
-    public final function course_category_tree(array $ignored) {
+    final public function course_category_tree(array $ignored) {
         debugging('Function core_course_renderer::course_category_tree() is deprecated, please use frontpage_combo_list()', DEBUG_DEVELOPER);
         return $this->frontpage_combo_list();
     }
@@ -115,7 +115,7 @@ class core_course_renderer extends plugin_renderer_base {
      * @param int $depth
      * @return string
      */
-    protected final function course_category_tree_category(stdClass $category, $depth=1) {
+    final protected function course_category_tree_category(stdClass $category, $depth=1) {
         debugging('Function core_course_renderer::course_category_tree_category() is deprecated', DEBUG_DEVELOPER);
         return '';
     }
@@ -197,7 +197,7 @@ class core_course_renderer extends plugin_renderer_base {
     /**
      * @deprecated since 4.0 - please do not use this function any more.
      */
-    public function course_section_cm_edit_actions($actions, cm_info $mod = null, $displayoptions = array()) {
+    public function course_section_cm_edit_actions($actions, ?cm_info $mod = null, $displayoptions = array()) {
 
         throw new coding_exception(
             'course_section_cm_edit_actions can not be used any more. Please, use ' .
@@ -224,16 +224,20 @@ class core_course_renderer extends plugin_renderer_base {
             return '';
         }
 
-        $data = [
-            'sectionid' => $section,
-            'sectionreturn' => $sectionreturn
-        ];
-        $ajaxcontrol = $this->render_from_template('course/activitychooserbutton', $data);
+        $sectioninfo = get_fast_modinfo($course)->get_section_info($section);
+
+        $activitychooserbutton = new \core_course\output\activitychooserbutton($sectioninfo, null, $sectionreturn);
 
         // Load the JS for the modal.
         $this->course_activitychooser($course->id);
 
-        return $ajaxcontrol;
+        return $this->render_from_template(
+            'core_courseformat/local/content/divider',
+            [
+                'content' => $this->render($activitychooserbutton),
+                'extraclasses' => 'always-visible my-3',
+            ]
+        );
     }
 
     /**
@@ -377,8 +381,8 @@ class core_course_renderer extends plugin_renderer_base {
         }
 
         $altname = get_accesshide(' ' . $cm->modfullname);
-        $name = html_writer::empty_tag('img', array('src' => $cm->get_icon_url(),
-                'class' => 'iconlarge activityicon', 'alt' => ' ', 'role' => 'presentation')) .
+        $name = html_writer::empty_tag('img', ['src' => $cm->get_icon_url(),
+                'class' => 'activityicon', 'alt' => '']) .
             html_writer::tag('span', ' '.$cm->get_formatted_name() . $altname, array('class' => 'instancename'));
         $formattedinfo = \core_availability\info::format_info($cm->availableinfo, $cm->get_course());
         return html_writer::div($name, 'activityinstance-error') .

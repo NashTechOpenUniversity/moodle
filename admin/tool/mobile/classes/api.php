@@ -213,6 +213,7 @@ class api {
             'tool_mobile_qrcodetype' => clean_param(get_config('tool_mobile', 'qrcodetype'), PARAM_INT),
             'supportpage' => $sitesupportavailable ? clean_param($CFG->supportpage, PARAM_URL) : '',
             'supportavailability' => clean_param($CFG->supportavailability, PARAM_INT),
+            'showloginform' => (int) get_config('core', 'showloginform'),
         );
 
         $typeoflogin = get_config('tool_mobile', 'typeoflogin');
@@ -393,6 +394,20 @@ class api {
             $settings->tool_dataprivacy_showdataretentionsummary = get_config('tool_dataprivacy', 'showdataretentionsummary');
         }
 
+        if (empty($section) || $section === 'blog') {
+            $settings->useblogassociations = $CFG->useblogassociations;
+            $settings->bloglevel = $CFG->bloglevel;
+            $settings->blogusecomments = $CFG->blogusecomments;
+        }
+
+        if (empty($section) || $section === 'h5psettings') {
+            \core_h5p\local\library\autoloader::register();
+            $customcss = \core_h5p\file_storage::get_custom_styles();
+            if (!empty($customcss)) {
+                $settings->h5pcustomcssurl = $customcss['cssurl']->out() . '?ver=' . $customcss['cssversion'];
+            }
+        }
+
         return $settings;
     }
 
@@ -448,13 +463,13 @@ class api {
     public static function get_qrlogin_key(stdClass $mobilesettings) {
         global $USER;
         // Delete previous keys.
-        delete_user_key('tool_mobile', $USER->id);
+        delete_user_key('tool_mobile/qrlogin', $USER->id);
 
         // Create a new key.
         $iprestriction = !empty($mobilesettings->qrsameipcheck) ? getremoteaddr(null) : null;
         $qrkeyttl = !empty($mobilesettings->qrkeyttl) ? $mobilesettings->qrkeyttl : self::LOGIN_QR_KEY_TTL;
         $validuntil = time() + $qrkeyttl;
-        return create_user_key('tool_mobile', $USER->id, null, $iprestriction, $validuntil);
+        return create_user_key('tool_mobile/qrlogin', $USER->id, null, $iprestriction, $validuntil);
     }
 
     /**
@@ -576,6 +591,8 @@ class api {
                 'CoreUserDelegate_AddonBadges:account' => new lang_string('badges', 'badges'),
                 'CoreUserDelegate_AddonBlog:account' => new lang_string('blog', 'blog'),
                 '$mmSideMenuDelegate_mmaCompetency' => new lang_string('myplans', 'tool_lp'),
+                'CoreUserDelegate_CorePolicy' => new lang_string('policiesagreements', 'tool_policy'),
+                'CoreUserDelegate_CoreDataPrivacy' => new lang_string('pluginname', 'tool_dataprivacy'),
                 'NoDelegate_SwitchAccount' => new lang_string('switchaccount', 'tool_mobile'),
             ),
             "$course" => array(
@@ -773,7 +790,7 @@ class api {
      *
      * @return array Subscription information
      */
-    public static function get_subscription_information() : ?array {
+    public static function get_subscription_information(): ?array {
         global $CFG;
 
         // Use session cache to prevent multiple requests.

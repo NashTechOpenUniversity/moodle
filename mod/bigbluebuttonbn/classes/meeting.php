@@ -283,6 +283,7 @@ class meeting {
         $presentation = $instance->get_presentation(); // This is for internal use.
         if (!empty($presentation)) {
             $meetinginfo->presentations[] = $presentation;
+            $meetinginfo->showpresentations = $instance->should_show_presentation();
         }
         $meetinginfo->attendees = [];
         if (!empty($info['attendees'])) {
@@ -462,7 +463,7 @@ class meeting {
             );
         }
         if ((boolean) config::get('recordingready_enabled')) {
-            $metadata['bn-recording-ready-url'] = $this->instance->get_record_ready_url()->out(false);
+            $metadata['bbb-recording-ready-url'] = $this->instance->get_record_ready_url()->out(false);
         }
         if ((boolean) config::get('meetingevents_enabled')) {
             $metadata['analytics-callback-url'] = $this->instance->get_meeting_event_notification_url()->out(false);
@@ -482,7 +483,7 @@ class meeting {
      * @param object $data
      * @return string
      */
-    public static function meeting_events(instance $instance, object $data):  string {
+    public static function meeting_events(instance $instance, object $data): string {
         $bigbluebuttonbn = $instance->get_instance_data();
         // Validate that the bigbluebuttonbn activity corresponds to the meeting_id received.
         $meetingidelements = explode('[', $data->{'meeting_id'});
@@ -496,6 +497,9 @@ class meeting {
         $meta['internalmeetingid'] = $data->{'internal_meeting_id'};
         $meta['callback'] = 'meeting_events';
         $meta['meetingid'] = $data->{'meeting_id'};
+        // Remove attendees from data to avoid duplicating callback logs; they are stored as summary logs.
+        $meta['data'] = clone $data->{'data'};
+        unset($meta['data']->{'attendees'});
 
         $eventcount = logger::log_event_callback($instance, $overrides, $meta);
         if ($eventcount === 1) {

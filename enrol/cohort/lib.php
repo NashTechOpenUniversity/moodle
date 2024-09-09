@@ -108,7 +108,7 @@ class enrol_cohort_plugin extends enrol_plugin {
      * @param array $fields instance fields
      * @return int id of new instance, null if can not be created
      */
-    public function add_instance($course, array $fields = null) {
+    public function add_instance($course, ?array $fields = null) {
         global $CFG;
 
         // Allows multiple cohorts to be set on creation.
@@ -512,14 +512,10 @@ class enrol_cohort_plugin extends enrol_plugin {
      * @param int|null $courseid Course ID.
      * @return array Errors
      */
-    public function validate_enrol_plugin_data(array $enrolmentdata, ?int $courseid = null) : array {
+    public function validate_enrol_plugin_data(array $enrolmentdata, ?int $courseid = null): array {
         global $DB;
 
-        $errors = [];
-        if (!enrol_is_enabled('cohort')) {
-            $errors['plugindisabled'] =
-                new lang_string('plugindisabled', 'enrol_cohort');
-        }
+        $errors = parent::validate_enrol_plugin_data($enrolmentdata, $courseid);
 
         if (isset($enrolmentdata['addtogroup'])) {
             $addtogroup = $enrolmentdata['addtogroup'];
@@ -591,7 +587,7 @@ class enrol_cohort_plugin extends enrol_plugin {
      * @param int $courseid Course ID.
      * @return array Updated enrolment data with custom fields info.
      */
-    public function fill_enrol_custom_fields(array $enrolmentdata, int $courseid) : array {
+    public function fill_enrol_custom_fields(array $enrolmentdata, int $courseid): array {
         global $DB;
 
         if (isset($enrolmentdata['cohortidnumber'])) {
@@ -619,20 +615,16 @@ class enrol_cohort_plugin extends enrol_plugin {
      * @param int|null $courseid Course ID.
      * @return lang_string|null Error
      */
-    public function validate_plugin_data_context(array $enrolmentdata, ?int $courseid = null) : ?lang_string {
+    public function validate_plugin_data_context(array $enrolmentdata, ?int $courseid = null): ?lang_string {
+        $error = null;
         if (isset($enrolmentdata['customint1'])) {
             $cohortid = $enrolmentdata['customint1'];
             $coursecontext = \context_course::instance($courseid);
             if (!cohort_get_cohort($cohortid, $coursecontext)) {
-                return new lang_string('contextcohortnotallowed', 'cohort', $enrolmentdata['cohortidnumber']);
+                $error = new lang_string('contextcohortnotallowed', 'cohort', $enrolmentdata['cohortidnumber']);
             }
         }
-        $enrolmentdata += [
-            'customint1' => null,
-            'customint2' => null,
-            'roleid' => 0,
-        ];
-        return parent::validate_plugin_data_context($enrolmentdata, $courseid);
+        return $error;
     }
 
     /**
@@ -667,7 +659,7 @@ class enrol_cohort_plugin extends enrol_plugin {
      * @param int $courseid Course ID.
      * @return stdClass|null Matching instance
      */
-    public function find_instance(array $enrolmentdata, int $courseid) : ?stdClass {
+    public function find_instance(array $enrolmentdata, int $courseid): ?stdClass {
         global $DB;
         $instances = enrol_get_instances($courseid, false);
 

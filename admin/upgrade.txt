@@ -1,4 +1,14 @@
+=== 4.5 Onwards ===
+
+This file has been replaced by UPGRADING.md. See MDL-81125 for further information.
+
+===
 This files describes API changes in /admin/*.
+
+=== 4.4 ===
+
+* Grade item setting "Advanced grade item options" (grade_item_advanced) is no longer used and has been removed.
+* Grade category settings no longer have the "Advanced" checkbox. The 'advanced' parameter has been removed.
 
 === 4.3 ===
 

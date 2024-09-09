@@ -4,6 +4,7 @@
     require_once($CFG->libdir.'/adminlib.php');
     require_once($CFG->libdir.'/authlib.php');
     require_once($CFG->dirroot.'/user/lib.php');
+    require_once($CFG->dirroot.'/'.$CFG->admin.'/user/user_bulk_forms.php');
 
     $delete       = optional_param('delete', 0, PARAM_INT);
     $confirm      = optional_param('confirm', '', PARAM_ALPHANUM);   //md5 confirmation hash
@@ -18,10 +19,6 @@
 
     $sitecontext = context_system::instance();
     $site = get_site();
-
-    if (!has_capability('moodle/user:update', $sitecontext) and !has_capability('moodle/user:delete', $sitecontext)) {
-        throw new \moodle_exception('nopermissions', 'error', '', 'edit/delete users');
-    }
 
     $returnurl = new moodle_url('/admin/user.php');
 
@@ -134,7 +131,7 @@
             if (!is_siteadmin($user) and $USER->id != $user->id and $user->suspended != 1) {
                 $user->suspended = 1;
                 // Force logout.
-                \core\session\manager::kill_user_sessions($user->id);
+                \core\session\manager::destroy_user_sessions($user->id);
                 user_update_user($user, false);
             }
         }
@@ -166,14 +163,29 @@
         echo html_writer::start_div('d-flex mb-2');
         $url = new moodle_url('/user/editadvanced.php', ['id' => -1]);
         echo html_writer::link($url, get_string('addnewuser', 'moodle'), [
-            'class' => 'btn btn-primary ml-auto',
+            'class' => 'btn btn-primary ms-auto',
             'data-action' => 'add-user',
         ]);
         echo html_writer::end_div();
     }
 
+    echo html_writer::start_div('', ['data-region' => 'report-user-list-wrapper']);
+
+    $bulkactions = new user_bulk_action_form(new moodle_url('/admin/user/user_bulk.php'),
+        ['excludeactions' => ['displayonpage', 'download'], 'passuserids' => true, 'hidesubmit' => true],
+        'post', '',
+        ['id' => 'user-bulk-action-form']);
+    $bulkactions->set_data(['returnurl' => $PAGE->url->out_as_local_url(false)]);
+
     $report = \core_reportbuilder\system_report_factory::create(\core_admin\reportbuilder\local\systemreports\users::class,
-        context_system::instance());
+        context_system::instance(), parameters: ['withcheckboxes' => $bulkactions->has_bulk_actions()]);
     echo $report->output();
+
+    if ($bulkactions->has_bulk_actions()) {
+        $PAGE->requires->js_call_amd('core_admin/bulk_user_actions', 'init');
+        $bulkactions->display();
+    }
+
+    echo html_writer::end_div();
 
     echo $OUTPUT->footer();

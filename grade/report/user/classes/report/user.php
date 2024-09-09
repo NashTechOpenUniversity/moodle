@@ -224,7 +224,7 @@ class user extends grade_report {
      * @param int $userid The id of the user
      * @param bool $viewasuser Set this to true when the current user is a mentor/parent of the targetted user.
      */
-    public function __construct(int $courseid, ?object $gpr, object $context, int $userid, bool $viewasuser = null) {
+    public function __construct(int $courseid, ?object $gpr, object $context, int $userid, ?bool $viewasuser = null) {
         global $DB, $CFG;
         parent::__construct($courseid, $gpr, $context);
 
@@ -475,7 +475,7 @@ class user extends grade_report {
      *
      * @return bool
      */
-    public function fill_table():bool {
+    public function fill_table(): bool {
         $this->fill_table_recursive($this->gtree->top_element);
         return true;
     }
@@ -588,7 +588,7 @@ class user extends grade_report {
                     $class .= ($type == 'categoryitem' || $type == 'courseitem') ? " d$depth baggb" : " item b1b";
                 }
 
-                $itemicon = \html_writer::div(grade_helper::get_element_icon($element), 'mr-1');
+                $itemicon = \html_writer::div(grade_helper::get_element_icon($element), 'me-1');
                 $elementtype = grade_helper::get_element_type_string($element);
                 $itemtype = \html_writer::span($elementtype, 'd-block text-uppercase small dimmed_text',
                     ['title' => $elementtype]);
@@ -598,14 +598,8 @@ class user extends grade_report {
                 }
 
                 // Generate the content for a cell that represents a grade item.
-                // If a behat test site is running avoid outputting the information about the type of the grade item.
-                // This additional information causes issues in behat particularly with the existing xpath used to
-                // interact with table elements.
-                if (!defined('BEHAT_SITE_RUNNING')) {
-                    $content = \html_writer::div($itemtype . $fullname);
-                } else {
-                    $content = \html_writer::div($fullname);
-                }
+                $itemtitle = \html_writer::div($fullname, 'rowtitle');
+                $content = \html_writer::div($itemtype . $itemtitle);
 
                 // Name.
                 $data['itemname']['content'] = \html_writer::div($itemicon . $content, "{$type} d-flex align-items-center");
@@ -713,7 +707,7 @@ class user extends grade_report {
                         $gradestatusclass = '';
                         $gradepassicon = '';
                         $ispassinggrade = $gradegrade->is_passed($gradegrade->grade_item);
-                        if (!is_null($ispassinggrade)) {
+                        if (!is_null($gradeval) && !is_null($ispassinggrade)) {
                             $gradestatusclass = $ispassinggrade ? 'gradepass' : 'gradefail';
                             if ($ispassinggrade) {
                                 $gradepassicon = $OUTPUT->pix_icon(
@@ -739,6 +733,13 @@ class user extends grade_report {
                     }
                     $data['grade']['headers'] = "$headercat $headerrow grade$userid";
                     $gradeitemdata['gradeformatted'] = $data['grade']['content'];
+                    // If the current grade item need to show a grade action menu, generate the appropriate output.
+                    if ($gradeactionmenu = $this->gtree->get_grade_action_menu($gradegrade)) {
+                        $gradecontainer = html_writer::div($data['grade']['content']);
+                        $grademenucontainer = html_writer::div($gradeactionmenu, 'ps-1 d-flex align-items-center');
+                        $data['grade']['content'] = html_writer::div($gradecontainer . $grademenucontainer,
+                            'd-flex align-items-center');
+                    }
                 }
 
                 // Range.

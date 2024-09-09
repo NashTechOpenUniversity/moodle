@@ -91,7 +91,7 @@ export default class Component extends BaseComponent {
             this.cms[cm.dataset.id] = cm;
         });
 
-        // Set the page item if any.
+        this._expandPageCmSectionIfNecessary(state);
         this._refreshPageItem({element: state.course, state});
 
         // Configure Aria Tree.
@@ -131,9 +131,9 @@ export default class Component extends BaseComponent {
             const toggler = section.querySelector(this.selectors.COLLAPSE);
             const isCollapsed = toggler?.classList.contains(this.classes.COLLAPSED) ?? false;
 
-            if (isChevron || isCollapsed) {
-                // Update the state.
-                const sectionId = section.getAttribute('data-id');
+            // Update the state.
+            const sectionId = section.getAttribute('data-id');
+            if (!sectionlink || isCollapsed) {
                 this.reactive.dispatch(
                     'sectionIndexCollapsed',
                     [sectionId],
@@ -217,6 +217,20 @@ export default class Component extends BaseComponent {
                 250
             );
         }
+    }
+
+    /**
+     * Expand a section if the current page is a section's cm.
+     *
+     * @private
+     * @param {Object} state the course state.
+     */
+    _expandPageCmSectionIfNecessary(state) {
+        const pageCmInfo = this.reactive.getPageAnchorCmInfo();
+        if (!pageCmInfo) {
+            return;
+        }
+        this._expandSectionNode(state.section.get(pageCmInfo.sectionid), true);
     }
 
     /**

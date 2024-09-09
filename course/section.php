@@ -32,7 +32,29 @@ $sectionid = required_param('id', PARAM_INT);
 // This parameter is used by the classic theme to force editing on.
 $edit = optional_param('edit', -1, PARAM_BOOL);
 
-$section = $DB->get_record('course_sections', ['id' => $sectionid], '*', MUST_EXIST);
+if (!$section = $DB->get_record('course_sections', ['id' => $sectionid], '*')) {
+    $url = new moodle_url('/');
+    $PAGE->set_context(\core\context\system::instance());
+    $PAGE->set_url($url);
+    $PAGE->set_pagelayout('course');
+    $PAGE->add_body_classes(['limitedwidth', 'single-section-page']);
+    $PAGE->set_title(get_string('notfound', 'error'));
+    $PAGE->set_heading($SITE->fullname);
+    echo $OUTPUT->header();
+
+    $errortext = new \core\output\notification(
+            get_string('sectioncantbefound', 'error'),
+            \core\output\notification::NOTIFY_ERROR
+    );
+    echo $OUTPUT->render($errortext);
+
+    $button = new single_button($url, get_string('gobacktosite'), 'get', single_button::BUTTON_PRIMARY);
+    $button->class = 'continuebutton';
+    echo $OUTPUT->render($button);
+
+    echo $OUTPUT->footer();
+    die();
+}
 
 // Defined here to avoid notices on errors.
 $PAGE->set_url('/course/section.php', ['id' => $sectionid]);
@@ -85,7 +107,7 @@ if (!$sectioninfo->uservisible) {
     }
 }
 
-$PAGE->set_pagetype('section-view-' . $course->format);
+$PAGE->set_pagetype('course-view-section-' . $course->format);
 $PAGE->set_other_editing_capability('moodle/course:update');
 $PAGE->set_other_editing_capability('moodle/course:manageactivities');
 $PAGE->set_other_editing_capability('moodle/course:activityvisibility');
@@ -142,13 +164,20 @@ if (!empty($bulkbutton)) {
     $PAGE->add_header_action($bulkbutton);
 }
 
+$outputclass = $format->get_output_classname('content');
+/** @var \core_courseformat\output\local\content */
+$sectionoutput = new $outputclass($format);
+
 // Add to the header the control menu for the section.
 if ($format->show_editor()) {
-    $sectionclass = new \core_courseformat\output\local\content\section($format, $sectioninfo);
-    $renderable = $sectionclass->export_for_template($renderer);
-    $controlmenuhtml = $renderable->controlmenu->menu;
-    $PAGE->add_header_action($controlmenuhtml);
-    $sectionheading = $OUTPUT->render($format->inplace_editable_render_section_name($sectioninfo, false));
+    $menu = $sectionoutput->get_page_header_action($renderer);
+    if ($menu) {
+        $PAGE->add_header_action($menu);
+    }
+    $sectionheading = $OUTPUT->container(
+        $OUTPUT->render($format->inplace_editable_render_section_name($sectioninfo, false)),
+        attributes: ['data-for' => 'section_title'],
+    );
     $PAGE->set_heading($sectionheading, false, false);
 } else {
     $PAGE->set_heading($sectiontitle);
@@ -182,9 +211,7 @@ echo $renderer->container_start('course-content');
 // Include course AJAX.
 include_course_ajax($course, $modinfo->get_used_module_names());
 
-$outputclass = $format->get_output_classname('content');
-$widget = new $outputclass($format);
-echo $renderer->render($widget);
+echo $renderer->render($sectionoutput);
 
 // Include course format javascript files.
 $jsfiles = $format->get_required_jsfiles();

@@ -299,8 +299,6 @@ class mod_lti_mod_form extends moodleform_mod {
             'toolurl',
             'securetoolurl',
             'launchcontainer',
-            'resourcekey',
-            'password',
             'instructorcustomparameters',
             'icon',
             'secureicon',
@@ -371,20 +369,16 @@ class mod_lti_mod_form extends moodleform_mod {
                 || !empty($this->current->secureicon) || !empty($this->current->icon));
 
             $selectcontentindicatorinner = $iscontentitem ?
-                $OUTPUT->pix_icon('i/valid', get_string('contentselected', 'mod_lti'), 'moodle', ['class' => 'mr-1'])
+                $OUTPUT->pix_icon('i/valid', get_string('contentselected', 'mod_lti'), 'moodle', ['class' => 'me-1'])
                 . get_string('contentselected', 'mod_lti') : '';
             $selectcontentindicator = html_writer::div($selectcontentindicatorinner, '',
                 ['aria-role' => 'status', 'id' => 'id_selectcontentindicator']);
-            $selectcontentstatus = $iscontentitem ? 'true' : 'false';
             $selectcontentgrp = [
                 $mform->createElement('button', 'selectcontent', get_string('selectcontent', 'mod_lti'), $contentbuttonattributes,
-                    ['customclassoverride' => 'btn-primary']),
+                    ['customclassoverride' => 'btn-secondary']),
                 $mform->createElement('html', $selectcontentindicator),
-                $mform->createElement('hidden', 'selectcontentstatus', $selectcontentstatus),
             ];
-            $mform->setType('selectcontentstatus', PARAM_TEXT);
             $mform->addGroup($selectcontentgrp, 'selectcontentgroup', get_string('content'), ' ', false);
-            $mform->addRule('selectcontentgroup', get_string('selectcontentvalidationerror', 'mod_lti'), 'required');
         }
 
         // Adding the standard "name" field.
@@ -465,8 +459,12 @@ class mod_lti_mod_form extends moodleform_mod {
         $mform->setType('resourcekey', PARAM_TEXT);
         $mform->addElement('hidden', 'password', '', ['id' => 'id_password']);
         $mform->setType('password', PARAM_TEXT);
-        $mform->addElement('hidden', 'instructorcustomparameters', '', ['id' => 'id_instructorcustomparameters']);
+        $mform->addElement('textarea', 'instructorcustomparameters', get_string('custom', 'lti'),
+            ['rows' => 4, 'cols' => 60]);
         $mform->setType('instructorcustomparameters', PARAM_TEXT);
+        $mform->setAdvanced('instructorcustomparameters');
+        $mform->addHelpButton('instructorcustomparameters', 'custom', 'lti');
+        $mform->setForceLtr('instructorcustomparameters');
         $mform->addElement('hidden', 'icon', '', ['id' => 'id_icon']);
         $mform->setType('icon', PARAM_URL);
         $mform->addElement('hidden', 'secureicon', '', ['id' => 'id_secureicon']);
@@ -536,15 +534,5 @@ class mod_lti_mod_form extends moodleform_mod {
             }
         }
         parent::set_data($defaultvalues);
-    }
-
-    public function validation($data, $files) {
-        $errors = parent::validation($data, $files);
-
-        if (isset($data['selectcontentstatus']) && $data['selectcontentstatus'] === 'false') {
-            $errors['selectcontentgroup'] = get_string('selectcontentvalidationerror', 'mod_lti');
-        }
-
-        return $errors;
     }
 }

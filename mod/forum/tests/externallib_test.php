@@ -35,13 +35,14 @@ require_once($CFG->dirroot . '/mod/forum/lib.php');
  * @copyright  2012 Mark Nelson <markn@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class externallib_test extends externallib_advanced_testcase {
+final class externallib_test extends externallib_advanced_testcase {
 
     /**
      * Tests set up
      */
     protected function setUp(): void {
         global $CFG;
+        parent::setUp();
 
         // We must clear the subscription caches. This has to be done both before each test, and after in case of other
         // tests using these functions.
@@ -54,6 +55,7 @@ class externallib_test extends externallib_advanced_testcase {
         // We must clear the subscription caches. This has to be done both before each test, and after in case of other
         // tests using these functions.
         \mod_forum\subscriptions::reset_forum_cache();
+        parent::tearDown();
     }
 
     /**
@@ -104,7 +106,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get forums
      */
-    public function test_mod_forum_get_forums_by_courses() {
+    public function test_mod_forum_get_forums_by_courses(): void {
         global $USER, $CFG, $DB;
 
         $this->resetAfterTest(true);
@@ -235,7 +237,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test the toggle favourite state
      */
-    public function test_mod_forum_toggle_favourite_state() {
+    public function test_mod_forum_toggle_favourite_state(): void {
         global $USER, $CFG, $DB;
 
         $this->resetAfterTest(true);
@@ -283,7 +285,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test the toggle pin state
      */
-    public function test_mod_forum_set_pin_state() {
+    public function test_mod_forum_set_pin_state(): void {
         $this->resetAfterTest(true);
 
         // Create a user.
@@ -331,7 +333,7 @@ class externallib_test extends externallib_advanced_testcase {
      *
      * Tests is similar to the get_forum_discussion_posts only utilizing the new return structure and entities
      */
-    public function test_mod_forum_get_discussion_posts() {
+    public function test_mod_forum_get_discussion_posts(): void {
         global $CFG;
 
         $this->resetAfterTest(true);
@@ -663,7 +665,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get forum posts
      */
-    public function test_mod_forum_get_discussion_posts_deleted() {
+    public function test_mod_forum_get_discussion_posts_deleted(): void {
         global $CFG, $PAGE;
 
         $this->resetAfterTest(true);
@@ -743,7 +745,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get forum posts returns inline attachments.
      */
-    public function test_mod_forum_get_discussion_posts_inline_attachments() {
+    public function test_mod_forum_get_discussion_posts_inline_attachments(): void {
         global $CFG;
 
         $this->resetAfterTest(true);
@@ -818,7 +820,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get forum posts (qanda forum)
      */
-    public function test_mod_forum_get_discussion_posts_qanda() {
+    public function test_mod_forum_get_discussion_posts_qanda(): void {
         global $CFG, $DB;
 
         $this->resetAfterTest(true);
@@ -884,7 +886,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get forum discussions
      */
-    public function test_mod_forum_get_forum_discussions() {
+    public function test_mod_forum_get_forum_discussions(): void {
         global $CFG, $DB, $PAGE;
 
         $this->resetAfterTest(true);
@@ -1051,10 +1053,12 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test the sorting in get forum discussions
      */
-    public function test_mod_forum_get_forum_discussions_sorting() {
+    public function test_mod_forum_get_forum_discussions_sorting(): void {
         global $CFG, $DB, $PAGE;
 
         $this->resetAfterTest(true);
+
+        $clock = $this->mock_clock_with_frozen();
 
         // Set the CFG variable to allow track forums.
         $CFG->forum_trackreadposts = true;
@@ -1105,7 +1109,7 @@ class externallib_test extends externallib_advanced_testcase {
         $record->userid = $user1->id;
         $record->forum = $forum1->id;
         $discussion1 = self::getDataGenerator()->get_plugin_generator('mod_forum')->create_discussion($record);
-        sleep(1);
+        $clock->bump();
 
         // Add three replies to the discussion 1 from different users.
         $record = new \stdClass();
@@ -1113,16 +1117,16 @@ class externallib_test extends externallib_advanced_testcase {
         $record->parent = $discussion1->firstpost;
         $record->userid = $user2->id;
         $discussion1reply1 = self::getDataGenerator()->get_plugin_generator('mod_forum')->create_post($record);
-        sleep(1);
+        $clock->bump();
 
         $record->parent = $discussion1reply1->id;
         $record->userid = $user3->id;
         $discussion1reply2 = self::getDataGenerator()->get_plugin_generator('mod_forum')->create_post($record);
-        sleep(1);
+        $clock->bump();
 
         $record->userid = $user4->id;
         $discussion1reply3 = self::getDataGenerator()->get_plugin_generator('mod_forum')->create_post($record);
-        sleep(1);
+        $clock->bump();
 
         // Create discussion2.
         $record2 = new \stdClass();
@@ -1130,7 +1134,7 @@ class externallib_test extends externallib_advanced_testcase {
         $record2->userid = $user1->id;
         $record2->forum = $forum1->id;
         $discussion2 = self::getDataGenerator()->get_plugin_generator('mod_forum')->create_discussion($record2);
-        sleep(1);
+        $clock->bump();
 
         // Add one reply to the discussion 2.
         $record2 = new \stdClass();
@@ -1138,7 +1142,7 @@ class externallib_test extends externallib_advanced_testcase {
         $record2->parent = $discussion2->firstpost;
         $record2->userid = $user2->id;
         $discussion2reply1 = self::getDataGenerator()->get_plugin_generator('mod_forum')->create_post($record2);
-        sleep(1);
+        $clock->bump();
 
         // Create discussion 3.
         $record3 = new \stdClass();
@@ -1146,7 +1150,7 @@ class externallib_test extends externallib_advanced_testcase {
         $record3->userid = $user1->id;
         $record3->forum = $forum1->id;
         $discussion3 = self::getDataGenerator()->get_plugin_generator('mod_forum')->create_discussion($record3);
-        sleep(1);
+        $clock->bump();
 
         // Add two replies to the discussion 3.
         $record3 = new \stdClass();
@@ -1154,7 +1158,7 @@ class externallib_test extends externallib_advanced_testcase {
         $record3->parent = $discussion3->firstpost;
         $record3->userid = $user2->id;
         $discussion3reply1 = self::getDataGenerator()->get_plugin_generator('mod_forum')->create_post($record3);
-        sleep(1);
+        $clock->bump();
 
         $record3->parent = $discussion3reply1->id;
         $record3->userid = $user3->id;
@@ -1237,7 +1241,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test add_discussion_post
      */
-    public function test_add_discussion_post() {
+    public function test_add_discussion_post(): void {
         global $CFG;
 
         $this->resetAfterTest(true);
@@ -1398,7 +1402,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test add_discussion_post and auto subscription to a discussion.
      */
-    public function test_add_discussion_post_subscribe_discussion() {
+    public function test_add_discussion_post_subscribe_discussion(): void {
         global $USER;
 
         $this->resetAfterTest(true);
@@ -1484,7 +1488,7 @@ class externallib_test extends externallib_advanced_testcase {
     /*
      * Test add_discussion. A basic test since all the API functions are already covered by unit tests.
      */
-    public function test_add_discussion() {
+    public function test_add_discussion(): void {
         global $CFG, $USER;
         $this->resetAfterTest(true);
 
@@ -1599,7 +1603,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test adding discussions in a course with gorups
      */
-    public function test_add_discussion_in_course_with_groups() {
+    public function test_add_discussion_in_course_with_groups(): void {
         global $CFG;
 
         $this->resetAfterTest(true);
@@ -1702,7 +1706,7 @@ class externallib_test extends externallib_advanced_testcase {
      *
      * @covers \mod_forum\event\discussion_lock_updated
      */
-    public function test_set_lock_state() {
+    public function test_set_lock_state(): void {
         global $DB;
         $this->resetAfterTest(true);
 
@@ -1775,7 +1779,7 @@ class externallib_test extends externallib_advanced_testcase {
     /*
      * Test can_add_discussion. A basic test since all the API functions are already covered by unit tests.
      */
-    public function test_can_add_discussion() {
+    public function test_can_add_discussion(): void {
         global $DB;
         $this->resetAfterTest(true);
 
@@ -1820,7 +1824,7 @@ class externallib_test extends externallib_advanced_testcase {
     /*
      * A basic test to make sure users cannot post to forum after the cutoff date.
      */
-    public function test_can_add_discussion_after_cutoff() {
+    public function test_can_add_discussion_after_cutoff(): void {
         $this->resetAfterTest(true);
 
         // Create courses to add the modules.
@@ -1848,7 +1852,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get posts discussions including rating information.
      */
-    public function test_mod_forum_get_discussion_rating_information() {
+    public function test_mod_forum_get_discussion_rating_information(): void {
         global $DB, $CFG, $PAGE;
         require_once($CFG->dirroot . '/rating/lib.php');
         $PAGE->set_url('/my/index.php');    // Need this because some internal API calls require the $PAGE url to be set.
@@ -1940,7 +1944,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test mod_forum_get_forum_access_information.
      */
-    public function test_mod_forum_get_forum_access_information() {
+    public function test_mod_forum_get_forum_access_information(): void {
         global $DB;
 
         $this->resetAfterTest(true);
@@ -1993,7 +1997,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test add_discussion_post
      */
-    public function test_add_discussion_post_private() {
+    public function test_add_discussion_post_private(): void {
         global $DB;
 
         $this->resetAfterTest(true);
@@ -2087,7 +2091,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test trusted text enabled.
      */
-    public function test_trusted_text_enabled() {
+    public function test_trusted_text_enabled(): void {
         global $USER, $CFG;
 
         $this->resetAfterTest(true);
@@ -2148,7 +2152,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test trusted text disabled.
      */
-    public function test_trusted_text_disabled() {
+    public function test_trusted_text_disabled(): void {
         global $USER, $CFG;
 
         $this->resetAfterTest(true);
@@ -2209,7 +2213,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test delete a discussion.
      */
-    public function test_delete_post_discussion() {
+    public function test_delete_post_discussion(): void {
         global $DB;
         $this->resetAfterTest(true);
 
@@ -2238,7 +2242,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test delete a post.
      */
-    public function test_delete_post_post() {
+    public function test_delete_post_post(): void {
         global $DB;
         $this->resetAfterTest(true);
 
@@ -2277,7 +2281,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test delete a different user post.
      */
-    public function test_delete_post_other_user_post() {
+    public function test_delete_post_other_user_post(): void {
         global $DB;
         $this->resetAfterTest(true);
 
@@ -2315,7 +2319,7 @@ class externallib_test extends externallib_advanced_testcase {
     /*
      * Test get forum posts by user id.
      */
-    public function test_mod_forum_get_discussion_posts_by_userid() {
+    public function test_mod_forum_get_discussion_posts_by_userid(): void {
         global $DB;
         $this->resetAfterTest(true);
 
@@ -2774,7 +2778,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_discussion_post a discussion.
      */
-    public function test_get_discussion_post_discussion() {
+    public function test_get_discussion_post_discussion(): void {
         global $DB;
         $this->resetAfterTest(true);
         // Setup test data.
@@ -2800,7 +2804,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_discussion_post a post.
      */
-    public function test_get_discussion_post_post() {
+    public function test_get_discussion_post_post(): void {
         global $DB;
         $this->resetAfterTest(true);
         // Setup test data.
@@ -2835,7 +2839,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_discussion_post a different user post.
      */
-    public function test_get_discussion_post_other_user_post() {
+    public function test_get_discussion_post_other_user_post(): void {
         global $DB;
         $this->resetAfterTest(true);
         // Setup test data.
@@ -2873,7 +2877,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test prepare_draft_area_for_post a different user post.
      */
-    public function test_prepare_draft_area_for_post() {
+    public function test_prepare_draft_area_for_post(): void {
         global $DB;
         $this->resetAfterTest(true);
         // Setup test data.
@@ -2950,7 +2954,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test update_discussion_post with a discussion.
      */
-    public function test_update_discussion_post_discussion() {
+    public function test_update_discussion_post_discussion(): void {
         global $DB, $USER;
         $this->resetAfterTest(true);
         // Setup test data.
@@ -2995,7 +2999,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test update_discussion_post with a post.
      */
-    public function test_update_discussion_post_post() {
+    public function test_update_discussion_post_post(): void {
         global $DB, $USER;
         $this->resetAfterTest(true);
         // Setup test data.
@@ -3087,7 +3091,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test update_discussion_post with other user post (no permissions).
      */
-    public function test_update_discussion_post_other_user_post() {
+    public function test_update_discussion_post_other_user_post(): void {
         global $DB, $USER;
         $this->resetAfterTest(true);
         // Setup test data.

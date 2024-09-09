@@ -25,7 +25,7 @@ use cm_info;
  * @package    core_courseformat
  * @copyright  2023 Ferran Recio <ferran@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \core_courseformat\base
+ * @coversDefaultClass \core_courseformat\local\baseactions
  */
 class baseactions_test extends \advanced_testcase {
     /**
@@ -34,6 +34,7 @@ class baseactions_test extends \advanced_testcase {
     public static function setUpBeforeClass(): void {
         global $CFG;
         require_once($CFG->dirroot . '/course/lib.php');
+        parent::setUpBeforeClass();
     }
 
     /**
@@ -45,7 +46,6 @@ class baseactions_test extends \advanced_testcase {
     private function get_base_reflection_method(baseactions $baseinstance, string $methodname): ReflectionMethod {
         $reflectionclass = new \reflectionclass($baseinstance);
         $method = $reflectionclass->getMethod($methodname);
-        $method->setAccessible(true);
         return $method;
     }
 

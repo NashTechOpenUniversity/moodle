@@ -93,12 +93,12 @@
         {{/initialselector}}
         {{#pagereset}}
             <div class="navitem align-self-center">
-                <a href="{{{.}}}" class="btn btn-link">{{#str}}clearall, gradereport_grader{{/str}}</a>
+                <a href="{{{.}}}" class="btn btn-link">{{#str}}clearall, core{{/str}}</a>
             </div>
             <div class="navitem-divider"></div>
         {{/pagereset}}
         {{#collapsedcolumns}}
-            <div class="navitem flex-column align-self-center ml-auto {{#classes}}{{.}}{{/classes}}" aria-live="polite">
+            <div class="navitem flex-column align-self-center ms-auto {{#classes}}{{.}}{{/classes}}" aria-live="polite">
                 {{#content}}
                     {{>core/comboboxsearch}}
                 {{/content}}

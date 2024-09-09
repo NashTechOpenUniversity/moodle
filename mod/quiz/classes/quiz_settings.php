@@ -65,6 +65,9 @@ class quiz_settings {
     /** @var bool whether the current user has capability mod/quiz:preview. */
     protected $ispreviewuser = null;
 
+    /** @var grade_calculator|null grade calculator for this quiz. */
+    protected ?grade_calculator $gradecalculator = null;
+
     // Constructor =============================================================.
 
     /**
@@ -110,7 +113,7 @@ class quiz_settings {
      * @param int|null $userid the the userid (optional). If passed, relevant overrides are applied.
      * @return quiz_settings the new quiz settings object.
      */
-    public static function create(int $quizid, int $userid = null): self {
+    public static function create(int $quizid, ?int $userid = null): self {
         $quiz = access_manager::load_quiz_and_settings($quizid);
         [$course, $cm] = get_course_and_cm_from_instance($quiz, 'quiz');
 
@@ -124,7 +127,7 @@ class quiz_settings {
      * @param int|null $userid the the userid (optional). If passed, relevant overrides are applied.
      * @return quiz_settings the new quiz settings object.
      */
-    public static function create_for_cmid(int $cmid, int $userid = null): self {
+    public static function create_for_cmid(int $cmid, ?int $userid = null): self {
         [$course, $cm] = get_course_and_cm_from_cmid($cmid, 'quiz');
         $quiz = access_manager::load_quiz_and_settings($cm->instance);
 
@@ -393,7 +396,11 @@ class quiz_settings {
      * @return grade_calculator
      */
     public function get_grade_calculator(): grade_calculator {
-        return grade_calculator::create($this);
+        if ($this->gradecalculator === null) {
+            $this->gradecalculator = grade_calculator::create($this);
+        }
+
+        return $this->gradecalculator;
     }
 
     /**
@@ -500,7 +507,7 @@ class quiz_settings {
      * @param int|null $attemptsubmittime time this attempt was submitted. (Optional, but should be given.)
      * @return string an appropraite message.
      */
-    public function cannot_review_message($when, $short = false, int $attemptsubmittime = null) {
+    public function cannot_review_message($when, $short = false, ?int $attemptsubmittime = null) {
 
         if ($attemptsubmittime === null) {
             debugging('It is recommended that you pass $attemptsubmittime to cannot_review_message', DEBUG_DEVELOPER);
@@ -621,5 +628,17 @@ class quiz_settings {
         sort($questiontypes);
 
         return $questiontypes;
+    }
+
+    /**
+     * Returns an override manager instance with context and quiz loaded.
+     *
+     * @return \mod_quiz\local\override_manager
+     */
+    public function get_override_manager(): \mod_quiz\local\override_manager {
+        return new \mod_quiz\local\override_manager(
+            quiz: $this->quiz,
+            context: $this->context
+        );
     }
 }

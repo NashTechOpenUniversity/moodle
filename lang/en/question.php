@@ -218,6 +218,7 @@ $string['invalidcategoryidtomove'] = 'Invalid category id to move!';
 $string['invalidconfirm'] = 'Confirmation string was incorrect';
 $string['invalidcontextinhasanyquestions'] = 'Invalid context passed to question_context_has_any_questions.';
 $string['invalidgrade'] = 'Grades ({$a}) do not match grade options - question skipped.';
+$string['invalidgradequestion'] = 'Grades ({$a->grades}) do not match grade options - question \'{$a->question}\' skipped.';
 $string['invalidpenalty'] = 'Invalid penalty';
 $string['invalidwizardpage'] = 'Incorrect or no wizard page specified!';
 $string['lastmodifiedby'] = 'Last modified by';
@@ -298,7 +299,7 @@ $string['questionname'] = 'Question name';
 $string['questionnameandquestionversion'] = '{$a->name} v{$a->version}';
 $string['questionno'] = 'Question {$a}';
 $string['questionsaveerror'] = 'Errors occur during saving question - ({$a})';
-$string['questionsinuse'] = '* Denotes questions which can\'t be deleted because they are in use. Instead, they will be hidden in the question bank unless you select \'Show old questions\'.';
+$string['questionsinuse'] = '* Denotes questions which can\'t be deleted because they are in use. Instead, they will be hidden in the question bank unless you set \'Show hidden questions\' to \'Yes\'.';
 $string['questionsmovedto'] = 'Questions still in use moved to "{$a}" in the parent course category.';
 $string['questionsrescuedfrom'] = 'Questions saved from context {$a}.';
 $string['questionsrescuedfrominfo'] = 'These questions (some of which may be hidden) were saved when context {$a} was deleted because they are still used by some quizzes or other activities.';
@@ -448,6 +449,10 @@ $string['questionbehavioursdisabled'] = 'Question behaviours to disable';
 $string['questionbehavioursdisabledexplained'] = 'Enter a comma-separated list of behaviours you do not want to appear in the drop-down menu.';
 $string['questionbehavioursorder'] = 'Question behaviours order';
 $string['questionbehavioursorderexplained'] = 'Enter a comma-separated list of behaviours in the order you want them to appear in the drop-down menu.';
+$string['questiondefaultssave'] = 'Save question options as user preference defaults';
+$string['questiondefaultssave_desc'] = 'Whether question options such as \'Default mark\', \'One or multiple answers?\' etc. should be saved as user preferences when the edit question form is submitted, for use as defaults the next time the user accesses the form.';
+$string['questionediting'] = 'Question editing';
+$string['questionediting_desc'] = 'These settings apply to edit question forms.';
 $string['questionidmismatch'] = 'Question ids mismatch';
 $string['questionformtagheader'] = '{$a} tags';
 $string['questionname'] = 'Question name';
@@ -519,9 +524,3 @@ $string['version_selection'] = 'Version {$a->version}';
 $string['versioninfo'] = 'Version {$a->version} (of {$a->latestversion})';
 $string['versioninfolatest'] = 'Version {$a->version} (latest)';
 $string['question_version'] = 'Question version';
-
-// Deprecated since Moodle 4.0.
-$string['notflagged'] = 'Not flagged';
-
-// Deprecated since Moodle 4.1.
-$string['nopermissionmove'] = 'You don\'t have permission to move questions from here. You must save the question in this category or save it as a new question.';

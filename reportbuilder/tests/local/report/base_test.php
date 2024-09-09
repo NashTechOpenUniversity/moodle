@@ -43,6 +43,7 @@ class base_test extends advanced_testcase {
     public static function setUpBeforeClass(): void {
         global $CFG;
         require_once("{$CFG->dirroot}/reportbuilder/tests/fixtures/system_report_available.php");
+        parent::setUpBeforeClass();
     }
 
     /**
@@ -198,7 +199,6 @@ class base_test extends advanced_testcase {
         $systemreport = system_report_factory::create(system_report_available::class, context_system::instance());
 
         $method = (new ReflectionClass($systemreport))->getMethod('annotate_entity');
-        $method->setAccessible(true);
 
         $method->invoke($systemreport, 'test', new lang_string('yes'));
         $this->assertEquals(new lang_string('yes'), $systemreport->get_entity_title('test'));
@@ -213,7 +213,6 @@ class base_test extends advanced_testcase {
         $systemreport = system_report_factory::create(system_report_available::class, context_system::instance());
 
         $method = (new ReflectionClass($systemreport))->getMethod('annotate_entity');
-        $method->setAccessible(true);
 
         $this->expectException(coding_exception::class);
         $this->expectExceptionMessage('Entity name must be comprised of alphanumeric character, underscore or dash');
@@ -229,7 +228,6 @@ class base_test extends advanced_testcase {
         $systemreport = system_report_factory::create(system_report_available::class, context_system::instance());
 
         $method = (new ReflectionClass($systemreport))->getMethod('annotate_entity');
-        $method->setAccessible(true);
 
         $method->invoke($systemreport, 'test', new lang_string('yes'));
 

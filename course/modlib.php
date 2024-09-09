@@ -27,8 +27,10 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-use \core_grades\component_gradeitems;
+use core\di;
+use core\hook;
 use core_courseformat\formatactions;
+use core_grades\component_gradeitems;
 
 require_once($CFG->dirroot.'/course/lib.php');
 
@@ -497,7 +499,7 @@ function set_moduleinfo_defaults($moduleinfo) {
  * Check that the user can add a module. Also returns some information like the module, context and course section info.
  * The fucntion create the course section if it doesn't exist.
  *
- * @param object $course the course of the module
+ * @param stdClass $course the course of the module
  * @param string $modulename the module name
  * @param int $sectionnum the section of the module
  * @return array list containing module, context, course section.
@@ -618,14 +620,18 @@ function update_moduleinfo($cm, $moduleinfo, $course, $mform = null) {
         // This code is used both when submitting the form, which uses a long
         // name to avoid clashes, and by unit test code which uses the real
         // name in the table.
+        $newavailability = $cm->availability;
         if (property_exists($moduleinfo, 'availabilityconditionsjson')) {
             if ($moduleinfo->availabilityconditionsjson !== '') {
-                $cm->availability = $moduleinfo->availabilityconditionsjson;
+                $newavailability = $moduleinfo->availabilityconditionsjson;
             } else {
-                $cm->availability = null;
+                $newavailability = null;
             }
         } else if (property_exists($moduleinfo, 'availability')) {
-            $cm->availability = $moduleinfo->availability;
+            $newavailability = $moduleinfo->availability;
+        }
+        if ($cm->availability != $newavailability) {
+            $cm->availability = $newavailability;
         }
         // If there is any availability data, verify it.
         if ($cm->availability) {
@@ -723,6 +729,16 @@ function update_moduleinfo($cm, $moduleinfo, $course, $mform = null) {
         $cminfo = cm_info::create($cm);
         $completion->reset_all_state($cminfo);
     }
+
+    if ($cm->name != $moduleinfo->name) {
+        di::get(hook\manager::class)->dispatch(
+            new \core_courseformat\hook\after_cm_name_edited(
+                get_fast_modinfo($course)->get_cm($cm->id),
+                $moduleinfo->name
+            ),
+        );
+    }
+
     $cm->name = $moduleinfo->name;
     \core\event\course_module_updated::create_from_cm($cm, $modcontext)->trigger();
 
@@ -755,6 +771,7 @@ function include_modulelib($modulename) {
  */
 function get_moduleinfo_data($cm, $course) {
     global $CFG;
+    require_once($CFG->libdir . '/gradelib.php');
 
     list($cm, $context, $module, $data, $cw) = can_update_moduleinfo($cm);
 
@@ -906,6 +923,12 @@ function prepare_new_moduleinfo_data($course, $modulename, $section, string $suf
             );
             $formfield = 'advancedgradingmethod_'.$areaname;
             $data->{$formfield} = '';
+        }
+    }
+
+    if (plugin_supports('mod', $data->modulename, FEATURE_QUICKCREATE)) {
+        if (get_string_manager()->string_exists('quickcreatename', "mod_{$data->modulename}")) {
+            $data->name = get_string("quickcreatename", "mod_{$data->modulename}");
         }
     }
 

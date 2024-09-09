@@ -63,6 +63,7 @@ export default class Component extends BaseComponent {
         };
         this.selectorGenerators = {
             cmNameFor: (id) => `[data-cm-name-for='${id}']`,
+            sectionNameFor: (id) => `[data-section-name-for='${id}']`,
         };
         // Default classes to toggle on refresh.
         this.classes = {
@@ -152,9 +153,6 @@ export default class Component extends BaseComponent {
             "scroll",
             this._scrollHandler
         );
-        setTimeout(() => {
-            this._scrollHandler();
-        }, 500);
     }
 
     /**
@@ -178,15 +176,12 @@ export default class Component extends BaseComponent {
             const toggler = section.querySelector(this.selectors.COLLAPSE);
             const isCollapsed = toggler?.classList.contains(this.classes.COLLAPSED) ?? false;
 
-            if (isChevron || isCollapsed) {
-                // Update the state.
-                const sectionId = section.getAttribute('data-id');
-                this.reactive.dispatch(
-                    'sectionContentCollapsed',
-                    [sectionId],
-                    !isCollapsed
-                );
-            }
+            const sectionId = section.getAttribute('data-id');
+            this.reactive.dispatch(
+                'sectionContentCollapsed',
+                [sectionId],
+                !isCollapsed,
+            );
         }
     }
 
@@ -236,6 +231,7 @@ export default class Component extends BaseComponent {
             {watch: `cm.name:updated`, handler: this._refreshCmName},
             // Update section number and title.
             {watch: `section.number:updated`, handler: this._refreshSectionNumber},
+            {watch: `section.title:updated`, handler: this._refreshSectionTitle},
             // Collapse and expand sections.
             {watch: `section.contentcollapsed:updated`, handler: this._refreshSectionCollapsed},
             // Sections and cm sorting.
@@ -427,6 +423,22 @@ export default class Component extends BaseComponent {
                 }
             }
         }
+    }
+
+    /**
+     * Update a course section name on the whole page.
+     *
+     * @param {object} param
+     * @param {Object} param.element details the update details.
+     */
+    _refreshSectionTitle({element}) {
+        // Replace the text content of the section name in the whole page.
+        const allSectionNamesFor = document.querySelectorAll(
+            this.selectorGenerators.sectionNameFor(element.id)
+        );
+        allSectionNamesFor.forEach((sectionNameFor) => {
+            sectionNameFor.textContent = element.title;
+        });
     }
 
     /**

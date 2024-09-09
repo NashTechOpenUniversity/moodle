@@ -216,4 +216,22 @@ $messageproviders = array (
             'email' => MESSAGE_FORCED,
         ],
     ],
+
+    // Task has reached the maximum fail delay.
+    'failedtaskmaxdelay' => [
+        'defaults' => [
+            'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'email' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+        ],
+        'capability'  => 'moodle/site:config',
+    ],
+
+    // Course welcome message.
+    'enrolcoursewelcomemessage' => [
+        'defaults' => [
+            'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'email' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'airnotifier' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+        ],
+    ],
 );

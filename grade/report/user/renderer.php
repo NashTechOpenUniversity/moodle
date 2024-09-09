@@ -88,31 +88,23 @@ class gradereport_user_renderer extends plugin_renderer_base {
      * @param object $course The course object.
      * @param int|null $userid The user ID.
      * @param int|null $groupid The group ID.
+     * @param string $usersearch Search string.
      * @return string The raw HTML to render.
      * @throws coding_exception
      */
-    public function users_selector(object $course, ?int $userid = null, ?int $groupid = null): string {
+    public function users_selector(object $course, ?int $userid = null, ?int $groupid = null, string $usersearch = ''): string {
+        $actionbarrenderer = $this->page->get_renderer('core_course', 'actionbar');
         $resetlink = new moodle_url('/grade/report/user/index.php', ['id' => $course->id, 'group' => 0]);
-        $data = [
-            'currentvalue' => optional_param('searchvalue', '', PARAM_NOTAGS),
-            'resetlink' => $resetlink->out(false),
-            'name' => 'userid',
-            'courseid' => $course->id,
-            'groupid' => $groupid ?? 0,
-        ];
-
-        $searchdropdown = new comboboxsearch(
-            true,
-            $this->render_from_template('core_user/comboboxsearch/user_selector', $data),
-            null,
-            'user-search dropdown d-flex',
-            null,
-            'usersearchdropdown overflow-auto',
-            null,
-            false,
+        $baseurl = new moodle_url('/grade/report/user/index.php', ['id' => $course->id]);
+        $this->page->requires->js_call_amd('gradereport_user/user', 'init', [$baseurl->out(false)]);
+        $userselector = new \core_course\output\actionbar\user_selector(
+            course: $course,
+            resetlink: $resetlink,
+            userid: $userid,
+            groupid: $groupid,
+            usersearch: $usersearch
         );
-        $this->page->requires->js_call_amd('gradereport_user/user', 'init');
-        return $this->render_from_template($searchdropdown->get_template(), $searchdropdown->export_for_template($this));
+        return $actionbarrenderer->render($userselector);
     }
 
     /**
@@ -131,7 +123,6 @@ class gradereport_user_renderer extends plugin_renderer_base {
         while ($userdata = $gui->next_user()) {
             $users[$userdata->user->id] = $userdata->user;
         }
-        $gui->close();
 
         $arraykeys = array_keys($users);
         $keynumber = array_search($userid, $arraykeys);

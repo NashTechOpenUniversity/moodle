@@ -1067,7 +1067,7 @@ abstract class moodleform {
     /**
      * Form definition. Abstract method - always override!
      */
-    protected abstract function definition();
+    abstract protected function definition();
 
     /**
      * After definition hook.
@@ -1428,7 +1428,7 @@ abstract class moodleform {
      * @param array $strings strings for javascript
      * @deprecated since Moodle 3.3 MDL-57471
      */
-    function init_javascript_enhancement($element, $enhancement, array $options=array(), array $strings=null) {
+    function init_javascript_enhancement($element, $enhancement, array $options=array(), ?array $strings=null) {
         debugging('$mform->init_javascript_enhancement() is deprecated and no longer does anything. '.
             'smartselect uses should be converted to the searchableselector form element.', DEBUG_DEVELOPER);
     }
@@ -1519,7 +1519,7 @@ abstract class moodleform {
      * @param array  $simulatedsubmitteddata       An associative array of form values (same format as $_POST).
      * @param array  $simulatedsubmittedfiles      An associative array of files uploaded (same format as $_FILES). Can be omitted.
      * @param string $method                       'post' or 'get', defaults to 'post'.
-     * @param null   $formidentifier               the default is to use the class name for this class but you may need to provide
+     * @param ?string $formidentifier               the default is to use the class name for this class but you may need to provide
      *                                              a different value here for some forms that are used more than once on the
      *                                              same page.
      */
@@ -1963,7 +1963,7 @@ class MoodleQuickForm extends HTML_QuickForm_DHTMLRulesTableless {
      *
      * @param boolean $disable default true, controls if the shortforms are disabled.
      */
-    function setDisableShortforms ($disable = true) {
+    function setDisableShortforms($disable = true) {
         $this->_disableShortforms = $disable;
     }
 
@@ -2742,9 +2742,6 @@ require([
       }
     }
 
-    document.getElementById(\'' . $elem->_attributes['id'] . '\').addEventListener(\'blur\', function(ev) {
-        ' . $valFunc . '
-    });
     document.getElementById(\'' . $elem->_attributes['id'] . '\').addEventListener(\'change\', function(ev) {
         ' . $valFunc . '
     });

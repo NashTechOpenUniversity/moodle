@@ -431,7 +431,7 @@ class repository_nextcloud extends repository {
      * @throws coding_exception
      * @throws moodle_exception
      */
-    public function send_file($storedfile, $lifetime=null , $filter=0, $forcedownload=false, array $options = null) {
+    public function send_file($storedfile, $lifetime=null , $filter=0, $forcedownload=false, ?array $options = null) {
         $repositoryname = $this->get_name();
         $reference = json_decode($storedfile->get_reference());
 
@@ -943,7 +943,7 @@ class repository_nextcloud extends repository {
      * @param stored_file $file
      * @return bool true if synced successfully else false if not ready to sync or reference link not set
      */
-    public function sync_reference(stored_file $file):bool {
+    public function sync_reference(stored_file $file): bool {
         global $CFG;
 
         if ($file->get_referencelastsync() + DAYSECS > time()) {

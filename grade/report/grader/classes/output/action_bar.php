@@ -32,6 +32,9 @@ class action_bar extends \core_grades\output\action_bar {
     /** @var string $usersearch The content that the current user is looking for. */
     protected string $usersearch = '';
 
+    /** @var int $userid The ID of the user that the current user is looking for. */
+    protected int $userid = 0;
+
     /**
      * The class constructor.
      *
@@ -40,7 +43,13 @@ class action_bar extends \core_grades\output\action_bar {
     public function __construct(\context_course $context) {
         parent::__construct($context);
 
+        $this->userid = optional_param('gpr_userid', 0, PARAM_INT);
         $this->usersearch = optional_param('gpr_search', '', PARAM_NOTAGS);
+
+        if ($this->userid) {
+            $user = \core_user::get_user($this->userid);
+            $this->usersearch = fullname($user);
+        }
     }
 
     /**
@@ -80,6 +89,10 @@ class action_bar extends \core_grades\output\action_bar {
                 $this->context,
                 '/grade/report/grader/index.php'
             );
+
+            $firstnameinitial = $SESSION->gradereport["filterfirstname-{$this->context->id}"] ?? '';
+            $lastnameinitial  = $SESSION->gradereport["filtersurname-{$this->context->id}"] ?? '';
+
             $initialselector = new comboboxsearch(
                 false,
                 $initialscontent->buttoncontent,
@@ -88,29 +101,31 @@ class action_bar extends \core_grades\output\action_bar {
                 'initialswidget',
                 'initialsdropdown',
                 $initialscontent->buttonheader,
+                true,
+                get_string('filterbyname', 'core_grades'),
+                'nameinitials',
+                json_encode([
+                    'first' => $firstnameinitial,
+                    'last' => $lastnameinitial,
+                ])
             );
             $data['initialselector'] = $initialselector->export_for_template($output);
-            $data['groupselector'] = $gradesrenderer->group_selector($course);
+
+            if ($course->groupmode) {
+                $actionbarrenderer = $PAGE->get_renderer('core_course', 'actionbar');
+                $data['groupselector'] = $actionbarrenderer->render(
+                    new \core_course\output\actionbar\group_selector(null, $this->context));
+            }
 
             $resetlink = new moodle_url('/grade/report/grader/index.php', ['id' => $courseid]);
-            $searchinput = $OUTPUT->render_from_template('core_user/comboboxsearch/user_selector', [
-                'currentvalue' => $this->usersearch,
-                'courseid' => $courseid,
-                'resetlink' => $resetlink->out(false),
-                'group' => 0,
-            ]);
-            $searchdropdown = new comboboxsearch(
-                true,
-                $searchinput,
-                null,
-                'user-search dropdown d-flex',
-                null,
-                'usersearchdropdown overflow-auto',
-                null,
-                false,
+            $userselectorrenderer = new \core_course\output\actionbar\user_selector(
+                course: $course,
+                resetlink: $resetlink,
+                userid: $this->userid,
+                groupid: 0,
+                usersearch: $this->usersearch
             );
-            $data['searchdropdown'] = $searchdropdown->export_for_template($output);
-
+            $data['searchdropdown'] = $userselectorrenderer->export_for_template($output);
             // The collapsed column dialog is aligned to the edge of the screen, we need to place it such that it also aligns.
             $collapsemenudirection = right_to_left() ? 'dropdown-menu-left' : 'dropdown-menu-right';
 
@@ -123,6 +138,8 @@ class action_bar extends \core_grades\output\action_bar {
                 'collapsecolumndropdown p-3 flex-column ' . $collapsemenudirection,
                 null,
                 true,
+                get_string('aria:dropdowncolumns', 'gradereport_grader'),
+                'collapsedcolumns'
             );
             $data['collapsedcolumns'] = [
                 'classes' => 'd-none',
@@ -135,10 +152,12 @@ class action_bar extends \core_grades\output\action_bar {
                 $allowedgroups = groups_get_all_groups($course->id, $USER->id, $course->defaultgroupingid);
             }
 
-            if (!empty($SESSION->gradereport["filterfirstname-{$this->context->id}"]) ||
-                !empty($SESSION->gradereport["filterlastname-{$this->context->id}"]) ||
+            if (
+                $firstnameinitial ||
+                $lastnameinitial ||
                 groups_get_course_group($course, true, $allowedgroups) ||
-                $this->usersearch) {
+                $this->usersearch
+            ) {
                 $reset = new moodle_url('/grade/report/grader/index.php', [
                     'id' => $courseid,
                     'group' => 0,

@@ -29,9 +29,15 @@ import Notification from 'core/notification';
 export default class GroupSearch extends search_combobox {
 
     courseID;
+    cmID;
     bannedFilterFields = ['id', 'link', 'groupimageurl'];
 
-    constructor() {
+    /**
+     * Construct the class.
+     *
+     * @param {int|null} cmid ID of the course module initiating the group search (optional).
+     */
+    constructor(cmid = null) {
         super();
         this.selectors = {...this.selectors,
             courseid: '[data-region="courseid"]',
@@ -39,11 +45,51 @@ export default class GroupSearch extends search_combobox {
         };
         const component = document.querySelector(this.componentSelector());
         this.courseID = component.querySelector(this.selectors.courseid).dataset.courseid;
+        // Override the instance since the body is built outside the constructor for the combobox.
+        this.instance = component.querySelector(this.selectors.instance).dataset.instance;
+        this.cmID = cmid;
+
+        const searchValueElement = this.component.querySelector(`#${this.searchInput.dataset.inputElement}`);
+        searchValueElement.addEventListener('change', () => {
+            this.toggleDropdown(); // Otherwise the dropdown stays open when user choose an option using keyboard.
+
+            const valueElement = this.component.querySelector(`#${this.combobox.dataset.inputElement}`);
+            if (valueElement.value !== searchValueElement.value) {
+                valueElement.value = searchValueElement.value;
+                valueElement.dispatchEvent(new Event('change', {bubbles: true}));
+            }
+
+            searchValueElement.value = '';
+        });
+
+        this.$component.on('hide.bs.dropdown', () => {
+            this.searchInput.removeAttribute('aria-activedescendant');
+
+            const listbox = document.querySelector(`#${this.searchInput.getAttribute('aria-controls')}[role="listbox"]`);
+            listbox.querySelectorAll('.active[role="option"]').forEach(option => {
+                option.classList.remove('active');
+            });
+            listbox.scrollTop = 0;
+
+            // Use setTimeout to make sure the following code is executed after the click event is handled.
+            setTimeout(() => {
+                if (this.searchInput.value !== '') {
+                    this.searchInput.value = '';
+                    this.searchInput.dispatchEvent(new Event('input', {bubbles: true}));
+                }
+            });
+        });
+
         this.renderDefault().catch(Notification.exception);
     }
 
-    static init() {
-        return new GroupSearch();
+    /**
+     * Initialise an instance of the class.
+     *
+     * @param {int|null} cmid ID of the course module initiating the group search (optional).
+     */
+    static init(cmid = null) {
+        return new GroupSearch(cmid);
     }
 
     /**
@@ -65,24 +111,18 @@ export default class GroupSearch extends search_combobox {
     }
 
     /**
-     * The triggering div that contains the searching widget.
-     *
-     * @returns {string}
-     */
-    triggerSelector() {
-        return '.groupsearchwidget';
-    }
-
-    /**
      * Build the content then replace the node.
      */
     async renderDropdown() {
         const {html, js} = await renderForPromise('core_group/comboboxsearch/resultset', {
             groups: this.getMatchedResults(),
             hasresults: this.getMatchedResults().length > 0,
+            instance: this.instance,
             searchterm: this.getSearchTerm(),
         });
         replaceNodeContents(this.selectors.placeholder, html, js);
+        // Remove aria-activedescendant when the available options change.
+        this.searchInput.removeAttribute('aria-activedescendant');
     }
 
     /**
@@ -95,12 +135,6 @@ export default class GroupSearch extends search_combobox {
         await this.renderDropdown();
 
         this.updateNodes();
-        this.registerInputEvents();
-
-        // Add a small BS listener so that we can set the focus correctly on open.
-        this.$component.on('shown.bs.dropdown', () => {
-            this.searchInput.focus({preventScroll: true});
-        });
     }
 
     /**
@@ -109,7 +143,7 @@ export default class GroupSearch extends search_combobox {
      * @returns {Promise<*>}
      */
     async fetchDataset() {
-        return await groupFetch(this.courseID).then((r) => r.groups);
+        return await groupFetch(this.courseID, this.cmID).then((r) => r.groups);
     }
 
     /**
@@ -140,7 +174,6 @@ export default class GroupSearch extends search_combobox {
                 return {
                     id: group.id,
                     name: group.name,
-                    link: this.selectOneLink(group.id),
                     groupimageurl: group.groupimageurl,
                 };
             })
@@ -148,14 +181,41 @@ export default class GroupSearch extends search_combobox {
     }
 
     /**
-     * Handle any keyboard inputs.
+     * The handler for when a user interacts with the component.
+     *
+     * @param {MouseEvent} e The triggering event that we are working with.
      */
-    registerInputEvents() {
+    async clickHandler(e) {
+        if (e.target.closest(this.selectors.clearSearch)) {
+            e.stopPropagation();
+            // Clear the entered search query in the search bar.
+            this.searchInput.value = '';
+            this.setSearchTerms(this.searchInput.value);
+            this.searchInput.focus();
+            this.clearSearchButton.classList.add('d-none');
+            // Display results.
+            await this.filterrenderpipe();
+        }
+    }
+
+    /**
+     * The handler for when a user changes the value of the component (selects an option from the dropdown).
+     *
+     * @param {Event} e The change event.
+     */
+    changeHandler(e) {
+        window.location = this.selectOneLink(e.target.value);
+    }
+
+    /**
+     * Override the input event listener for the text input area.
+     */
+    registerInputHandlers() {
         // Register & handle the text input.
         this.searchInput.addEventListener('input', debounce(async() => {
             this.setSearchTerms(this.searchInput.value);
             // We can also require a set amount of input before search.
-            if (this.searchInput.value === '') {
+            if (this.getSearchTerm() === '') {
                 // Hide the "clear" search button in the search bar.
                 this.clearSearchButton.classList.add('d-none');
             } else {
@@ -168,74 +228,8 @@ export default class GroupSearch extends search_combobox {
     }
 
     /**
-     * The handler for when a user interacts with the component.
-     *
-     * @param {MouseEvent} e The triggering event that we are working with.
-     */
-    async clickHandler(e) {
-        if (e.target.closest(this.selectors.dropdown)) {
-            // Forcibly prevent BS events so that we can control the open and close.
-            // Really needed because by default input elements cant trigger a dropdown.
-            e.stopImmediatePropagation();
-        }
-        this.clearSearchButton.addEventListener('click', async() => {
-            this.searchInput.value = '';
-            this.setSearchTerms(this.searchInput.value);
-            await this.filterrenderpipe();
-        });
-        // Prevent normal key presses activating this.
-        if (e.target.closest('.dropdown-item') && e.button === 0) {
-            window.location = e.target.closest('.dropdown-item').href;
-        }
-    }
-
-    /**
-     * The handler for when a user presses a key within the component.
-     *
-     * @param {KeyboardEvent} e The triggering event that we are working with.
-     */
-    keyHandler(e) {
-        super.keyHandler(e);
-        // Switch the key presses to handle keyboard nav.
-        switch (e.key) {
-            case 'Tab':
-                if (e.target.closest(this.selectors.input)) {
-                    e.preventDefault();
-                    this.clearSearchButton.focus({preventScroll: true});
-                }
-                break;
-            case 'Escape':
-                if (document.activeElement.getAttribute('role') === 'option') {
-                    e.stopPropagation();
-                    this.searchInput.focus({preventScroll: true});
-                } else if (e.target.closest(this.selectors.input)) {
-                    const trigger = this.component.querySelector(this.selectors.trigger);
-                    trigger.focus({preventScroll: true});
-                }
-                break;
-        }
-    }
-
-    /**
-     * Override the input event listener for the text input area.
-     */
-    registerInputHandlers() {
-        // Register & handle the text input.
-        this.searchInput.addEventListener('input', debounce(() => {
-            this.setSearchTerms(this.searchInput.value);
-            // We can also require a set amount of input before search.
-            if (this.getSearchTerm() === '') {
-                // Hide the "clear" search button in the search bar.
-                this.clearSearchButton.classList.add('d-none');
-            } else {
-                // Display the "clear" search button in the search bar.
-                this.clearSearchButton.classList.remove('d-none');
-            }
-        }, 300));
-    }
-
-    /**
      * Build up the view all link that is dedicated to a particular result.
+     * We will call this function when a user interacts with the combobox to redirect them to show their results in the page.
      *
      * @param {Number} groupID The ID of the group selected.
      */

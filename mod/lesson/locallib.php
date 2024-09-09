@@ -1032,7 +1032,7 @@ function lesson_get_overview_report_table_and_data(lesson $lesson, $currentgroup
             $row = [$studentname];
 
             foreach ($extrafields as $field) {
-                $row[] = $student->$field;
+                $row[] = s($student->$field);
             }
 
             $row[] = $attempts;
@@ -1317,7 +1317,7 @@ abstract class lesson_add_page_form_base extends moodleform {
      * Used to determine if this is a standard page or a special page
      * @return bool
      */
-    public final function is_standard() {
+    final public function is_standard() {
         return (bool)$this->standard;
     }
 
@@ -1327,7 +1327,7 @@ abstract class lesson_add_page_form_base extends moodleform {
      * This method adds the basic elements to the form including title and contents
      * and then calls custom_definition();
      */
-    public final function definition() {
+    final public function definition() {
         global $CFG;
         $mform = $this->_form;
         $editoroptions = $this->_customdata['editoroptions'];
@@ -1355,8 +1355,9 @@ abstract class lesson_add_page_form_base extends moodleform {
             $mform->addElement('hidden', 'qtype');
             $mform->setType('qtype', PARAM_INT);
 
-            $mform->addElement('text', 'title', get_string('pagetitle', 'lesson'), array('size'=>70));
+            $mform->addElement('text', 'title', get_string('pagetitle', 'lesson'), ['size' => 70, 'maxlength' => 255]);
             $mform->addRule('title', get_string('required'), 'required', null, 'client');
+            $mform->addRule('title', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
             if (!empty($CFG->formatstringstriptags)) {
                 $mform->setType('title', PARAM_TEXT);
             } else {
@@ -1389,7 +1390,7 @@ abstract class lesson_add_page_form_base extends moodleform {
      * @param string|null $label
      * @param int $selected The page to select by default
      */
-    protected final function add_jumpto($name, $label=null, $selected=LESSON_NEXTPAGE) {
+    final protected function add_jumpto($name, $label=null, $selected=LESSON_NEXTPAGE) {
         $title = get_string("jump", "lesson");
         if ($label === null) {
             $label = $title;
@@ -1409,7 +1410,7 @@ abstract class lesson_add_page_form_base extends moodleform {
      * @param string|null $label
      * @param mixed $value The default value
      */
-    protected final function add_score($name, $label=null, $value=null) {
+    final protected function add_score($name, $label=null, $value=null) {
         if ($label === null) {
             $label = get_string("score", "lesson");
         }
@@ -1441,7 +1442,7 @@ abstract class lesson_add_page_form_base extends moodleform {
      *                      component as it's elements
      * @return void
      */
-    protected final function add_answer($count, $label = null, $required = false, $format= '', array $help = []) {
+    final protected function add_answer($count, $label = null, $required = false, $format= '', array $help = []) {
         if ($label === null) {
             $label = get_string('answer', 'lesson');
         }
@@ -1474,7 +1475,7 @@ abstract class lesson_add_page_form_base extends moodleform {
      * @param bool $required
      * @return void
      */
-    protected final function add_response($count, $label = null, $required = false) {
+    final protected function add_response($count, $label = null, $required = false) {
         if ($label === null) {
             $label = get_string('response', 'lesson');
         }
@@ -2297,9 +2298,17 @@ class lesson extends lesson_base {
             if ($modname) {
                 $instancename = $DB->get_field($modname, 'name', array('id' => $module->instance));
                 if ($instancename) {
-                    return html_writer::link(new moodle_url('/mod/'.$modname.'/view.php',
-                        array('id' => $this->properties->activitylink)), get_string('activitylinkname',
-                        'lesson', $instancename), array('class' => 'centerpadded lessonbutton standardbutton pr-3'));
+                    return html_writer::link(
+                        new moodle_url('/mod/'.$modname.'/view.php', [
+                            'id' => $this->properties->activitylink,
+                        ]),
+                        get_string(
+                            'activitylinkname',
+                            'lesson',
+                            format_string($instancename, true, ['context' => $this->get_context()]),
+                        ),
+                        ['class' => 'centerpadded lessonbutton standardbutton pe-3'],
+                    );
                 }
             }
         }
@@ -2855,15 +2864,17 @@ class lesson extends lesson_base {
 
         if ($this->properties->usepassword && empty($USER->lessonloggedin[$this->id])) {
             $correctpass = false;
-            if (!empty($userpassword) &&
-                    (($this->properties->password == md5(trim($userpassword))) || ($this->properties->password == trim($userpassword)))) {
+
+            $userpassword = trim((string) $userpassword);
+            if ($userpassword !== '' &&
+                    ($this->properties->password === md5($userpassword) || $this->properties->password === $userpassword)) {
                 // With or without md5 for backward compatibility (MDL-11090).
                 $correctpass = true;
                 $USER->lessonloggedin[$this->id] = true;
             } else if (isset($this->properties->extrapasswords)) {
                 // Group overrides may have additional passwords.
                 foreach ($this->properties->extrapasswords as $password) {
-                    if (strcmp($password, md5(trim($userpassword))) === 0 || strcmp($password, trim($userpassword)) === 0) {
+                    if ($password === md5($userpassword) || $password === $userpassword) {
                         $correctpass = true;
                         $USER->lessonloggedin[$this->id] = true;
                     }
@@ -5026,7 +5037,7 @@ abstract class lesson_page extends lesson_base {
      * @param stdClass $data The form data to update.
      * @return stdClass The updated fom data.
      */
-    public function update_form_data(stdClass $data) : stdClass {
+    public function update_form_data(stdClass $data): stdClass {
         return $data;
     }
 }

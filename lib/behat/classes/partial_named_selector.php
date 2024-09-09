@@ -80,6 +80,7 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
         'group_message' => 'group_message',
         'autocomplete' => 'autocomplete',
         'iframe' => 'iframe',
+        'option_role' => 'option_role',
     );
 
     /**
@@ -262,6 +263,9 @@ XPATH
 XPATH
         , 'section' => <<<XPATH
 .//li[contains(concat(' ', normalize-space(@class), ' '), ' section ')][./descendant::*[self::h3]
+    [normalize-space(.) = %locator%][contains(concat(' ', normalize-space(@class), ' '), ' sectionname ') or
+    contains(concat(' ', normalize-space(@class), ' '), ' section-title ')]] |
+.//li[contains(concat(' ', normalize-space(@class), ' '), ' section ')][./descendant::*[self::h4]
     [normalize-space(.) = %locator%][contains(concat(' ', normalize-space(@class), ' '), ' sectionname ') or
     contains(concat(' ', normalize-space(@class), ' '), ' section-title ')]] |
 .//div[contains(concat(' ', normalize-space(@class), ' '), ' sitetopic ')]

@@ -410,18 +410,6 @@ class core_user_external extends \core_external\external_api {
         if (!empty($preferences)) {
             $userpref = ['id' => $userid];
             foreach ($preferences as $preference) {
-
-                /*
-                 * Rename user message provider preferences to avoid orphan settings on old app versions.
-                 * @todo Remove this "translation" block on MDL-73284.
-                 */
-                if (preg_match('/message_provider_.*_loggedin/', $preference['type']) ||
-                        preg_match('/message_provider_.*_loggedoff/', $preference['type'])) {
-                    $nameparts = explode('_', $preference['type']);
-                    array_pop($nameparts);
-                    $preference['type'] = implode('_', $nameparts).'_enabled';
-                }
-
                 $userpref['preference_' . $preference['type']] = $preference['value'];
             }
             useredit_update_user_preference($userpref);
@@ -671,7 +659,7 @@ class core_user_external extends \core_external\external_api {
                     useredit_update_user_preference($userpref);
                 }
                 if (isset($user['suspended']) and $user['suspended']) {
-                    \core\session\manager::kill_user_sessions($user['id']);
+                    \core\session\manager::destroy_user_sessions($user['id']);
                 }
 
                 $transaction->allow_commit();
@@ -1139,6 +1127,8 @@ class core_user_external extends \core_external\external_api {
             'theme'       => new external_value(core_user::get_property_type('theme'), 'Theme name such as "standard", must exist on server', VALUE_OPTIONAL),
             'timezone'    => new external_value(core_user::get_property_type('timezone'), 'Timezone code such as Australia/Perth, or 99 for default', VALUE_OPTIONAL),
             'mailformat'  => new external_value(core_user::get_property_type('mailformat'), 'Mail format code is 0 for plain text, 1 for HTML etc', VALUE_OPTIONAL),
+            'trackforums'  => new external_value(core_user::get_property_type('trackforums'),
+                'Whether the user is tracking forums.', VALUE_OPTIONAL),
             'description' => new external_value(core_user::get_property_type('description'), 'User profile description', VALUE_OPTIONAL),
             'descriptionformat' => new external_format_value(core_user::get_property_type('descriptionformat'), VALUE_OPTIONAL),
             'city'        => new external_value(core_user::get_property_type('city'), 'Home city of the user', VALUE_OPTIONAL),

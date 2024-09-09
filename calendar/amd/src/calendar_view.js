@@ -57,13 +57,16 @@ function(
             root.on('change', CalendarSelectors.courseSelector, function() {
                 var selectElement = $(this);
                 var courseId = selectElement.val();
+                const courseName = $("option:selected", selectElement).text();
                 CalendarViewManager[reloadFunction](root, courseId, null)
                     .then(function() {
                         // We need to get the selector again because the content has changed.
                         return root.find(CalendarSelectors.courseSelector).val(courseId);
                     })
                     .then(function() {
-                        CalendarViewManager.updateUrl('?view=upcoming&course=' + courseId);
+                        CalendarViewManager.updateUrl('?view=' + type + '&course=' + courseId);
+                        CalendarViewManager.handleCourseChange(Number(courseId), courseName);
+                        return;
                     })
                     .fail(Notification.exception);
             });
@@ -83,11 +86,11 @@ function(
         };
 
         return {
-            init: function(root, type) {
+            init: function(root, type, isCalendarBlock = false) {
                 root = $(root);
 
-                CalendarViewManager.init(root, type);
-                registerEventListeners(root, type);
+                CalendarViewManager.init(root, type, isCalendarBlock);
+                registerEventListeners(root, type, isCalendarBlock);
             }
         };
     });

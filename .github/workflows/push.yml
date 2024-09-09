@@ -4,7 +4,6 @@ on:
   push:
     branches-ignore:
       - main
-      - master
       - MOODLE_[0-9]+_STABLE
     tags-ignore:
       - v[0-9]+.[0-9]+.[0-9]+*
@@ -16,7 +15,7 @@ on:
         default: ''
 
 env:
-  php: 8.2
+  php: 8.3
 
 jobs:
   Grunt:
@@ -68,7 +67,7 @@ jobs:
             db: mysqli
           # PostgreSQL builds always run with the highest PHP supported version.
           - os: ubuntu-22.04
-            php: 8.2
+            php: 8.3
             db: pgsql
 
     steps:

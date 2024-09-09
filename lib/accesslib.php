@@ -383,7 +383,7 @@ function get_role_definitions_uncached(array $roleids) {
  * Get the default guest role, this is used for guest account,
  * search engine spiders, etc.
  *
- * @return stdClass role record
+ * @return stdClass|false role record
  */
 function get_guest_role() {
     global $CFG, $DB;
@@ -970,13 +970,22 @@ function get_empty_accessdata() {
  * @access private
  * @param int $userid
  * @param bool $preloadonly true means do not return access array
- * @return array accessdata
+ * @return ?array accessdata
  */
 function get_user_accessdata($userid, $preloadonly=false) {
     global $CFG, $ACCESSLIB_PRIVATE, $USER;
 
     if (isset($USER->access)) {
         $ACCESSLIB_PRIVATE->accessdatabyuser[$USER->id] = $USER->access;
+    }
+
+    // Unfortunately, we can't use the $ACCESSLIB_PRIVATE->dirtyusers array because it is not available in CLI.
+    // So we need to check if the user has been marked as dirty or not in the cache directly.
+    // This will add additional queries to the database, but it is the best we can do.
+    if (CLI_SCRIPT && !empty($ACCESSLIB_PRIVATE->accessdatabyuser[$userid])) {
+        if (get_cache_flag('accesslib/dirtyusers', $userid, $ACCESSLIB_PRIVATE->accessdatabyuser[$userid]['time'])) {
+            unset($ACCESSLIB_PRIVATE->accessdatabyuser[$userid]);
+        }
     }
 
     if (!isset($ACCESSLIB_PRIVATE->accessdatabyuser[$userid])) {
@@ -1645,18 +1654,6 @@ function role_assign($roleid, $userid, $contextid, $component = '', $itemid = 0,
 
     core_course_category::role_assignment_changed($roleid, $context);
 
-    // Update the room membership and power levels when the user role changes.
-    if (\core_communication\api::is_available() && $coursecontext = $context->get_course_context(false)) {
-        $communication = \core_communication\api::load_by_instance(
-            $coursecontext,
-            'core_course',
-            'coursecommunication',
-            $coursecontext->instanceid,
-        );
-
-        $communication->update_room_membership([$userid]);
-    }
-
     $event = \core\event\role_assigned::create(array(
         'context' => $context,
         'objectid' => $ra->roleid,
@@ -1669,6 +1666,13 @@ function role_assign($roleid, $userid, $contextid, $component = '', $itemid = 0,
     ));
     $event->add_record_snapshot('role_assignments', $ra);
     $event->trigger();
+
+    // Dispatch the hook for post role assignment actions.
+    $hook = new \core\hook\access\after_role_assigned(
+        context: $context,
+        userid: $userid,
+    );
+    \core\di::get(\core\hook\manager::class)->dispatch($hook);
 
     return $ra->id;
 }
@@ -1763,19 +1767,12 @@ function role_unassign_all(array $params, $subcontexts = false, $includemanual =
             $event->trigger();
             core_course_category::role_assignment_changed($ra->roleid, $context);
 
-            // Update the room membership and power levels when the user role changes.
-            if (\core_communication\api::is_available() && $coursecontext = $context->get_course_context(false)) {
-                $communication = \core_communication\api::load_by_instance(
-                    $coursecontext,
-                    'core_course',
-                    'coursecommunication',
-                    $coursecontext->instanceid,
-                );
-
-                $communication->update_room_membership([$ra->userid]);
-            }
-
-
+            // Dispatch the hook for post role assignment actions.
+            $hook = new \core\hook\access\after_role_unassigned(
+                context: $context,
+                userid: $ra->userid,
+            );
+            \core\di::get(\core\hook\manager::class)->dispatch($hook);
         }
     }
     unset($ras);
@@ -2599,7 +2596,7 @@ function is_inside_frontpage(context $context) {
  * Returns capability information (cached)
  *
  * @param string $capabilityname
- * @return stdClass or null if capability not found
+ * @return ?stdClass object or null if capability not found
  */
 function get_capability_info($capabilityname) {
     $caps = get_all_capabilities();
@@ -2631,7 +2628,7 @@ function get_capability_info($capabilityname) {
  * Do not use this function except in the get_capability_info
  *
  * @param string $capabilityname
- * @return stdClass|null with deprecation message and potential replacement if not null
+ * @return array|null with deprecation message and potential replacement if not null
  */
 function get_deprecated_capability_info($capabilityname) {
     $cache = cache::make('core', 'capabilities');
@@ -2969,7 +2966,7 @@ function user_can_assign(context $context, $targetroleid) {
  * @param context $context optional context for course role name aliases
  * @return array of role records with optional coursealias property
  */
-function get_all_roles(context $context = null) {
+function get_all_roles(?context $context = null) {
     global $DB;
 
     if (!$context or !$coursecontext = $context->get_course_context(false)) {
@@ -4644,7 +4641,7 @@ function role_get_description(stdClass $role) {
  * @param bool $returnmenu true means id=>localname, false means id=>rolerecord
  * @return array Array of context-specific role names, or role objects with a ->localname field added.
  */
-function role_get_names(context $context = null, $rolenamedisplay = ROLENAME_ALIAS, $returnmenu = null) {
+function role_get_names(?context $context = null, $rolenamedisplay = ROLENAME_ALIAS, $returnmenu = null) {
     return role_fix_names(get_all_roles($context), $context, $rolenamedisplay, $returnmenu);
 }
 
@@ -4657,7 +4654,7 @@ function role_get_names(context $context = null, $rolenamedisplay = ROLENAME_ALI
  * @param bool $returnmenu null means keep the same format as $roleoptions, true means id=>localname, false means id=>rolerecord
  * @return array Array of context-specific role names, or role objects with a ->localname field added.
  */
-function role_fix_names($roleoptions, context $context = null, $rolenamedisplay = ROLENAME_ALIAS, $returnmenu = null) {
+function role_fix_names($roleoptions, ?context $context = null, $rolenamedisplay = ROLENAME_ALIAS, $returnmenu = null) {
     global $DB;
 
     if (empty($roleoptions)) {

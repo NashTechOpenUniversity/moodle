@@ -747,7 +747,7 @@ abstract class repository implements cacheable_object {
      * @return bool true when the user can, otherwise throws an exception.
      * @throws repository_exception when the user does not meet the requirements.
      */
-    public final function check_capability() {
+    final public function check_capability() {
         global $USER;
 
         // The context we are on.
@@ -1221,7 +1221,7 @@ abstract class repository implements cacheable_object {
      * @param bool $forcedownload If true (default false), forces download of file rather than view in browser/plugin
      * @param array $options additional options affecting the file serving
      */
-    public function send_file($storedfile, $lifetime=null , $filter=0, $forcedownload=false, array $options = null) {
+    public function send_file($storedfile, $lifetime=null , $filter=0, $forcedownload=false, ?array $options = null) {
         if ($this->has_moodle_files()) {
             $fs = get_file_storage();
             $params = file_storage::unpack_reference($storedfile->get_reference(), true);
@@ -1843,7 +1843,7 @@ abstract class repository implements cacheable_object {
      * @return bool true if the user can edit the instance.
      * @since Moodle 2.5
      */
-    public final function can_be_edited_by_user() {
+    final public function can_be_edited_by_user() {
         global $USER;
 
         // We need to be able to explore the repository.
@@ -2859,7 +2859,7 @@ abstract class repository implements cacheable_object {
      *
      * @return string repository secret key.
      */
-    final static public function get_secret_key() {
+    final public static function get_secret_key() {
         global $CFG;
 
         if (!isset($CFG->reposecretkey)) {
@@ -3290,7 +3290,7 @@ function create_event_draft_file_deleted(context $context, stored_file $storedfi
  * @param string $filearea filearea
  * @param int $itemid the item id
  * @param array $files Array of files object with each item having filename/filepath as values
- * @return array $return Array of strings matching up to the parent directory of the deleted files
+ * @return false|stdClass $return Object containing URL of zip archive and a file path
  * @throws coding_exception
  */
 function repository_download_selected_files($context, string $component, string $filearea, $itemid, array $files) {
@@ -3307,10 +3307,6 @@ function repository_download_selected_files($context, string $component, string 
         $filename = $selectedfile->filename ? clean_filename($selectedfile->filename) : '.'; // Default to '.' for root.
         $filepath = clean_param($selectedfile->filepath, PARAM_PATH); // Default to '/' for downloadall.
         $filepath = file_correct_filepath($filepath);
-        $area = file_get_draft_area_info($itemid, $filepath);
-        if ($area['filecount'] == 0 && $area['foldercount'] == 0) {
-            continue;
-        }
 
         $storedfile = $fs->get_file($context->id, $component, $filearea, $itemid, $filepath, $filename);
         // If it is empty we are downloading a directory.
@@ -3324,16 +3320,16 @@ function repository_download_selected_files($context, string $component, string 
         $filestoarchive[$archivefile] = $storedfile;
     }
     $zippedfile = get_string('files') . '.zip';
-    if ($newfile =
-        $zipper->archive_to_storage(
+    if ($zipper->archive_to_storage(
             $filestoarchive,
             $context->id,
             $component,
             $filearea,
             $newdraftitemid,
             "/",
-            $zippedfile, $USER->id)
-    ) {
+            $zippedfile,
+            $USER->id,
+    )) {
         $return = new stdClass();
         $return->fileurl = moodle_url::make_draftfile_url($newdraftitemid, '/', $zippedfile)->out();
         $return->filepath = $filepath;

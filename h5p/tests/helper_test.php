@@ -35,6 +35,7 @@ class helper_test extends \advanced_testcase {
      * Register the H5P autoloader
      */
     protected function setUp(): void {
+        parent::setUp();
         autoloader::register();
     }
 
@@ -204,7 +205,6 @@ class helper_test extends \advanced_testcase {
      * Test the behaviour of save_h5p() when the H5P file contains metadata.
      *
      * @runInSeparateProcess
-     * @covers ::save_h5p
      */
     public function test_save_h5p_metadata(): void {
         global $DB;
@@ -311,6 +311,16 @@ class helper_test extends \advanced_testcase {
         $factory->get_framework()->set_file($file);
         $candeploy = helper::can_deploy_package($file);
         $this->assertTrue($candeploy);
+
+        $usertobedeleted = $this->getDataGenerator()->create_user();
+        $this->setUser($usertobedeleted);
+        $file = helper::create_fake_stored_file_from_path($path, (int)$usertobedeleted->id);
+        $factory->get_framework()->set_file($file);
+        // Then we delete this user.
+        $this->setAdminUser();
+        delete_user($usertobedeleted);
+        $candeploy = helper::can_deploy_package($file);
+        $this->assertTrue($candeploy); // We can update as admin.
     }
 
     /**
@@ -339,6 +349,16 @@ class helper_test extends \advanced_testcase {
         $factory->get_framework()->set_file($file);
         $candeploy = helper::can_update_library($file);
         $this->assertTrue($candeploy);
+
+        $usertobedeleted = $this->getDataGenerator()->create_user();
+        $this->setUser($usertobedeleted);
+        $file = helper::create_fake_stored_file_from_path($path, (int)$usertobedeleted->id);
+        $factory->get_framework()->set_file($file);
+        // Then we delete this user.
+        $this->setAdminUser();
+        delete_user($usertobedeleted);
+        $canupdate = helper::can_update_library($file);
+        $this->assertTrue($canupdate); // We can update as admin.
     }
 
     /**

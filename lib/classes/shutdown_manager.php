@@ -121,7 +121,7 @@ class core_shutdown_manager {
      * @param array $params
      * @return void
      */
-    public static function register_signal_handler($callback, array $params = null): void {
+    public static function register_signal_handler($callback, ?array $params = null): void {
         if (!is_callable($callback)) {
             error_log('Invalid custom signal function detected ' . var_export($callback, true)); // phpcs:ignore
         }
@@ -135,7 +135,7 @@ class core_shutdown_manager {
      * @param array $params
      * @return void
      */
-    public static function register_function($callback, array $params = null): void {
+    public static function register_function($callback, ?array $params = null): void {
         if (!is_callable($callback)) {
             error_log('Invalid custom shutdown function detected '.var_export($callback, true)); // phpcs:ignore
         }
@@ -147,6 +147,9 @@ class core_shutdown_manager {
      */
     public static function shutdown_handler() {
         global $DB;
+
+        // In case we caught an out of memory shutdown we increase memory limit to unlimited, so we can gracefully shut down.
+        raise_memory_limit(MEMORY_UNLIMITED);
 
         // Always ensure we know who the user is in access logs even if they
         // were logged in a weird way midway through the request.

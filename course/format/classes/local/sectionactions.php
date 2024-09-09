@@ -18,6 +18,7 @@ namespace core_courseformat\local;
 
 use section_info;
 use stdClass;
+use core\event\course_module_updated;
 use core\event\course_section_deleted;
 
 /**
@@ -53,7 +54,7 @@ class sectionactions extends baseactions {
             'sequence' => '',
             'name' => $fields->name ?? null,
             'visible' => $fields->visible ?? 1,
-            'availability' => null,
+            'availability' => $fields->availability ?? null,
             'component' => $fields->component ?? null,
             'itemid' => $fields->itemid ?? null,
             'timemodified' => time(),
@@ -335,5 +336,131 @@ class sectionactions extends baseactions {
         // Ensure we have the latest section info.
         $sectioninfo = $this->get_section_info($sectioninfo->id);
         return $this->delete_format_data($sectioninfo, $forcedeleteifnotempty, $event);
+    }
+
+    /**
+     * Update a course section.
+     *
+     * @param section_info $sectioninfo the section info or database record to update.
+     * @param array|stdClass $fields the fields to update.
+     * @return bool whether section was updated
+     */
+    public function update(section_info $sectioninfo, array|stdClass $fields): bool {
+        global $DB;
+
+        $courseid = $this->course->id;
+
+        // Some fields can not be updated using this method.
+        $fields = array_diff_key((array) $fields, array_flip(['id', 'course', 'section', 'sequence']));
+        if (array_key_exists('name', $fields) && \core_text::strlen($fields['name']) > 255) {
+            throw new \moodle_exception('maximumchars', 'moodle', '', 255);
+        }
+
+        // If the section is delegated to a component, it may control some section values.
+        $fields = $this->preprocess_delegated_section_fields($sectioninfo, $fields);
+
+        if (empty($fields)) {
+            return false;
+        }
+
+        $fields['id'] = $sectioninfo->id;
+        $fields['timemodified'] = time();
+        $DB->update_record('course_sections', $fields);
+
+        $sectioninfo->get_component_instance()?->section_updated((object) $fields);
+
+        // We need to update the section cache before the format options are updated.
+        \course_modinfo::purge_course_section_cache_by_id($courseid, $sectioninfo->id);
+        rebuild_course_cache($courseid, false, true);
+
+        course_get_format($courseid)->update_section_format_options($fields);
+
+        $event = \core\event\course_section_updated::create(
+            [
+                'objectid' => $sectioninfo->id,
+                'courseid' => $courseid,
+                'context' => \context_course::instance($courseid),
+                'other' => ['sectionnum' => $sectioninfo->section],
+            ]
+        );
+        $event->trigger();
+
+        if (isset($fields['visible'])) {
+            $this->transfer_visibility_to_cms($sectioninfo, (bool) $fields['visible']);
+        }
+        return true;
+    }
+
+    /**
+     * Transfer the visibility of the section to the course modules.
+     *
+     * @param section_info $sectioninfo the section info or database record to update.
+     * @param bool $visibility the new visibility of the section.
+     */
+    protected function transfer_visibility_to_cms(section_info $sectioninfo, bool $visibility): void {
+        global $DB;
+
+        if (empty($sectioninfo->sequence) || $visibility == (bool) $sectioninfo->visible) {
+            return;
+        }
+
+        $modules = explode(',', $sectioninfo->sequence);
+        $cmids = [];
+
+        // In case the section is delegated by a module, we change also the visibility for the source module.
+        if ($sectioninfo->is_delegated()) {
+            $delegateinstance = $sectioninfo->get_component_instance();
+            // We only return sections delegated by course modules. Sections delegated to other
+            // types of components must implement their own methods to get the section.
+            if ($delegateinstance && ($delegateinstance instanceof \core_courseformat\sectiondelegatemodule)) {
+                $delegator = $delegateinstance->get_cm();
+                $modules[] = $delegator->id;
+            }
+        }
+
+        foreach ($modules as $moduleid) {
+            $cm = get_coursemodule_from_id(null, $moduleid, $this->course->id);
+            if (!$cm) {
+                continue;
+            }
+
+            $modupdated = false;
+            if ($visibility) {
+                // As we unhide the section, we use the previously saved visibility stored in visibleold.
+                $modupdated = set_coursemodule_visible($moduleid, $cm->visibleold, $cm->visibleoncoursepage, false);
+            } else {
+                // We hide the section, so we hide the module but we store the original state in visibleold.
+                $modupdated = set_coursemodule_visible($moduleid, 0, $cm->visibleoncoursepage, false);
+                if ($modupdated) {
+                    $DB->set_field('course_modules', 'visibleold', $cm->visible, ['id' => $moduleid]);
+                }
+            }
+
+            if ($modupdated) {
+                $cmids[] = $cm->id;
+                course_module_updated::create_from_cm($cm)->trigger();
+            }
+        }
+
+        \course_modinfo::purge_course_modules_cache($this->course->id, $cmids);
+        rebuild_course_cache($this->course->id, false, true);
+    }
+
+    /**
+     * Preprocess the section fields before updating a delegated section.
+     *
+     * @param section_info $sectioninfo the section info or database record to update.
+     * @param array $fields the fields to update.
+     * @return array the updated fields
+     */
+    protected function preprocess_delegated_section_fields(section_info $sectioninfo, array $fields): array {
+        $delegated = $sectioninfo->get_component_instance();
+        if (!$delegated) {
+            return $fields;
+        }
+        if (array_key_exists('name', $fields)) {
+            $fields['name'] = $delegated->preprocess_section_name($sectioninfo, $fields['name']);
+        }
+        return $fields;
     }
 }

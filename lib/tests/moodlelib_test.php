@@ -16,8 +16,6 @@
 
 namespace core;
 
-use lang_string;
-
 /**
  * Unit tests for (some of) ../moodlelib.php.
  *
@@ -27,7 +25,7 @@ use lang_string;
  * @author     T.J.Hunt@open.ac.uk
  * @author     nicolas@moodle.com
  */
-class moodlelib_test extends \advanced_testcase {
+final class moodlelib_test extends \advanced_testcase {
 
     /**
      * Define a local decimal separator.
@@ -55,7 +53,7 @@ class moodlelib_test extends \advanced_testcase {
         $stringmanager->reset_caches(true);
     }
 
-    public function test_cleanremoteaddr() {
+    public function test_cleanremoteaddr(): void {
         // IPv4.
         $this->assertNull(cleanremoteaddr('1023.121.234.1'));
         $this->assertSame('123.121.234.1', cleanremoteaddr('123.121.234.01 '));
@@ -74,7 +72,7 @@ class moodlelib_test extends \advanced_testcase {
         $this->assertSame('::ffff:c0a8:11', cleanremoteaddr('::ffff:192.168.1.1', true));
     }
 
-    public function test_address_in_subnet() {
+    public function test_address_in_subnet(): void {
         // 1: xxx.xxx.xxx.xxx/nn or xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx/nnn (number of bits in net mask).
         $this->assertTrue(address_in_subnet('123.121.234.1', '123.121.234.1/32'));
         $this->assertFalse(address_in_subnet('123.121.23.1', '123.121.23.0/32'));
@@ -159,7 +157,7 @@ class moodlelib_test extends \advanced_testcase {
         $this->assertFalse(address_in_subnet('123.123.123.123', ''));
     }
 
-    public function test_fix_utf8() {
+    public function test_fix_utf8(): void {
         // Make sure valid data including other types is not changed.
         $this->assertSame(null, fix_utf8(null));
         $this->assertSame(1, fix_utf8(1));
@@ -182,7 +180,7 @@ class moodlelib_test extends \advanced_testcase {
         $this->assertSame('Hello ', fix_utf8('Hello ￿'));
     }
 
-    public function test_optional_param() {
+    public function test_optional_param(): void {
         global $CFG;
 
         $_POST['username'] = 'post_user';
@@ -204,7 +202,7 @@ class moodlelib_test extends \advanced_testcase {
         }
     }
 
-    public function test_optional_param_array() {
+    public function test_optional_param_array(): void {
         global $CFG;
 
         $_POST['username'] = array('a'=>'post_user');
@@ -237,7 +235,7 @@ class moodlelib_test extends \advanced_testcase {
         $this->assertDebuggingCalled();
     }
 
-    public function test_required_param() {
+    public function test_required_param(): void {
         $_POST['username'] = 'post_user';
         $_GET['username'] = 'get_user';
         $this->assertSame('post_user', required_param('username', PARAM_RAW));
@@ -268,7 +266,7 @@ class moodlelib_test extends \advanced_testcase {
         }
     }
 
-    public function test_required_param_array() {
+    public function test_required_param_array(): void {
         global $CFG;
 
         $_POST['username'] = array('a'=>'post_user');
@@ -306,7 +304,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param() {
+    public function test_clean_param(): void {
         // Forbid objects and arrays.
         try {
             clean_param(array('x', 'y'), PARAM_RAW);
@@ -336,7 +334,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_array() {
+    public function test_clean_param_array(): void {
         $this->assertSame(array(), clean_param_array(null, PARAM_RAW));
         $this->assertSame(array('a', 'b'), clean_param_array(array('a', 'b'), PARAM_RAW));
         $this->assertSame(array('a', array('b')), clean_param_array(array('a', array('b')), PARAM_RAW, true));
@@ -363,7 +361,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_raw() {
+    public function test_clean_param_raw(): void {
         $this->assertSame(
             '#()*#,9789\'".,<42897></?$(*DSFMO#$*)(SDJ)($*)',
             clean_param('#()*#,9789\'".,<42897></?$(*DSFMO#$*)(SDJ)($*)', PARAM_RAW));
@@ -374,7 +372,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_trim() {
+    public function test_clean_param_trim(): void {
         $this->assertSame('Frog toad', clean_param("   Frog toad   \r\n  ", PARAM_RAW_TRIMMED));
         $this->assertSame('', clean_param(null, PARAM_RAW_TRIMMED));
     }
@@ -383,7 +381,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_clean() {
+    public function test_clean_param_clean(): void {
         // PARAM_CLEAN is an ugly hack, do not use in new code (skodak),
         // instead use more specific type, or submit sothing that can be verified properly.
         $this->assertSame('xx', clean_param('xx<script>', PARAM_CLEAN));
@@ -395,7 +393,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_alpha() {
+    public function test_clean_param_alpha(): void {
         $this->assertSame('DSFMOSDJ', clean_param('#()*#,9789\'".,<42897></?$(*DSFMO#$*)(SDJ)($*)', PARAM_ALPHA));
         $this->assertSame('', clean_param(null, PARAM_ALPHA));
     }
@@ -404,7 +402,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_alphanum() {
+    public function test_clean_param_alphanum(): void {
         $this->assertSame('978942897DSFMOSDJ', clean_param('#()*#,9789\'".,<42897></?$(*DSFMO#$*)(SDJ)($*)', PARAM_ALPHANUM));
         $this->assertSame('', clean_param(null, PARAM_ALPHANUM));
     }
@@ -413,7 +411,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_alphaext() {
+    public function test_clean_param_alphaext(): void {
         $this->assertSame('DSFMOSDJ', clean_param('#()*#,9789\'".,<42897></?$(*DSFMO#$*)(SDJ)($*)', PARAM_ALPHAEXT));
         $this->assertSame('', clean_param(null, PARAM_ALPHAEXT));
     }
@@ -422,7 +420,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_sequence() {
+    public function test_clean_param_sequence(): void {
         $this->assertSame(',9789,42897', clean_param('#()*#,9789\'".,<42897></?$(*DSFMO#$*)(SDJ)($*)', PARAM_SEQUENCE));
         $this->assertSame('', clean_param(null, PARAM_SEQUENCE));
     }
@@ -431,7 +429,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_component() {
+    public function test_clean_param_component(): void {
         // Please note the cleaning of component names is very strict, no guessing here.
         $this->assertSame('mod_forum', clean_param('mod_forum', PARAM_COMPONENT));
         $this->assertSame('block_online_users', clean_param('block_online_users', PARAM_COMPONENT));
@@ -464,7 +462,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_localisedfloat() {
+    public function test_clean_param_localisedfloat(): void {
 
         $this->assertSame(0.5, clean_param('0.5', PARAM_LOCALISEDFLOAT));
         $this->assertSame(false, clean_param('0X5', PARAM_LOCALISEDFLOAT));
@@ -497,7 +495,7 @@ class moodlelib_test extends \advanced_testcase {
         $this->assertSame(false, clean_param('10X6blah', PARAM_LOCALISEDFLOAT));
     }
 
-    public function test_is_valid_plugin_name() {
+    public function test_is_valid_plugin_name(): void {
         $this->assertTrue(is_valid_plugin_name('forum'));
         $this->assertTrue(is_valid_plugin_name('forum2'));
         $this->assertTrue(is_valid_plugin_name('feedback360'));
@@ -517,7 +515,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_plugin() {
+    public function test_clean_param_plugin(): void {
         // Please note the cleaning of plugin names is very strict, no guessing here.
         $this->assertSame('forum', clean_param('forum', PARAM_PLUGIN));
         $this->assertSame('forum2', clean_param('forum2', PARAM_PLUGIN));
@@ -539,7 +537,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_area() {
+    public function test_clean_param_area(): void {
         // Please note the cleaning of area names is very strict, no guessing here.
         $this->assertSame('something', clean_param('something', PARAM_AREA));
         $this->assertSame('something2', clean_param('something2', PARAM_AREA));
@@ -560,7 +558,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_text() {
+    public function test_clean_param_text(): void {
         // Standard.
         $this->assertSame('xx<lang lang="en">aa</lang><lang lang="yy">pp</lang>', clean_param('xx<lang lang="en">aa</lang><lang lang="yy">pp</lang>', PARAM_TEXT));
         $this->assertSame('<span lang="en" class="multilang">aa</span><span lang="xy" class="multilang">bb</span>', clean_param('<span lang="en" class="multilang">aa</span><span lang="xy" class="multilang">bb</span>', PARAM_TEXT));
@@ -618,7 +616,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_url() {
+    public function test_clean_param_url(): void {
         // Test PARAM_URL and PARAM_LOCALURL a bit.
         // Valid URLs.
         $this->assertSame('http://google.com/', clean_param('http://google.com/', PARAM_URL));
@@ -648,7 +646,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_localurl() {
+    public function test_clean_param_localurl(): void {
         global $CFG;
 
         $this->resetAfterTest();
@@ -695,7 +693,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_file() {
+    public function test_clean_param_file(): void {
         $this->assertSame('correctfile.txt', clean_param('correctfile.txt', PARAM_FILE));
         $this->assertSame('badfile.txt', clean_param('b\'a<d`\\/fi:l>e.t"x|t', PARAM_FILE));
         $this->assertSame('..parentdirfile.txt', clean_param('../parentdirfile.txt', PARAM_FILE));
@@ -731,7 +729,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_path() {
+    public function test_clean_param_path(): void {
         $this->assertSame('correctfile.txt', clean_param('correctfile.txt', PARAM_PATH));
         $this->assertSame('bad/file.txt', clean_param('b\'a<d`\\/fi:l>e.t"x|t', PARAM_PATH));
         $this->assertSame('/parentdirfile.txt', clean_param('../parentdirfile.txt', PARAM_PATH));
@@ -756,7 +754,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_safepath() {
+    public function test_clean_param_safepath(): void {
         $this->assertSame('folder/file', clean_param('folder/file', PARAM_SAFEPATH));
         $this->assertSame('folder//file', clean_param('folder/../file', PARAM_SAFEPATH));
         $this->assertSame('', clean_param(null, PARAM_SAFEPATH));
@@ -766,7 +764,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_username() {
+    public function test_clean_param_username(): void {
         global $CFG;
         $currentstatus =  $CFG->extendedusernamechars;
 
@@ -805,7 +803,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_stringid() {
+    public function test_clean_param_stringid(): void {
         // Test string identifiers validation.
         // Valid strings.
         $this->assertSame('validstring', clean_param('validstring', PARAM_STRINGID));
@@ -826,7 +824,7 @@ class moodlelib_test extends \advanced_testcase {
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_timezone() {
+    public function test_clean_param_timezone(): void {
         // Test timezone validation.
         $testvalues = array (
             'America/Jamaica'                => 'America/Jamaica',
@@ -860,20 +858,22 @@ class moodlelib_test extends \advanced_testcase {
             '-13.5'                          => '',
             '0.2'                            => '',
             ''                               => '',
-            null                             => '',
         );
 
         foreach ($testvalues as $testvalue => $expectedvalue) {
             $actualvalue = clean_param($testvalue, PARAM_TIMEZONE);
             $this->assertEquals($expectedvalue, $actualvalue);
         }
+
+        // Test for null.
+        $this->assertEquals('', clean_param(null, PARAM_TIMEZONE));
     }
 
     /**
      * @covers \core\param
      * @covers \clean_param
      */
-    public function test_clean_param_null_argument() {
+    public function test_clean_param_null_argument(): void {
         $this->assertEquals(0, clean_param(null, PARAM_INT));
         $this->assertEquals(0, clean_param(null, PARAM_FLOAT));
         $this->assertEquals(0, clean_param(null, PARAM_LOCALISEDFLOAT));
@@ -893,7 +893,7 @@ class moodlelib_test extends \advanced_testcase {
         $this->assertEquals('', clean_param(null, PARAM_EMAIL));
     }
 
-    public function test_validate_param() {
+    public function test_validate_param(): void {
         try {
             $param = validate_param('11a', PARAM_INT);
             $this->fail('invalid_parameter_exception expected');
@@ -975,26 +975,26 @@ class moodlelib_test extends \advanced_testcase {
         }
     }
 
-    public function test_shorten_text_no_tags_already_short_enough() {
+    public function test_shorten_text_no_tags_already_short_enough(): void {
         // ......12345678901234567890123456.
         $text = "short text already no tags";
         $this->assertSame($text, shorten_text($text));
     }
 
-    public function test_shorten_text_with_tags_already_short_enough() {
+    public function test_shorten_text_with_tags_already_short_enough(): void {
         // .........123456...7890....12345678.......901234567.
         $text = "<p>short <b>text</b> already</p><p>with tags</p>";
         $this->assertSame($text, shorten_text($text));
     }
 
-    public function test_shorten_text_no_tags_needs_shortening() {
+    public function test_shorten_text_no_tags_needs_shortening(): void {
         // Default truncation is after 30 chars, but allowing 3 for the final '...'.
         // ......12345678901234567890123456789023456789012345678901234.
         $text = "long text without any tags blah de blah blah blah what";
         $this->assertSame('long text without any tags ...', shorten_text($text));
     }
 
-    public function test_shorten_text_with_tags_needs_shortening() {
+    public function test_shorten_text_with_tags_needs_shortening(): void {
         // .......................................123456789012345678901234567890...
         $text = "<div class='frog'><p><blockquote>Long text with tags that will ".
             "be chopped off but <b>should be added back again</b></blockquote></p></div>";
@@ -1002,7 +1002,7 @@ class moodlelib_test extends \advanced_testcase {
             "tags that ...</blockquote></p></div>", shorten_text($text));
     }
 
-    public function test_shorten_text_with_tags_and_html_comment() {
+    public function test_shorten_text_with_tags_and_html_comment(): void {
         $text = "<div class='frog'><p><blockquote><!--[if !IE]><!-->Long text with ".
             "tags that will<!--<![endif]--> ".
             "be chopped off but <b>should be added back again</b></blockquote></p></div>";
@@ -1010,7 +1010,7 @@ class moodlelib_test extends \advanced_testcase {
             "tags that ...<!--<![endif]--></blockquote></p></div>", shorten_text($text));
     }
 
-    public function test_shorten_text_with_entities() {
+    public function test_shorten_text_with_entities(): void {
         // Remember to allow 3 chars for the final '...'.
         // ......123456789012345678901234567_____890...
         $text = "some text which shouldn't &nbsp; break there";
@@ -1019,7 +1019,7 @@ class moodlelib_test extends \advanced_testcase {
         $this->assertSame("some text which shouldn't ...", shorten_text($text, 29));
     }
 
-    public function test_shorten_text_known_tricky_case() {
+    public function test_shorten_text_known_tricky_case(): void {
         // This case caused a bug up to 1.9.5
         // ..........123456789012345678901234567890123456789.....0_____1___2___...
         $text = "<h3>standard 'break-out' sub groups in TGs?</h3>&nbsp;&lt;&lt;There are several";
@@ -1031,13 +1031,13 @@ class moodlelib_test extends \advanced_testcase {
             shorten_text($text, 43));
     }
 
-    public function test_shorten_text_no_spaces() {
+    public function test_shorten_text_no_spaces(): void {
         // ..........123456789.
         $text = "<h1>123456789</h1>"; // A string with no convenient breaks.
         $this->assertSame("<h1>12345...</h1>", shorten_text($text, 8));
     }
 
-    public function test_shorten_text_utf8_european() {
+    public function test_shorten_text_utf8_european(): void {
         // Text without tags.
         // ......123456789012345678901234567.
         $text = "Žluťoučký koníček přeskočil";
@@ -1064,7 +1064,7 @@ class moodlelib_test extends \advanced_testcase {
         $this->assertSame("<p>Žluťoučký koníček <b>přeskočil...</b></p>", shorten_text($text, 30, true));
     }
 
-    public function test_shorten_text_utf8_oriental() {
+    public function test_shorten_text_utf8_oriental(): void {
         // Japanese
         // text without tags
         // ......123456789012345678901234.
@@ -1086,7 +1086,7 @@ class moodlelib_test extends \advanced_testcase {
         $this->assertSame("简体中文简体中文...", shorten_text($text, 13, false));
     }
 
-    public function test_shorten_text_multilang() {
+    public function test_shorten_text_multilang(): void {
         // This is not necessaryily specific to multilang. The issue is really
         // tags with attributes, where before we were generating invalid HTML
         // output like shorten_text('<span id="x" class="y">A</span> B', 1)
@@ -1194,7 +1194,7 @@ class moodlelib_test extends \advanced_testcase {
      * @param string $expected
      * @param boolean $includehash
      */
-    public function test_shorten_filename($filename, $length, $expected, $includehash) {
+    public function test_shorten_filename($filename, $length, $expected, $includehash): void {
         if (null === $length) {
             $length = MAX_FILENAME_SIZE;
         }
@@ -1325,7 +1325,7 @@ class moodlelib_test extends \advanced_testcase {
      * @param string $expected
      * @param boolean $includehash
      */
-    public function test_shorten_filenames($filenames, $length, $expected, $includehash) {
+    public function test_shorten_filenames($filenames, $length, $expected, $includehash): void {
         if (null === $length) {
             $length = MAX_FILENAME_SIZE;
         }
@@ -1333,7 +1333,7 @@ class moodlelib_test extends \advanced_testcase {
         $this->assertSame($expected, shorten_filenames($filenames, $length, $includehash));
     }
 
-    public function test_usergetdate() {
+    public function test_usergetdate(): void {
         global $USER, $CFG, $DB;
         $this->resetAfterTest();
 
@@ -1379,7 +1379,7 @@ class moodlelib_test extends \advanced_testcase {
         $this->assertDebuggingCalled(null, DEBUG_DEVELOPER);
     }
 
-    public function test_mark_user_preferences_changed() {
+    public function test_mark_user_preferences_changed(): void {
         $this->resetAfterTest();
         $otheruser = $this->getDataGenerator()->create_user();
         $otheruserid = $otheruser->id;
@@ -1391,7 +1391,7 @@ class moodlelib_test extends \advanced_testcase {
         set_cache_flag('userpreferenceschanged', $otheruserid, null);
     }
 
-    public function test_check_user_preferences_loaded() {
+    public function test_check_user_preferences_loaded(): void {
         global $DB;
         $this->resetAfterTest();
 
@@ -1438,7 +1438,7 @@ class moodlelib_test extends \advanced_testcase {
         set_cache_flag('userpreferenceschanged', $user->id, null);
     }
 
-    public function test_set_user_preference() {
+    public function test_set_user_preference(): void {
         global $DB, $USER;
         $this->resetAfterTest();
 
@@ -1543,7 +1543,7 @@ class moodlelib_test extends \advanced_testcase {
         }
     }
 
-    public function test_set_user_preference_for_current_user() {
+    public function test_set_user_preference_for_current_user(): void {
         global $USER;
         $this->resetAfterTest();
         $this->setAdminUser();
@@ -1553,7 +1553,7 @@ class moodlelib_test extends \advanced_testcase {
         $this->assertEquals(1, get_user_preferences('test_pref'));
     }
 
-    public function test_unset_user_preference_for_current_user() {
+    public function test_unset_user_preference_for_current_user(): void {
         global $USER;
         $this->resetAfterTest();
         $this->setAdminUser();
@@ -1574,7 +1574,7 @@ class moodlelib_test extends \advanced_testcase {
      * harcoded expectations below with:
      * http://www.tools4noobs.com/online_tools/unix_timestamp_to_datetime/
      */
-    public function test_some_moodle_special_dst() {
+    public function test_some_moodle_special_dst(): void {
         $stamp = 1365386400; // 2013/04/08 02:00:00 GMT/UTC.
 
         // In Europe/Tallinn it was 2013/04/08 05:00:00.
@@ -1616,7 +1616,7 @@ class moodlelib_test extends \advanced_testcase {
         $this->assertSame($expectation, $moodleres);
     }
 
-    public function test_userdate() {
+    public function test_userdate(): void {
         global $USER, $CFG, $DB;
         $this->resetAfterTest();
 
@@ -1734,7 +1734,7 @@ class moodlelib_test extends \advanced_testcase {
     /**
      * Make sure the DST changes happen at the right time in Moodle.
      */
-    public function test_dst_changes() {
+    public function test_dst_changes(): void {
         // DST switching in Prague.
         // From 2AM to 3AM in 1989.
         $date = new \DateTime('1989-03-26T01:59:00+01:00');
@@ -1804,7 +1804,7 @@ class moodlelib_test extends \advanced_testcase {
         $this->assertSame('Sunday, 2 November 2014, 01:01', userdate($date->getTimestamp(), '%A, %d %B %Y, %H:%M', 'America/New_York'));
     }
 
-    public function test_make_timestamp() {
+    public function test_make_timestamp(): void {
         global $USER, $CFG, $DB;
         $this->resetAfterTest();
 
@@ -1965,7 +1965,7 @@ class moodlelib_test extends \advanced_testcase {
      * Test get_string and most importantly the implementation of the lang_string
      * object.
      */
-    public function test_get_string() {
+    public function test_get_string(): void {
         global $COURSE;
 
         // Make sure we are using English.
@@ -2105,7 +2105,7 @@ class moodlelib_test extends \advanced_testcase {
         $COURSE->lang = $originallang;
     }
 
-    public function test_lang_string_var_export() {
+    public function test_lang_string_var_export(): void {
 
         // Call var_export() on a newly generated lang_string.
         $str = new lang_string('no');
@@ -2115,13 +2115,13 @@ class moodlelib_test extends \advanced_testcase {
         $leadingbackslash = (version_compare(PHP_VERSION, '8.2.0', '>=')) ? '\\' : '';
 
         $expected1 = <<<EOF
-{$leadingbackslash}lang_string::__set_state(array(
-   'identifier' => 'no',
+{$leadingbackslash}core\lang_string::__set_state(array(
    'component' => 'moodle',
    'a' => NULL,
-   'lang' => NULL,
    'string' => NULL,
    'forcedstring' => false,
+   'identifier' => 'no',
+   'lang' => NULL,
 ))
 EOF;
 
@@ -2142,21 +2142,17 @@ EOF;
         $this->assertEquals('No', $str);
     }
 
-    public function test_get_string_limitation() {
+    public function test_get_string_limitation(): void {
         // This is one of the limitations to the lang_string class. It can't be
         // used as a key.
-        if (PHP_VERSION_ID >= 80000) {
-            $this->expectException(\TypeError::class);
-        } else {
-            $this->expectWarning();
-        }
+        $this->expectException(\TypeError::class);
         $array = array(get_string('yes', null, null, true) => 'yes');
     }
 
     /**
      * Test localised float formatting.
      */
-    public function test_format_float() {
+    public function test_format_float(): void {
 
         // Special case for null.
         $this->assertEquals('', format_float(null));
@@ -2205,7 +2201,7 @@ EOF;
     /**
      * Test localised float unformatting.
      */
-    public function test_unformat_float() {
+    public function test_unformat_float(): void {
 
         // Tests without the localised decimal separator.
 
@@ -2279,7 +2275,7 @@ EOF;
     /**
      * Test deleting of users.
      */
-    public function test_delete_user() {
+    public function test_delete_user(): void {
         global $DB, $CFG;
 
         $this->resetAfterTest();
@@ -2385,7 +2381,7 @@ EOF;
     /**
      * Test deletion of user with long username
      */
-    public function test_delete_user_long_username() {
+    public function test_delete_user_long_username(): void {
         global $DB;
 
         $this->resetAfterTest();
@@ -2412,7 +2408,7 @@ EOF;
     /**
      * Test deletion of user with long email address
      */
-    public function test_delete_user_long_email() {
+    public function test_delete_user_long_email(): void {
         global $DB;
 
         $this->resetAfterTest();
@@ -2439,7 +2435,7 @@ EOF;
     /**
      * Test function convert_to_array()
      */
-    public function test_convert_to_array() {
+    public function test_convert_to_array(): void {
         // Check that normal classes are converted to arrays the same way as (array) would do.
         $obj = new \stdClass();
         $obj->prop1 = 'hello';
@@ -2463,7 +2459,7 @@ EOF;
     /**
      * Test the function date_format_string().
      */
-    public function test_date_format_string() {
+    public function test_date_format_string(): void {
         global $CFG;
 
         $this->resetAfterTest();
@@ -2518,7 +2514,7 @@ EOF;
         }
     }
 
-    public function test_get_config() {
+    public function test_get_config(): void {
         global $CFG;
 
         $this->resetAfterTest();
@@ -2570,7 +2566,7 @@ EOF;
         $this->assertFalse($cache->get('mod_forum'));
     }
 
-    public function test_get_max_upload_sizes() {
+    public function test_get_max_upload_sizes(): void {
         // Test with very low limits so we are not affected by php upload limits.
         // Test activity limit smallest.
         $sitebytes = 102400;
@@ -2672,7 +2668,7 @@ EOF;
      * Test function password_is_legacy_hash.
      * @covers ::password_is_legacy_hash
      */
-    public function test_password_is_legacy_hash() {
+    public function test_password_is_legacy_hash(): void {
         // Well formed bcrypt hashes should be matched.
         foreach (array('some', 'strings', 'to_check!') as $password) {
             $bcrypt = password_hash($password, '2y');
@@ -2689,7 +2685,7 @@ EOF;
      * Test function that calculates password pepper entropy.
      * @covers ::calculate_entropy
      */
-    public function test_calculate_entropy() {
+    public function test_calculate_entropy(): void {
         // Test that the function returns 0 with an empty string.
         $this->assertEquals(0, calculate_entropy(''));
 
@@ -2701,7 +2697,7 @@ EOF;
      * Test function to get password peppers.
      * @covers ::get_password_peppers
      */
-    public function test_get_password_peppers() {
+    public function test_get_password_peppers(): void {
         global $CFG;
         $this->resetAfterTest();
 
@@ -2749,7 +2745,7 @@ EOF;
      * @covers ::exceeds_password_length
      * @return void
      */
-    public function test_exceeds_password_length() {
+    public function test_exceeds_password_length(): void {
         $this->resetAfterTest(true);
 
         // With password less than equals to MAX_PASSWORD_CHARACTERS.
@@ -2766,7 +2762,7 @@ EOF;
      * Test function validate_internal_user_password.
      * @covers ::validate_internal_user_password
      */
-    public function test_validate_internal_user_password() {
+    public function test_validate_internal_user_password(): void {
         $this->resetAfterTest(true);
         // Test bcrypt hashes (these will be updated but will still count as valid).
         $bcrypthashes = [
@@ -2802,7 +2798,7 @@ EOF;
      *
      * @covers ::validate_internal_user_password
      */
-    public function test_validate_internal_user_password_bad_pepper() {
+    public function test_validate_internal_user_password_bad_pepper(): void {
         global $CFG;
         $this->resetAfterTest();
 
@@ -2851,7 +2847,7 @@ EOF;
      * Test function update_internal_user_password.
      * @covers ::update_internal_user_password
      */
-    public function test_hash_internal_user_password() {
+    public function test_hash_internal_user_password(): void {
         global $CFG;
         $this->resetAfterTest();
         $passwords = ['pw', 'abc123', 'C0mP1eX_&}<?@*&%` |\"', 'ĩńťėŕňăţĩōŋāĹ'];
@@ -2879,7 +2875,7 @@ EOF;
     /**
      * Test function update_internal_user_password().
      */
-    public function test_update_internal_user_password() {
+    public function test_update_internal_user_password(): void {
         global $DB;
         $this->resetAfterTest();
         $passwords = array('password', '1234', 'changeme', '****');
@@ -2924,25 +2920,48 @@ EOF;
     /**
      * Testing that if the password is not cached, that it does not update
      * the user table and fire event.
+     *
+     * @dataProvider update_internal_user_password_no_cache_provider
+     * @covers ::update_internal_user_password
+     *
+     * @param string $authmethod The authentication method to set for the user.
+     * @param string|null $password The new password to set for the user.
      */
-    public function test_update_internal_user_password_no_cache() {
+    public function test_update_internal_user_password_no_cache(
+        string $authmethod,
+        ?string $password,
+    ): void {
         global $DB;
         $this->resetAfterTest();
 
-        $user = $this->getDataGenerator()->create_user(array('auth' => 'cas'));
+        $user = $this->getDataGenerator()->create_user(['auth' => $authmethod]);
         $DB->update_record('user', ['id' => $user->id, 'password' => AUTH_PASSWORD_NOT_CACHED]);
         $user->password = AUTH_PASSWORD_NOT_CACHED;
 
         $sink = $this->redirectEvents();
-        update_internal_user_password($user, 'wonkawonka');
+        update_internal_user_password($user, $password);
         $this->assertEquals(0, $sink->count(), 'User updated event should not fire');
+    }
+
+    /**
+     * The data provider will test the {@see test_update_internal_user_password_no_cache}
+     * for accounts using the authentication method with prevent_local_passwords set to true (no cache).
+     *
+     * @return array
+     */
+    public static function update_internal_user_password_no_cache_provider(): array {
+        return [
+            'Password is not empty' => ['cas', 'wonkawonka'],
+            'Password is an empty string' => ['oauth2', ''],
+            'Password is null' => ['oauth2', null],
+        ];
     }
 
     /**
      * Test if the user has a password hash, but now their auth method
      * says not to cache it.  Then it should update.
      */
-    public function test_update_internal_user_password_update_no_cache() {
+    public function test_update_internal_user_password_update_no_cache(): void {
         $this->resetAfterTest();
 
         $user = $this->getDataGenerator()->create_user(array('password' => 'test'));
@@ -2956,7 +2975,7 @@ EOF;
         $this->assertEquals(AUTH_PASSWORD_NOT_CACHED, $user->password);
     }
 
-    public function test_fullname() {
+    public function test_fullname(): void {
         global $CFG;
 
         $this->resetAfterTest();
@@ -3103,7 +3122,7 @@ EOF;
         $CFG->alternativefullnameformat = $originalcfg->alternativefullnameformat;
     }
 
-    public function test_order_in_string() {
+    public function test_order_in_string(): void {
         $this->resetAfterTest();
 
         // Return an array in an order as they are encountered in a string.
@@ -3125,7 +3144,7 @@ EOF;
         $this->assertEquals($expectedarray, order_in_string($valuearray, $formatstring));
     }
 
-    public function test_complete_user_login() {
+    public function test_complete_user_login(): void {
         global $USER, $DB;
 
         $this->resetAfterTest();
@@ -3159,14 +3178,14 @@ EOF;
         $this->assertTimeCurrent($USER->currentlogin);
         $this->assertSame(sesskey(), $USER->sesskey);
         $this->assertTimeCurrent($USER->preference['_lastloaded']);
-        $this->assertObjectNotHasAttribute('password', $USER);
-        $this->assertObjectNotHasAttribute('description', $USER);
+        $this->assertObjectNotHasProperty('password', $USER);
+        $this->assertObjectNotHasProperty('description', $USER);
     }
 
     /**
      * Test require_logout.
      */
-    public function test_require_logout() {
+    public function test_require_logout(): void {
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
@@ -3219,7 +3238,7 @@ EOF;
      * @param string $wwwroot The wwwroot
      * @param array $msgids An array of msgid local parts and the final result
      */
-    public function test_generate_email_messageid($wwwroot, $msgids) {
+    public function test_generate_email_messageid($wwwroot, $msgids): void {
         global $CFG;
 
         $this->resetAfterTest();
@@ -3233,7 +3252,7 @@ EOF;
     /**
      * Test email with custom headers
      */
-    public function test_send_email_with_custom_header() {
+    public function test_send_email_with_custom_header(): void {
         global $DB, $CFG;
         $this->preventResetByRollback();
         $this->resetAfterTest();
@@ -3358,7 +3377,7 @@ EOF;
      * @param array $addresses An array of test addresses
      * @param boolean $expected Expected result
      */
-    public function test_email_should_be_diverted($divertallemailsto, $divertallemailsexcept, $addresses, $expected) {
+    public function test_email_should_be_diverted($divertallemailsto, $divertallemailsexcept, $addresses, $expected): void {
         global $CFG;
 
         $this->resetAfterTest();
@@ -3370,7 +3389,7 @@ EOF;
         }
     }
 
-    public function test_email_to_user() {
+    public function test_email_to_user(): void {
         global $CFG;
 
         $this->resetAfterTest();
@@ -3551,7 +3570,7 @@ EOF;
     /**
      * Test setnew_password_and_mail.
      */
-    public function test_setnew_password_and_mail() {
+    public function test_setnew_password_and_mail(): void {
         global $DB, $CFG;
 
         $this->resetAfterTest();
@@ -3581,9 +3600,9 @@ EOF;
 
     /**
      * Data provider for test_generate_confirmation_link
-     * @return Array of confirmation urls and expected resultant confirmation links
+     * @return array Confirmation urls and expected resultant confirmation links
      */
-    public function generate_confirmation_link_provider() {
+    public static function generate_confirmation_link_provider(): array {
         global $CFG;
         return [
             "Simple name" => [
@@ -3651,7 +3670,7 @@ EOF;
                 "confirmationurl" => "http://moodle.org/ext.php?with=some&param=eters",
                 "expected" => "http://moodle.org/ext.php?with=some&param=eters&data=/many_-%2E%40characters%40_%40-%2E%2E-%2E%2E"
             ],
-            "Custom external confirmation url with parameters" => [
+            "Custom external confirmation url with parameters (again)" => [
                 "username" => "many_-.@characters@_@-..-..",
                 "confirmationurl" => "http://moodle.org/ext.php?with=some&data=test",
                 "expected" => "http://moodle.org/ext.php?with=some&data=/many_-%2E%40characters%40_%40-%2E%2E-%2E%2E"
@@ -3666,7 +3685,7 @@ EOF;
      * @param string $confirmationurl The url the user should go to to confirm
      * @param string $expected The expected url of the confirmation link
      */
-    public function test_generate_confirmation_link($username, $confirmationurl, $expected) {
+    public function test_generate_confirmation_link($username, $confirmationurl, $expected): void {
         $this->resetAfterTest();
         $sink = $this->redirectEmails();
 
@@ -3690,7 +3709,7 @@ EOF;
     /**
      * Test generate_confirmation_link with custom admin link
      */
-    public function test_generate_confirmation_link_with_custom_admin() {
+    public function test_generate_confirmation_link_with_custom_admin(): void {
         global $CFG;
 
         $this->resetAfterTest();
@@ -3726,7 +3745,7 @@ EOF;
      * Test remove_course_content deletes course contents
      * TODO Add asserts to verify other data related to course is deleted as well.
      */
-    public function test_remove_course_contents() {
+    public function test_remove_course_contents(): void {
 
         $this->resetAfterTest();
 
@@ -3743,7 +3762,7 @@ EOF;
     /**
      * Test function username_load_fields_from_object().
      */
-    public function test_username_load_fields_from_object() {
+    public function test_username_load_fields_from_object(): void {
         $this->resetAfterTest();
 
         // This object represents the information returned from an sql query.
@@ -3932,7 +3951,7 @@ EOT;
     /**
      * Tests the getremoteaddr() function.
      */
-    public function test_getremoteaddr() {
+    public function test_getremoteaddr(): void {
         global $CFG;
 
         $this->resetAfterTest();
@@ -4025,7 +4044,7 @@ EOT;
     /**
      * Test function for creation of random strings.
      */
-    public function test_random_string() {
+    public function test_random_string(): void {
         $pool = 'a-zA-Z0-9';
 
         $result = random_string(10);
@@ -4052,7 +4071,7 @@ EOT;
     /**
      * Test function for creation of complex random strings.
      */
-    public function test_complex_random_string() {
+    public function test_complex_random_string(): void {
         $pool = preg_quote('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789`~!@#%^&*()_+-=[];,./<>?:{} ', '/');
 
         $result = complex_random_string(10);
@@ -4097,7 +4116,7 @@ EOT;
      * @param string $ip the ipaddress to test
      * @dataProvider data_private_ips
      */
-    public function test_ip_is_public_private_ips($ip) {
+    public function test_ip_is_public_private_ips($ip): void {
         $this->assertFalse(ip_is_public($ip));
     }
 
@@ -4119,7 +4138,7 @@ EOT;
      * @param string $ip the ipaddress to test
      * @dataProvider data_public_ips
      */
-    public function test_ip_is_public_public_ips($ip) {
+    public function test_ip_is_public_public_ips($ip): void {
         $this->assertTrue(ip_is_public($ip));
     }
 
@@ -4133,7 +4152,7 @@ EOT;
      * @param bool $result The expected result.
      * @dataProvider data_can_send_from_real_email_address
      */
-    public function test_can_send_from_real_email_address($email, $display, $samecourse, $config, $result) {
+    public function test_can_send_from_real_email_address($email, $display, $samecourse, $config, $result): void {
         $this->resetAfterTest();
 
         $fromuser = $this->getDataGenerator()->create_user();
@@ -4262,7 +4281,7 @@ EOT;
     /**
      * Test that generate_email_processing_address() returns valid email address.
      */
-    public function test_generate_email_processing_address() {
+    public function test_generate_email_processing_address(): void {
         global $CFG;
         $this->resetAfterTest();
 
@@ -4291,7 +4310,7 @@ EOT;
      *
      * @dataProvider data_email_is_not_allowed_for_allowemailaddresses
      */
-    public function test_email_is_not_allowed_for_allowemailaddresses($email, $config, $result) {
+    public function test_email_is_not_allowed_for_allowemailaddresses($email, $config, $result): void {
         $this->resetAfterTest();
 
         set_config('allowemailaddresses', $config);
@@ -4369,7 +4388,7 @@ EOT;
      *
      * @dataProvider data_email_is_not_allowed_for_denyemailaddresses
      */
-    public function test_email_is_not_allowed_for_denyemailaddresses($email, $config, $result) {
+    public function test_email_is_not_allowed_for_denyemailaddresses($email, $config, $result): void {
         $this->resetAfterTest();
 
         set_config('denyemailaddresses', $config);
@@ -4442,7 +4461,7 @@ EOT;
     /**
      * Test safe method unserialize_array().
      */
-    public function test_unserialize_array() {
+    public function test_unserialize_array(): void {
         $a = [1, 2, 3];
         $this->assertEquals($a, unserialize_array(serialize($a)));
         $a = ['a' => 1, 2 => 2, 'b' => 'cde'];
@@ -4500,7 +4519,7 @@ EOT;
      * @dataProvider component_class_callback_default_provider
      * @param $default
      */
-    public function test_component_class_callback_not_found($default) {
+    public function test_component_class_callback_not_found($default): void {
         $this->assertSame($default, component_class_callback('thisIsNotTheClassYouWereLookingFor', 'anymethod', [], $default));
     }
 
@@ -4510,7 +4529,7 @@ EOT;
      * @dataProvider component_class_callback_default_provider
      * @param $default
      */
-    public function test_component_class_callback_method_not_found($default) {
+    public function test_component_class_callback_method_not_found($default): void {
         require_once(__DIR__ . '/fixtures/component_class_callback_example.php');
 
         $this->assertSame($default, component_class_callback(test_component_class_callback_example::class, 'this_is_not_the_method_you_were_looking_for', ['abc'], $default));
@@ -4522,7 +4541,7 @@ EOT;
      * @dataProvider component_class_callback_default_provider
      * @param $default
      */
-    public function test_component_class_callback_found_returns_null($default) {
+    public function test_component_class_callback_found_returns_null($default): void {
         require_once(__DIR__ . '/fixtures/component_class_callback_example.php');
 
         $this->assertSame($default, component_class_callback(\test_component_class_callback_example::class, 'method_returns_value', [null], $default));
@@ -4535,7 +4554,7 @@ EOT;
      * @dataProvider component_class_callback_data_provider
      * @param $default
      */
-    public function test_component_class_callback_found_returns_value($value) {
+    public function test_component_class_callback_found_returns_value($value): void {
         require_once(__DIR__ . '/fixtures/component_class_callback_example.php');
 
         $this->assertSame($value, component_class_callback(\test_component_class_callback_example::class, 'method_returns_value', [$value], 'This is not the value you were looking for'));
@@ -4548,7 +4567,7 @@ EOT;
      * @dataProvider component_class_callback_multiple_params_provider
      * @param $default
      */
-    public function test_component_class_callback_found_accepts_multiple($params, $count) {
+    public function test_component_class_callback_found_accepts_multiple($params, $count): void {
         require_once(__DIR__ . '/fixtures/component_class_callback_example.php');
 
         $this->assertSame($count, component_class_callback(\test_component_class_callback_example::class, 'method_returns_all_params', $params, 'This is not the value you were looking for'));
@@ -4627,7 +4646,7 @@ EOT;
      * @param callable $callable
      * @param string $expectedname
      */
-    public function test_get_callable_name($callable, $expectedname) {
+    public function test_get_callable_name($callable, $expectedname): void {
         $this->assertSame($expectedname, get_callable_name($callable));
     }
 
@@ -4660,7 +4679,7 @@ EOT;
             ],
             'method_of_object' => [
                 [new lang_string('parentlanguage', 'core_langconfig'), 'my_foobar_method'],
-                'lang_string::my_foobar_method',
+                'core\lang_string::my_foobar_method',
             ],
             'function_as_literal' => [
                 'my_foobar_callback',
@@ -4726,7 +4745,7 @@ EOT;
      * @param int $allowaccountssameemail Value for $CFG->allowaccountssameemail.
      * @param string $expectedexception The exception to be expected.
      */
-    public function test_get_complete_user_data($field, $value, $success, $allowaccountssameemail = 0, $expectedexception = '') {
+    public function test_get_complete_user_data($field, $value, $success, $allowaccountssameemail = 0, $expectedexception = ''): void {
         $this->resetAfterTest();
 
         // Set config settings we need for our environment.
@@ -4776,7 +4795,7 @@ EOT;
     /**
      * Test for send_password_change_().
      */
-    public function test_send_password_change_info() {
+    public function test_send_password_change_info(): void {
         $this->resetAfterTest();
 
         $user = $this->getDataGenerator()->create_user();
@@ -4802,7 +4821,7 @@ EOT;
      * @covers \get_time_interval_string
      */
     public function test_get_time_interval_string(int $time1, int $time2, ?string $format, string $expected,
-            bool $dropzeroes = false, bool $fullformat = false) {
+            bool $dropzeroes = false, bool $fullformat = false): void {
         if (is_null($format)) {
             $this->assertEquals($expected, get_time_interval_string($time1, $time2));
         } else {
@@ -4906,7 +4925,7 @@ EOT;
     /**
      * Tests the rename_to_unused_name function with a file.
      */
-    public function test_rename_to_unused_name_file() {
+    public function test_rename_to_unused_name_file(): void {
         global $CFG;
 
         // Create a new file in dataroot.
@@ -4932,7 +4951,7 @@ EOT;
     /**
      * Tests the rename_to_unused_name function with a directory.
      */
-    public function test_rename_to_unused_name_dir() {
+    public function test_rename_to_unused_name_dir(): void {
         global $CFG;
 
         // Create a new directory in dataroot.
@@ -4958,7 +4977,7 @@ EOT;
     /**
      * Tests the rename_to_unused_name function with error cases.
      */
-    public function test_rename_to_unused_name_failure() {
+    public function test_rename_to_unused_name_failure(): void {
         global $CFG;
 
         // Rename a file that doesn't exist.
@@ -5002,7 +5021,7 @@ EOT;
      * @param int $size the size in bytes
      * @param string $expected the expected string.
      */
-    public function test_display_size($size, $expected) {
+    public function test_display_size($size, $expected): void {
         $result = display_size($size);
         $expected = str_replace(' ', "\xc2\xa0", $expected); // Should be non-breaking space.
         $this->assertEquals($expected, $result);
@@ -5168,13 +5187,20 @@ EOT;
      * @dataProvider get_home_page_provider
      * @param string $user Whether the user is logged, guest or not logged.
      * @param int $expected Expected value after calling the get_home_page method.
-     * @param int $defaulthomepage The $CFG->defaulthomepage setting value.
-     * @param int $enabledashboard Whether the dashboard should be enabled or not.
-     * @param int $userpreference User preference for the home page setting.
+     * @param int|string|null $defaulthomepage The $CFG->defaulthomepage setting value.
+     * @param int|null $enabledashboard Whether the dashboard should be enabled or not.
+     * @param int|string|null $userpreference User preference for the home page setting.
+     * $param int|null $allowguestmymoodle The $CFG->allowguestmymoodle setting value.
      * @covers ::get_home_page
      */
-    public function test_get_home_page(string $user, int $expected, ?int $defaulthomepage = null, ?int $enabledashboard = null,
-            ?int $userpreference = null) {
+    public function test_get_home_page(
+        string $user,
+        int $expected,
+        int|string|null $defaulthomepage = null,
+        ?int $enabledashboard = null,
+        int|string|null $userpreference = null,
+        ?int $allowguestmymoodle = null,
+    ): void {
         global $CFG, $USER;
 
         $this->resetAfterTest();
@@ -5191,6 +5217,9 @@ EOT;
         if (isset($enabledashboard)) {
             $CFG->enabledashboard = $enabledashboard;
         }
+        if (isset($allowguestmymoodle)) {
+            $CFG->allowguestmymoodle = $allowguestmymoodle;
+        }
 
         if ($USER) {
             set_user_preferences(['user_home_page_preference' => $userpreference], $USER->id);
@@ -5205,21 +5234,39 @@ EOT;
      *
      * @return array
      */
-    public function get_home_page_provider(): array {
+    public static function get_home_page_provider(): array {
+        global $CFG;
+
         return [
             'No logged user' => [
                 'user' => 'nologged',
                 'expected' => HOMEPAGE_SITE,
             ],
-            'Guest user' => [
+            'Guest user. Dashboard set as default home page and enabled for guests' => [
+                'user' => 'guest',
+                'expected' => HOMEPAGE_MY,
+            ],
+            'Guest user. Dashboard set as default home page but disabled for guests' => [
                 'user' => 'guest',
                 'expected' => HOMEPAGE_SITE,
+                'defaulthomepage' => HOMEPAGE_MY,
+                'enabledashboard' => 1,
+                'userpreference' => null,
+                'allowguestmymoodle' => 0,
+            ],
+            'Guest user. My courses set as default home page' => [
+                'user' => 'guest',
+                'expected' => HOMEPAGE_SITE,
+                'defaulthomepage' => HOMEPAGE_MYCOURSES,
+            ],
+            'Guest user. User preference set as default page' => [
+                'user' => 'guest',
+                'expected' => HOMEPAGE_SITE,
+                'defaulthomepage' => HOMEPAGE_USER,
             ],
             'Logged user. Dashboard set as default home page and enabled' => [
                 'user' => 'logged',
                 'expected' => HOMEPAGE_MY,
-                'defaulthomepage' => HOMEPAGE_MY,
-                'enabledashboard' => 1,
             ],
             'Logged user. Dashboard set as default home page but disabled' => [
                 'user' => 'logged',
@@ -5251,6 +5298,11 @@ EOT;
                 'defaulthomepage' => HOMEPAGE_SITE,
                 'enabledashboard' => 0,
             ],
+            'Logged user. URL set as default home page.' => [
+                'user' => 'logged',
+                'expected' => HOMEPAGE_URL,
+                'defaulthomepage' => "{$CFG->wwwroot}/home",
+            ],
             'Logged user. User preference set as default page with dashboard enabled and user preference set to dashboard' => [
                 'user' => 'logged',
                 'expected' => HOMEPAGE_MY,
@@ -5279,6 +5331,13 @@ EOT;
                 'enabledashboard' => 0,
                 'userpreference' => HOMEPAGE_MYCOURSES,
             ],
+            'Logged user. User preference set as default page with user preference set to URL.' => [
+                'user' => 'logged',
+                'expected' => HOMEPAGE_URL,
+                'defaulthomepage' => HOMEPAGE_USER,
+                'enabledashboard' => null,
+                'userpreference' => "{$CFG->wwwroot}/home",
+            ],
         ];
     }
 
@@ -5287,7 +5346,7 @@ EOT;
      *
      * @covers ::get_default_home_page
      */
-    public function test_get_default_home_page() {
+    public function test_get_default_home_page(): void {
         global $CFG;
 
         $this->resetAfterTest();
@@ -5299,6 +5358,31 @@ EOT;
         $CFG->enabledashboard = 0;
         $default = get_default_home_page();
         $this->assertEquals(HOMEPAGE_MYCOURSES, $default);
+    }
+
+    /**
+     * Test getting default home page for {@see HOMEPAGE_URL}
+     *
+     * @covers ::get_default_home_page_url
+     */
+    public function test_get_default_home_page_url(): void {
+        global $CFG;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $this->assertNull(get_default_home_page_url());
+
+        // Site configuration.
+        $CFG->defaulthomepage = "{$CFG->wwwroot}/home";
+        $this->assertEquals($CFG->defaulthomepage, get_default_home_page_url());
+
+        // User preference.
+        $CFG->defaulthomepage = HOMEPAGE_USER;
+
+        $userpreference = "{$CFG->wwwroot}/about";
+        set_user_preference('user_home_page_preference', $userpreference);
+        $this->assertEquals($userpreference, get_default_home_page_url());
     }
 
     /**
@@ -5376,7 +5460,7 @@ EOT;
      *
      * @covers ::html_is_blank
      */
-    public function test_html_is_blank() {
+    public function test_html_is_blank(): void {
         $this->assertEquals(true, html_is_blank(null));
         $this->assertEquals(true, html_is_blank(''));
         $this->assertEquals(true, html_is_blank('<p> </p>'));
@@ -5530,6 +5614,47 @@ EOT;
                 true,
                 ['one'],
             ],
+        ];
+    }
+
+    /**
+     * Test case for checking the email greetings in various user notification emails.
+     *
+     * @dataProvider email_greetings_provider
+     * @param string $funcname The name of the function to call for sending the email.
+     * @param mixed $extra Any extra parameter required by the function.
+     * @covers ::send_password_change_info()
+     * @covers ::send_confirmation_email()
+     * @covers ::setnew_password_and_mail()
+     * @covers ::send_password_change_confirmation_email()
+     */
+    public function test_email_greetings($funcname, $extra): void {
+        $this->resetAfterTest();
+
+        $user = $this->getDataGenerator()->create_user();
+
+        $sink = $this->redirectEmails(); // Make sure we are redirecting emails.
+        $funcname($user, $extra);
+        $result = $sink->get_messages();
+        $sink->close();
+        // Test greetings.
+        $this->assertStringContainsString('Hi ' . $user->firstname, quoted_printable_decode($result[0]->body));
+    }
+
+    /**
+     * Data provider for test_email_greetings tests.
+     *
+     * @return array
+     */
+    public static function email_greetings_provider(): array {
+        $extrasendpasswordchangeconfirmationemail = new \stdClass();
+        $extrasendpasswordchangeconfirmationemail->token = '123';
+
+        return [
+            ['send_password_change_info', null],
+            ['send_confirmation_email', null],
+            ['setnew_password_and_mail', false],
+            ['send_password_change_confirmation_email', $extrasendpasswordchangeconfirmationemail],
         ];
     }
 }

@@ -41,6 +41,7 @@ $string['bold'] = 'Bold';
 $string['calendarend'] = '{$a} closes';
 $string['calendarstart'] = '{$a} opens';
 $string['cannotaccess'] = 'You can only access this feedback from a course';
+$string['cannotcreatepagebreak'] = 'Page breaks cannot be added at the beginning of a feedback, and only one page break can be added at the end';
 $string['cannotsavetempl'] = 'Saving templates is not allowed';
 $string['captcha'] = 'Captcha';
 $string['captchanotset'] = 'Captcha hasn\'t been set.';
@@ -194,7 +195,10 @@ $string['multichoicerated'] = 'Multiple choice (rated)';
 $string['multichoicetype'] = 'Multiple choice type';
 $string['multichoice_values'] = 'Multiple choice values';
 $string['multiplesubmit'] = 'Allow multiple submissions';
-$string['multiplesubmit_help'] = 'If enabled for anonymous surveys, users can submit feedback an unlimited number of times.';
+$string['multiplesubmit_help'] = 'If set to Yes:
+
+* For anonymous surveys: participants can submit unlimited responses, and all responses will be recorded.
+* For non-anonymous surveys: participants can submit unlimited responses, but only their latest response will be recorded.';
 $string['name'] = 'Name';
 $string['name_required'] = 'Name required';
 $string['nameandlabelformat'] = '({$a->label}) {$a->name}';
@@ -246,7 +250,8 @@ $string['radio'] = 'Multiple choice - single answer';
 $string['radio_values'] = 'Responses';
 $string['ready_feedbacks'] = 'Ready feedbacks';
 $string['required'] = 'Required';
-$string['resetting_data'] = 'Reset feedback responses';
+$string['resetting_data'] = 'Responses';
+$string['resetting_delete'] = 'Delete responses';
 $string['resetting_feedbacks'] = 'Resetting feedbacks';
 $string['response_nr'] = 'Response number';
 $string['responses'] = 'Responses';

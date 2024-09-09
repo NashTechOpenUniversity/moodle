@@ -22,13 +22,13 @@ Feature: Given we have opted to search for a grade item, Lets find and search th
   Scenario: A teacher can search for and find a grade item to view
     Given I click on "Grade items" "link" in the ".page-toggler" "css_element"
     And I click on ".gradesearchwidget" "css_element"
-    When I confirm "Test assignment one" in "grade" search within the gradebook widget exists
-    And I confirm "Test assignment two" in "grade" search within the gradebook widget exists
+    When I confirm "Test assignment one" exists in the "Search items" search combo box
+    And I confirm "Test assignment two" exists in the "Search items" search combo box
     Then I set the field "Search items" to "two"
     And I wait until "Test assignment one" "option_role" does not exist
-    And I confirm "Test assignment one" in "grade" search within the gradebook widget does not exist
-    And I confirm "Test assignment two" in "grade" search within the gradebook widget exists
-    And I click on "Test assignment two" in the "grade" search widget
+    And I confirm "Test assignment one" does not exist in the "Search items" search combo box
+    And I confirm "Test assignment two" exists in the "Search items" search combo box
+    And I click on "Test assignment two" in the "Search items" search combo box
     # The search input remains in the field on reload this is in keeping with other search implementations.
     And I click on ".gradesearchwidget" "css_element"
     And the field "Search items" matches value "two"
@@ -47,17 +47,14 @@ Feature: Given we have opted to search for a grade item, Lets find and search th
     And I click on "Search items" "field"
     And I wait until "Test assignment one" "option_role" exists
     And I press the down key
-    And the focused element is "Test assignment one" "option_role"
-    And I press the end key
-    And the focused element is "Course total" "option_role"
-    And I press the home key
-    And the focused element is "Test assignment one" "option_role"
-    And I press the up key
-    And the focused element is "Course total" "option_role"
-    And I press the down key
-    And the focused element is "Test assignment one" "option_role"
-    And I press the escape key
     And the focused element is "Search items" "field"
+    And ".active" "css_element" should exist in the "Test assignment one" "option_role"
+    And I press the up key
+    And the focused element is "Search items" "field"
+    And ".active" "css_element" should exist in the "Course total" "option_role"
+    And I press the down key
+    And the focused element is "Search items" "field"
+    And ".active" "css_element" should exist in the "Test assignment one" "option_role"
     Then I set the field "Search items" to "Goodmeme"
     And I wait until "Test assignment one" "option_role" does not exist
     And I press the down key

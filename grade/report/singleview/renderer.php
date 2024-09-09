@@ -45,25 +45,24 @@ class gradereport_singleview_renderer extends plugin_renderer_base {
      * @return string The raw HTML to render.
      */
     public function users_selector(object $course, ?int $userid = null, ?int $groupid = null): string {
+        $actionbarrenderer = $this->page->get_renderer('core_course', 'actionbar');
         $resetlink = new moodle_url('/grade/report/singleview/index.php', ['id' => $course->id, 'group' => $groupid ?? 0]);
-        $data = [
-            'currentvalue' => optional_param('searchvalue', '', PARAM_NOTAGS),
-            'courseid' => $course->id,
-            'group' => $groupid ?? 0,
-            'resetlink' => $resetlink->out(false),
-            'userid' => $userid ?? 0
-        ];
-        $dropdown = new comboboxsearch(
-            true,
-            $this->render_from_template('core_user/comboboxsearch/user_selector', $data),
-            null,
-            'user-search dropdown d-flex',
-            null,
-            'usersearchdropdown overflow-auto',
-            null,
-            false,
+        $usersearch = '';
+
+        if ($userid) {
+            $user = core_user::get_user($userid);
+            $usersearch = fullname($user);
+        }
+
+        return $actionbarrenderer->render(
+            new \core_course\output\actionbar\user_selector(
+                course: $course,
+                resetlink: $resetlink,
+                userid: $userid,
+                groupid: $groupid,
+                usersearch: $usersearch
+            )
         );
-        return $this->render_from_template($dropdown->get_template(), $dropdown->export_for_template($this));
     }
 
     /**
@@ -78,6 +77,7 @@ class gradereport_singleview_renderer extends plugin_renderer_base {
         $data = [
             'name' => 'itemid',
             'courseid' => $course->id,
+            'instance' => rand(),
         ];
 
         // If a particular grade item option is selected (not in zero state).
@@ -92,6 +92,7 @@ class gradereport_singleview_renderer extends plugin_renderer_base {
         $sbody = $this->render_from_template('core/local/comboboxsearch/searchbody', [
             'courseid' => $course->id,
             'currentvalue' => optional_param('gradesearchvalue', '', PARAM_NOTAGS),
+            'instance' => $data['instance'],
         ]);
         $dropdown = new comboboxsearch(
             false,
@@ -99,7 +100,12 @@ class gradereport_singleview_renderer extends plugin_renderer_base {
             $sbody,
             'grade-search h-100',
             'gradesearchwidget h-100',
-            'gradesearchdropdown overflow-auto w-100',
+            'gradesearchdropdown overflow-auto',
+            null,
+            true,
+            get_string('selectagrade', 'gradereport_singleview'),
+            'itemid',
+            $gradeitemid
         );
         return $this->render_from_template($dropdown->get_template(), $dropdown->export_for_template($this));
     }

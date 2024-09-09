@@ -696,16 +696,15 @@ class completion_info {
         $completionstate = $this->get_core_completion_state($cminfo, $userid);
 
         if (plugin_supports('mod', $cminfo->modname, FEATURE_COMPLETION_HAS_RULES)) {
-            $response = true;
             $cmcompletionclass = activity_custom_completion::get_cm_completion_class($cminfo->modname);
             if ($cmcompletionclass) {
                 /** @var activity_custom_completion $cmcompletion */
                 $cmcompletion = new $cmcompletionclass($cminfo, $userid, $completionstate);
-                $response = $cmcompletion->get_overall_completion_state() != COMPLETION_INCOMPLETE;
-            }
-
-            if (!$response) {
-                return COMPLETION_INCOMPLETE;
+                $customstate = $cmcompletion->get_overall_completion_state();
+                if ($customstate == COMPLETION_INCOMPLETE) {
+                    return $customstate;
+                }
+                $completionstate[] = $customstate;
             }
         }
 
@@ -949,7 +948,7 @@ class completion_info {
      * Resetting state of manual tickbox has same result as deleting state for
      * it.
      *
-     * @param stcClass|cm_info $cm Activity
+     * @param stdClass|cm_info $cm Activity
      */
     public function reset_all_state($cm) {
         global $DB;
@@ -991,7 +990,7 @@ class completion_info {
      *   fill the cache, retrieves information from the entire course not just for
      *   this one activity
      * @param int $userid User ID or 0 (default) for current user
-     * @param null $unused This parameter has been deprecated since 4.0 and should not be used anymore.
+     * @param mixed $unused This parameter has been deprecated since 4.0 and should not be used anymore.
      * @return object Completion data. Record from course_modules_completion plus other completion statuses such as
      *                  - Completion status for 'must-receive-grade' completion rule.
      *                  - Custom completion statuses defined by the activity module plugin.
@@ -1396,7 +1395,7 @@ class completion_info {
      * @return array Array of user objects with user fields (including all identity fields)
      */
     public function get_tracked_users($where = '', $whereparams = array(), $groupid = 0,
-             $sort = '', $limitfrom = '', $limitnum = '', context $extracontext = null) {
+             $sort = '', $limitfrom = '', $limitnum = '', ?context $extracontext = null) {
 
         global $DB;
 
@@ -1443,12 +1442,12 @@ class completion_info {
      * @param int $start User to start at if paging (optional)
      * @param context $extracontext If set, includes extra user information fields
      *   as appropriate to display for current user in this context
-     * @return stdClass with ->total and ->start (same as $start) and ->users;
+     * @return array with ->total and ->start (same as $start) and ->users;
      *   an array of user objects (like mdl_user id, firstname, lastname)
      *   containing an additional ->progress array of coursemoduleid => completionstate
      */
     public function get_progress_all($where = '', $where_params = array(), $groupid = 0,
-            $sort = '', $pagesize = '', $start = '', context $extracontext = null) {
+            $sort = '', $pagesize = '', $start = '', ?context $extracontext = null) {
         global $CFG, $DB;
 
         // Get list of applicable users
@@ -1495,7 +1494,7 @@ class completion_info {
      *
      * @param stdClass|cm_info $cm Course-module for item that owns grade
      * @param grade_item $item Grade item
-     * @param stdClass $grade
+     * @param stdClass|grade_grade $grade
      * @param bool $deleted
      * @param bool $isbulkupdate If bulk grade update is happening.
      */
@@ -1590,7 +1589,6 @@ class completion_info {
      * This is to be used only for system errors (things that shouldn't happen)
      * and not user-level errors.
      *
-     * @global type $CFG
      * @param string $error Error string (will not be displayed to user unless debugging is enabled)
      * @throws moodle_exception Exception with the error string as debug info
      */
@@ -1633,11 +1631,12 @@ class completion_info {
                 $data->coursemoduleid = $data->cmvcoursemoduleid;
                 $data->userid = $data->cmvuserid;
             }
+            // When reseting all state in the completion, we need to keep current view state.
+            // We cannot assume the activity has been viewed, so we should check if there is any course_modules_viewed already.
+            $data->viewed = is_null($data->cmvuserid) ? 0 : 1;
+
             unset($data->cmvcoursemoduleid);
             unset($data->cmvuserid);
-
-            // When reseting all state in the completion, we need to keep current view state.
-            $data->viewed = 1;
         }
 
         return (array)$data;

@@ -2,32 +2,8 @@
 
 /* COURSE CONTENT */
 
-.section_add_menus {
-    text-align: right;
-    clear: both;
-}
-
 .block_tree .tree_item.branch {
     margin-left: 8px;
-}
-
-.section_add_menus .horizontal div,
-.section_add_menus .horizontal form {
-    display: inline;
-}
-
-.section_add_menus optgroup {
-    font-weight: normal;
-    font-style: italic;
-}
-/*rtl:ignore*/
-.section_add_menus .urlselect {
-    text-align: left;
-    margin-left: .4em;
-}
-/*rtl:ignore*/
-.section_add_menus .urlselect select {
-    margin-left: .2em;
 }
 
 .section {
@@ -88,14 +64,7 @@
 
         &.indented {
             .activity-item {
-                border: 0;
                 margin-left: map-get($spacers, 3);
-            }
-        }
-        &.indented + .indented {
-            .activity-item {
-                border-top: $border-width solid $border-color;
-                border-radius: unset;
             }
         }
     }
@@ -288,6 +257,17 @@
         border-top: 1px solid $dropzone-border;
         margin-top: -1px;
     }
+
+    [data-for="sectioninfo"] {
+        // When a section is empty, the activity dropzone indicator is below
+        // the section info. This ensures the dropzone will not displace the content
+        // even if the section has no restrictions or info to display.
+        min-height: 1px;
+    }
+
+    [data-for="sectioninfo"].drop-down {
+        margin-top: -1px;
+    }
 }
 
 .section .activity .activityinstance .groupinglabel {
@@ -323,24 +303,6 @@
     left: -8px;
     position: absolute;
     top: 0;
-}
-
-.course-content .section-summary {
-    border: 1px solid $table-border-color;
-    margin-top: 5px;
-    list-style: none;
-}
-
-.course-content .section-summary .section-title {
-    margin: 2px 5px 10px 5px;
-}
-
-.course-content .section-summary .summarytext {
-    margin: 2px 5px 2px 5px;
-}
-
-.course-content .section-summary .summary {
-    margin-top: 5px;
 }
 
 .course-content .single-section .section-navigation {
@@ -403,8 +365,6 @@
     list-style: none;
 
     li.section {
-        padding-top: $spacer;
-        padding-bottom: $spacer;
         .content {
             margin: 0;
             padding: 0;
@@ -501,10 +461,6 @@
     padding-bottom: 13rem;
 }
 
-.jumpmenu .form-inline {
-    display: block;
-}
-
 .path-course-view .completionprogress {
     margin-left: 25px;
 }
@@ -590,6 +546,7 @@ span.editinstructions {
     text-decoration: none;
     z-index: 9999;
     border: $alert-border-width solid transparent;
+    width: fit-content;
 
     @include alert-variant(
         theme-color-level('info', $alert-bg-level),
@@ -609,11 +566,6 @@ span.editinstructions {
 #page-admin-course-manage #movecourses td img {
     margin: 0 .22em;
     vertical-align: text-bottom;
-}
-
-#coursesearch {
-    margin-top: 1em;
-    text-align: left;
 }
 
 #page-course-pending .pendingcourserequests {
@@ -855,11 +807,11 @@ span.editinstructions {
 
     .listitem {
         > div {
-            > .float-left {
+            > .float-start {
                 float: left;
             }
 
-            > .float-right {
+            > .float-end {
                 float: right;
                 text-align: right;
             }
@@ -1040,43 +992,6 @@ span.editinstructions {
 }
 
 /** Management header styling **/
-.coursecat-management-header {
-    vertical-align: middle;
-
-    h2 {
-        display: inline-block;
-        text-align: left;
-    }
-
-    > div {
-        float: right;
-
-        > div {
-            margin: 10px 0 10px 1em;
-            display: inline-block;
-        }
-    }
-
-    select {
-        max-width: 300px;
-        cursor: pointer;
-        padding: 0.4em 0.5em 0.45em 1em;
-        vertical-align: baseline;
-        white-space: nowrap;
-    }
-
-    .view-mode-selector {
-        .moodle-actionmenu {
-            white-space: nowrap;
-            display: inline-block;
-        }
-
-        .moodle-actionmenu[data-enhanced].show .menu a {
-            padding-left: 1em;
-        }
-    }
-}
-
 .course-being-dragged-proxy {
     border: 0;
     color: $link-color;
@@ -1163,12 +1078,13 @@ span.editinstructions {
 
 /* Variables definition*/
 
-$activity-item-background: theme-color-level('primary', -12) !default;
-$activity-item-border: theme-color-level('primary', -2) !default;
-$activity-item-color: $body-color !default;
-$activity-item-hover: theme-color-level('primary', -12) !default;
-$activity-item-border-radius: 1rem !default;
-$activity-add-hover: theme-color-level('primary', -10) !default;
+$activity-item-padding: 0.75rem !default;
+$activity-border-radius: 1rem !default;
+$activity-border-width: 2px !default;
+$activity-hover-border-color: $primary !default;
+$divider-color: $gray-300 !default;
+$divider-width: 2px !default;
+$divider-hover-color: $primary !default;
 
 /* Functions/Mixins definition */
 
@@ -1192,49 +1108,6 @@ $activity-add-hover: theme-color-level('primary', -10) !default;
                 color: color-yiq($value);
             }
         }
-    }
-}
-
-/* Activity & Block 'add' buttons */
-
-.activity-add,
-.block-add {
-    @include alert-variant($primary-light-background, $primary-light-border, $primary);
-    border-width: $border-width;
-    .pluscontainer {
-        border: $border-width solid $primary-light-border;
-        border-radius: 50%;
-        width: map-get($iconsizes, 5);
-        height: map-get($iconsizes, 5);
-    }
-    &:hover {
-        cursor: pointer;
-        background-color: $activity-add-hover;
-        .activity-add-text {
-            text-decoration: underline;
-        }
-    }
-    width: 100%;
-}
-
-.block-add {
-    @include border-radius();
-}
-
-.activity-add {
-    @include border-radius($activity-item-border-radius);
-}
-
-/* Add section */
-
-.changenumsections {
-    border-top: $border-width solid $primary-light-border;
-}
-
-.add-sections {
-    .icon {
-        margin-right: map-get($spacers, 1);
-        font-size: inherit;
     }
 }
 
@@ -1264,13 +1137,22 @@ $activity-add-hover: theme-color-level('primary', -10) !default;
 
 .course-section {
     list-style: none;
-    padding: map-get($spacers, 3);
     margin-top: map-get($spacers, 3);
-    border: $border-width solid $border-color;
-    @include border-radius($activity-item-border-radius);
+    // Custom styles for course sections while editing.
+    .editing & {
+        margin-top: map-get($spacers, 2);
+    }
+
+    .section-item {
+        padding: map-get($spacers, 3);
+        border: $border-width solid $border-color;
+        @include border-radius($activity-border-radius);
+    }
 
     &.hidden {
-        background-color: $gray-100;
+        .section-item {
+            background-color: $gray-100;
+        }
     }
 
     .sectionname > a {
@@ -1282,6 +1164,12 @@ $activity-add-hover: theme-color-level('primary', -10) !default;
 
     .sectionbadges .badge {
         margin-left: map-get($spacers, 2);
+        font-weight: normal;
+        .icon {
+            font-size: 12px;
+            width: 12px;
+            height: 12px;
+        }
     }
 
     .course-section-header.draggable {
@@ -1297,7 +1185,7 @@ $activity-add-hover: theme-color-level('primary', -10) !default;
     .summarytext {
         // Add rounded borders to images.
         img {
-            @include border-radius($activity-item-border-radius);
+            @include border-radius($activity-border-radius);
         }
     }
 
@@ -1307,7 +1195,7 @@ $activity-add-hover: theme-color-level('primary', -10) !default;
         padding: map-get($spacers, 1) map-get($spacers, 3);
         background-color: $gray-200;
         @include font-size($small-font-size);
-        @include border-radius($activity-item-border-radius);
+        @include border-radius($activity-border-radius);
         .editavailability {
             a {
                 @include border-radius();
@@ -1324,19 +1212,14 @@ $activity-add-hover: theme-color-level('primary', -10) !default;
     }
 
     // Override '.btn.btn-icon' styles from buttons.scss to make action menu buttons smaller.
-    .action-menu .btn.btn-icon {
-        height: map-get($iconsizes, 5);
-        width: map-get($iconsizes, 5);
-        @include border-radius();
-    }
-
-    &.section-summary {
-        padding-left: map-get($spacers, 3);
-        padding-right: map-get($spacers, 3);
-        margin-bottom: map-get($spacers, 2);
-        margin-top: map-get($spacers, 2);
-        @if $enable-rounded {
+    .action-menu {
+        .btn.btn-icon {
+            height: map-get($iconsizes, 5);
+            width: map-get($iconsizes, 5);
             @include border-radius();
+        }
+        &.section-actions .btn.btn-icon {
+            font-size: $font-size-lg;
         }
     }
 
@@ -1357,6 +1240,33 @@ $activity-add-hover: theme-color-level('primary', -10) !default;
         font-size: $font-size-lg;
         color: $primary;
     }
+
+    // Add new z-index context for dnd overlay higher divider buttons and quick edit links.
+    .overlay-preview {
+        z-index: 5;
+    }
+}
+
+// Course 'add section' button.
+.btn.add-section {
+    @include border-radius($activity-border-radius);
+    border: $divider-width dashed $border-color;
+    color: $primary;
+    font-size: $font-size-sm;
+    font-weight: bold;
+    &:hover,
+    &:focus {
+        background-color: $primary-light-background;
+        border: $divider-width solid $primary;
+        color: $primary;
+    }
+}
+
+.max-section-alert {
+    border-top: $divider-width dashed $border-color;
+    font-size: $font-size-sm;
+    font-weight: normal;
+    color: $gray-500;
 }
 
 /* Single section page specific styles */
@@ -1364,10 +1274,12 @@ $activity-add-hover: theme-color-level('primary', -10) !default;
 .single-section {
     // Revert main section's styles.
     > ul > .course-section {
-        padding: 0;
-        border: none;
-        &.hidden {
+        &.hidden .section-item {
             background-color: inherit;
+        }
+        .section-item {
+            padding: 0;
+            border: none;
         }
     }
 }
@@ -1390,22 +1302,48 @@ $activity-add-hover: theme-color-level('primary', -10) !default;
 .activity {
     list-style: none;
     position: relative;
+    padding-top: map-get($spacers, 1);
+    margin-top: map-get($spacers, 1);
+    border-top: $border-width solid $border-color;
+    // Custom styles for activity while editing and for the first activity card in the section.
+    .editing &,
+    .section &:first-child {
+        // Remove activity top border and spacing, while editing a separator is displayed.
+        padding-top: 0;
+        margin-top: 0;
+        border-top: none;
+    }
 }
 
 .activity-item {
     position: relative;
-    @include border-radius($activity-item-border-radius);
-    &:not(.activityinline) {
-        padding: .75rem;
-    }
+    padding: $activity-item-padding;
+    @include border-radius($activity-border-radius);
     &.activityinline {
-        padding: .75rem 0;
+        padding: $activity-item-padding 0;
     }
     &.hiddenactivity {
         background-color: $gray-100;
         .activityiconcontainer,
         .badge {
             mix-blend-mode: multiply;
+        }
+    }
+    // Custom styles for activity cards while editing.
+    .editing & {
+        cursor: move;
+        .a {
+            cursor: pointer;
+        }
+        // Add a border on hover to the activity card (avoiding hover effect in inner activities).
+        &:hover:not(:has(.activity:hover)),
+        &.selected {
+            outline: $activity-border-width solid $activity-hover-border-color;
+            box-shadow: $box-shadow-sm;
+            .activityiconcontainer,
+            .badge {
+                mix-blend-mode: multiply;
+            }
         }
     }
 
@@ -1483,12 +1421,12 @@ $activity-add-hover: theme-color-level('primary', -10) !default;
         // Prevent bootstrap strech-link from covering the inplace editable button using z-index.
         .activityname {
             .afterlink {
-                margin-left: 0.5rem;
+                margin-left: map-get($spacers, 2);
             }
             .inplaceeditable .quickeditlink {
                 position: relative;
                 z-index: 2;
-                margin-left: 0.5rem;
+                margin-left: map-get($spacers, 2);
             }
         }
         .activitybadge {
@@ -1592,7 +1530,7 @@ $activity-add-hover: theme-color-level('primary', -10) !default;
         }
         // Add rounded borders to images.
         img {
-            @include border-radius($activity-item-border-radius);
+            @include border-radius($activity-border-radius);
         }
     }
 
@@ -1612,97 +1550,177 @@ $activity-add-hover: theme-color-level('primary', -10) !default;
     }
 }
 
-/* Activity card in editing mode */
-
-.editing .activity-item {
-    cursor: move;
-
-    .a {
-        cursor: pointer;
-    }
-
-    &:hover,
-    &.selected {
-        @include alert-variant($activity-item-hover, $activity-item-border, $activity-item-color);
-
-        .activityiconcontainer,
-        .badge {
-            mix-blend-mode: multiply;
-        }
-    }
-}
-
 .section .draggable .activity-item .dragicon {
     display: none;
 }
 
-/* Activity divider */
+/* Dividers */
 
-.activity:focus-within + .activity div.divider button,
-.course-section-header:focus-within + .content .section .activity:first-child div.divider button,
-.content .section .activity:focus-within div.divider button {
-    visibility: visible;
-}
-
-.activity {
-    div.divider {
-        position: absolute;
+.divider {
+    position: relative;
+    hr {
         width: 100%;
-        height: 2rem;
-        margin-top: -1rem;
-        margin-bottom: -1rem;
-        z-index: 5;
-        button {
-            border-radius: 100%;
-            width: 2rem;
-            height: 2rem;
-            position: relative;
-            left: calc(50%);
-            opacity: 0;
-            visibility: hidden;
-            transition: visibility 0.1s;
-            margin: 0;
-            padding: 0;
-            i.icon {
-                height: 1.5rem;
-                width: 1.5rem;
-                font-size: 1.5rem;
-                position: absolute;
-                left: calc(0.25rem - 1px);
-                top: calc(0.25rem - 0.5px);
-            }
+        margin: map-get($spacers, 2) map-get($spacers, 1);
+        border-top: $divider-width dashed $divider-color;
+        .changenumsections.disabled & {
+            border-top: $divider-width dashed $divider-color;
         }
     }
-    &:not(.dragging) div.divider {
-        &:hover button,
-        &:focus button,
-        &:focus-within button {
+    .divider-content {
+        opacity: 0;
+        visibility: hidden;
+        transition: visibility 0.1s;
+        position: absolute;
+        background: linear-gradient(transparent 40%, $white 40%, $white 60%, transparent 60%);
+        .section.hidden & {
+            background: linear-gradient(transparent 40%, $gray-100 40%, $gray-100 60%, transparent 60%);
+        }
+    }
+    &.always-visible {
+        .divider-content {
             opacity: 1;
             visibility: visible;
         }
+    }
+    &.always-hidden {
+        hr {
+            opacity: 0;
+            visibility: hidden;
+        }
+    }
+    &:hover,
+    &:focus,
+    &:focus-within {
+        .divider-content {
+            opacity: 1;
+            visibility: visible;
+        }
+        hr {
+            opacity: 1;
+            visibility: visible;
+        }
+    }
+    // Style the hr divider when the "Add content" button is hovered.
+    &:has(.btn.add-content:hover) {
+        hr {
+            border-color: $divider-hover-color;
+            .changenumsections.disabled & {
+                border-color: $gray-200;
+            }
+        }
+    }
+}
+
+// These styles will make the activity and section dividers buttons visible (but still without opacity) so
+// buttons can be keyboard focusable.
+.activity:focus-within + .activity .divider .divider-content,
+.course-section-header:focus-within + .content .section .activity:first-child .divider .divider-content,
+.content .section .activity:focus-within .divider .divider-content,
+.course-content:focus-within .changenumsections .divider .divider-content {
+    visibility: visible;
+}
+
+// Hide last section "Add section". It will rely on the course format general "Add section" button.
+.course-content ul.topics > li:last-child .changenumsections {
+    display: none;
+}
+
+// Custom buttons for dividers.
+.btn.add-content {
+    position: relative;
+    z-index: 1;
+    @include border-radius();
+    font-size: $font-size-sm;
+    font-weight: bold;
+    color: theme-color-level("primary", $alert-color-level);
+    background-color: theme-color-level("primary", $alert-bg-level);
+    &:hover,
+    &:focus {
+        color: color-yiq($primary);
+        background-color: $primary;
+    }
+    .icon {
+        width: 14px;
+        height: 14px;
+        font-size: 14px;
+    }
+    .changenumsections.disabled & {
+        color: $gray-500;
+        background-color: $gray-200;
+        outline: none;
+        box-shadow: none;
+        &:hover,
+        &:focus {
+            color: $gray-500;
+            background-color: $gray-200;
+            outline: none;
+            box-shadow: none;
+        }
+        pointer-events: auto; // Restore pointer events for the disabled button so we can see the tooltip.
     }
 }
 
 /* Bulk editing */
 
-.bulkenabled .bulk-hidden {
-    display: none !important; // stylelint-disable-line declaration-no-important
-}
-
-.activity-item .bulkselect {
-    position: absolute;
-    left: -2rem;
-}
-
-.course-section-header .bulkselect {
-    left: -2rem;
-    position: relative;
-    width: 0;
-}
-
-@include media-breakpoint-down(sm) {
-    .bulkenabled .course-content {
+.bulkenabled {
+    .bulk-hidden {
+        display: none !important; // stylelint-disable-line declaration-no-important
+    }
+    .section {
+        margin-left: map-get($spacers, 3);
+        &:not(:first-child) {
+            margin-top: map-get($spacers, 4);
+        }
+    }
+    .activity {
+        margin-top: map-get($spacers, 2);
         margin-left: 2rem;
+        padding-top: map-get($spacers, 2);
+        border-top: $divider-width dashed $divider-color;
+        &:first-child {
+            margin-top: map-get($spacers, 4);
+        }
+    }
+    .activity-item {
+        .bulkselect {
+            position: absolute;
+            left: -2rem;
+        }
+        // Delegated sections are not available for bulk editing.
+        &:has(.delegated-section):hover {
+            outline: none !important; // stylelint-disable-line declaration-no-important
+            box-shadow: none !important; // stylelint-disable-line declaration-no-important
+        }
+    }
+    .course-section-header .bulkselect {
+        left: -2.75rem;
+        position: relative;
+        width: 0;
+    }
+    @include media-breakpoint-down(sm) {
+        .course-content {
+            margin-left: 2rem;
+        }
+    }
+}
+
+// Custom styles for bulk actions sticky footer in small devices.
+.sticky-footer-content.bulkactions {
+    @include media-breakpoint-down(sm) {
+        position: relative;
+        .form-check,
+        .bulkaction-name,
+        .bulkcount {
+            display: none;
+        }
+        .actions button {
+            padding: 0 map-get($spacers, 2);
+        }
+        .bulkcancel {
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
     }
 }
 
@@ -1712,9 +1730,6 @@ $activity-add-hover: theme-color-level('primary', -10) !default;
     a {
         color: $black;
         text-decoration: none;
-        img {
-            filter: invert(25%) sepia(86%) saturate(1158%) hue-rotate(189deg) brightness(104%) contrast(92%);
-        }
     }
     .activityicon {
         width: 32px;
@@ -1729,8 +1744,98 @@ $activity-add-hover: theme-color-level('primary', -10) !default;
     .activity:first-of-type hr {
         display: none;
     }
-    .section {
+    .section-item {
         margin-bottom: map-get($spacers, 4);
         @include border-radius();
+    }
+}
+
+/* Styles for the Move activity and Move section modals */
+
+.move-activity-tree {
+    .collapse-list-item {
+        @include border-radius();
+
+        &:hover,
+        &:focus {
+            background-color: theme-color-level("primary", $alert-bg-level);
+
+            a {
+                color: theme-color-level("primary", $alert-color-level);
+            }
+        }
+
+        a {
+            color: $list-group-action-active-color;
+
+            &:hover,
+            &:focus {
+                text-decoration: none;
+            }
+        }
+
+        a.disabled {
+            color: $list-group-disabled-color;
+        }
+    }
+
+    .collapse-list-item-content .collapse-list-item {
+        padding: $collapse-list-item-padding-y $collapse-list-item-padding-x;
+    }
+
+    ul {
+        margin-left: map-get($spacers, 4);
+    }
+
+    .collapse-list-link {
+        font-weight: bold;
+    }
+}
+
+/* Subsection specific styles */
+
+.activity.subsection {
+    border-top: none;
+    > .activity-item {
+        border: $border-width solid $border-color;
+        padding: 0;
+        margin: map-get($spacers, 2) 0;
+        .activity-altcontent {
+            margin-top: 0;
+        }
+    }
+    .section {
+        margin-top: 0;
+        .section-item {
+            border: none;
+            padding: $activity-item-padding;
+        }
+        .icons-collapse-expand:has(+ h4) {
+            height: map-get($iconsizes, 4);
+            width: map-get($iconsizes, 4);
+            font-size: $font-size-sm;
+        }
+        h4 {
+            font-size: $h5-font-size;
+        }
+        .section-actions .btn.btn-icon {
+            font-size: inherit;
+        }
+    }
+    + .activity {
+        border-top: none;
+    }
+    // Allow v-parent-focus only for closest acvitity (avoiding subsection).
+    .focus-control:not(:has(.focus-control)) {
+        &:focus-within .v-parent-focus,
+        &:hover .v-parent-focus {
+            opacity: 1 !important; // stylelint-disable-line declaration-no-important
+            visibility: visible !important; // stylelint-disable-line declaration-no-important
+        }
+    }
+    .focus-control:focus-within .focus-control .v-parent-focus,
+    .focus-control:hover .focus-control .v-parent-focus {
+        opacity: 0;
+        visibility: hidden;
     }
 }

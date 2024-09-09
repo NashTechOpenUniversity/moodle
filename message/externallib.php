@@ -1333,7 +1333,7 @@ class core_message_external extends external_api {
      * @throws \moodle_exception if the messaging feature is disabled on the site.
      * @since 3.2
      */
-    public static function get_conversations($userid, $limitfrom = 0, $limitnum = 0, int $type = null, bool $favourites = null,
+    public static function get_conversations($userid, $limitfrom = 0, $limitnum = 0, ?int $type = null, ?bool $favourites = null,
             bool $mergeself = false) {
         global $CFG, $USER;
 
@@ -3028,7 +3028,6 @@ class core_message_external extends external_api {
      *
      * @return external_single_structure the structure
      * @since  Moodle 3.2
-     * @todo Remove loggedin and loggedoff from processors structure on MDL-73284.
      */
     protected static function get_preferences_structure() {
         return new external_single_structure(
@@ -3065,24 +3064,6 @@ class core_message_external extends external_api {
                                                     'lockedmessage' => new external_value(PARAM_TEXT,
                                                         'Text to display if locked', VALUE_OPTIONAL),
                                                     'userconfigured' => new external_value(PARAM_INT, 'Is configured?'),
-                                                    'loggedin' => new external_single_structure(
-                                                        array(
-                                                            'name' => new external_value(PARAM_NOTAGS, 'Name'),
-                                                            'displayname' => new external_value(PARAM_TEXT, 'Display name'),
-                                                            'checked' => new external_value(PARAM_BOOL, 'Is checked?'),
-                                                        ),
-                                                        'DEPRECATED ATTRIBUTE -
-                                                        Kept for backward compatibility, use enabled instead.',
-                                                    ),
-                                                    'loggedoff' => new external_single_structure(
-                                                        array(
-                                                            'name' => new external_value(PARAM_NOTAGS, 'Name'),
-                                                            'displayname' => new external_value(PARAM_TEXT, 'Display name'),
-                                                            'checked' => new external_value(PARAM_BOOL, 'Is checked?'),
-                                                        ),
-                                                        'DEPRECATED ATTRIBUTE -
-                                                        Kept for backward compatibility, use enabled instead.',
-                                                    ),
                                                     'enabled' => new external_value(PARAM_BOOL, 'Is enabled?'),
                                                 )
                                             ),

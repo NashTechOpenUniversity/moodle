@@ -16,10 +16,6 @@
 
 namespace core\output;
 
-use renderable;
-use renderer_base;
-use core\output\named_templatable;
-
 /**
  * A generic user choice output class.
  *
@@ -30,8 +26,7 @@ use core\output\named_templatable;
  * @copyright  2023 Ferran Recio <ferran@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class choicelist implements renderable, named_templatable {
-
+class choicelist implements named_templatable, renderable {
     /** @var object[] The user choices. */
     protected $options = [];
 
@@ -92,6 +87,23 @@ class choicelist implements renderable, named_templatable {
      */
     public function count_options(): int {
         return count($this->options);
+    }
+
+    /**
+     * Get the selectable options.
+     *
+     * This method returns an array of options that are selectable, excluding the selected option and any disabled options.
+     *
+     * @return \stdClass[]
+     */
+    public function get_selectable_options(): array {
+        $selectableoptions = [];
+        foreach ($this->options as $option) {
+            if ($option['value'] !== $this->selected && !$option['disabled']) {
+                $selectableoptions[] = (object) $option;
+            }
+        }
+        return $selectableoptions;
     }
 
     /**
@@ -204,6 +216,23 @@ class choicelist implements renderable, named_templatable {
                 'value' => $attributevalue,
             ];
         }
+    }
+
+    /**
+     * Retrieves the HTML attributes for a given value from the options array.
+
+     * @param string $value The value for which to retrieve the extras.
+     * @return array an array of HTML attributes of the option (attribute => value).
+     */
+    public function get_option_extras(string $value): array {
+        if (!isset($this->options[$value]) || !isset($this->options[$value]['extras'])) {
+            return [];
+        }
+        $result = [];
+        foreach ($this->options[$value]['extras'] as $extra) {
+            $result[$extra['attribute']] = $extra['value'];
+        }
+        return $result;
     }
 
     /**

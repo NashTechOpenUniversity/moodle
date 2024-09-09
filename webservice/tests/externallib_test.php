@@ -18,6 +18,7 @@ namespace core_webservice;
 
 use core_external\external_api;
 use externallib_advanced_testcase;
+use core\tests\session\mock_handler;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -33,8 +34,8 @@ require_once($CFG->dirroot . '/webservice/tests/helpers.php');
  * @copyright  2012 Paul Charsley
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class externallib_test extends externallib_advanced_testcase {
-
+final class externallib_test extends externallib_advanced_testcase {
+    #[\Override]
     public function setUp(): void {
         // Calling parent is good, always
         parent::setUp();
@@ -43,7 +44,7 @@ class externallib_test extends externallib_advanced_testcase {
         set_config('enablewebservices', '1');
     }
 
-    public function test_get_site_info() {
+    public function test_get_site_info(): void {
         global $DB, $USER, $CFG, $PAGE;
 
         $this->resetAfterTest(true);
@@ -190,7 +191,9 @@ class externallib_test extends externallib_advanced_testcase {
         $record->firstip      = $record->lastip = '10.0.0.1';
         $record->sid = md5('hokus1');
         $record->timecreated = time();
-        $DB->insert_record('sessions', $record);
+
+        $mockhandler = new mock_handler();
+        $mockhandler->add_test_session($record);
 
         $siteinfo = \core_webservice_external::get_site_info();
         $siteinfo = external_api::clean_returnvalue(\core_webservice_external::get_site_info_returns(), $siteinfo);
@@ -201,7 +204,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_site_info with values > PHP_INT_MAX. We check only userquota since maxbytes require PHP ini changes.
      */
-    public function test_get_site_info_max_int() {
+    public function test_get_site_info_max_int(): void {
         $this->resetAfterTest(true);
 
         self::setUser(self::getDataGenerator()->create_user());
@@ -218,7 +221,7 @@ class externallib_test extends externallib_advanced_testcase {
     /**
      * Test get_site_info with missing components.
      */
-    public function test_get_site_missing_components() {
+    public function test_get_site_missing_components(): void {
         global $USER, $DB;
 
         $this->resetAfterTest(true);

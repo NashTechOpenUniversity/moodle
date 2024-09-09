@@ -150,7 +150,7 @@ function user_create_user($user, $updatepassword = true, $triggerevent = true) {
  *             This will not affect user_password_updated event triggering.
  */
 function user_update_user($user, $updatepassword = true, $triggerevent = true) {
-    global $DB, $CFG;
+    global $DB;
 
     // Set the timecreate field to the current time.
     if (!is_object($user)) {
@@ -159,26 +159,12 @@ function user_update_user($user, $updatepassword = true, $triggerevent = true) {
 
     $currentrecord = $DB->get_record('user', ['id' => $user->id]);
 
-    // Communication api update for user.
-    if (core_communication\api::is_available()) {
-        $usercourses = enrol_get_users_courses($user->id);
-        if (!empty($currentrecord) && isset($user->suspended) && $currentrecord->suspended !== $user->suspended) {
-            foreach ($usercourses as $usercourse) {
-                $communication = \core_communication\api::load_by_instance(
-                    context: \core\context\course::instance($usercourse->id),
-                    component: 'core_course',
-                    instancetype: 'coursecommunication',
-                    instanceid: $usercourse->id
-                );
-                // If the record updated the suspended for a user.
-                if ($user->suspended === 0) {
-                    $communication->add_members_to_room([$user->id]);
-                } else if ($user->suspended === 1) {
-                    $communication->remove_members_from_room([$user->id]);
-                }
-            }
-        }
-    }
+    // Dispatch the hook for pre user update actions.
+    $hook = new \core_user\hook\before_user_updated(
+        user: $user,
+        currentuserdata: $currentrecord,
+    );
+    \core\di::get(\core\hook\manager::class)->dispatch($hook);
 
     // Check username.
     if (isset($user->username)) {
@@ -231,7 +217,7 @@ function user_update_user($user, $updatepassword = true, $triggerevent = true) {
         if (!property_exists($currentrecord, $attributekey) || $attributekey === 'timemodified') {
             continue;
         }
-        if ($currentrecord->{$attributekey} != $attributevalue) {
+        if ($currentrecord->{$attributekey} !== $attributevalue) {
             $changedattributes[$attributekey] = $attributevalue;
         }
     }
@@ -300,7 +286,7 @@ function user_get_default_fields() {
         'institution', 'interests', 'firstaccess', 'lastaccess', 'auth', 'confirmed',
         'idnumber', 'lang', 'theme', 'timezone', 'mailformat', 'description', 'descriptionformat',
         'city', 'country', 'profileimageurlsmall', 'profileimageurl', 'customfields',
-        'groups', 'roles', 'preferences', 'enrolledcourses', 'suspended', 'lastcourseaccess'
+        'groups', 'roles', 'preferences', 'enrolledcourses', 'suspended', 'lastcourseaccess', 'trackforums',
     );
 }
 
@@ -408,7 +394,7 @@ function user_get_user_details($user, $course = null, array $userfields = array(
             foreach ($fields as $formfield) {
                 if ($formfield->show_field_content()) {
                     $userdetails['customfields'][] = [
-                        'name' => $formfield->field->name,
+                        'name' => $formfield->display_name(),
                         'value' => $formfield->data,
                         'displayvalue' => $formfield->display_data(),
                         'type' => $formfield->field->datatype,
@@ -444,9 +430,7 @@ function user_get_user_details($user, $course = null, array $userfields = array(
         $hiddenfields = array_flip(explode(',', $CFG->hiddenuserfields));
     }
 
-
-    if (!empty($user->address) && (in_array('address', $userfields)
-            && in_array('address', $showuseridentityfields) || $isadmin)) {
+    if (!empty($user->address) && (in_array('address', $userfields) || $isadmin)) {
         $userdetails['address'] = $user->address;
     }
     if (!empty($user->phone1) && (in_array('phone1', $userfields)
@@ -612,7 +596,7 @@ function user_get_user_details($user, $course = null, array $userfields = array(
     }
 
     if ($currentuser or has_capability('moodle/user:viewalldetails', $context)) {
-        $extrafields = ['auth', 'confirmed', 'lang', 'theme', 'mailformat'];
+        $extrafields = ['auth', 'confirmed', 'lang', 'theme', 'mailformat', 'trackforums'];
         foreach ($extrafields as $extrafield) {
             if (in_array($extrafield, $userfields) && isset($user->$extrafield)) {
                 $userdetails[$extrafield] = $user->$extrafield;
@@ -904,7 +888,7 @@ function user_get_user_navigation_info($user, $page, $options = array()) {
 
                 // Get login failures string.
                 $a = new stdClass();
-                $a->attempts = html_writer::tag('span', $count, array('class' => 'value mr-1 font-weight-bold'));
+                $a->attempts = html_writer::tag('span', $count, array('class' => 'value me-1 font-weight-bold'));
                 $returnobject->metadata['userloginfail'] =
                     get_string('failedloginattempts', '', $a);
 

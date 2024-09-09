@@ -63,7 +63,7 @@ define('USER_SEARCH_EXACT_MATCH', 2);
  * Returns $user object of the main admin user
  *
  * @static stdClass $mainadmin
- * @return stdClass {@link $USER} record from DB, false if not found
+ * @return stdClass|false {user} record from DB, false if not found
  */
 function get_admin() {
     global $CFG, $DB;
@@ -147,7 +147,7 @@ function get_admins() {
  * @param array $exceptions A list of IDs to ignore, eg 2,4,5,8,9,10
  * @return array
  */
-function search_users($courseid, $groupid, $searchtext, $sort='', array $exceptions=null) {
+function search_users($courseid, $groupid, $searchtext, $sort='', ?array $exceptions=null) {
     global $DB;
 
     $fullname  = $DB->sql_fullname('u.firstname', 'u.lastname');
@@ -234,7 +234,7 @@ function search_users($courseid, $groupid, $searchtext, $sort='', array $excepti
  *     parameters (using named placeholders).
  */
 function users_search_sql(string $search, string $u = 'u', int $searchtype = USER_SEARCH_STARTS_WITH, array $extrafields = [],
-        array $exclude = null, array $includeonly = null): array {
+        ?array $exclude = null, ?array $includeonly = null): array {
     global $DB, $CFG;
     $params = array();
     $tests = array();
@@ -360,7 +360,7 @@ function users_search_sql(string $search, string $u = 'u', int $searchtype = USE
  *      string SQL fragment to use in the ORDER BY clause. For example, "firstname, lastname".
  *      array of parameters used in the SQL fragment. If $search is not given, this is guaranteed to be an empty array.
  */
-function users_order_by_sql(string $usertablealias = '', string $search = null, context $context = null,
+function users_order_by_sql(string $usertablealias = '', ?string $search = null, ?context $context = null,
         array $customfieldmappings = []) {
     global $DB, $PAGE;
 
@@ -429,8 +429,8 @@ function users_order_by_sql(string $usertablealias = '', string $search = null, 
  * @return array|int|bool  {@link $USER} records unless get is false in which case the integer count of the records found is returned.
  *                        False is returned if an error is encountered.
  */
-function get_users($get=true, $search='', $confirmed=false, array $exceptions=null, $sort='firstname ASC',
-                   $firstinitial='', $lastinitial='', $page='', $recordsperpage='', $fields='*', $extraselect='', array $extraparams=null) {
+function get_users($get=true, $search='', $confirmed=false, ?array $exceptions=null, $sort='firstname ASC',
+                   $firstinitial='', $lastinitial='', $page='', $recordsperpage='', $fields='*', $extraselect='', ?array $extraparams=null) {
     global $DB, $CFG;
 
     if ($get && !$recordsperpage) {
@@ -503,7 +503,7 @@ function get_users($get=true, $search='', $confirmed=false, array $exceptions=nu
  */
 function get_users_listing($sort='lastaccess', $dir='ASC', $page=0, $recordsperpage=0,
                            $search='', $firstinitial='', $lastinitial='', $extraselect='',
-                           array $extraparams=null, $extracontext = null) {
+                           ?array $extraparams=null, $extracontext = null) {
     global $DB, $CFG;
 
     $fullname  = $DB->sql_fullname();
@@ -1181,7 +1181,7 @@ function get_scales_menu($courseid=0) {
  * @param string $select use empty string when updating all records
  * @param array $params optional select parameters
  */
-function increment_revision_number($table, $field, $select, array $params = null) {
+function increment_revision_number($table, $field, $select, ?array $params = null) {
     global $DB;
 
     $now = time();
@@ -1205,7 +1205,7 @@ function increment_revision_number($table, $field, $select, array $params = null
  *
  * @global object
  * @param int $courseid The id of the course as found in the 'course' table.
- * @return array
+ * @return array|false
  */
 function get_course_mods($courseid) {
     global $DB;
@@ -1236,7 +1236,7 @@ function get_course_mods($courseid) {
  * @param int $strictness IGNORE_MISSING means compatible mode, false returned if record not found, debug message if more found;
  *                        IGNORE_MULTIPLE means return first, ignore multiple records found(not recommended);
  *                        MUST_EXIST means throw exception if no record or multiple records found
- * @return stdClass
+ * @return stdClass|false
  */
 function get_coursemodule_from_id($modulename, $cmid, $courseid=0, $sectionnum=false, $strictness=IGNORE_MISSING) {
     global $DB;

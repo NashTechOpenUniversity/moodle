@@ -21,18 +21,23 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 import UserSearch from 'core_user/comboboxsearch/user';
-import Url from 'core/url';
 import {renderForPromise, replaceNodeContents} from 'core/templates';
 import * as Repository from 'core_grades/searchwidget/repository';
 
 export default class User extends UserSearch {
 
-    constructor() {
+    /**
+     * Construct the class.
+     *
+     * @param {string} baseUrl The base URL for the page.
+     */
+    constructor(baseUrl) {
         super();
+        this.baseUrl = baseUrl;
     }
 
-    static init() {
-        return new User();
+    static init(baseUrl) {
+        return new User(baseUrl);
     }
 
     /**
@@ -42,11 +47,14 @@ export default class User extends UserSearch {
         const {html, js} = await renderForPromise('core_user/comboboxsearch/resultset', {
             users: this.getMatchedResults().slice(0, 5),
             hasresults: this.getMatchedResults().length > 0,
+            instance: this.instance,
             matches: this.getDatasetSize(),
             searchterm: this.getSearchTerm(),
             selectall: this.selectAllResultsLink(),
         });
         replaceNodeContents(this.getHTMLElements().searchDropdown, html, js);
+        // Remove aria-activedescendant when the available options change.
+        this.searchInput.removeAttribute('aria-activedescendant');
     }
 
     /**
@@ -55,25 +63,23 @@ export default class User extends UserSearch {
      * @returns {string|*}
      */
     selectAllResultsLink() {
-        return Url.relativeUrl('/grade/report/user/index.php', {
-            id: this.courseID,
-            userid: 0,
-            searchvalue: this.getSearchTerm()
-        }, false);
+        const url = new URL(this.baseUrl);
+        url.searchParams.set('userid', 0);
+        url.searchParams.set('searchvalue', this.getSearchTerm());
+        return url.toString();
     }
 
     /**
-     * Build up the view all link that is dedicated to a particular result.
+     * Build up the link that is dedicated to a particular result.
      *
      * @param {Number} userID The ID of the user selected.
      * @returns {string|*}
      */
     selectOneLink(userID) {
-        return Url.relativeUrl('/grade/report/user/index.php', {
-            id: this.courseID,
-            searchvalue: this.getSearchTerm(),
-            userid: userID,
-        }, false);
+        const url = new URL(this.baseUrl);
+        url.searchParams.set('userid', userID);
+        url.searchParams.set('searchvalue', this.getSearchTerm());
+        return url.toString();
     }
 
     /**

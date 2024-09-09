@@ -1,5 +1,8 @@
 <?php
 
+use core\di;
+use core\hook;
+
 defined('MOODLE_INTERNAL') || die;
 
 require_once($CFG->libdir.'/formslib.php');
@@ -418,6 +421,8 @@ class course_edit_form extends moodleform {
         $handler->set_parent_context($categorycontext); // For course handler only.
         $handler->instance_form_definition($mform, empty($course->id) ? 0 : $course->id);
 
+        $hook = new \core_course\hook\after_form_definition($this, $mform);
+        di::get(hook\manager::class)->dispatch($hook);
 
         // When two elements we need a group.
         $buttonarray = array();
@@ -432,6 +437,16 @@ class course_edit_form extends moodleform {
 
         $mform->addElement('hidden', 'id', null);
         $mform->setType('id', PARAM_INT);
+
+        // Communication api call to set the communication data in the form for handling actions for group feature changes.
+        // We only need to set the data for courses already created.
+        if (!empty($course->id)) {
+            $communication = core_communication\helper::load_by_course(
+                courseid: $course->id,
+                context: $coursecontext,
+            );
+            $communication->set_data($course);
+        }
 
         // Prepare custom fields data.
         $handler->instance_form_before_set_data($course);
@@ -488,6 +503,9 @@ class course_edit_form extends moodleform {
         // Tweak the form with values provided by custom fields in use.
         $handler  = core_course\customfield\course_handler::create();
         $handler->instance_form_definition_after_data($mform, empty($courseid) ? 0 : $courseid);
+
+        $hook = new \core_course\hook\after_form_definition_after_data($this, $mform);
+        di::get(hook\manager::class)->dispatch($hook);
     }
 
     /**
@@ -534,6 +552,31 @@ class course_edit_form extends moodleform {
         $handler = core_course\customfield\course_handler::create();
         $errors  = array_merge($errors, $handler->instance_form_validation($data, $files));
 
+        $hook = new \core_course\hook\after_form_validation($this, $data, $files);
+        di::get(hook\manager::class)->dispatch($hook);
+        $pluginerrors = $hook->get_errors();
+        if (!empty($pluginerrors)) {
+            $errors = array_merge($errors, $pluginerrors);
+        }
+
         return $errors;
+    }
+
+    /**
+     * Returns course object.
+     *
+     * @return \stdClass
+     */
+    public function get_course(): stdClass {
+        return $this->course;
+    }
+
+    /**
+     * Returns context.
+     *
+     * @return \core\context
+     */
+    public function get_context(): \core\context {
+        return $this->context;
     }
 }

@@ -5,13 +5,15 @@ Feature: BigBlueButtonBN Subplugins test
   I can see the additional settings coming from the subplugins in the edit form
 
   Background:  Make sure that the BigBlueButtonBN plugin is enabled
-    Given I accept dpa and enable bigbluebuttonbn plugin
+    Given I enable "bigbluebuttonbn" "mod" plugin
     And the following "courses" exist:
       | fullname    | shortname   | category | enablecompletion |
       | Test course | Test course | 0        | 1                |
     And the following "activities" exist:
       | activity        | course      | name              | type |
       | bigbluebuttonbn | Test course | BBB Instance name | 0    |
+    And the following config values are set as admin:
+      | enableasyncbackup | 0 |
 
   Scenario: Add a subplugin and check that the settings are available
     Given I log in as "admin"
@@ -21,7 +23,7 @@ Feature: BigBlueButtonBN Subplugins test
   Scenario: I check that new fields are available and editable in the instance edit form
     Given I am on the "BBB Instance name" "bigbluebuttonbn activity editing" page logged in as "admin"
     When I expand all fieldsets
-    And I should see "New field"
+    Then I should see "New field"
 
   @javascript
   Scenario: I check that new fields are available and when I edit the field the value is saved

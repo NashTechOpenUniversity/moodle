@@ -24,16 +24,15 @@ Feature: Regrading grades does not unnecessarily mark some as overriden
     And I set the field "Available aggregation types" to "Weighted mean of grades"
     And I press "Save changes"
     And I am on the "Assignment 1" "assign activity" page
-    And I follow "View all submissions"
-    And I click on "Grade" "link" in the "Student 1" "table_row"
+    And I go to "Student 1" "Assignment 1" activity advanced grading page
     And I set the field "Grade out of 100" to "80"
     And I press "Save and show next"
     And I set the field "Grade out of 100" to "60"
     And I press "Save changes"
     And I am on the "Course 1" "grades > Grader report > View" page
     And the following should exist in the "gradereport-grader-table" table:
-      |                      |              |              |
-      | First name / Last name | Assignment 1 | Course total |
+      | -1-                  | -3-          | -4-          |
+      | First name           | Assignment 1 | Course total |
       | Student 1            | 80.00        | 80.00        |
       | Student 2            | 60.00        | 60.00        |
     And I turn editing mode on
@@ -55,8 +54,7 @@ Feature: Regrading grades does not unnecessarily mark some as overriden
   @javascript
   Scenario: Confirm overridden course total does not get regraded when activity grade is changed
     Given I am on the "Assignment 1" "assign activity" page
-    And I follow "View all submissions"
-    And I click on "Grade" "link" in the "Student 1" "table_row"
+    And I go to "Student 1" "Assignment 1" activity advanced grading page
     And I set the field "Grade out of 100" to "90"
     And I press "Save and show next"
     And I set the field "Grade out of 100" to "70"
@@ -64,7 +62,7 @@ Feature: Regrading grades does not unnecessarily mark some as overriden
     When I am on the "Course 1" "grades > Grader report > View" page
     And I turn editing mode off
     Then the following should exist in the "gradereport-grader-table" table:
-      |                      |              |              |
-      | First name / Last name | Assignment 1 | Course total |
+      | -1-                  | -3-          | -4-          |
+      | First name           | Assignment 1 | Course total |
       | Student 1            | 90.00        | 180.00       |
       | Student 2            | 70.00        | 160.00       |

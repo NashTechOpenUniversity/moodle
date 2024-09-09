@@ -145,7 +145,7 @@ function groups_get_group_by_name($courseid, $name) {
  * @category group
  * @param int $courseid The id of the course
  * @param string $idnumber idnumber of group
- * @return group object
+ * @return stdClass|false group object
  */
 function groups_get_group_by_idnumber($courseid, $idnumber) {
     if (empty($idnumber)) {
@@ -186,7 +186,7 @@ function groups_get_grouping_by_name($courseid, $name) {
  * @category group
  * @param int $courseid The id of the course
  * @param string $idnumber idnumber of the group
- * @return grouping object
+ * @return stdClass|false grouping object
  */
 function groups_get_grouping_by_idnumber($courseid, $idnumber) {
     if (empty($idnumber)) {
@@ -457,9 +457,12 @@ function groups_get_my_groups() {
  * @category group
  * @param int $courseid
  * @param int $userid $USER if not specified
+ * @param bool $includehidden Include groups with GROUP_VISIBILITY_NONE that the user is a member of, but is not allowed to see
+ *    themselves. Use this parameter with care - it is the responsibility of the calling code to ensure these groups are not exposed
+ *    to the user, as this could have privacy implications.
  * @return array Array[groupingid][groupid] including grouping id 0 which means all groups
  */
-function groups_get_user_groups($courseid, $userid=0) {
+function groups_get_user_groups(int $courseid, int $userid = 0, bool $includehidden = false): array {
     global $USER, $DB;
 
     if (empty($courseid)) {
@@ -471,7 +474,7 @@ function groups_get_user_groups($courseid, $userid=0) {
     }
 
     $usergroups = false;
-    $viewhidden = has_capability('moodle/course:viewhiddengroups', context_course::instance($courseid));
+    $viewhidden = $includehidden || has_capability('moodle/course:viewhiddengroups', context_course::instance($courseid));
     $viewall = \core_group\visibility::can_view_all_groups($courseid);
 
     $cache = cache::make('core', 'user_group_groupings');
@@ -483,7 +486,7 @@ function groups_get_user_groups($courseid, $userid=0) {
 
     if ($usergroups === false) {
 
-        $sql = "SELECT g.id, g.courseid, gg.groupingid
+        $sql = "SELECT g.id, g.courseid, gg.groupingid, g.visibility
                   FROM {groups} g
                   JOIN {groups_members} gm ON gm.groupid = g.id
              LEFT JOIN {groupings_groups} gg ON gg.groupid = g.id
@@ -1191,7 +1194,7 @@ function groups_group_visible($groupid, $course, $cm = null, $userid = null) {
  * @return array($sql, $params)
  * @throws coding_exception if empty or invalid context submitted when $groupid = USERSWITHOUTGROUP
  */
-function groups_get_members_ids_sql($groupids, context $context = null, $groupsjointype = GROUPS_JOIN_ANY) {
+function groups_get_members_ids_sql($groupids, ?context $context = null, $groupsjointype = GROUPS_JOIN_ANY) {
     if (!is_array($groupids)) {
         $groupids = [$groupids];
     }
@@ -1251,7 +1254,7 @@ function groups_get_names_concat_sql(int $courseid, string $separator = ', '): a
  * @return \core\dml\sql_join Contains joins, wheres, params
  * @throws coding_exception if empty or invalid context submitted when $groupid = USERSWITHOUTGROUP
  */
-function groups_get_members_join($groupids, $useridcolumn, context $context = null, int $jointype = GROUPS_JOIN_ANY) {
+function groups_get_members_join($groupids, $useridcolumn, ?context $context = null, int $jointype = GROUPS_JOIN_ANY) {
     global $DB;
 
     // Use unique prefix just in case somebody makes some SQL magic with the result.
@@ -1471,7 +1474,7 @@ function _group_verify_activegroup($courseid, $groupmode, $groupingid, array $al
  * @param cache $cache The cache if it has already been initialised. If not a new one will be created.
  * @return stdClass A data object containing groups, groupings, and mappings.
  */
-function groups_cache_groupdata($courseid, cache $cache = null) {
+function groups_cache_groupdata($courseid, ?cache $cache = null) {
     global $DB;
 
     if ($cache === null) {
@@ -1528,7 +1531,7 @@ function groups_cache_groupdata($courseid, cache $cache = null) {
  * @param cache $cache The cache if it has already been initialised. If not a new one will be created.
  * @return stdClass
  */
-function groups_get_course_data($courseid, cache $cache = null) {
+function groups_get_course_data($courseid, ?cache $cache = null) {
     if ($cache === null) {
         // Initialise a cache if we wern't given one.
         $cache = cache::make('core', 'groupdata');

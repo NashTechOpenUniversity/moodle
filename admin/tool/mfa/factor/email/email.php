@@ -22,13 +22,14 @@
  * @copyright   Catalyst IT
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 // Ignore coding standards for login check, this page does not require login.
-// @codingStandardsIgnoreStart
-require_once(__DIR__ . '../../../../../../config.php');
+// phpcs:disable moodle.Files.RequireLogin.Missing
+require_once(__DIR__ . '/../../../../../config.php');
+
 $instanceid = required_param('instance', PARAM_INT);
 $pass = optional_param('pass', '0', PARAM_INT);
 $secret = optional_param('secret', 0, PARAM_INT);
-// @codingStandardsIgnoreEnds
 
 $context = context_system::instance();
 $PAGE->set_context($context);
@@ -78,7 +79,7 @@ if ($form->is_cancelled()) {
         $DB->set_field('tool_mfa', 'revoked', 1, ['userid' => $user->id, 'factor' => 'email']);
 
         // Remotely logout all sessions for user.
-        $manager = \core\session\manager::kill_user_sessions($instance->userid);
+        \core\session\manager::destroy_user_sessions($instance->userid);
 
         // Log event.
         $ip = $instance->createdfromip;

@@ -44,9 +44,10 @@ class modinfolib_test extends advanced_testcase {
         global $CFG;
         require_once($CFG->dirroot . '/course/lib.php');
         require_once($CFG->libdir . '/tests/fixtures/sectiondelegatetest.php');
+        parent::setUpBeforeClass();
     }
 
-    public function test_section_info_properties() {
+    public function test_section_info_properties(): void {
         global $DB, $CFG;
 
         $this->resetAfterTest();
@@ -114,7 +115,7 @@ class modinfolib_test extends advanced_testcase {
         set_config('enablecompletion', $oldcfgenablecompletion);
     }
 
-    public function test_cm_info_properties() {
+    public function test_cm_info_properties(): void {
         global $DB, $CFG;
 
         $this->resetAfterTest();
@@ -248,7 +249,7 @@ class modinfolib_test extends advanced_testcase {
         set_config('enablecompletion', $oldcfgenablecompletion);
     }
 
-    public function test_matching_cacherev() {
+    public function test_matching_cacherev(): void {
         global $DB, $CFG;
 
         $this->resetAfterTest();
@@ -407,71 +408,125 @@ class modinfolib_test extends advanced_testcase {
         $this->assertEquals($newcourse->cacherev, $SITE->cacherev);
     }
 
-    public function test_course_modinfo_properties() {
+    public function test_course_modinfo_properties(): void {
         global $USER, $DB;
 
         $this->resetAfterTest();
         $this->setAdminUser();
 
+        set_config('allowstealth', true);
+
         // Generate the course and some modules. Make one section hidden.
         $course = $this->getDataGenerator()->create_course(
-                array('format' => 'topics',
-                    'numsections' => 3),
-                array('createsections' => true));
+                ['format' => 'topics', 'numsections' => 3],
+                ['createsections' => true]);
         $DB->execute('UPDATE {course_sections} SET visible = 0 WHERE course = ? and section = ?',
-                array($course->id, 3));
-        $coursecontext = context_course::instance($course->id);
+                [$course->id, 3]);
         $forum0 = $this->getDataGenerator()->create_module('forum',
-                array('course' => $course->id), array('section' => 0));
+                ['course' => $course->id, 'section' => 0]);
         $assign0 = $this->getDataGenerator()->create_module('assign',
-                array('course' => $course->id), array('section' => 0, 'visible' => 0));
+                ['course' => $course->id, 'section' => 0, 'visible' => 0]);
+        $page0 = $this->getDataGenerator()->create_module('page',
+                ['course' => $course->id, 'section' => 0, 'visibleoncoursepage' => 0]);
         $forum1 = $this->getDataGenerator()->create_module('forum',
-                array('course' => $course->id), array('section' => 1));
+                ['course' => $course->id, 'section' => 1]);
         $assign1 = $this->getDataGenerator()->create_module('assign',
-                array('course' => $course->id), array('section' => 1));
+                ['course' => $course->id, 'section' => 1]);
         $page1 = $this->getDataGenerator()->create_module('page',
-                array('course' => $course->id), array('section' => 1));
+                ['course' => $course->id, 'section' => 1]);
         $page3 = $this->getDataGenerator()->create_module('page',
-                array('course' => $course->id), array('section' => 3));
+                ['course' => $course->id, 'section' => 3]);
 
         $modinfo = get_fast_modinfo($course->id);
 
-        $this->assertEquals(array($forum0->cmid, $assign0->cmid, $forum1->cmid, $assign1->cmid, $page1->cmid, $page3->cmid),
+        $this->assertEquals(
+                [$forum0->cmid, $assign0->cmid, $page0->cmid, $forum1->cmid, $assign1->cmid, $page1->cmid, $page3->cmid],
                 array_keys($modinfo->cms));
         $this->assertEquals($course->id, $modinfo->courseid);
         $this->assertEquals($USER->id, $modinfo->userid);
-        $this->assertEquals(array(0 => array($forum0->cmid, $assign0->cmid),
-            1 => array($forum1->cmid, $assign1->cmid, $page1->cmid), 3 => array($page3->cmid)), $modinfo->sections);
-        $this->assertEquals(array('forum', 'assign', 'page'), array_keys($modinfo->instances));
-        $this->assertEquals(array($assign0->id, $assign1->id), array_keys($modinfo->instances['assign']));
-        $this->assertEquals(array($forum0->id, $forum1->id), array_keys($modinfo->instances['forum']));
-        $this->assertEquals(array($page1->id, $page3->id), array_keys($modinfo->instances['page']));
+        $this->assertEquals([
+                0 => [$forum0->cmid, $assign0->cmid, $page0->cmid],
+                1 => [$forum1->cmid, $assign1->cmid, $page1->cmid],
+                3 => [$page3->cmid],
+            ], $modinfo->sections);
+        $this->assertEquals(['forum', 'assign', 'page'], array_keys($modinfo->instances));
+        $this->assertEquals([$assign0->id, $assign1->id], array_keys($modinfo->instances['assign']));
+        $this->assertEquals([$forum0->id, $forum1->id], array_keys($modinfo->instances['forum']));
+        $this->assertEquals([$page0->id, $page1->id, $page3->id], array_keys($modinfo->instances['page']));
         $this->assertEquals(groups_get_user_groups($course->id), $modinfo->groups);
-        $this->assertEquals(array(0 => array($forum0->cmid, $assign0->cmid),
-            1 => array($forum1->cmid, $assign1->cmid, $page1->cmid),
-            3 => array($page3->cmid)), $modinfo->get_sections());
-        $this->assertEquals(array(0, 1, 2, 3), array_keys($modinfo->get_section_info_all()));
-        $this->assertEquals($forum0->cmid . ',' . $assign0->cmid, $modinfo->get_section_info(0)->sequence);
+        $this->assertEquals([
+                0 => [$forum0->cmid, $assign0->cmid, $page0->cmid],
+                1 => [$forum1->cmid, $assign1->cmid, $page1->cmid],
+                3 => [$page3->cmid],
+            ], $modinfo->get_sections());
+        $this->assertEquals([0, 1, 2, 3], array_keys($modinfo->get_section_info_all()));
+        $this->assertEquals($forum0->cmid . ',' . $assign0->cmid . ',' . $page0->cmid, $modinfo->get_section_info(0)->sequence);
         $this->assertEquals($forum1->cmid . ',' . $assign1->cmid . ',' . $page1->cmid, $modinfo->get_section_info(1)->sequence);
         $this->assertEquals('', $modinfo->get_section_info(2)->sequence);
         $this->assertEquals($page3->cmid, $modinfo->get_section_info(3)->sequence);
         $this->assertEquals($course->id, $modinfo->get_course()->id);
         $names = array_keys($modinfo->get_used_module_names());
         sort($names);
-        $this->assertEquals(array('assign', 'forum', 'page'), $names);
+        $this->assertEquals(['assign', 'forum', 'page'], $names);
         $names = array_keys($modinfo->get_used_module_names(true));
         sort($names);
-        $this->assertEquals(array('assign', 'forum', 'page'), $names);
+        $this->assertEquals(['assign', 'forum', 'page'], $names);
         // Admin can see hidden modules/sections.
         $this->assertTrue($modinfo->cms[$assign0->cmid]->uservisible);
+        $this->assertTrue($modinfo->cms[$assign0->cmid]->is_visible_on_course_page());
+        $this->assertTrue($modinfo->cms[$page0->cmid]->uservisible);
+        $this->assertTrue($modinfo->cms[$page0->cmid]->is_visible_on_course_page());
         $this->assertTrue($modinfo->get_section_info(3)->uservisible);
 
-        // Get modinfo for non-current user (without capability to view hidden activities/sections).
-        $user = $this->getDataGenerator()->create_user();
-        $modinfo = get_fast_modinfo($course->id, $user->id);
-        $this->assertEquals($user->id, $modinfo->userid);
-        $this->assertFalse($modinfo->cms[$assign0->cmid]->uservisible);
-        $this->assertFalse($modinfo->get_section_info(3)->uservisible);
+        $this->assertFalse($modinfo->cms[$assign0->cmid]->is_stealth());
+        $this->assertFalse($modinfo->cms[$assign0->cmid]->is_stealth());
+        $this->assertTrue($modinfo->cms[$page0->cmid]->is_stealth());
+        $this->assertTrue($modinfo->cms[$page3->cmid]->is_stealth());
+
+        // Get modinfo for user with student role (without capability to view hidden activities/sections).
+        $student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $course->id, 'student');
+        $studentmodinfo = get_fast_modinfo($course->id, $student->id);
+        $this->assertEquals($student->id, $studentmodinfo->userid);
+        $this->assertTrue($studentmodinfo->cms[$forum0->cmid]->uservisible);
+        $this->assertTrue($studentmodinfo->cms[$forum0->cmid]->is_visible_on_course_page());
+        $this->assertFalse($studentmodinfo->cms[$assign0->cmid]->uservisible);
+        $this->assertFalse($studentmodinfo->cms[$assign0->cmid]->is_visible_on_course_page());
+        $this->assertTrue($studentmodinfo->cms[$page0->cmid]->uservisible);
+        $this->assertFalse($studentmodinfo->cms[$page0->cmid]->is_visible_on_course_page());
+        $this->assertFalse($studentmodinfo->get_section_info(3)->uservisible);
+        $this->assertTrue($studentmodinfo->cms[$page3->cmid]->uservisible);
+        $this->assertTrue($studentmodinfo->cms[$page3->cmid]->is_visible_on_course_page());
+
+        // Get modinfo for user with teacher role (with capability to view hidden activities but not sections).
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'teacher');
+        $teachermodinfo = get_fast_modinfo($course->id, $teacher->id);
+        $this->assertEquals($teacher->id, $teachermodinfo->userid);
+        $this->assertTrue($teachermodinfo->cms[$forum0->cmid]->uservisible);
+        $this->assertTrue($teachermodinfo->cms[$forum0->cmid]->is_visible_on_course_page());
+        $this->assertTrue($teachermodinfo->cms[$assign0->cmid]->uservisible);
+        $this->assertTrue($teachermodinfo->cms[$assign0->cmid]->is_visible_on_course_page());
+        $this->assertTrue($teachermodinfo->cms[$page0->cmid]->uservisible);
+        $this->assertTrue($teachermodinfo->cms[$page0->cmid]->is_visible_on_course_page());
+        $this->assertFalse($teachermodinfo->get_section_info(3)->uservisible);
+        $this->assertTrue($teachermodinfo->cms[$page3->cmid]->uservisible);
+        $this->assertTrue($teachermodinfo->cms[$page3->cmid]->is_visible_on_course_page());
+
+        // Get modinfo for user with editingteacher role (with capability to view hidden activities/sections).
+        $editingteacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($editingteacher->id, $course->id, 'editingteacher');
+        $editingteachermodinfo = get_fast_modinfo($course->id, $editingteacher->id);
+        $this->assertEquals($editingteacher->id, $editingteachermodinfo->userid);
+        $this->assertTrue($editingteachermodinfo->cms[$forum0->cmid]->uservisible);
+        $this->assertTrue($editingteachermodinfo->cms[$forum0->cmid]->is_visible_on_course_page());
+        $this->assertTrue($editingteachermodinfo->cms[$assign0->cmid]->uservisible);
+        $this->assertTrue($editingteachermodinfo->cms[$assign0->cmid]->is_visible_on_course_page());
+        $this->assertTrue($editingteachermodinfo->cms[$page0->cmid]->uservisible);
+        $this->assertTrue($editingteachermodinfo->cms[$page0->cmid]->is_visible_on_course_page());
+        $this->assertTrue($editingteachermodinfo->get_section_info(3)->uservisible);
+        $this->assertTrue($editingteachermodinfo->cms[$page3->cmid]->uservisible);
+        $this->assertTrue($editingteachermodinfo->cms[$page3->cmid]->is_visible_on_course_page());
 
         // Attempt to access and set non-existing field.
         $this->assertTrue(empty($modinfo->somefield));
@@ -491,7 +546,7 @@ class modinfolib_test extends advanced_testcase {
         $this->assertNotEquals('Illegal overwriting', $modinfo->cms);
     }
 
-    public function test_is_user_access_restricted_by_capability() {
+    public function test_is_user_access_restricted_by_capability(): void {
         global $DB;
 
         $this->resetAfterTest();
@@ -549,7 +604,7 @@ class modinfolib_test extends advanced_testcase {
     /**
      * Tests for function cm_info::get_course_module_record()
      */
-    public function test_cm_info_get_course_module_record() {
+    public function test_cm_info_get_course_module_record(): void {
         global $DB;
 
         $this->resetAfterTest();
@@ -693,7 +748,7 @@ class modinfolib_test extends advanced_testcase {
      * Tests the availability property that has been added to course modules
      * and sections (just to see that it is correctly saved and accessed).
      */
-    public function test_availability_property() {
+    public function test_availability_property(): void {
         global $DB, $CFG;
 
         $this->resetAfterTest();
@@ -739,7 +794,7 @@ class modinfolib_test extends advanced_testcase {
     /**
      * Tests for get_groups() method.
      */
-    public function test_get_groups() {
+    public function test_get_groups(): void {
         $this->resetAfterTest();
         $generator = $this->getDataGenerator();
 
@@ -802,7 +857,7 @@ class modinfolib_test extends advanced_testcase {
     /**
      * Tests the function for constructing a cm_info from mixed data.
      */
-    public function test_create() {
+    public function test_create(): void {
         global $CFG, $DB;
         $this->resetAfterTest();
 
@@ -861,7 +916,7 @@ class modinfolib_test extends advanced_testcase {
      * Tests function for getting $course and $cm at once quickly from modinfo
      * based on cmid or cm record.
      */
-    public function test_get_course_and_cm_from_cmid() {
+    public function test_get_course_and_cm_from_cmid(): void {
         global $CFG, $DB;
         $this->resetAfterTest();
 
@@ -954,7 +1009,7 @@ class modinfolib_test extends advanced_testcase {
      * Tests function for getting $course and $cm at once quickly from modinfo
      * based on instance id or record.
      */
-    public function test_get_course_and_cm_from_instance() {
+    public function test_get_course_and_cm_from_instance(): void {
         global $CFG, $DB;
         $this->resetAfterTest();
 
@@ -1084,7 +1139,7 @@ class modinfolib_test extends advanced_testcase {
         int $strictness = IGNORE_MISSING,
         bool $expectnull = false,
         bool $expectexception = false
-    ) {
+    ): void {
         global $DB;
 
         $this->resetAfterTest();
@@ -1571,5 +1626,471 @@ class modinfolib_test extends advanced_testcase {
 
         $this->assertFalse($sectioninfos[1]->is_delegated());
         $this->assertTrue($sectioninfos[2]->is_delegated());
+    }
+
+    /**
+     * Test the course_modinfo::purge_course_caches() function with a
+     * one-course array, a two-course array, and an empty array, and ensure
+     * that only the courses specified have their course cache version
+     * incremented (or all course caches if none specified).
+     *
+     * @covers \course_modinfo
+     */
+    public function test_multiple_modinfo_cache_purge(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $cache = cache::make('core', 'coursemodinfo');
+
+        // Generate two courses and pre-requisite modules for targeted course
+        // cache tests.
+        $courseone = $this->getDataGenerator()->create_course(
+            [
+                'format' => 'topics',
+                'numsections' => 3,
+            ],
+            [
+                'createsections' => true,
+            ]
+        );
+        $coursetwo = $this->getDataGenerator()->create_course(
+            [
+                'format' => 'topics',
+                'numsections' => 3,
+            ],
+            [
+                'createsections' => true,
+            ]
+        );
+        $coursethree = $this->getDataGenerator()->create_course(
+            [
+                'format' => 'topics',
+                'numsections' => 3,
+            ],
+            [
+                'createsections' => true,
+            ]
+        );
+
+        // Make sure the cacherev is set for all three.
+        $cacherevone = $DB->get_field('course', 'cacherev', ['id' => $courseone->id]);
+        $this->assertGreaterThan(0, $cacherevone);
+        $prevcacherevone = $cacherevone;
+
+        $cacherevtwo = $DB->get_field('course', 'cacherev', ['id' => $coursetwo->id]);
+        $this->assertGreaterThan(0, $cacherevtwo);
+        $prevcacherevtwo = $cacherevtwo;
+
+        $cacherevthree = $DB->get_field('course', 'cacherev', ['id' => $coursethree->id]);
+        $this->assertGreaterThan(0, $cacherevthree);
+        $prevcacherevthree = $cacherevthree;
+
+        // Reset course caches and make sure cacherev is bumped up but cache is empty.
+        rebuild_course_cache($courseone->id, true);
+        $cacherevone = $DB->get_field('course', 'cacherev', ['id' => $courseone->id]);
+        $this->assertGreaterThan($prevcacherevone, $cacherevone);
+        $this->assertEmpty($cache->get_versioned($courseone->id, $prevcacherevone));
+        $prevcacherevone = $cacherevone;
+
+        rebuild_course_cache($coursetwo->id, true);
+        $cacherevtwo = $DB->get_field('course', 'cacherev', ['id' => $coursetwo->id]);
+        $this->assertGreaterThan($prevcacherevtwo, $cacherevtwo);
+        $this->assertEmpty($cache->get_versioned($coursetwo->id, $prevcacherevtwo));
+        $prevcacherevtwo = $cacherevtwo;
+
+        rebuild_course_cache($coursethree->id, true);
+        $cacherevthree = $DB->get_field('course', 'cacherev', ['id' => $coursethree->id]);
+        $this->assertGreaterThan($prevcacherevthree, $cacherevthree);
+        $this->assertEmpty($cache->get_versioned($coursethree->id, $prevcacherevthree));
+        $prevcacherevthree = $cacherevthree;
+
+        // Build course caches. Cacherev should not change but caches are now not empty. Make sure cacherev is the same everywhere.
+        $modinfoone = get_fast_modinfo($courseone->id);
+        $cacherevone = $DB->get_field('course', 'cacherev', ['id' => $courseone->id]);
+        $this->assertEquals($prevcacherevone, $cacherevone);
+        $cachedvalueone = $cache->get_versioned($courseone->id, $cacherevone);
+        $this->assertNotEmpty($cachedvalueone);
+        $this->assertEquals($cacherevone, $cachedvalueone->cacherev);
+        $this->assertEquals($cacherevone, $modinfoone->get_course()->cacherev);
+        $prevcacherevone = $cacherevone;
+
+        $modinfotwo = get_fast_modinfo($coursetwo->id);
+        $cacherevtwo = $DB->get_field('course', 'cacherev', ['id' => $coursetwo->id]);
+        $this->assertEquals($prevcacherevtwo, $cacherevtwo);
+        $cachedvaluetwo = $cache->get_versioned($coursetwo->id, $cacherevtwo);
+        $this->assertNotEmpty($cachedvaluetwo);
+        $this->assertEquals($cacherevtwo, $cachedvaluetwo->cacherev);
+        $this->assertEquals($cacherevtwo, $modinfotwo->get_course()->cacherev);
+        $prevcacherevtwo = $cacherevtwo;
+
+        $modinfothree = get_fast_modinfo($coursethree->id);
+        $cacherevthree = $DB->get_field('course', 'cacherev', ['id' => $coursethree->id]);
+        $this->assertEquals($prevcacherevthree, $cacherevthree);
+        $cachedvaluethree = $cache->get_versioned($coursethree->id, $cacherevthree);
+        $this->assertNotEmpty($cachedvaluethree);
+        $this->assertEquals($cacherevthree, $cachedvaluethree->cacherev);
+        $this->assertEquals($cacherevthree, $modinfothree->get_course()->cacherev);
+        $prevcacherevthree = $cacherevthree;
+
+        // Purge course one's cache. Cacherev must be incremented (but only for
+        // course one, check course two and three in next step).
+        course_modinfo::purge_course_caches([$courseone->id]);
+
+        get_fast_modinfo($courseone->id);
+        $cacherevone = $DB->get_field('course', 'cacherev', ['id' => $courseone->id]);
+        $this->assertGreaterThan($prevcacherevone, $cacherevone);
+        $prevcacherevone = $cacherevone;
+
+        // Confirm course two and three's cache shouldn't have been affected.
+        get_fast_modinfo($coursetwo->id);
+        $cacherevtwo = $DB->get_field('course', 'cacherev', ['id' => $coursetwo->id]);
+        $this->assertEquals($prevcacherevtwo, $cacherevtwo);
+        $prevcacherevtwo = $cacherevtwo;
+
+        get_fast_modinfo($coursethree->id);
+        $cacherevthree = $DB->get_field('course', 'cacherev', ['id' => $coursethree->id]);
+        $this->assertEquals($prevcacherevthree, $cacherevthree);
+        $prevcacherevthree = $cacherevthree;
+
+        // Purge course two and three's cache. Cacherev must be incremented (but only for
+        // course two and three, then check course one hasn't changed in next step).
+        course_modinfo::purge_course_caches([$coursetwo->id, $coursethree->id]);
+
+        get_fast_modinfo($coursetwo->id);
+        $cacherevtwo = $DB->get_field('course', 'cacherev', ['id' => $coursetwo->id]);
+        $this->assertGreaterThan($prevcacherevtwo, $cacherevtwo);
+        $prevcacherevtwo = $cacherevtwo;
+
+        get_fast_modinfo($coursethree->id);
+        $cacherevthree = $DB->get_field('course', 'cacherev', ['id' => $coursethree->id]);
+        $this->assertGreaterThan($prevcacherevthree, $cacherevthree);
+        $prevcacherevthree = $cacherevthree;
+
+        // Confirm course one's cache shouldn't have been affected.
+        get_fast_modinfo($courseone->id);
+        $cacherevone = $DB->get_field('course', 'cacherev', ['id' => $courseone->id]);
+        $this->assertEquals($prevcacherevone, $cacherevone);
+        $prevcacherevone = $cacherevone;
+
+        // Purge all course caches. Cacherev must be incremented for all three courses.
+        course_modinfo::purge_course_caches();
+        get_fast_modinfo($courseone->id);
+        $cacherevone = $DB->get_field('course', 'cacherev', ['id' => $courseone->id]);
+        $this->assertGreaterThan($prevcacherevone, $cacherevone);
+
+        get_fast_modinfo($coursetwo->id);
+        $cacherevtwo = $DB->get_field('course', 'cacherev', ['id' => $coursetwo->id]);
+        $this->assertGreaterThan($prevcacherevtwo, $cacherevtwo);
+
+        get_fast_modinfo($coursethree->id);
+        $cacherevthree = $DB->get_field('course', 'cacherev', ['id' => $coursethree->id]);
+        $this->assertGreaterThan($prevcacherevthree, $cacherevthree);
+    }
+
+    /**
+     * Test get_sections_delegated_by_cm method
+     *
+     * @covers \course_modinfo::get_sections_delegated_by_cm
+     */
+    public function test_get_sections_delegated_by_cm(): void {
+        $this->resetAfterTest();
+
+        $manager = \core_plugin_manager::resolve_plugininfo_class('mod');
+        $manager::enable_plugin('subsection', 1);
+
+        $course = $this->getDataGenerator()->create_course(['numsections' => 1]);
+
+        $modinfo = get_fast_modinfo($course);
+        $delegatedsections = $modinfo->get_sections_delegated_by_cm();
+        $this->assertEmpty($delegatedsections);
+
+        // Add a section delegated by a course module.
+        $subsection = $this->getDataGenerator()->create_module('subsection', ['course' => $course]);
+        $modinfo = get_fast_modinfo($course);
+        $delegatedsections = $modinfo->get_sections_delegated_by_cm();
+        $this->assertCount(1, $delegatedsections);
+        $this->assertArrayHasKey($subsection->cmid, $delegatedsections);
+
+        // Add a section delegated by a block.
+        formatactions::section($course)->create_delegated('block_site_main_menu', 1);
+        $modinfo = get_fast_modinfo($course);
+        $delegatedsections = $modinfo->get_sections_delegated_by_cm();
+        // Sections delegated by a block shouldn't be returned.
+        $this->assertCount(1, $delegatedsections);
+    }
+
+    /**
+     * Test get_sections_delegated_by_cm method
+     *
+     * @covers \cm_info::get_delegated_section_info
+     */
+    public function test_get_delegated_section_info(): void {
+        $this->resetAfterTest();
+
+        $manager = \core_plugin_manager::resolve_plugininfo_class('mod');
+        $manager::enable_plugin('subsection', 1);
+
+        $course = $this->getDataGenerator()->create_course(['numsections' => 1]);
+
+        // Add a section delegated by a course module.
+        $subsection = $this->getDataGenerator()->create_module('subsection', ['course' => $course]);
+        $otheractivity = $this->getDataGenerator()->create_module('page', ['course' => $course]);
+
+        $modinfo = get_fast_modinfo($course);
+        $delegatedsections = $modinfo->get_sections_delegated_by_cm();
+
+        $delegated = $modinfo->get_cm($subsection->cmid)->get_delegated_section_info();
+        $this->assertNotNull($delegated);
+        $this->assertEquals($delegated, $delegatedsections[$subsection->cmid]);
+
+        $delegated = $modinfo->get_cm($otheractivity->cmid)->get_delegated_section_info();
+        $this->assertNull($delegated);
+    }
+
+    /**
+     * Test get_uservisible method when the section is delegated.
+     *
+     * @covers \section_info::get_uservisible
+     * @dataProvider data_provider_get_uservisible_delegate
+     * @param string $role The role to assign to the user.
+     * @param bool $parentvisible The visibility of the parent section.
+     * @param bool $delegatedvisible The visibility of the delegated section.
+     * @param bool $expected The expected visibility of the delegated section.
+     * @return void
+     */
+    public function test_get_uservisible_delegate(
+        string $role,
+        bool $parentvisible,
+        bool $delegatedvisible,
+        bool $expected,
+    ): void {
+        $this->resetAfterTest();
+
+        $manager = \core_plugin_manager::resolve_plugininfo_class('mod');
+        $manager::enable_plugin('subsection', 1);
+
+        $course = $this->getDataGenerator()->create_course(['numsections' => 1]);
+        $subsection = $this->getDataGenerator()->create_module('subsection', ['course' => $course], ['section' => 1]);
+
+        $student = $this->getDataGenerator()->create_and_enrol($course, $role);
+
+        $modinfo = get_fast_modinfo($course);
+
+        formatactions::section($course)->update(
+            $modinfo->get_section_info(1),
+            ['visible' => $parentvisible]
+        );
+
+        formatactions::cm($course)->set_visibility(
+            $subsection->cmid,
+            $delegatedvisible,
+        );
+
+        $this->setUser($student);
+        $modinfo = get_fast_modinfo($course);
+
+        $delegatedsection = $modinfo->get_cm($subsection->cmid)->get_delegated_section_info();
+
+        // The get_uservisible is a magic getter.
+        $this->assertEquals($expected, $delegatedsection->uservisible);
+    }
+
+    /**
+     * Data provider for test_get_uservisible_delegate.
+     *
+     * @return array
+     */
+    public static function data_provider_get_uservisible_delegate(): array {
+        return [
+            'Student on a visible subsection inside a visible parent' => [
+                'role' => 'student',
+                'parentvisible' => true,
+                'delegatedvisible' => true,
+                'expected' => true,
+            ],
+            'Student on a hidden subsection inside a visible parent' => [
+                'role' => 'student',
+                'parentvisible' => true,
+                'delegatedvisible' => false,
+                'expected' => false,
+            ],
+            'Student on a visible subsection inside a hidden parent' => [
+                'role' => 'student',
+                'parentvisible' => false,
+                'delegatedvisible' => true,
+                'expected' => false,
+            ],
+            'Student on a hidden subsection inside a hidden parent' => [
+                'role' => 'student',
+                'parentvisible' => false,
+                'delegatedvisible' => false,
+                'expected' => false,
+            ],
+            'Teacher on a visible subsection inside a visible parent' => [
+                'role' => 'editingteacher',
+                'parentvisible' => true,
+                'delegatedvisible' => true,
+                'expected' => true,
+            ],
+            'Teacher on a hidden subsection inside a visible parent' => [
+                'role' => 'editingteacher',
+                'parentvisible' => true,
+                'delegatedvisible' => false,
+                'expected' => true,
+            ],
+            'Teacher on a visible subsection inside a hidden parent' => [
+                'role' => 'editingteacher',
+                'parentvisible' => false,
+                'delegatedvisible' => true,
+                'expected' => true,
+            ],
+            'Teacher on a hidden subsection inside a hidden parent' => [
+                'role' => 'editingteacher',
+                'parentvisible' => false,
+                'delegatedvisible' => false,
+                'expected' => true,
+            ],
+        ];
+    }
+
+    /**
+     * Test get_available method when the section is delegated.
+     *
+     * @covers \section_info::get_available
+     * @covers \section_info::get_uservisible
+     * @dataProvider data_provider_get_available_delegated
+     * @param string $role The role to assign to the user.
+     * @param bool $parentavailable The parent section is available.
+     * @param bool $delegatedavailable The delegated section is available..
+     * @param bool $expectedavailable The expected availability of the delegated section.
+     * @param bool $expecteduservisible The expected uservisibility of the delegated section.
+     * @return void
+     */
+    public function test_get_available_delegated(
+        string $role,
+        bool $parentavailable,
+        bool $delegatedavailable,
+        bool $expectedavailable,
+        bool $expecteduservisible,
+    ): void {
+        $this->resetAfterTest();
+
+        // The element will be available tomorrow.
+        $availability = json_encode(
+            (object) [
+                'op' => '&',
+                'showc' => [true],
+                'c' => [
+                    [
+                        'type' => 'date',
+                        'd' => '>=',
+                        't' => time() + DAYSECS,
+                    ],
+                ],
+            ]
+        );
+
+        $manager = \core_plugin_manager::resolve_plugininfo_class('mod');
+        $manager::enable_plugin('subsection', 1);
+
+        $course = $this->getDataGenerator()->create_course(['numsections' => 1]);
+
+        $cmparams = ['section' => 1];
+        if (!$delegatedavailable) {
+            $cmparams['availability'] = $availability;
+        }
+
+        $subsection = $this->getDataGenerator()->create_module(
+            'subsection',
+            ['course' => $course],
+            $cmparams
+        );
+
+        $student = $this->getDataGenerator()->create_and_enrol($course, $role);
+
+        $modinfo = get_fast_modinfo($course);
+
+        if (!$parentavailable) {
+            formatactions::section($course)->update(
+                $modinfo->get_section_info(1),
+                ['availability' => $availability]
+            );
+        }
+
+        $this->setUser($student);
+        $modinfo = get_fast_modinfo($course);
+
+        $delegatedsection = $modinfo->get_cm($subsection->cmid)->get_delegated_section_info();
+
+        // All section_info getters are magic methods.
+        $this->assertEquals($expectedavailable, $delegatedsection->available);
+        $this->assertEquals($expecteduservisible, $delegatedsection->uservisible);
+    }
+
+    /**
+     * Data provider for test_get_available_delegated.
+     *
+     * @return array
+     */
+    public static function data_provider_get_available_delegated(): array {
+        return [
+            'Student on an available subsection inside an available parent' => [
+                'role' => 'student',
+                'parentavailable' => true,
+                'delegatedavailable' => true,
+                'expectedavailable' => true,
+                'expecteduservisible' => true,
+            ],
+            'Student on an unavailable subsection inside an available parent' => [
+                'role' => 'student',
+                'parentavailable' => true,
+                'delegatedavailable' => false,
+                'expectedavailable' => false,
+                'expecteduservisible' => false,
+            ],
+            'Student on an available subsection inside an unavailable parent' => [
+                'role' => 'student',
+                'parentavailable' => false,
+                'delegatedavailable' => true,
+                'expectedavailable' => false,
+                'expecteduservisible' => false,
+            ],
+            'Student on an unavailable subsection inside an unavailable parent' => [
+                'role' => 'student',
+                'parentavailable' => false,
+                'delegatedavailable' => false,
+                'expectedavailable' => false,
+                'expecteduservisible' => false,
+            ],
+            'Teacher on an available subsection inside an available parent' => [
+                'role' => 'editingteacher',
+                'parentavailable' => true,
+                'delegatedavailable' => true,
+                'expectedavailable' => true,
+                'expecteduservisible' => true,
+            ],
+            'Teacher on an unavailable subsection inside an available parent' => [
+                'role' => 'editingteacher',
+                'parentavailable' => true,
+                'delegatedavailable' => false,
+                'expectedavailable' => false,
+                'expecteduservisible' => true,
+            ],
+            'Teacher on an available subsection inside an unavailable parent' => [
+                'role' => 'editingteacher',
+                'parentavailable' => false,
+                'delegatedavailable' => true,
+                'expectedavailable' => false,
+                'expecteduservisible' => true,
+            ],
+            'Teacher on an unavailable subsection inside an unavailable parent' => [
+                'role' => 'editingteacher',
+                'parentavailable' => false,
+                'delegatedavailable' => false,
+                'expectedavailable' => false,
+                'expecteduservisible' => true,
+            ],
+        ];
     }
 }

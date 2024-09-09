@@ -148,7 +148,7 @@ input[type="image"],
 .sr-only-focusable,
 a.dropdown-toggle,
 .moodle-dialogue-base .closebutton,
-button.close,
+button.btn-close,
 .form-autocomplete-selection,
 [role="treeitem"]:not([aria-expanded="true"]) {
     &.focus,
@@ -314,12 +314,8 @@ a.autolink {
     display: none;
 }
 
-.visibleifjs {
+body:not(.jsenabled) .visibleifjs {
     display: none;
-}
-
-.jsenabled .visibleifjs {
-    display: inline;
 }
 
 .jsenabled .collapsibleregion {
@@ -381,8 +377,8 @@ img.resize {
 }
 /* Icon styles */
 img.activityicon {
-    height: 24px;
-    width: 24px;
+    height: 32px;
+    width: 32px;
     vertical-align: middle;
 }
 
@@ -393,7 +389,7 @@ img.activityicon {
 #maincontent {
     display: block;
     height: 1px;
-    overflow: hidden;
+    overflow: clip;
 }
 
 img.uihint {
@@ -1521,8 +1517,8 @@ audio.mediaplugin_html5audio {
         .icon {
             display: block;
             font-size: 3em;
-            height: 1em;
-            width: 1em;
+            max-height: 3em;
+            max-width: 3em;
         }
     }
     .carousel-item .loading-icon .icon {
@@ -1540,6 +1536,8 @@ audio.mediaplugin_html5audio {
         .icon {
             height: 2.5rem;
             width: 6rem;
+            max-height: 2.5rem;
+            max-width: 6rem;
             margin-bottom: .6rem;
         }
     }
@@ -1856,6 +1854,28 @@ ul.badges {
     color: map-get($theme-colors, 'warning');
 }
 
+#page-badges-index #page {
+    .badges-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    h2 {
+        margin: 0; /* Removes default margins */
+    }
+
+    #action_bar {
+        margin: 0; /* Removes any default margin that might affect alignment */
+    }
+
+    .tertiary-navigation.container-fluid {
+        width: auto;
+        height: 50px;
+        padding-top: 0;
+    }
+}
+
 #page-badges-award .recipienttable tr td {
     vertical-align: top;
 }
@@ -1953,24 +1973,14 @@ nav.navbar .logo img {
     overflow: hidden;
     padding: 0.25rem 0;
 
-    display: flex;
-
     .page-header-image {
         & > a {
             display: inline-block;
         }
-    }
-
-    .page-header-headings,
-    .header-button-group {
-        position: relative;
-        line-height: 24px;
-        vertical-align: middle;
-    }
-
-    .header-button-group {
-        display: block;
-        float: left;
+        .userinitials,
+        .userpicture {
+            margin-right: map-get($spacers, 3);
+        }
     }
 }
 
@@ -1984,6 +1994,10 @@ a.disabled {
     cursor: default;
     font-style: italic;
     color: $text-muted;
+}
+
+a.btn.disabled {
+    opacity: 1;
 }
 
 body.lockscroll {
@@ -2208,6 +2222,8 @@ $footer-link-color: $bg-inverse-link-color !default;
     a {
         color: $footer-link-color;
         text-decoration: underline;
+        padding-top: map-get($spacers, 1);
+        padding-bottom: map-get($spacers, 1);
 
         .icon {
             color: $footer-link-color;
@@ -2332,9 +2348,9 @@ $footer-link-color: $bg-inverse-link-color !default;
         transform: translate(-50%, -50%);
 
         .icon {
-            height: 30px;
-            width: 30px;
-            font-size: 30px;
+            max-height: 2em;
+            max-width: 2em;
+            font-size: 2em;
         }
     }
 }
@@ -2406,6 +2422,10 @@ body.h5p-embed {
     }
 }
 
+#page-contentbank-edit fieldset {
+    margin-top: 1em;
+}
+
 .text-decoration-none {
     text-decoration: none !important; /* stylelint-disable-line declaration-no-important */
 }
@@ -2438,26 +2458,12 @@ body.h5p-embed {
     z-index: 1 !important; /* stylelint-disable-line declaration-no-important */
 }
 
-// These floats are deprecated in Bootstrap 4.3.1. It is still okay to use them in Moodle.
-.float-left {
-    float: left !important; /* stylelint-disable-line declaration-no-important */
-}
-
-.float-right {
-    float: right !important; /* stylelint-disable-line declaration-no-important */
-}
-
 .img-responsive {
     @include img-fluid();
 }
 
 input[disabled] {
     cursor: not-allowed;
-}
-
-.custom-select {
-    width: auto;
-    max-width: 100%;
 }
 
 .fade.in {
@@ -2573,11 +2579,6 @@ $picker-emojis-per-row: 7 !default;
             line-height: $picker-emoji-button-size;
             font-size: $picker-emoji-button-font-size;
             overflow: hidden;
-
-            @include hover-focus {
-                color: inherit;
-                text-decoration: none;
-            }
         }
     }
 
@@ -2628,7 +2629,7 @@ $picker-emojis-per-row: 7 !default;
             color: darken(theme-color-level($color, $alert-color-level), 10%);
         }
         // Darken the close button text colour inside notification alerts for better contrast.
-        .close {
+        .btn-close {
             color: darken(theme-color-level($color, $alert-color-level), 20%);
             opacity: 0.6;
         }
@@ -2839,6 +2840,48 @@ body.dragging {
     cursor: move;
 }
 
+.dropzone-container {
+    cursor: pointer;
+
+    .dropzone {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        border: 2px dashed $filemanager-dnd-border-color;
+        border-radius: 0.5rem;
+
+        &.dragover {
+            border: 2px dashed $filemanager-dnd-upload-over-border-color;
+        }
+    }
+
+    .dropzone-icon {
+        color: $gray-500;
+
+        .icon {
+            font-size: 6em;
+            width: auto;
+            height: auto;
+            max-width: initial;
+            max-height: initial;
+            margin-right: 0;
+        }
+    }
+
+    .dropzone-sr-only-focusable {
+        &:active,
+        &:focus {
+            outline: 0;
+            box-shadow: $input-btn-focus-box-shadow;
+            z-index: $zindex-popover;
+            position: relative;
+            background: $sr-only-active-bg;
+            padding: 7px;
+        }
+    }
+}
+
 // Generic classes reactive components can use.
 
 .overlay-preview {
@@ -2894,7 +2937,8 @@ body.dragging {
 .collapse-list {
     .collapse-list-item {
         padding: $collapse-list-item-padding-y $collapse-list-item-padding-x;
-        @include hover-focus() {
+        &:hover,
+        &:focus {
             background-color: $collapse-list-item-hover-bg;
             border-color: $collapse-list-item-hover-border;
         }
@@ -2915,6 +2959,13 @@ body.dragging {
             padding-right: 0 !important; /* stylelint-disable-line declaration-no-important */
         }
     }
+}
+
+#page-my-index .my-action-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
 }
 
 .dropdown-toggle::after {
@@ -3032,7 +3083,11 @@ blockquote {
     margin: 0 0.5rem 1rem;
     padding-left: 1rem;
     color: $gray-700;
-    border-left: 5px solid $gray-400;
+    border-left: 5px solid $gray-500;
+}
+
+.page-header-headings {
+    background-color: $body-bg;
 }
 
 /* Prevent long strings exceeding page width */
@@ -3051,9 +3106,6 @@ blockquote {
 /* Showmore component */
 .showmore-container {
     &.collapsed {
-        .collapsed-content {
-            display: block;
-        }
         .expanded-content {
             display: none;
         }
@@ -3061,9 +3113,6 @@ blockquote {
     &:not(.collapsed) {
         .collapsed-content {
             display: none;
-        }
-        .expanded-content {
-            display: block;
         }
     }
     button {
@@ -3082,14 +3131,16 @@ blockquote {
 .usersearchdropdown,
 .gradesearchdropdown,
 .groupsearchdropdown {
-    max-width: 350px;
-    .searchresultitemscontainer {
-        max-height: 170px;
-        overflow: auto;
-        /* stylelint-disable declaration-no-important */
-        img {
-            height: 48px !important;
-            width: 48px !important;
+    &.dropdown-menu {
+        width: 350px;
+        .searchresultitemscontainer {
+            max-height: 170px;
+            overflow: auto;
+            /* stylelint-disable declaration-no-important */
+            img {
+                height: 48px !important;
+                width: 48px !important;
+            }
         }
     }
 }
@@ -3112,4 +3163,9 @@ blockquote {
     i.icon {
         vertical-align: middle;
     }
+}
+
+/* General card customisations. */
+.card.active {
+    border-color: $gray-500;
 }
