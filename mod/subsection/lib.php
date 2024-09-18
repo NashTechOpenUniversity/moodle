@@ -37,12 +37,14 @@ function subsection_supports($feature) {
         FEATURE_GROUPS => false,
         FEATURE_GROUPINGS => false,
         FEATURE_MOD_INTRO => false,
+        FEATURE_COMPLETION => false,
         FEATURE_COMPLETION_TRACKS_VIEWS => false,
         FEATURE_GRADE_HAS_GRADE => false,
         FEATURE_GRADE_OUTCOMES => false,
         FEATURE_BACKUP_MOODLE2 => true,
         FEATURE_SHOW_DESCRIPTION => false,
         FEATURE_MOD_PURPOSE => MOD_PURPOSE_CONTENT,
+        FEATURE_MODEDIT_DEFAULT_COMPLETION => false,
         FEATURE_QUICKCREATE => true,
         default => null,
     };
@@ -300,4 +302,23 @@ function mod_subsection_get_fontawesome_icon_map() {
     return [
         'mod_subsection:subsection' => 'fa-rectangle-list',
     ];
+}
+
+/**
+ * Get the course content items for the subsection module.
+ *
+ * This function is called when the course content is being generated for the activity chooser.
+ * However, here this module is never shown in the activity chooser so we return an empty array.
+ *
+ * @param \core_course\local\entity\content_item $contentitem
+ * @param stdClass $user
+ * @param stdClass $course
+ * @return array
+ */
+function mod_subsection_get_course_content_items(
+    core_course\local\entity\content_item $contentitem,
+    stdClass $user,
+    stdClass $course
+): array {
+    return [];
 }

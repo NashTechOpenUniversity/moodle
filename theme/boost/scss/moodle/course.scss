@@ -549,9 +549,9 @@ span.editinstructions {
     width: fit-content;
 
     @include alert-variant(
-        theme-color-level('info', $alert-bg-level),
-        theme-color-level('info', $alert-border-level),
-        theme-color-level('info', $alert-color-level)
+        shift-color($info, $alert-bg-scale),
+        shift-color($info, $alert-border-scale),
+        shift-color($info, $alert-color-scale)
     );
 }
 
@@ -612,9 +612,9 @@ span.editinstructions {
     .coursebox > .info > .coursename a {
         display: block;
         background-image: url([[pix:moodle|i/course]]);
+        background-size: $icon-width $icon-height;
         background-repeat: no-repeat;
         padding-left: 21px;
-        background-position: left 0.2em;
     }
 }
 
@@ -690,6 +690,7 @@ span.editinstructions {
 
 .course_category_tree .category.with_children > .info > .categoryname {
     background-image: url([[pix:moodle|t/expanded]]);
+    background-size: $icon-width $icon-height;
     background-repeat: no-repeat;
     background-position: center left;
 }
@@ -1101,9 +1102,9 @@ $divider-hover-color: $primary !default;
     }
     @each $color, $value in $theme-colors {
         &.btn-#{$color} {
-            $bg-color: theme-color-level($color, $alert-bg-level);
+            $bg-color: shift-color($value, $alert-bg-scale);
             @include button-variant($bg-color, $bg-color, $value);
-            color: theme-color-level($color, $alert-color-level);
+            color: shift-color($value, $alert-color-scale);
             &:hover {
                 color: color-yiq($value);
             }
@@ -1149,7 +1150,8 @@ $divider-hover-color: $primary !default;
         @include border-radius($activity-border-radius);
     }
 
-    &.hidden {
+    &.hidden,
+    &.orphaned {
         .section-item {
             background-color: $gray-100;
         }
@@ -1301,7 +1303,6 @@ $divider-hover-color: $primary !default;
 
 .activity {
     list-style: none;
-    position: relative;
     padding-top: map-get($spacers, 1);
     margin-top: map-get($spacers, 1);
     border-top: $border-width solid $border-color;
@@ -1316,7 +1317,6 @@ $divider-hover-color: $primary !default;
 }
 
 .activity-item {
-    position: relative;
     padding: $activity-item-padding;
     @include border-radius($activity-border-radius);
     &.activityinline {
@@ -1338,12 +1338,22 @@ $divider-hover-color: $primary !default;
         // Add a border on hover to the activity card (avoiding hover effect in inner activities).
         &:hover:not(:has(.activity:hover)),
         &.selected {
+            // We use outline here to avoid changing the layout everytime we hover.
             outline: $activity-border-width solid $activity-hover-border-color;
             box-shadow: $box-shadow-sm;
             .activityiconcontainer,
             .badge {
                 mix-blend-mode: multiply;
             }
+        }
+    }
+    .activity.dragging & {
+        border: $activity-border-width solid $activity-hover-border-color;
+        .editing &:hover {
+            // We cancel the outline when dragging because it is not taken into account
+            // in the element/image representing the drag and drop and it cuts out part of the
+            // border.
+            outline: none;
         }
     }
 
@@ -1632,8 +1642,8 @@ $divider-hover-color: $primary !default;
     @include border-radius();
     font-size: $font-size-sm;
     font-weight: bold;
-    color: theme-color-level("primary", $alert-color-level);
-    background-color: theme-color-level("primary", $alert-bg-level);
+    color: shift-color($primary, $alert-color-scale);
+    background-color: shift-color($primary, $alert-bg-scale);
     &:hover,
     &:focus {
         color: color-yiq($primary);
@@ -1683,8 +1693,8 @@ $divider-hover-color: $primary !default;
     }
     .activity-item {
         .bulkselect {
-            position: absolute;
-            left: -2rem;
+            float: left;
+            margin-left: -2rem;
         }
         // Delegated sections are not available for bulk editing.
         &:has(.delegated-section):hover {
@@ -1758,10 +1768,10 @@ $divider-hover-color: $primary !default;
 
         &:hover,
         &:focus {
-            background-color: theme-color-level("primary", $alert-bg-level);
+            background-color: shift-color($primary, $alert-bg-scale);
 
             a {
-                color: theme-color-level("primary", $alert-color-level);
+                color: shift-color($primary, $alert-color-scale);
             }
         }
 
