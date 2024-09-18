@@ -622,18 +622,21 @@ class fields {
             ] = (array) $this->get_sql($tablealias, true, '', '', false);
         } else {
             $userfields = array_merge(['id'], self::get_name_fields(), $this->get_required_fields([self::PURPOSE_IDENTITY]));
-            // Build the SELECT fragment SQL if we don't have any.
-            foreach ($userfields as &$field) {
-                $field = $tablealias . '.' . $field;
+            // Build the user field array with correct format: fieldname => tablealias.fieldname . Ex: ['id' => 'u.id].
+            $newuserfield = [];
+            foreach ($userfields as $field) {
+                $newuserfield[$field] = $tablealias . '.' . $field;
             }
+            $userfields = $newuserfield;
+            // Build the SELECT fragment SQL if we don't have any.
             $selectsql = implode(',', $userfields);
         }
         if ($tablealias) {
             $tablealias .= '.';
         }
+        $cpfields = [];
         if ($search) {
             // IF we have any search key, we want update the search query base on search type.
-            $cpfields = [];
             $userfieldsjoin = [];
             foreach ($userfields as $fieldname => $userfield) {
                 if ($match = self::match_custom_field($fieldname)) {
@@ -646,14 +649,14 @@ class fields {
             // Build custom profile JOIN fragment.
             // The extra JOIN only exist if we have custom profile exist in the SELECT.
             if ($cpfields) {
-                [$searchquery, $ufconditions, $ufparams] = $this->build_user_field_conditions($search, $userfieldsjoin, $tablealias,
-                    $searchtype, 'uf');
-                [$ufextraconditions, $ufextraparams] = $this->build_sensible_conditions($tablealias,
-                    $excludeuserids, $includeuserids, 'uf');
+                [$searchquery, $ufconditions, $ufparams] = $this->build_user_field_conditions($search, $userfieldsjoin, 'subu.',
+                    $searchtype, 'subu');
+                [$ufextraconditions, $ufextraparams] = $this->build_sensible_conditions('subu.',
+                    $excludeuserids, $includeuserids, 'subu');
                 $ufwhere = '(' . implode(' OR ', $ufconditions) . ') AND ';
                 $ufwhere .= implode(' AND ', $ufextraconditions);
                 // Create sql and params for user custom profile field.
-                $cpfwhere = $DB->sql_like('uid.data', ":uidcondition", false, false);
+                $cpfwhere = $DB->sql_like('subuid.data', ":uidcondition", false, false);
                 $cpfjoinparams['uidcondition'] = $searchquery;
 
                 [$cpfinsql, $cpfinparams] = $DB->get_in_or_equal(array_keys($cpfields), SQL_PARAMS_NAMED);
@@ -661,24 +664,23 @@ class fields {
 
                 // Combine two sql into a single JOIN sql.
                 // where we can get a list user in advanced to improve performance.
-                $joinsql  .= "JOIN (SELECT u.id as userid
-                                      FROM {user} u
+                $joinsql  .= "JOIN (SELECT subu.id as userid
+                                      FROM {user} subu
                                      WHERE $ufwhere
                                      UNION
-                                    SELECT uid.userid
-                                      FROM {user_info_field} uif
-                                      JOIN {user_info_data} uid ON uid.fieldid = uif.id
-                                     WHERE uif.shortname $cpfinsql
+                                    SELECT subuid.userid
+                                      FROM {user_info_field} subuif
+                                      JOIN {user_info_data} subuid ON subuid.fieldid = subuif.id
+                                     WHERE subuif.shortname $cpfinsql
                                            AND $cpfwhere
                                    ) finduserids ON finduserids.userid = {$tablealias}id ";
                 $fullparams = array_merge($fullparams, $cpfjoinparams);
             }
         }
-
-        // Build the WHERE sql fragment.
         $whereparams = [];
         $whereconditions = [];
-        if ($search) {
+        // Build the WHERE sql fragment.
+        if ($search && !$cpfields) {
             [, $conditions, $whereparams] = $this->build_user_field_conditions($search, $userfields, $tablealias,
                 $searchtype);
             $whereconditions[] = '(' . implode(' OR ', $conditions) . ')';
@@ -785,11 +787,18 @@ class fields {
             $DB->sql_fullname($tablealias . 'firstname', $tablealias . 'lastname'),
             $extrawhereconditions[] = $tablealias . 'lastname',
         ];
-        $userfields = array_merge($extrawhereconditions, $userfields);
-        foreach ($userfields as $fieldname => $condition) {
-            $userfieldconditions[$fieldname] = $DB->sql_like($condition, ":$prefix" . "con{$i}00", false, false);
+        foreach ($extrawhereconditions as $index => $condition) {
+            $userfieldconditions[$index] = $DB->sql_like($condition, ":$prefix" . "con{$i}00", false, false);
             if ($searchtype === self::USER_SEARCH_EXACT_MATCH) {
-                $userfieldconditions[$fieldname] = "$condition = :$prefix" . "con{$i}00";
+                $userfieldconditions[$index] = "$condition = :$prefix" . "con{$i}00";
+            }
+            $params[$prefix . "con{$i}00"] = $searchquery;
+            $i++;
+        }
+        foreach ($userfields as $fieldname => $condition) {
+            $userfieldconditions[$fieldname] = $DB->sql_like($tablealias . $fieldname, ":$prefix" . "con{$i}00", false, false);
+            if ($searchtype === self::USER_SEARCH_EXACT_MATCH) {
+                $userfieldconditions[$fieldname] = "$tablealias$fieldname = :$prefix" . "con{$i}00";
             }
             $params[$prefix . "con{$i}00"] = $searchquery;
             $i++;
