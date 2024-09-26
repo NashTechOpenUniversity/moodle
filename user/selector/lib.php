@@ -41,7 +41,9 @@ define('USER_SELECTOR_DEFAULT_ROWS', 20);
 abstract class user_selector_base {
     /** @var string The control name (and id) in the HTML. */
     protected $name;
-    /** @var array Extra fields to search on and return in addition to firstname and lastname. */
+    /**
+     * @var array Extra fields to search on and return in addition to firstname and lastname.
+     */
     protected $extrafields;
     /** @var object Context used for capability checks regarding this selector (does
      * not necessarily restrict user list) */
@@ -88,13 +90,49 @@ abstract class user_selector_base {
 
     /** @var boolean Whether to include custom user profile fields */
     protected $includecustomfields = false;
-    /** @var string User fields selects for custom fields. */
+    /**
+     * @var string User fields selects for custom fields.
+     * @deprecated since 4.5. Get what you need from $userfields instead.
+     */
+    #[\core\attribute\deprecated(
+    replacement: 'user_selector_base::$userfields',
+    since: '4.5',
+    reason: 'No longer required',
+    mdl: 'MDL-77742',
+    )]
     protected $userfieldsselects = '';
-    /** @var string User fields join for custom fields. */
+    /**
+     * @var string User fields join for custom fields.
+     * @deprecated since 4.5. Get what you need from $userfields instead.
+     */
+    #[\core\attribute\deprecated(
+    replacement: 'user_selector_base::$userfields',
+    since: '4.5',
+    reason: 'No longer required',
+    mdl: 'MDL-77742',
+    )]
     protected $userfieldsjoin = '';
-    /** @var array User fields params for custom fields. */
+    /**
+     * @var array User fields params for custom fields.
+     * @deprecated since 4.5. Get what you need from $userfields instead.
+     */
+    #[\core\attribute\deprecated(
+    replacement: 'user_selector_base::$userfields',
+    since: '4.5',
+    reason: 'No longer required',
+    mdl: 'MDL-77742',
+    )]
     protected $userfieldsparams = [];
-    /** @var array User fields mappings for custom fields. */
+    /**
+     * @var array User fields mappings for custom fields.
+     * @deprecated since 4.5. Get what you need from $userfields instead.
+     */
+    #[\core\attribute\deprecated(
+    replacement: 'user_selector_base::$userfields',
+    since: '4.5',
+    reason: 'No longer required',
+    mdl: 'MDL-77742',
+    )]
     protected $userfieldsmappings = [];
     /**
      * @var fields information about the profile fields being displayed and searched in this user selector.
@@ -138,17 +176,16 @@ abstract class user_selector_base {
         }
 
         // Populate the list of additional user identifiers to display.
+        $this->userfields = fields::for_identity($this->accesscontext, $this->includecustomfields)->with_name();
+        // For backwards compatibility, populate deprecated fields.
+        $this->extrafields = $this->userfields->get_required_fields([fields::PURPOSE_IDENTITY]);
         if ($this->includecustomfields) {
-            $userfieldsapi = fields::for_identity($this->accesscontext)->with_name();
-            $this->extrafields = $userfieldsapi->get_required_fields([fields::PURPOSE_IDENTITY]);
             [
                 'selects' => $this->userfieldsselects,
                 'joins' => $this->userfieldsjoin,
                 'params' => $this->userfieldsparams,
                 'mappings' => $this->userfieldsmappings
-            ] = (array) $userfieldsapi->get_sql('u', true, '', '', false);
-        } else {
-            $this->extrafields = fields::get_identity_fields($this->accesscontext, false);
+            ] = (array) $this->userfields->get_sql('u', true, '', '', false);
         }
 
         if (isset($options['exclude']) && is_array($options['exclude'])) {
@@ -507,6 +544,7 @@ abstract class user_selector_base {
 
     /**
      * Returns an array with SQL to perform a search and the params that go into it.
+     * This method has been replaced by search_sql_with_custom_field. It is recommend to use the new function instead.
      *
      * @param string $search the text to search for.
      * @param string $u the table alias for the user table in the query being
@@ -514,8 +552,15 @@ abstract class user_selector_base {
      * @return array an array with two elements, a fragment of SQL to go in the
      *      where clause the query, and an array containing any required parameters.
      *      this uses ? style placeholders.
+     * @deprecated since Moodle 4.5.
      */
+     #[\core\attribute\deprecated(
+        replacement: 'search_sql_with_custom_field',
+        since: '4.5',
+        mdl: 'MDL-77742',
+     )]
     protected function search_sql(string $search, string $u): array {
+        \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
         $extrafields = $this->includecustomfields
             ? array_values($this->userfieldsmappings)
             : $this->extrafields;
