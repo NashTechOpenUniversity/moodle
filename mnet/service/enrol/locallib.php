@@ -477,12 +477,11 @@ class mnetservice_enrol_existing_users_selector extends user_selector_base {
      */
     public function find_users($search) {
         global $DB;
-
-        list($wherecondition, $params)  = $this->search_sql($search, 'u');
+        [$select, , $wherecondition, $sort, $params]  = $this->search_sql_with_custom_field($search, 'u');
         $params['hostid']               = $this->hostid;
         $params['remotecourseid']       = $this->remotecourseid;
 
-        $fields      = "SELECT ".$this->required_fields_sql("u");
+        $fields      = "SELECT " . $select;
         $countfields = "SELECT COUNT(1)";
 
         $sql = "          FROM {user} u
@@ -490,8 +489,6 @@ class mnetservice_enrol_existing_users_selector extends user_selector_base {
                          WHERE e.hostid = :hostid AND e.remotecourseid = :remotecourseid
                                AND e.enroltype = 'mnet'
                                AND $wherecondition";
-
-        list($sort, $sortparams) = users_order_by_sql('u');
         $order = "    ORDER BY $sort";
 
         if (!$this->is_validating()) {
@@ -501,7 +498,7 @@ class mnetservice_enrol_existing_users_selector extends user_selector_base {
             }
         }
 
-        $availableusers = $DB->get_records_sql($fields . $sql . $order, array_merge($params, $sortparams));
+        $availableusers = $DB->get_records_sql($fields . $sql . $order, $params);
 
         if (empty($availableusers)) {
             return array();
@@ -560,15 +557,14 @@ class mnetservice_enrol_potential_users_selector extends user_selector_base {
         }
 
         list($usql, $uparams) = $DB->get_in_or_equal(array_keys($userids), SQL_PARAMS_NAMED, 'uid');
-
-        list($wherecondition, $params) = $this->search_sql($search, 'u');
+        [$select, , $wherecondition, $sort, $params] = $this->search_sql_with_custom_field($search, 'u');
 
         $params = array_merge($params, $uparams);
         $params['hostid'] = $this->hostid;
         $params['remotecourseid'] = $this->remotecourseid;
         $params['mnetlocalhostid'] = $CFG->mnet_localhost_id;
 
-        $fields      = "SELECT ".$this->required_fields_sql("u");
+        $fields      = "SELECT " . $select;
         $countfields = "SELECT COUNT(1)";
 
         $sql = "          FROM {user} u
@@ -578,8 +574,6 @@ class mnetservice_enrol_potential_users_selector extends user_selector_base {
                                AND u.id NOT IN (SELECT e.userid
                                                   FROM {mnetservice_enrol_enrolments} e
                                                  WHERE (e.hostid = :hostid AND e.remotecourseid = :remotecourseid))";
-
-        list($sort, $sortparams) = users_order_by_sql('u');
         $order = "    ORDER BY $sort";
 
         if (!$this->is_validating()) {
@@ -589,7 +583,7 @@ class mnetservice_enrol_potential_users_selector extends user_selector_base {
             }
         }
 
-        $availableusers = $DB->get_records_sql($fields . $sql . $order, array_merge($params, $sortparams));
+        $availableusers = $DB->get_records_sql($fields . $sql . $order, $params);
 
         if (empty($availableusers)) {
             return array();
