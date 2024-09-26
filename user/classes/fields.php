@@ -623,11 +623,7 @@ class fields {
         } else {
             $userfields = array_merge(['id'], self::get_name_fields(), $this->get_required_fields([self::PURPOSE_IDENTITY]));
             // Build the user field array with correct format: fieldname => tablealias.fieldname . Ex: ['id' => 'u.id].
-            $newuserfield = [];
-            foreach ($userfields as $field) {
-                $newuserfield[$field] = $tablealias . '.' . $field;
-            }
-            $userfields = $newuserfield;
+            $userfields = array_combine($userfields, array_map(fn($field) => $tablealias . '.' . $field, $userfields));
             // Build the SELECT fragment SQL if we don't have any.
             $selectsql = implode(',', $userfields);
         }
@@ -788,19 +784,19 @@ class fields {
             $extrawhereconditions[] = $tablealias . 'lastname',
         ];
         foreach ($extrawhereconditions as $index => $condition) {
-            $userfieldconditions[$index] = $DB->sql_like($condition, ":$prefix" . "con{$i}00", false, false);
+            $userfieldconditions[$index] = $DB->sql_like($condition, ":{$prefix}con{$i}00", false, false);
             if ($searchtype === self::USER_SEARCH_EXACT_MATCH) {
-                $userfieldconditions[$index] = "$condition = :$prefix" . "con{$i}00";
+                $userfieldconditions[$index] = "$condition = :{$prefix}con{$i}00";
             }
-            $params[$prefix . "con{$i}00"] = $searchquery;
+            $params["{$prefix}con{$i}00"] = $searchquery;
             $i++;
         }
         foreach ($userfields as $fieldname => $condition) {
-            $userfieldconditions[$fieldname] = $DB->sql_like($tablealias . $fieldname, ":$prefix" . "con{$i}00", false, false);
+            $userfieldconditions[$fieldname] = $DB->sql_like($tablealias . $fieldname, ":{$prefix}con{$i}00", false, false);
             if ($searchtype === self::USER_SEARCH_EXACT_MATCH) {
-                $userfieldconditions[$fieldname] = "$tablealias$fieldname = :$prefix" . "con{$i}00";
+                $userfieldconditions[$fieldname] = "$tablealias$fieldname = :{$prefix}con{$i}00";
             }
-            $params[$prefix . "con{$i}00"] = $searchquery;
+            $params["{$prefix}con{$i}00"] = $searchquery;
             $i++;
         }
         return [$searchquery, $userfieldconditions, $params];
