@@ -188,7 +188,8 @@ class structure {
 
     /**
      * Make slot display number in place editable api call.
-
+     * If you want to update the code, you also need to update setNumber function in mod/quiz/yui/src/util/js/slot.js
+     *
      * @param int $slotid
      * @param \context $context
      * @return \core\output\inplace_editable
