@@ -96,9 +96,13 @@ Y.Moodle.mod_quiz.util.slot = {
         if (!slot) {
             return false;
         }
-        // We perform a simple substitution operation to get the number.
-        var number = slot.one(this.SELECTORS.NUMBER).get('text').replace(
-                        this.CONSTANTS.QUESTION, '');
+        var number;
+        if (slot.one(this.SELECTORS.NUMBER)._node.dataset.currentslotnumber) {
+            number = slot.one(this.SELECTORS.NUMBER)._node.dataset.currentslotnumber;
+        } else {
+            // We perform a simple substitution operation to get the number.
+            number = slot.one(this.SELECTORS.NUMBER).get('text').replace(this.CONSTANTS.QUESTION, '');
+        }
         // Attempt to validate the ID.
         number = parseInt(number, 10);
         if (typeof number === 'number' && isFinite(number)) {
@@ -112,11 +116,49 @@ Y.Moodle.mod_quiz.util.slot = {
      *
      * @method setNumber
      * @param slot {Node} The slot to update the number for.
+     * @param number {Number} The number will be set for this slot.
      * @return void
      */
     setNumber: function(slot, number) {
-        var numbernode = slot.one(this.SELECTORS.NUMBER);
-        numbernode.setHTML('<span class="accesshide">' + this.CONSTANTS.QUESTION + '</span> ' + number);
+        var yui = this;
+        var numberNode = slot.one(yui.SELECTORS.NUMBER)._node;
+        // Using promise causing some delay so it should better store the current slot number to HTML.
+        // So that we can reuse the current slot later without need to wait for promise to completed.
+        numberNode.dataset.currentslotnumber = number;
+        require(['core/inplace_editable', 'core/templates', 'core/str', 'core/notification'],
+            function(InplaceEditable, Templates, str, Notification) {
+                var inplaceElement = InplaceEditable.getInplaceEditable(numberNode);
+                // We don't need to change custom number.
+                if (inplaceElement && !numberNode.dataset.customnumber) {
+                    str.get_strings([
+                        {key: 'edit_slotdisplaynumber_hint', component: 'mod_quiz'},
+                        {key: 'edit_slotdisplaynumber_label', component: 'mod_quiz', param: number},
+                    ]).then(function(strings) {
+                        var context = {
+                            displayvalue: number,
+                            value: number,
+                            itemid: inplaceElement.getItemId(),
+                            component: 'mod_quiz',
+                            itemtype: 'slotdisplaynumber',
+                            edithint: strings[0],
+                            editlabel: strings[1],
+                            editicon: {
+                                'key': 't/editstring',
+                                'component': 'core',
+                                'title': strings[1],
+                            },
+                            linkeverything: true,
+                        };
+                        return Templates.render('core/inplace_editable', context).then(function(html, js) {
+                            Templates.replaceNodeContents(
+                                numberNode,
+                                '<span class="accesshide">' + yui.CONSTANTS.QUESTION + '</span>' + html, js);
+                            return true;
+                        });
+                    }).catch(Notification.exception);
+                }
+            }
+        );
     },
 
     /**
