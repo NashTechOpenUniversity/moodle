@@ -96,9 +96,13 @@ Y.Moodle.mod_quiz.util.slot = {
         if (!slot) {
             return false;
         }
-        // We perform a simple substitution operation to get the number.
-        var number = slot.one(this.SELECTORS.NUMBER).get('text').replace(
-                        this.CONSTANTS.QUESTION, '');
+        var number;
+        if (slot.one(this.SELECTORS.NUMBER)._node.dataset.currentslotnumber) {
+            number = slot.one(this.SELECTORS.NUMBER)._node.dataset.currentslotnumber;
+        } else {
+            // We perform a simple substitution operation to get the number.
+            number = slot.one(this.SELECTORS.NUMBER).get('text').replace(this.CONSTANTS.QUESTION, '');
+        }
         // Attempt to validate the ID.
         number = parseInt(number, 10);
         if (typeof number === 'number' && isFinite(number)) {
@@ -109,14 +113,56 @@ Y.Moodle.mod_quiz.util.slot = {
 
     /**
      * Updates the slot number for the provided slot.
+     * If you want to update the code, you also need to update
+     * make_slot_display_number_in_place_editable in mod/quiz/classes/structure.php
      *
      * @method setNumber
      * @param slot {Node} The slot to update the number for.
+     * @param number {Number} The number will be set for this slot.
      * @return void
      */
     setNumber: function(slot, number) {
-        var numbernode = slot.one(this.SELECTORS.NUMBER);
-        numbernode.setHTML('<span class="accesshide">' + this.CONSTANTS.QUESTION + '</span> ' + number);
+        var yui = this;
+        var numberNode = slot.one(yui.SELECTORS.NUMBER)._node;
+        // We store the number on a data attribute on the containing span, so it is always available,
+        // even when the inplace editable is being re-rendered asynchronously via a promise.
+        numberNode.dataset.currentslotnumber = number;
+        require(['core/inplace_editable', 'core/templates', 'core/str', 'core/notification'],
+            function(InplaceEditable, Templates, str, Notification) {
+                var inplaceElement = InplaceEditable.getInplaceEditable(numberNode);
+                // If slot already have a customised number, then we shouldn't re-render inplace editable element.
+                if (inplaceElement && !numberNode.dataset.customnumber) {
+                    // Get the required strings for the template.
+                    str.get_strings([
+                        {key: 'edit_slotdisplaynumber_hint', component: 'mod_quiz'},
+                        {key: 'edit_slotdisplaynumber_label', component: 'mod_quiz', param: number},
+                    ]).then(function(strings) {
+                        var context = {
+                            displayvalue: number,
+                            value: number,
+                            itemid: inplaceElement.getItemId(),
+                            component: 'mod_quiz',
+                            itemtype: 'slotdisplaynumber',
+                            edithint: strings[0],
+                            editlabel: strings[1],
+                            editicon: {
+                                'key': 't/editstring',
+                                'component': 'core',
+                                'title': strings[1],
+                            },
+                            linkeverything: true,
+                        };
+                        return Templates.render('core/inplace_editable', context);
+                    }).then(function(html, js) {
+                        // Replace the existing node with the new inplace editable element that have a new slot number.
+                        Templates.replaceNodeContents(
+                            numberNode,
+                            '<span class="accesshide">' + yui.CONSTANTS.QUESTION + '</span>' + html, js);
+                        return true;
+                    }).catch(Notification.exception);
+                }
+            }
+        );
     },
 
     /**
