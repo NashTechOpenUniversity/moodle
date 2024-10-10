@@ -63,6 +63,7 @@ Y.extend(RESOURCETOOLBOX, TOOLBOX, {
         Y.delegate('click', this.handle_data_action, BODY, SELECTOR.ACTIVITYACTION, this);
         Y.delegate('click', this.handle_data_action, BODY, SELECTOR.DEPENDENCY_LINK, this);
         this.initialise_select_multiple();
+        this.handle_question_number_update();
     },
 
     /**
@@ -88,6 +89,21 @@ Y.extend(RESOURCETOOLBOX, TOOLBOX, {
 
         // Assign the delete method to the delete multiple button.
         Y.delegate('click', this.delete_multiple_action, BODY, SELECTOR.SELECTMULTIPLEDELETEBUTTON, this);
+    },
+
+    /**
+     * Add data-attribute with slot number to inplace element when they are updated.
+     */
+    handle_question_number_update: function() {
+        require(['core/local/inplace_editable/events'], function(Events) {
+            // Listen to the updated inplace editable event when user updates the question number.
+            document.body.addEventListener(Events.eventTypes.elementUpdated, function(e) {
+                if (e.target.parentNode.classList.contains('slotnumber')) {
+                    e.target.parentNode.setAttribute('data-customnumber', e.detail.ajaxreturn.displayvalue);
+                }
+            });
+        });
+
     },
 
     /**
