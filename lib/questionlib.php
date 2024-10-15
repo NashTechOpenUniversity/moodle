@@ -1555,7 +1555,8 @@ function question_extend_settings_navigation(navigation_node $navigationnode, $c
         return;
     }
 
-    if (($cat = $PAGE->url->param('cat')) && preg_match('~\d+,\d+~', $cat)) {
+    if (($cat = $PAGE->url->param('cat')) && preg_match('~\d+,\d+~', $cat) &&
+            $PAGE->context->id === $context->id) {
         $params['cat'] = $cat;
     }
 

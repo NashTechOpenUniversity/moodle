@@ -243,6 +243,13 @@ class view {
         if (!isset($params['filter']) && isset($params['cat'])) {
             $params['filter']  = [];
             [$categoryid, $contextid] = category_condition::validate_category_param($params['cat']);
+
+            // Check contextid is valid in the list of contexts.
+            $contextidlist = array_column($this->contexts->all(), 'id');
+            if ($contextid && !in_array($contextid, $contextidlist)) {
+                throw new \moodle_exception('invalidcategory', 'question');
+            }
+
             if (!is_null($categoryid)) {
                 $category = category_condition::get_category_record($categoryid, $contextid);
                 $params['filter']['category'] = [
