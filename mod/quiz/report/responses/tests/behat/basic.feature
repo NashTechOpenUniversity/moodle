@@ -105,11 +105,11 @@ Feature: Basic use of the Responses report
     And I click on "Student One" "list_item"
     And I wait until the page is ready
     Then the following should exist in the "responses" table:
-      | First name / Last name |
-      | Student One            |
+      | First name  |
+      | Student One |
     And the following should not exist in the "responses" table:
-      | First name / Last name |
-      | Student Two            |
+      | First name  |
+      | Student Two |
 
   @javascript
   Scenario: A teacher can filter the user attempt by name in the responses report.
@@ -140,11 +140,11 @@ Feature: Basic use of the Responses report
     And I press "Apply"
     Then I should not see "Nothing to display"
     And the following should exist in the "responses" table:
-      | First name / Last name |
-      | Student Two            |
+      | First name  |
+      | Student Two |
     And the following should not exist in the "responses" table:
-      | First name / Last name |
-      | Student One            |
+      | First name  |
+      | Student One |
 
   @javascript
   Scenario: A teacher can filter the user attempt by group in the responses report.
@@ -158,21 +158,21 @@ Feature: Basic use of the Responses report
       | slot | response |
       | 1    | 3.0      |
     And I am on the "Quiz 1" "mod_quiz > Responses report" page logged in as teacher
-    And I click on "All participants" in the "group" search widget
+    And I click on "All participants" in the "Search groups" search combo box
     And I wait until "Group 1" "option_role" exists
-    And I click on "Group 1" in the "group" search widget
+    And I click on "Group 1" in the "Search groups" search combo box
     And the following should exist in the "responses" table:
-      | First name / Last name |
-      | Student One            |
+      | First name  |
+      | Student One |
     And the following should not exist in the "responses" table:
-      | First name / Last name |
-      | Student Two            |
-    And I click on "Group 1" in the "group" search widget
+      | First name  |
+      | Student Two |
+    And I click on "Group 1" in the "Search groups" search combo box
     And I wait until "Group 2" "option_role" exists
-    And I click on "Group 2" in the "group" search widget
+    And I click on "Group 2" in the "Search groups" search combo box
     Then the following should not exist in the "responses" table:
-      | First name / Last name |
-      | Student One            |
+      | First name  |
+      | Student One |
     And the following should exist in the "responses" table:
-      | First name / Last name |
-      | Student Two            |
+      | First name  |
+      | Student Two |

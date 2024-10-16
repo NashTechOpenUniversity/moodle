@@ -62,8 +62,8 @@ Feature: Viewing results by group
     Given I am on the "<quiz>" "quiz activity" page logged in as "<user>"
     And I follow "Results"
     Then I <all> "All participants" in the ".groupsearchwidget" "css_element"
-    And I confirm "Group 1" in "group" search within the gradebook widget <G1>
-    And I confirm "Group 2" in "group" search within the gradebook widget <G2>
+    And I confirm "Group 1" <G1> in the "Search groups" search combo box
+    And I confirm "Group 2" <G2> in the "Search groups" search combo box
     And I <error> "Sorry, but you need to be part of a group to see this page."
     And I should not see "Group 3"
 

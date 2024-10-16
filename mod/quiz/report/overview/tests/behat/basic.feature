@@ -28,7 +28,7 @@ Feature: Basic use of the Grades report
       | student3 | C1     | student        |
       | student4 | C1     | student        |
     And the following "groups" exist:
-      | course | idnumber | name    |
+      | course | idnumber | name                                                                                             |
       | C1     | G1       | <span class="multilang" lang="en">English</span><span class="multilang" lang="es">Spanish</span> |
       | C1     | G2       | Group 2                                                                                          |
     And the following "group members" exist:
@@ -107,9 +107,9 @@ Feature: Basic use of the Grades report
     And I should see "100.00" in the "S2 Student2" "table_row"
 
     # Verify groups are displayed correctly.
-    And I click on "All participants" in the "group" search widget
+    And I click on "All participants" in the "Search groups" search combo box
     And I wait until "English" "option_role" exists
-    And I click on "English" in the "group" search widget
+    And I click on "English" in the "Search groups" search combo box
     And I should see "Number of students in group 'English' achieving grade ranges"
 
   @javascript
@@ -132,12 +132,12 @@ Feature: Basic use of the Grades report
     And I click on "S1 Student1" "list_item"
     And I wait until the page is ready
     Then the following should exist in the "attempts" table:
-      | First name / Last name |
-      | S1 Student1            |
+      | First name  |
+      | S1 Student1 |
     And the following should not exist in the "attempts" table:
-      | First name / Last name |
-      | S2 Student2            |
-      | Four Student           |
+      | First name   |
+      | S2 Student2  |
+      | Four Student |
 
   @javascript
   Scenario: A teacher can filter the user attempt by name in the grades report.
@@ -159,34 +159,34 @@ Feature: Basic use of the Grades report
     And I press "Apply"
     Then I should not see "Nothing to display"
     And the following should exist in the "attempts" table:
-      | First name / Last name |
-      | Four Student           |
+      | First name   |
+      | Four Student |
     And the following should not exist in the "attempts" table:
-      | First name / Last name |
-      | S1 Student1            |
-      | S2 Student2            |
+      | First name  |
+      | S1 Student1 |
+      | S2 Student2 |
 
   @javascript
   Scenario: A teacher can filter the user attempt by group in the grades report.
     When I am on the "Quiz 1" "quiz activity" page logged in as teacher1
     And I navigate to "Results" in current page administration
-    And I click on "All participants" in the "group" search widget
+    And I click on "All participants" in the "Search groups" search combo box
     And I wait until "Group 2" "option_role" exists
-    And I click on "Group 2" in the "group" search widget
+    And I click on "Group 2" in the "Search groups" search combo box
     And the following should exist in the "attempts" table:
-      | First name / Last name |
-      | Four Student           |
+      | First name   |
+      | Four Student |
     And the following should not exist in the "attempts" table:
-      | First name / Last name |
-      | S1 Student1            |
-      | S2 Student2            |
-    And I click on "Group 2" in the "group" search widget
+      | First name  |
+      | S1 Student1 |
+      | S2 Student2 |
+    And I click on "Group 2" in the "Search groups" search combo box
     And I wait until "English" "option_role" exists
-    And I click on "English" in the "group" search widget
+    And I click on "English" in the "Search groups" search combo box
     Then the following should not exist in the "attempts" table:
-      | First name / Last name |
-      | Four Student           |
+      | First name   |
+      | Four Student |
     And the following should exist in the "attempts" table:
-      | First name / Last name |
-      | S1 Student1            |
-      | S2 Student2            |
+      | First name  |
+      | S1 Student1 |
+      | S2 Student2 |
