@@ -15,15 +15,26 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings for component 'qbank_managecategories', language 'en'
+ * Callbacks for qbank_manageacategories
  *
  * @package   qbank_managecategories
- * @copyright 2021 Catalyst IT Australia Pty Ltd
- * @author    Guillermo Gomez Arias <guillermogomez@catalyst-au.net>
+ * @copyright 2024 Catalyst IT Europe Ltd
+ * @author    Mark Johnson <mark.johnson@catalyst-eu.net>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['pluginname'] = 'Manage categories';
-$string['privacy:preference:includesubcategories'] = 'A flag to indicate whether or not questions from subcategories are shown.';
-$string['questionsubcategoriesdisplayed'] = 'Questions from subcategories are displayed.';
-$string['questionsubcategoriesnotdisplayed'] = 'Questions from subcategories are not displayed.';
+/**
+ * Allow update of user preferences via AJAX.
+ *
+ * @return array[]
+ */
+function qbank_managecategories_user_preferences(): array {
+    return [
+        'qbank_managecategories_includesubcategories' => [
+            'type' => PARAM_BOOL,
+            'null' => NULL_NOT_ALLOWED,
+            'default' => false,
+            'permissioncallback' => [core_user::class, 'is_current_user'],
+        ],
+    ];
+}
