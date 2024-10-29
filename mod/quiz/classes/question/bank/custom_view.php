@@ -83,7 +83,8 @@ class custom_view extends \core_question\local\bank\view {
                 $params['filter']['category'] = [
                     'jointype' => custom_category_condition::JOINTYPE_DEFAULT,
                     'values' => [$category->id],
-                    'filteroptions' => ['includesubcategories' => false],
+                    'filteroptions' => ['includesubcategories' =>
+                        get_user_preferences('qbank_managecategories_includesubcategories', false)],
                 ];
             }
         }
