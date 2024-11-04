@@ -1221,7 +1221,7 @@ function quiz_get_combined_reviewoptions($quiz, $attempts) {
     if (empty($attempts)) {
         return [$someoptions, $someoptions];
     }
-
+    $maxmarks = 0;
     foreach ($attempts as $attempt) {
         $attemptoptions = display_options::make_from_quiz($quiz,
                 quiz_attempt_state($quiz, $attempt));
@@ -1230,8 +1230,9 @@ function quiz_get_combined_reviewoptions($quiz, $attempts) {
             $alloptions->$field = $alloptions->$field && $attemptoptions->$field;
         }
         $someoptions->marks = max($someoptions->marks, $attemptoptions->marks);
-        $alloptions->marks = min($alloptions->marks, $attemptoptions->marks);
+        $maxmarks = max(min($alloptions->marks, $attemptoptions->marks), $maxmarks);
     }
+    $alloptions->marks = $maxmarks;
     return [$someoptions, $alloptions];
 }
 
