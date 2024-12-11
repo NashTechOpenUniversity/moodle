@@ -16,6 +16,7 @@
 
 namespace qbank_history;
 
+use core_question\local\bank\filter_condition_manager;
 use core_question\local\bank\question_action_base;
 
 /**
@@ -49,11 +50,18 @@ class history_action extends question_action_base {
         }
 
         if (question_has_capability_on($question, 'use')) {
+            $currentfilter = $this->qbank->base_url()->param('filter');
+            if ($currentfilter && $currentfilter = json_decode($this->qbank->base_url()->param('filter'))) {
+                $currentfilter->category->values = [$question->categoryid];
+            } else {
+                $currentfilter = filter_condition_manager::get_default_filter($question->categoryid . ',' . $question->contextid);
+            }
+
             $url = helper::get_question_history_url(
                 $question->questionbankentryid,
                 $this->qbank->returnurl,
                 $this->qbank->cm->id,
-                $this->qbank->base_url()->param('filter'),
+                json_encode($currentfilter),
             );
             return [$url, 't/log', $this->strpreview];
         }
