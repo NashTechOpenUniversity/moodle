@@ -77,7 +77,7 @@ class custom_view extends \core_question\local\bank\view {
                     'jointype' => custom_category_condition::JOINTYPE_DEFAULT,
                     'values' => [$category->id],
                     'filteroptions' => ['includesubcategories' =>
-                        get_user_preferences('qbank_managecategories_includesubcategories', false)],
+                        get_user_preferences('qbank_managecategories_includesubcategories_filter_default', false)],
                 ];
             }
         }
