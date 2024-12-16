@@ -30,7 +30,7 @@
  */
 function qbank_managecategories_user_preferences(): array {
     return [
-        'qbank_managecategories_includesubcategories' => [
+        'qbank_managecategories_includesubcategories_filter_default' => [
             'type' => PARAM_BOOL,
             'null' => NULL_NOT_ALLOWED,
             'default' => false,
