@@ -113,3 +113,5 @@ Feature: A teacher can put questions in categories in the question bank
     When I reload the page
     Then I should see "Question 1" in the "categoryquestions" "table"
     And the field "Also show questions from subcategories" matches value "1"
+    And I am on the "Course 1" "core_question > course question bank" page
+    And the field "Also show questions from subcategories" matches value "1"

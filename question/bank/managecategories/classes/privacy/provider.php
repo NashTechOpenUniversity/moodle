@@ -39,7 +39,8 @@ class provider implements
      */
     public static function get_metadata(collection $collection): collection {
         $collection->add_user_preference('qbank_managecategories_showdescriptions', 'privacy:preference:showdescriptions');
-        $collection->add_user_preference('qbank_managecategories_includesubcategories', 'privacy:preference:includesubcategories');
+        $collection->add_user_preference('qbank_managecategories_includesubcategories_filter_default',
+            'privacy:preference:includesubcategories_filter_default');
         return $collection;
     }
 
@@ -60,7 +61,7 @@ class provider implements
             );
         }
 
-        $includesubcategories = get_user_preferences('qbank_managecategories_includesubcategories', null, $userid);
+        $includesubcategories = get_user_preferences('qbank_managecategories_includesubcategories_filter_default', null, $userid);
         if (isset($includesubcategories)) {
             $displayquestions = $includesubcategories ? 'questionsubcategoriesdisplayed' : 'questionsubcategoriesnotdisplayed';
             writer::export_user_preference(
