@@ -108,3 +108,17 @@ Feature: Teacher can view and override users' activity completion data via the p
     And the manual completion button of "my assignment" overridden by "Teacher" is displayed as "Done"
     And I toggle the manual completion state of "my assignment"
     And the manual completion button of "my assignment" is displayed as "Mark as done"
+
+  Scenario Outline: Download activity completion report in different formats
+    Given I am on the "Course 1" Course page logged in as teacher1
+    And I navigate to "Reports > Activity completion" in current page administration
+    When I set the field "Download table data as" to "<format>"
+    Then I press "Download"
+    Examples:
+      | format                             |
+      | Comma separated values (.csv)      |
+      | Microsoft Excel (.xlsx)            |
+      | HTML table                         |
+      | Javascript Object Notation (.json) |
+      | OpenDocument (.ods)                |
+      | Portable Document Format (.pdf)    |
