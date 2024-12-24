@@ -2122,18 +2122,35 @@ function quiz_is_overriden_calendar_event(\calendar_event $event) {
  * @param int|null $cmid the course_module id for this quiz.
  * @return quiz_attempt all the data about the quiz attempt.
  */
-function quiz_create_attempt_handling_errors($attemptid, $cmid = null) {
+function quiz_create_attempt_handling_errors($attemptid, $cmid = null, $quizobj = null) {
+    global $USER;
     try {
         $attempobj = quiz_attempt::create($attemptid);
     } catch (moodle_exception $e) {
         if (!empty($cmid)) {
-            list($course, $cm) = get_course_and_cm_from_cmid($cmid, 'quiz');
+            [$course, $cm] = get_course_and_cm_from_cmid($cmid, 'quiz');
             $continuelink = new moodle_url('/mod/quiz/view.php', ['id' => $cmid]);
             $context = context_module::instance($cm->id);
-            if (has_capability('mod/quiz:preview', $context)) {
-                throw new moodle_exception('attempterrorcontentchange', 'quiz', $continuelink);
+
+            if (str_contains($e->getMessage(), 'qtype_missingtype_question')) {
+                foreach ($quizobj->get_structure()->get_slots() as $slot) {
+                    if (!qbank_helper::is_question_exist_in_slot($attemptid, $slot->slot)) {
+                        $qubaids = new \mod_quiz\question\qubaids_for_users_attempts(
+                            $quizobj->get_quizid(), $USER->id, 'unfinished', true);
+                        $newquestionid = qbank_helper::choose_question_for_redo($quizobj->get_quizid(),
+                            $quizobj->get_context(), $slot->id, $qubaids);
+                        if ($newquestionid) {
+                            qbank_helper::replace_question_in_slot($attemptid, $slot->slot, $newquestionid);
+                            $attempobj = quiz_attempt::create($attemptid);
+                        }
+                    }
+                }
             } else {
-                throw new moodle_exception('attempterrorcontentchangeforuser', 'quiz', $continuelink);
+                if (has_capability('mod/quiz:preview', $context)) {
+                    throw new moodle_exception('attempterrorcontentchange', 'quiz', $continuelink);
+                } else {
+                    throw new moodle_exception('attempterrorcontentchangeforuser', 'quiz', $continuelink);
+                }
             }
         } else {
             throw new moodle_exception('attempterrorinvalid', 'quiz');

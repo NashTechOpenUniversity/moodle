@@ -269,6 +269,46 @@ class qbank_helper {
     }
 
     /**
+     *
+     *
+     * @param int $attemptid
+     * @return bool
+     */
+    public static function is_question_exist_in_slot(int $attemptid, int $slot): bool {
+        global $DB;
+        return $DB->record_exists_sql('SELECT quea.questionid
+                                         FROM {quiz_attempts} qa
+                                         JOIN {question_usages} qu ON qu.id = qa.uniqueid
+                                         JOIN {question_attempts} quea ON quea.questionusageid = qu.id
+                                    LEFT JOIN {question} q ON q.id = quea.questionid
+                                        WHERE qa.id = :attemptid
+                                              AND quea.slot = :slot',
+                                        ['attemptid' => $attemptid, 'slot' => $slot]);
+    }
+
+    /**
+     *
+     *
+     * @param int $questionusageid
+     * @param int $slot
+     * @param int $questionid
+     * @return bool
+     */
+    public static function replace_question_in_slot(int $attemptid, int $slot, int $newquestionid): bool {
+        global $DB;
+        $questionattempt = $DB->get_record_sql('SELECT quea.id
+                                FROM {quiz_attempts} qa
+                                JOIN {question_usages} qu ON qu.id = qa.uniqueid
+                                JOIN {question_attempts} quea ON quea.questionusageid = qu.id
+                               WHERE qa.id = :attemptid
+                                     AND quea.slot = :slot',
+                                    ['attemptid' => $attemptid, 'slot' => $slot]);
+        $questionattempt->questionid = $newquestionid;
+
+        return $DB->update_record('question_attempts', $questionattempt);
+    }
+
+    /**
      * Check all the questions in an attempt and return information about their versions.
      *
      * Once a quiz attempt has been started, it continues to use the version of each question
