@@ -54,7 +54,7 @@ export default class extends GenericFilter {
             setUserPreference('qbank_managecategories_includesubcategories_filter_default', checked);
         }
         const {html} = await Templates.renderForPromise('qbank_managecategories/include_subcategories_checkbox', {
-            checked: checked,
+            checked: checked && checked !== '0',
         });
         filterValueNode.insertAdjacentHTML('afterend', html);
     }
