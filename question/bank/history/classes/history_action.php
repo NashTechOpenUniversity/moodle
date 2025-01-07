@@ -54,7 +54,7 @@ class history_action extends question_action_base {
             if ($currentfilter) {
                 $currentfilter = filter_condition_manager::update_filter_param_to_category(
                     $currentfilter, $question->categoryid);
-            } else {
+            } else if (empty($question->isdummy)) {
                 $currentfilter = json_encode(filter_condition_manager::get_default_filter(
                     $question->categoryid . ',' . $question->contextid));
             }
