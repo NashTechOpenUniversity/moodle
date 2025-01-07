@@ -77,6 +77,9 @@ class custom_view extends \core_question\local\bank\view {
         // Default filter condition.
         if (!isset($params['filter'])) {
             $params['filter']  = filter_condition_manager::get_default_filter($params['cat']);
+            // The quiz question bank modal doesn't include a hidden filter option.
+            // Therefore, the default filter hidden condition is unnecessary.
+            unset($params['filter']['hidden']);
         }
 
         $this->init_columns($this->wanted_columns(), $this->heading_column());
