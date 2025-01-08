@@ -307,7 +307,7 @@ final class helper_test extends manage_category_test_base {
         $quiz = $this->quiz;
         // Create category 1 and one hidden question.
         $qcat = $this->qgenerator->create_question_category(['contextid' => $this->context->id]);
-        $q1 = $this->qgenerator->create_question('shortanswer', null, ['category' => $qcat->id]);     // Will be hidden.
+        $q1 = $this->qgenerator->create_question('shortanswer', null, ['category' => $qcat->id]);
         $DB->set_field('question_versions', 'status', 'hidden', ['questionid' => $q1->id]);
 
         $contexts = new \core_question\local\bank\question_edit_contexts(\context_module::instance($quiz->cmid));
@@ -320,7 +320,7 @@ final class helper_test extends manage_category_test_base {
         $categorycontexts = helper::get_categories_for_contexts($contextslist);
         $this->assertEquals(0, reset($categorycontexts)->questioncount);
         // Add an extra question.
-        $this->qgenerator->create_question('shortanswer', null, ['category' => $qcat->id]);     // Will be hidden.
+        $this->qgenerator->create_question('shortanswer', null, ['category' => $qcat->id]);
         $categorycontexts = helper::get_categories_for_contexts($contextslist);
         // Verify we have 1 question in category.
         $this->assertEquals(1, reset($categorycontexts)->questioncount);
