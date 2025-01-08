@@ -254,6 +254,10 @@ class custom_view extends \core_question\local\bank\view {
                                           JOIN {question_bank_entries} be
                                             ON be.id = v.questionbankentryid
                                          WHERE be.id = qbe.id AND v.status <> :substatus)';
+
+        // An additional condition is required in the subquery to account for scenarios
+        // where the latest version is hidden. This ensures we retrieve the previous
+        // "Ready" version instead of the hidden latest version.
         $onlyready = '((qv.status = :status))';
         $this->sqlparams = [
             'status' => question_version_status::QUESTION_STATUS_READY,
