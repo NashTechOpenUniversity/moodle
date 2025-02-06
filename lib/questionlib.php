@@ -1409,7 +1409,7 @@ function question_edit_url($context) {
  * @return navigation_node Returns the question branch that was added
  */
 function question_extend_settings_navigation(navigation_node $navigationnode, $context, $baseurl = '/question/edit.php') {
-    global $PAGE;
+    global $PAGE, $COURSE;
 
     $iscourse = $context->contextlevel === CONTEXT_COURSE;
 
@@ -1421,8 +1421,16 @@ function question_extend_settings_navigation(navigation_node $navigationnode, $c
         return;
     }
 
-    if (($cat = $PAGE->url->param('cat')) && preg_match('~\d+,\d+~', $cat)) {
+    if (($cat = $PAGE->url->param('cat')) && preg_match('~\d+,\d+~', $cat) &&
+            $PAGE->context->id === $context->id) {
+        // Only include the 'cat' parameter if its context matches the current course module's context.
+        // This prevents incorrect category context being passed in URLs after editing or adding a question,
+        // Which could result in the question bank tab showing the wrong question category.
         $params['cat'] = $cat;
+        [, $contextid] = explode(',', $cat);
+        if ($context->id !== $contextid) {
+            unset($params['cat']);
+        }
     }
 
     $questionnode = $navigationnode->add(get_string($iscourse ? 'questionbank_plural' : 'questionbank', 'question'),

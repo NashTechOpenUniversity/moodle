@@ -241,6 +241,12 @@ class view {
 
         // Default filter condition.
         if (!isset($params['filter']) && isset($params['cat'])) {
+            [, $contextid] = category_condition::validate_category_param($params['cat']);
+            // Check contextid is valid in the list of contexts.
+            $contextidlist = array_column($this->contexts->all(), 'id');
+            if ($contextid && !in_array($contextid, $contextidlist)) {
+                throw new \moodle_exception('invalidcategory', 'question');
+            }
             $params['filter']  = filter_condition_manager::get_default_filter($params['cat']);
             $params['jointype'] = datafilter::JOINTYPE_ALL;
         }
