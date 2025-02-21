@@ -28,11 +28,18 @@ defined('MOODLE_INTERNAL') || die();
 
 if ($hassiteconfig) {
     // Add settings page for AI provider settings.
-    $providers = new admin_settingpage('aiprovider', new lang_string('aiprovidersettings', 'ai'));
+    $providers = new admin_settingpage('aiprovider', new lang_string('aiproviders', 'ai'));
     $providers->add(new admin_setting_heading('availableproviders',
-            get_string('availableproviders', 'core_ai'),
-            get_string('availableproviders_desc', 'core_ai')));
-    $providers->add(new \core_admin\admin\admin_setting_plugin_manager(
+        get_string('availableproviders', 'core_ai'),
+        get_string('availableproviders_desc', 'core_ai')));
+    // Add call to action to add a new provider.
+    $providers->add(new \core_admin\admin\admin_setting_template_render(
+        name: 'addnewprovider',
+        templatename: 'core_ai/admin_add_provider',
+        context: ['addnewproviderurl' => new moodle_url('/ai/configure.php')]
+    ));
+
+    $providers->add(new \core_ai\admin\admin_setting_provider_manager(
             'aiprovider',
             \core_ai\table\aiprovider_management_table::class,
             'manageaiproviders',
@@ -40,15 +47,8 @@ if ($hassiteconfig) {
     ));
     $ADMIN->add('ai', $providers);
 
-    // Load settings for all AI providers.
-    $plugins = core_plugin_manager::instance()->get_plugins_of_type('aiprovider');
-    foreach ($plugins as $plugin) {
-        /** @var \core\plugininfo\aiprovider $plugin */
-        $plugin->load_settings($ADMIN, 'ai', $hassiteconfig);
-    }
-
     // Add settings page for AI placement settings.
-    $placements = new admin_settingpage('aiplacement', new lang_string('aiplacementsettings', 'ai'));
+    $placements = new admin_settingpage('aiplacement', new lang_string('aiplacements', 'ai'));
     $placements->add(new admin_setting_heading('availableplacements',
             get_string('availableplacements', 'core_ai'),
             get_string('availableplacements_desc', 'core_ai')));
@@ -67,3 +67,22 @@ if ($hassiteconfig) {
         $plugin->load_settings($ADMIN, 'ai', $hassiteconfig);
     }
 }
+
+// AI reports category.
+$ADMIN->add('reports', new admin_category('aireports', get_string('aireports', 'core_ai')));
+// Add AI policy acceptance report.
+$aipolicyacceptance = new admin_externalpage(
+    'aipolicyacceptancereport',
+    get_string('aipolicyacceptance', 'core_ai'),
+    new moodle_url('/ai/policy_acceptance_report.php'),
+    'moodle/ai:viewaipolicyacceptancereport'
+);
+$ADMIN->add('aireports', $aipolicyacceptance);
+// Add AI usage report.
+$aiusage = new admin_externalpage(
+    'aiusagereport',
+    get_string('aiusage', 'core_ai'),
+    new moodle_url('/ai/usage_report.php'),
+    'moodle/ai:viewaiusagereport',
+);
+$ADMIN->add('aireports', $aiusage);

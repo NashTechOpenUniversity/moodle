@@ -157,12 +157,15 @@ EOF;
             }
 
             $violationdata .= sprintf(
-                "  %.03d violations of '%s' (severity: %s)\n%s\n",
+                "  %.03d violations of rule '%s' found (severity: %s)\n",
                 count($violation->nodes),
-                $violation->description,
+                $violation->id,
                 $violation->impact,
-                $nodedata
             );
+            $violationdata .= "  {$violation->help}\n";
+            $violationdata .= "  {$violation->description}\n";
+            $violationdata .= "  {$violation->helpUrl}\n";
+            $violationdata .= $nodedata;
         }
 
         throw new ExpectationException($violationdata, $this->getSession());
@@ -181,9 +184,13 @@ EOF;
         if (empty($standardtags)) {
             $standardtags = [
                 // Meet WCAG 2.2 Level A success criteria.
+                'wcag2a',
+                'wcag21a',
                 'wcag22a',
 
                 // Meet WCAG 2.2 Level AA success criteria.
+                'wcag2aa',
+                'wcag21aa',
                 'wcag22aa',
 
                 // Meet Section 508 requirements.

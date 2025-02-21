@@ -37,7 +37,7 @@ use testing_data_generator;
  * @copyright 2023 Huong Nguyen <huongnv13@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class activity_sender_test extends \advanced_testcase {
+final class activity_sender_test extends \advanced_testcase {
 
     /** @var testing_data_generator Data generator. */
     private testing_data_generator $generator;
@@ -255,10 +255,10 @@ The last word of this sentence is in bold', $processeddescription);
      *
      * @return array Test data.
      */
-    public function share_resource_provider(): array {
+    public static function share_resource_provider(): array {
         return [
             'Success' => [
-                'http_response' => new Response(
+                'httpresponse' => new Response(
                     201,
                     ['Content-Type' => 'application/json'],
                     json_encode([
@@ -271,7 +271,7 @@ The last word of this sentence is in bold', $processeddescription);
                 ],
             ],
             'Fail with 200 status code' => [
-                'http_response' => new Response(
+                'httpresponse' => new Response(
                     200,
                     ['Content-Type' => 'application/json'],
                     json_encode([
@@ -284,7 +284,7 @@ The last word of this sentence is in bold', $processeddescription);
                 ],
             ],
             'Fail with 401 status code' => [
-                'http_response' => new Response(
+                'httpresponse' => new Response(
                     401,
                 ),
                 'expected' => [
@@ -296,7 +296,7 @@ The last word of this sentence is in bold', $processeddescription);
                 ],
             ],
             'Fail with 404 status code' => [
-                'http_response' => new Response(
+                'httpresponse' => new Response(
                     404,
                 ),
                 'expected' => [

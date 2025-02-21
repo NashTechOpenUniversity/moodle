@@ -22,6 +22,10 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use core\di;
+use core\hook;
+use core_user\hook\extend_user_menu;
+
 define('USER_FILTER_ENROLMENT', 1);
 define('USER_FILTER_GROUP', 2);
 define('USER_FILTER_LAST_ACCESS', 3);
@@ -558,10 +562,13 @@ function user_get_user_details($user, $course = null, array $userfields = array(
                     }
                 }
 
+                $groupdescription = file_rewrite_pluginfile_urls($group->description, 'pluginfile.php', $context->id, 'group',
+                    'description', $group->id);
+
                 $userdetails['groups'][] = [
                     'id' => $group->id,
-                    'name' => format_string($group->name),
-                    'description' => format_text($group->description, $group->descriptionformat, ['context' => $context]),
+                    'name' => format_string($group->name, true, ['context' => $context]),
+                    'description' => format_text($groupdescription, $group->descriptionformat, ['context' => $context]),
                     'descriptionformat' => $group->descriptionformat
                 ];
             }
@@ -888,7 +895,7 @@ function user_get_user_navigation_info($user, $page, $options = array()) {
 
                 // Get login failures string.
                 $a = new stdClass();
-                $a->attempts = html_writer::tag('span', $count, array('class' => 'value me-1 font-weight-bold'));
+                $a->attempts = html_writer::tag('span', $count, array('class' => 'value me-1 fw-bold'));
                 $returnobject->metadata['userloginfail'] =
                     get_string('failedloginattempts', '', $a);
 
@@ -907,6 +914,14 @@ function user_get_user_navigation_info($user, $page, $options = array()) {
         if ($item->itemtype !== 'divider' && $item->itemtype !== 'invalid') {
             $custommenucount++;
         }
+    }
+
+    // Call to hook to add menu items.
+    $hook = new extend_user_menu();
+    di::get(core\hook\manager::class)->dispatch($hook);
+    $hookitems = $hook->get_navitems();
+    foreach ($hookitems as $menuitem) {
+        $returnobject->navitems[] = $menuitem;
     }
 
     if ($custommenucount > 0) {
@@ -1280,14 +1295,23 @@ function user_get_tagged_users($tag, $exclusivemode = false, $fromctx = 0, $ctx 
     }
     $perpage = $exclusivemode ? 24 : 5;
     $content = '';
-    $totalpages = ceil($usercount / $perpage);
+    $excludedusers = 0;
 
     if ($usercount) {
         $userlist = $tag->get_tagged_items('core', 'user', $page * $perpage, $perpage,
                 'it.deleted=:notdeleted', array('notdeleted' => 0));
+        foreach ($userlist as $user) {
+            if (!user_can_view_profile($user)) {
+                unset($userlist[$user->id]);
+                $excludedusers++;
+            }
+        }
         $renderer = $PAGE->get_renderer('core', 'user');
         $content .= $renderer->user_list($userlist, $exclusivemode);
     }
+
+    // Calculate the total number of pages.
+    $totalpages = ceil(($usercount - $excludedusers) / $perpage);
 
     return new core_tag\output\tagindex($tag, 'core', 'user', $content,
             $exclusivemode, $fromctx, $ctx, $rec, $page, $totalpages);

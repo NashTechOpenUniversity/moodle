@@ -25,6 +25,13 @@
                 * key - The key of the workflow filter option
                 * name - The name of the workflow filter option
                 * active - Whether the workflow filter option is currently active
+        * markingallocation
+            * markingallocationoptions - Array of marking allocation filter options
+                * key - The key of the marking allocation filter option
+                * name - The name of the marking allocation filter option
+                * active - Whether the marking allocation filter option is currently active
+        * suspendedparticipants
+            * active - Whether the suspended participants filter is currently active
 
     Example context (json):
     {
@@ -41,6 +48,18 @@
                             "active": true
                         }
                     ]
+                },
+                "markingallocation": {
+                    "markingallocationoptions": [
+                        {
+                            "key": "-1",
+                            "name": "No marker",
+                            "active": true
+                        }
+                    ]
+                },
+                "suspendedparticipants": {
+                    "active": true
                 }
             }
         ]
@@ -52,17 +71,36 @@
         <input type="hidden" name="action" value="{{action}}">
         {{#filters}}
             {{#markingworkflow}}
-                <div class="row m-0 pb-3">
+                <div class="d-flex flex-wrap m-0 pb-3">
                     <label class="w-100" for="filter-workflow-{{uniqid}}">
                         {{#str}}markingstate, mod_assign{{/str}}
                     </label>
-                    <select name="workflowfilter" id="filter-workflow-{{uniqid}}" class="custom-select w-100">
+                    <select name="workflowfilter" id="filter-workflow-{{uniqid}}" class="form-select w-100">
                     {{#workflowfilteroptions}}
                         <option value="{{key}}" {{#active}}selected="selected"{{/active}}>{{name}}</option>
                     {{/workflowfilteroptions}}
                     </select>
                 </div>
             {{/markingworkflow}}
+            {{#markingallocation}}
+                <div class="d-flex flex-wrap m-0 pb-3">
+                    <label class="w-100" for="filter-marking-allocation-{{uniqid}}">
+                        {{#str}}marker, mod_assign{{/str}}
+                    </label>
+                    <select name="markingallocationfilter" id="filter-marking-allocation-{{uniqid}}" class="form-select w-100">
+                    {{#markingallocationoptions}}
+                        <option value="{{key}}" {{#active}}selected="selected"{{/active}}>{{name}}</option>
+                    {{/markingallocationoptions}}
+                    </select>
+                </div>
+            {{/markingallocation}}
+            {{#suspendedparticipants}}
+                <div class="d-flex flex-wrap m-0 pb-3 pt-2 mx-1 align-items-center">
+                    <input type="hidden" name="suspendedparticipantsfilter" value="0" {{#active}}disabled{{/active}}>
+                    <input type="checkbox" id="filter-suspended-participants-{{uniqid}}" name="suspendedparticipantsfilter" value="1" {{#active}}checked{{/active}}>
+                    <label for="filter-suspended-participants-{{uniqid}}" class='m-0' >{{#str}} includesuspendedparticipants, mod_assign {{/str}}</label>
+                </div>
+            {{/suspendedparticipants}}
         {{/filters}}
         <div class="d-flex flex-row justify-content-end align-items-center pt-2">
             <a href="#" class="pull-right mx-3 text-decoration-none text-dark" data-action="close">{{#str}}closebuttontitle{{/str}}</a>

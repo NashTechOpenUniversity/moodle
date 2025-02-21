@@ -206,7 +206,7 @@ function upgrade_calculated_grade_items($courseid = null) {
     }
 
     if (!empty($possiblecourseids)) {
-        list($sql, $params) = $DB->get_in_or_equal($possiblecourseids);
+        [$sql, $params] = $DB->get_in_or_equal($possiblecourseids);
         // A calculated grade item grade min != 0 and grade max != 100 and the course setting is set to
         // "Initial min and max grades".
         $coursesql = "SELECT DISTINCT courseid
@@ -238,7 +238,7 @@ function upgrade_calculated_grade_items($courseid = null) {
         }
 
         if (!empty($categoryids)) {
-            list($sql, $params) = $DB->get_in_or_equal($categoryids);
+            [$sql, $params] = $DB->get_in_or_equal($categoryids);
             // A category with a calculation where the raw grade min and the raw grade max don't match the grade min and grade max
             // for the category.
             $coursesql = "SELECT DISTINCT gi.courseid
@@ -629,7 +629,7 @@ function upgrade_calendar_site_status(bool $output = true): bool {
     ];
 
     $targetsteps = array_merge(array_values($badsteps), array_values( $fixsteps));
-    list($insql, $inparams) = $DB->get_in_or_equal($targetsteps);
+    [$insql, $inparams] = $DB->get_in_or_equal($targetsteps);
     $foundsteps = $DB->get_fieldset_sql("
         SELECT DISTINCT version
           FROM {upgrade_log}
@@ -1423,19 +1423,6 @@ function upgrade_block_set_my_user_parent_context(
                SET bi.parentcontextid = bic.contextid
              WHERE bi.id = bic.instanceid
         EOF;
-    } else if ($dbfamily === 'oracle') {
-        $sql = <<<EOF
-            UPDATE {block_instances} bi
-            SET (bi.parentcontextid) = (
-                SELECT bic.contextid
-                  FROM {block_instance_context} bic
-                 WHERE bic.instanceid = bi.id
-            ) WHERE EXISTS (
-                SELECT 'x'
-                  FROM {block_instance_context} bic
-                 WHERE bic.instanceid = bi.id
-            )
-        EOF;
     } else {
         // Postgres and sqlsrv.
         $sql = <<<EOF
@@ -1820,4 +1807,222 @@ function upgrade_add_foreign_key_and_indexes() {
     $key = new xmldb_key('contextid', XMLDB_KEY_FOREIGN, ['contextid'], 'context', ['id']);
     // Launch add key contextid.
     $dbman->add_key($table, $key);
+}
+
+/**
+ * Upgrade helper to change a binary column to an integer column with a length of 1 in a consistent manner across databases.
+ *
+ * This function will
+ * - rename the existing column to a temporary name,
+ * - add a new column with the integer type,
+ * - copy the values from the old column to the new column,
+ * - and finally, drop the old column.
+ *
+ * This function will do nothing if the field is already an integer.
+ *
+ * The new column with the integer type will need to have a default value of 0.
+ * This is to avoid breaking the not null constraint, if it's set, especially if there are existing records.
+ * Please make sure that the column definition in install.xml also has the `DEFAULT` attribute value set to 0.
+ *
+ * @param string $tablename The name of the table.
+ * @param string $fieldname The name of the field to be converted.
+ * @param bool|null $notnull {@see XMLDB_NOTNULL} or null.
+ * @param string|null $previous The name of the field that this field should come after.
+ * @return bool
+ */
+function upgrade_change_binary_column_to_int(
+    string $tablename,
+    string $fieldname,
+    ?bool $notnull = null,
+    ?string $previous = null,
+): bool {
+    global $DB;
+
+    // Get the information about the field to be converted.
+    $columns = $DB->get_columns($tablename);
+    $toconvert = $columns[$fieldname];
+
+    // Check if the field to be converted is already an integer-type column (`meta_type` property of 'I').
+    if ($toconvert->meta_type === 'I') {
+        // Nothing to do if the field is already an integer-type.
+        return false;
+    } else if (!$toconvert->binary) {
+        throw new \core\exception\coding_exception(
+            'This function is only used to convert XMLDB_TYPE_BINARY fields to XMLDB_TYPE_INTEGER fields. '
+            . 'For other field types, please check out \database_manager::change_field_type()'
+        );
+    }
+
+    $dbman = $DB->get_manager();
+    $table = new xmldb_table($tablename);
+    // Temporary rename the field. We'll drop this later.
+    $tmpfieldname = "tmp$fieldname";
+    $field = new xmldb_field($fieldname, XMLDB_TYPE_BINARY);
+    $dbman->rename_field($table, $field, $tmpfieldname);
+
+    // Add the new field wih the integer type.
+    $field = new xmldb_field($fieldname, XMLDB_TYPE_INTEGER, '1', null, $notnull, null, '0', $previous);
+    $dbman->add_field($table, $field);
+
+    // Copy the 'true' values from the old field to the new field.
+    $sql = 'UPDATE {' . $tablename . '}
+               SET ' . $fieldname . ' = 1
+             WHERE ' . $tmpfieldname . ' = ?';
+    $DB->execute($sql, [1]);
+
+    // Drop the old field.
+    $oldfield = new xmldb_field($tmpfieldname);
+    $dbman->drop_field($table, $oldfield);
+
+    return true;
+}
+
+/**
+ * Upgrade script replacing absolute URLs in defaulthomepage setting with relative URLs
+ */
+function upgrade_store_relative_url_sitehomepage() {
+    global $CFG, $DB;
+
+    if (str_starts_with((string)$CFG->defaulthomepage, $CFG->wwwroot . '/')) {
+        set_config('defaulthomepage', substr((string)$CFG->defaulthomepage, strlen($CFG->wwwroot)));
+    }
+
+    $records = $DB->get_records_select('user_preferences', "name = :name AND " . $DB->sql_like('value', ':pattern'),
+        ['name' => 'user_home_page_preference', 'pattern' => 'http%']);
+    foreach ($records as $record) {
+        if (str_starts_with($record->value, $CFG->wwwroot . '/')) {
+            $DB->update_record('user_preferences', [
+                'id' => $record->id,
+                'value' => substr($record->value, strlen($CFG->wwwroot)),
+            ]);
+        }
+    }
+}
+
+/**
+ * Upgrade script to convert existing AI providers to provider instances.
+ */
+function upgrade_convert_ai_providers_to_instances() {
+    global $DB;
+    // Start with the azureai provider.
+    // Only migrate the provider if it is enabled.
+    $azureaiconfig = get_config('aiprovider_azureai');
+    if (!empty($azureaiconfig->enabled) || !empty($azureaiconfig->apikey)) {
+        // Create the instance config. We don't want everything from the provider config.
+        $instanceconfig = [
+            'aiprovider' => \aiprovider_azureai\provider::class,
+            'name' => get_string('pluginname', 'aiprovider_azureai'),
+            'apikey' => $azureaiconfig->apikey ?? '',
+            'endpoint' => $azureaiconfig->endpoint ?? '',
+            'enableglobalratelimit' => $azureaiconfig->enableglobalratelimit ?? 0,
+            'globalratelimit' => $azureaiconfig->globalratelimit ?? 100,
+            'enableuserratelimit' => $azureaiconfig->enableuserratelimit ?? 0,
+            'userratelimit' => $azureaiconfig->userratelimit ?? 10,
+        ];
+        $actionconfig = [
+            'core_ai\aiactions\generate_text' => [
+                'enabled' => $azureaiconfig->generate_text ?? true,
+                'settings' => [
+                    'deployment' => $azureaiconfig->action_generate_text_deployment ?? '',
+                    'apiversion' => $azureaiconfig->action_generate_text_apiversion ?? '2024-06-01',
+                    'systeminstruction' => $azureaiconfig->action_generate_text_systeminstruction
+                        ?? get_string('action_generate_text_instruction', 'core_ai'),
+                ],
+            ],
+            'core_ai\aiactions\generate_image' => [
+                'enabled' => $azureaiconfig->generate_image ?? true,
+                'settings' => [
+                    'deployment' => $azureaiconfig->action_generate_image_deployment ?? '',
+                    'apiversion' => $azureaiconfig->action_generate_image_apiversion ?? '2024-06-01',
+                ],
+            ],
+            'core_ai\aiactions\summarise_text' => [
+                'enabled' => $azureaiconfig->summarise_text ?? true,
+                'settings' => [
+                    'deployment' => $azureaiconfig->action_summarise_text_deployment ?? '',
+                    'apiversion' => $azureaiconfig->action_summarise_text_apiversion ?? '2024-06-01',
+                    'systeminstruction' => $azureaiconfig->action_generate_text_systeminstruction
+                        ?? get_string('action_summarise_text_instruction', 'core_ai'),
+                ],
+            ],
+        ];
+
+        // Because of the upgrade code restrictions we insert directly into the database and don't use the AI manager class.
+        $record = new stdClass();
+        $record->name = get_string('pluginname', 'aiprovider_azureai');
+        $record->provider = \aiprovider_azureai\provider::class;
+        $record->enabled = $azureaiconfig->enabled ?? false;
+        $record->config = json_encode($instanceconfig);
+        $record->actionconfig = json_encode($actionconfig);
+
+        $DB->insert_record('ai_providers', $record);
+    }
+
+    // Now do the same for the openai provider.
+    $openaiconfig = get_config('aiprovider_openai');
+    if (!empty($openaiconfig->enabled) || !empty($openaiconfig->apikey)) {
+        // Create the instance config. We don't want everything from the provider config.
+        $instanceconfig = [
+            'aiprovider' => \aiprovider_openai\provider::class,
+            'name' => get_string('pluginname', 'aiprovider_openai'),
+            'apikey' => $openaiconfig->apikey ?? '',
+            'orgid' => $openaiconfig->orgid ?? '',
+            'enableglobalratelimit' => $openaiconfig->enableglobalratelimit ?? 0,
+            'globalratelimit' => $openaiconfig->globalratelimit ?? 100,
+            'enableuserratelimit' => $openaiconfig->enableuserratelimit ?? 0,
+            'userratelimit' => $openaiconfig->userratelimit ?? 10,
+        ];
+        $actionconfig = [
+            'core_ai\aiactions\generate_text' => [
+                'enabled' => $openaiconfig->generate_text ?? true,
+                'settings' => [
+                    'model' => $openaiconfig->action_generate_text_model ?? 'gpt-4o',
+                    'endpoint' => $openaiconfig->action_generate_text_endpoint ?? 'https://api.openai.com/v1/chat/completions',
+                    'systeminstruction' => $openaiconfig->action_generate_text_systeminstruction
+                        ?? get_string('action_generate_text_instruction', 'core_ai'),
+                ],
+            ],
+            'core_ai\aiactions\generate_image' => [
+                'enabled' => $openaiconfig->generate_image ?? true,
+                'settings' => [
+                    'model' => $openaiconfig->action_generate_text_model ?? 'dall-e-3',
+                    'endpoint' => $openaiconfig->action_generate_text_endpoint ?? 'https://api.openai.com/v1/images/generations',
+                ],
+            ],
+            'core_ai\aiactions\summarise_text' => [
+                'enabled' => $openaiconfig->summarise_text ?? true,
+                'settings' => [
+                    'model' => $openaiconfig->action_generate_text_model ?? 'gpt-4o',
+                    'endpoint' => $openaiconfig->action_generate_text_endpoint ?? 'https://api.openai.com/v1/chat/completions',
+                    'systeminstruction' => $openaiconfig->action_generate_text_systeminstruction
+                        ?? get_string('action_summarise_text_instruction', 'core_ai'),
+                ],
+            ],
+        ];
+
+        $record = new stdClass();
+        $record->name = get_string('pluginname', 'aiprovider_openai');
+        $record->provider = \aiprovider_openai\provider::class;
+        $record->enabled = $openaiconfig->enabled ?? false;
+        $record->config = json_encode($instanceconfig);
+        $record->actionconfig = json_encode($actionconfig);
+
+        $DB->insert_record('ai_providers', $record);
+    }
+
+    // Finally remove the config settings from the plugin config table.
+    $azuresettings = ['enabled', 'apikey', 'endpoint', 'enableglobalratelimit', 'globalratelimit',
+        'enableuserratelimit', 'userratelimit', 'generate_text', 'action_generate_text_enabled', 'action_generate_text_deployment',
+        'action_generate_text_apiversion', 'action_generate_text_systeminstruction', 'generate_image',
+        'action_generate_image_enabled', 'action_generate_image_deployment', 'action_generate_image_apiversion',
+        'summarise_text', 'action_summarise_text_enabled', 'action_summarise_text_deployment', 'action_summarise_text_apiversion',
+        'action_summarise_text_systeminstruction'];
+    array_walk($azuresettings, static fn($setting) => unset_config($setting, 'aiprovider_azureai'));
+    $openaisettings = ['enabled', 'apikey', 'orgid', 'enableglobalratelimit', 'globalratelimit',
+        'enableuserratelimit', 'userratelimit', 'generate_text', 'action_generate_text_enabled', 'action_generate_text_model',
+        'action_generate_text_endpoint', 'action_generate_text_systeminstruction', 'generate_image',
+        'action_generate_image_enabled', 'action_generate_image_model', 'action_generate_image_endpoint',
+        'summarise_text', 'action_summarise_text_enabled', 'action_summarise_text_model', 'action_summarise_text_endpoint',
+        'action_summarise_text_systeminstruction'];
+    array_walk($openaisettings, static fn($setting) => unset_config($setting, 'aiprovider_openai'));
 }

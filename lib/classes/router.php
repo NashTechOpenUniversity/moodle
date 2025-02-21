@@ -92,14 +92,17 @@ class router {
         // Moodle is not guaranteed to exist at the domain root.
         // Strip out the current script.
         $scriptroot = parse_url($CFG->wwwroot, PHP_URL_PATH);
+        $scriptfile = str_replace(
+            realpath($CFG->dirroot),
+            '',
+            realpath($_SERVER['SCRIPT_FILENAME']),
+        );
+        // Replace occurrences of backslashes with forward slashes, especially on Windows.
+        $scriptfile = str_replace('\\', '/', $scriptfile);
         $relativeroot = sprintf(
             '%s%s',
             $scriptroot,
-            str_replace(
-                realpath($CFG->dirroot),
-                '',
-                realpath($_SERVER['SCRIPT_FILENAME']),
-            ),
+            $scriptfile,
         );
 
         // The server is not configured to rewrite unknown requests to automatically use the router.
@@ -142,11 +145,6 @@ class router {
     protected function create_app(
         string $basepath = '',
     ): void {
-        global $CFG;
-
-        // PHP Does not support autoloading functions.
-        require_once("{$CFG->libdir}/nikic/fast-route/src/functions.php");
-
         // Create an App using the DI Bridge.
         $this->app = router\bridge::create();
 

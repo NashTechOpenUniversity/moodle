@@ -36,7 +36,7 @@ require_once($CFG->dirroot . '/question/type/truefalse/edit_truefalse_form.php')
  * @copyright  2007 The Open University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class question_type_test extends \advanced_testcase {
+final class question_type_test extends \advanced_testcase {
     protected $qtype;
 
     protected function setUp(): void {
@@ -100,7 +100,7 @@ class question_type_test extends \advanced_testcase {
         $this->assertEquals($question->createdby, $questiondata->createdby);
         $this->assertEquals($question->createdby, $questiondata->modifiedby);
         $this->assertEquals('', $questiondata->idnumber);
-        $this->assertEquals($syscontext->id, $questiondata->contextid);
+        $this->assertEquals($category->contextid, $questiondata->contextid);
 
         // Options.
         $this->assertEquals($questiondata->id, $questiondata->options->question);

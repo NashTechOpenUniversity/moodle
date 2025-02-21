@@ -160,7 +160,9 @@ class badge extends base {
                     return '';
                 }
                 $badge = new \core_badges\badge($badgeid);
-
+                if (empty($badge->criteria)) {
+                    return '<span class="no-criteria-set d-none"></span>';
+                }
                 $renderer = $PAGE->get_renderer('core_badges');
                 return $renderer->print_badge_criteria($badge, 'short');
             });
@@ -259,19 +261,6 @@ class badge extends base {
                     return get_string('never', 'core_badges');
                 }
             });
-
-        // Image author details.
-        foreach (['imageauthorname', 'imageauthoremail', 'imageauthorurl'] as $imageauthorfield) {
-            $columns[] = (new column(
-                $imageauthorfield,
-                new lang_string($imageauthorfield, 'core_badges'),
-                $this->get_entity_name()
-            ))
-                ->add_joins($this->get_joins())
-                ->set_type(column::TYPE_TEXT)
-                ->add_field("{$badgealias}.{$imageauthorfield}")
-                ->set_is_sortable(true);
-        }
 
         return $columns;
     }

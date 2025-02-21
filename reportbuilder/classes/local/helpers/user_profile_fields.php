@@ -18,7 +18,6 @@ declare(strict_types=1);
 
 namespace core_reportbuilder\local\helpers;
 
-use core\context\system;
 use core\lang_string;
 use core_text;
 use core_reportbuilder\local\filters\{boolean_select, date, select, text};
@@ -57,11 +56,7 @@ class user_profile_fields {
         /** @var string The entity name used when adding columns and filters */
         private readonly string $entityname,
     ) {
-        // Retrieve the list of available/visible user profile fields.
-        $this->userprofilefields = array_filter(
-            profile_get_user_fields_with_data(0),
-            fn(profile_field_base $field) => $field->is_visible(),
-        );
+        $this->userprofilefields = profile_get_user_fields_with_data(0);
     }
 
     /**
@@ -130,10 +125,10 @@ class user_profile_fields {
                     END";
             }
 
-            $columns[] = (new column(
-                'profilefield_' . core_text::strtolower($profilefield->field->shortname),
-                new lang_string('customfieldcolumn', 'core_reportbuilder',
-                    format_string($profilefield->field->name, true, ['escape' => false, 'context' => system::instance()])),
+            $columnname = 'profilefield_' . core_text::strtolower($profilefield->field->shortname);
+            $columns[$columnname] = (new column(
+                $columnname,
+                new lang_string('customfieldcolumn', 'core_reportbuilder', $profilefield->display_name(false)),
                 $this->entityname
             ))
                 ->add_joins($this->get_joins())
@@ -154,10 +149,11 @@ class user_profile_fields {
                     );
 
                     return $field->display_data();
-                }, $profilefield);
+                }, $profilefield)
+                ->set_is_available($profilefield->is_visible());
         }
 
-        return $columns;
+        return array_values($columns);
     }
 
     /**
@@ -215,27 +211,28 @@ class user_profile_fields {
                 $userinfoparams[$paramdefault] = $fielddefault;
             }
 
+            $filtername = 'profilefield_' . core_text::strtolower($profilefield->field->shortname);
             $filter = (new filter(
                 $classname,
-                'profilefield_' . core_text::strtolower($profilefield->field->shortname),
-                new lang_string('customfieldcolumn', 'core_reportbuilder',
-                    format_string($profilefield->field->name, true, ['escape' => false, 'context' => system::instance()])),
+                $filtername,
+                new lang_string('customfieldcolumn', 'core_reportbuilder', $profilefield->display_name(false)),
                 $this->entityname,
                 $userinfosql,
                 $userinfoparams,
             ))
                 ->add_joins($this->get_joins())
-                ->add_join($this->get_table_join($profilefield));
+                ->add_join($this->get_table_join($profilefield))
+                ->set_is_available($profilefield->is_visible());
 
-            // If menu type then set filter options as appropriate.
-            if ($profilefield->field->datatype === 'menu') {
-                $filter->set_options($profilefield->options);
+            // If using a select filter, then populate the options.
+            if ($filter->get_filter_class() === select::class) {
+                $filter->set_options_callback(fn(): array => $profilefield->options);
             }
 
-            $filters[] = $filter;
+            $filters[$filtername] = $filter;
         }
 
-        return $filters;
+        return array_values($filters);
     }
 
     /**

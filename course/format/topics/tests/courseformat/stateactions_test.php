@@ -27,7 +27,7 @@ use stdClass;
  * @copyright  2022 Ferran Recio <ferran@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class stateactions_test extends \advanced_testcase {
+final class stateactions_test extends \advanced_testcase {
 
     /**
      * Enrol a user into a course and login as this user.
@@ -191,30 +191,30 @@ class stateactions_test extends \advanced_testcase {
      *
      * @return array the testing scenarios
      */
-    public function basic_role_provider(): array {
+    public static function basic_role_provider(): array {
         return [
             'admin' => [
-                'role' => 'admin',
+                'rolename' => 'admin',
                 'expectedexception' => false,
             ],
             'editingteacher' => [
-                'role' => 'editingteacher',
+                'rolename' => 'editingteacher',
                 'expectedexception' => false,
             ],
             'teacher' => [
-                'role' => 'teacher',
+                'rolename' => 'teacher',
                 'expectedexception' => true,
             ],
             'student' => [
-                'role' => 'student',
+                'rolename' => 'student',
                 'expectedexception' => true,
             ],
             'guest' => [
-                'role' => 'guest',
+                'rolename' => 'guest',
                 'expectedexception' => true,
             ],
             'unenroled' => [
-                'role' => 'unenroled',
+                'rolename' => 'unenroled',
                 'expectedexception' => true,
             ],
         ];

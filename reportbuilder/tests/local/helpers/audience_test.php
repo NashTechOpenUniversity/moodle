@@ -22,7 +22,9 @@ use advanced_testcase;
 use context_system;
 use core_reportbuilder_generator;
 use core_reportbuilder\reportbuilder\audience\manual;
+use core_reportbuilder\local\models\audience as audience_model;
 use core_user\reportbuilder\datasource\users;
+use invalid_parameter_exception;
 
 /**
  * Unit tests for audience helper
@@ -32,7 +34,7 @@ use core_user\reportbuilder\datasource\users;
  * @copyright   2021 David Matamoros <davidmc@moodle.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class audience_test extends advanced_testcase {
+final class audience_test extends advanced_testcase {
 
      /**
       * Test reports list is empty for a normal user without any audience records configured
@@ -332,6 +334,66 @@ class audience_test extends advanced_testcase {
     }
 
     /**
+     * Test retrieving SQL for single audience
+     */
+    public function test_user_audience_single_sql(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+
+        $userone = $this->getDataGenerator()->create_user();
+        $usertwo = $this->getDataGenerator()->create_user();
+        $userthree = $this->getDataGenerator()->create_user();
+
+        /** @var core_reportbuilder_generator $generator */
+        $generator = $this->getDataGenerator()->get_plugin_generator('core_reportbuilder');
+        $report = $generator->create_report(['name' => 'My report', 'source' => users::class]);
+
+        $audience = $generator->create_audience(['reportid' => $report->get('id'), 'classname' => manual::class,
+            'configdata' => [
+                'users' => [$userone->id, $usertwo->id],
+            ],
+        ]);
+
+        [$select, $params] = audience::user_audience_single_sql($audience->get_persistent(), 'u.id');
+        $users = $DB->get_fieldset_sql("SELECT u.id FROM {user} u WHERE {$select}", $params);
+        $this->assertEqualsCanonicalizing([$userone->id, $usertwo->id], $users);
+    }
+
+    /**
+     * Test retrieving SQL for multiple audiences
+     */
+    public function test_user_audience_sql(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+
+        $userone = $this->getDataGenerator()->create_user();
+        $usertwo = $this->getDataGenerator()->create_user();
+        $userthree = $this->getDataGenerator()->create_user();
+        $userfour = $this->getDataGenerator()->create_user();
+
+        /** @var core_reportbuilder_generator $generator */
+        $generator = $this->getDataGenerator()->get_plugin_generator('core_reportbuilder');
+        $report = $generator->create_report(['name' => 'My report', 'source' => users::class]);
+
+        $audienceone = $generator->create_audience(['reportid' => $report->get('id'), 'classname' => manual::class,
+            'configdata' => [
+                'users' => [$userone->id, $usertwo->id],
+            ],
+        ]);
+        $audiencetwo = $generator->create_audience(['reportid' => $report->get('id'), 'classname' => manual::class,
+            'configdata' => [
+                'users' => [$usertwo->id, $userthree->id],
+            ],
+        ]);
+
+        [$selects, $params] = audience::user_audience_sql([$audienceone->get_persistent(), $audiencetwo->get_persistent()]);
+        $users = $DB->get_fieldset_sql("SELECT u.id FROM {user} u WHERE " . implode(' OR ', $selects), $params);
+        $this->assertEqualsCanonicalizing([$userone->id, $usertwo->id, $userthree->id], $users);
+    }
+
+    /**
      * Test getting list of audiences in use within schedules for a report
      */
     public function test_get_audiences_for_report_schedules(): void {
@@ -361,5 +423,52 @@ class audience_test extends advanced_testcase {
             $audienceone->get_persistent()->get('id'),
             $audiencetwo->get_persistent()->get('id'),
         ], $audiences);
+    }
+
+    /**
+     * Testing deleting report audience
+     */
+    public function test_delete_report_audience(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        /** @var core_reportbuilder_generator $generator */
+        $generator = $this->getDataGenerator()->get_plugin_generator('core_reportbuilder');
+
+        $report = $generator->create_report(['name' => 'My report', 'source' => users::class, 'default' => false]);
+        $audienceone = $generator->create_audience(['reportid' => $report->get('id'), 'configdata' => []]);
+        $audiencetwo = $generator->create_audience(['reportid' => $report->get('id'), 'configdata' => []]);
+
+        $audiences = audience_model::get_records(['reportid' => $report->get('id')]);
+        $this->assertCount(2, $audiences);
+
+        // Delete the first audience.
+        $result = audience::delete_report_audience($report->get('id'), $audienceone->get_persistent()->get('id'));
+        $this->assertTrue($result);
+
+        // We should be left with only the second audience.
+        $audiences = audience_model::get_records(['reportid' => $report->get('id')]);
+        $this->assertCount(1, $audiences);
+        $this->assertEquals($audiencetwo->get_persistent()->get('id'), reset($audiences)->get('id'));
+    }
+
+    /**
+     * Testing deleting invalid report audience
+     */
+    public function test_delete_report_audience_invalid(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        /** @var core_reportbuilder_generator $generator */
+        $generator = $this->getDataGenerator()->get_plugin_generator('core_reportbuilder');
+
+        $reportone = $generator->create_report(['name' => 'Report one', 'source' => users::class, 'default' => false]);
+        $audienceone = $generator->create_audience(['reportid' => $reportone->get('id'), 'configdata' => []]);
+
+        $reporttwo = $generator->create_report(['name' => 'Report two', 'source' => users::class, 'default' => false]);
+
+        $this->expectException(invalid_parameter_exception::class);
+        $this->expectExceptionMessage('Invalid audience');
+        audience::delete_report_audience($reporttwo->get('id'), $audienceone->get_persistent()->get('id'));
     }
 }

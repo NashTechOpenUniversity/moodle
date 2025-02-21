@@ -19,12 +19,14 @@
  * @module    core_grades/searchwidget/initials
  * @copyright 2022 Mathew May <mathew.solutions>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @deprecated since Moodle 4.5 - please use core_course/actionbar/initials instead.
+ * @todo       Final deprecation in Moodle 6.0. See MDL-82421.
  */
 
 import Pending from 'core/pending';
 import * as Url from 'core/url';
 import CustomEvents from "core/custom_interaction_events";
-import $ from 'jquery';
+import Dropdown from 'theme_boost/bootstrap/dropdown';
 
 /**
  * Whether the event listener has already been registered for this module.
@@ -65,7 +67,7 @@ export const init = (callingLink, gpr_userid = null, gpr_search = null) => {
     const pendingPromise = new Pending();
     registerListenerEvents(callingLink, gpr_userid, gpr_search);
     // BS events always bubble so, we need to listen for the event higher up the chain.
-    $(selectors.parentDomNode).on('shown.bs.dropdown', () => {
+    document.querySelector(selectors.parentDomNode).addEventListener('shown.bs.dropdown', () => {
         document.querySelector(selectors.pageClickableItem).focus({preventScroll: true});
     });
     pendingPromise.resolve();
@@ -137,7 +139,7 @@ const registerListenerEvents = (callingLink, gpr_userid = null, gpr_search = nul
                     window.location = Url.relativeUrl(callingLink, params);
                 }
                 if (e.target.dataset.action === selectors.formItems.cancel) {
-                    $(`.${selectors.targetButton}`).dropdown('toggle');
+                    Dropdown.getOrCreateInstance(document.querySelector(`.${selectors.targetButton}`)).toggle();
                 }
             }
         });

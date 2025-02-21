@@ -340,7 +340,7 @@
 }
 
 .form-item .form-setting .defaultsnext {
-    display: inline;
+    display: inline-block;
 }
 
 .form-item .form-setting .locked-checkbox {
@@ -400,7 +400,7 @@
     }
 }
 
-@include media-breakpoint-down(sm) {
+@include media-breakpoint-down(md) {
     .jsenabled .admin_colourpicker {
         height: 150px;
         margin-bottom: 10px;
@@ -473,7 +473,8 @@
     }
 
     #plugins-control-panel {
-        .status-missing td {
+        .status-missing td,
+        .deprecatedtype td {
             background-color: $state-warning-bg;
         }
 
@@ -518,6 +519,7 @@
     // Plugins check table.
     #plugins-check {
         .status-missing,
+        .deprecatedtype,
         .status-downgrade {
             td {
                 background-color: $state-danger-bg;

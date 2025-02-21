@@ -27,7 +27,7 @@ use core_adminpresets\manager;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @coversDefaultClass \tool_admin_presets\local\action\import
  */
-class import_test extends \advanced_testcase {
+final class import_test extends \advanced_testcase {
 
     /**
      * Test the behaviour of execute() method.
@@ -81,6 +81,9 @@ class import_test extends \advanced_testcase {
         $action = new import();
         $sink = $this->redirectEvents();
         try {
+            // Suppress warnings and load XML.
+            $invokable = self::get_invokable();
+            set_error_handler($invokable, E_WARNING);
             $action->execute();
         } catch (\exception $e) {
             // If import action was successfull, redirect should be called so we will encounter an
@@ -90,6 +93,7 @@ class import_test extends \advanced_testcase {
             } else {
                 $this->assertInstanceOf(\moodle_exception::class, $e);
             }
+            restore_error_handler();
         } finally {
             if ($expecteddebugging) {
                 $this->assertDebuggingCalled();
@@ -154,7 +158,7 @@ class import_test extends \advanced_testcase {
                             'activity_modules' => 1,
                         ],
                         'mod' => [
-                            'chat' => 0,
+                            'page' => 0,
                             'data' => 0,
                             'lesson' => 1,
                         ],
@@ -190,7 +194,7 @@ class import_test extends \advanced_testcase {
      *
      * @return array
      */
-    public function import_execute_provider(): array {
+    public static function import_execute_provider(): array {
         $fixturesfolder = __DIR__ . '/../../../../../presets/tests/fixtures/';
 
         return [

@@ -18,6 +18,7 @@ namespace core\output;
 
 use breadcrumb_navigation_node;
 use cm_info;
+use core\hook\output\after_http_headers;
 use core_block\output\block_contents;
 use core_block\output\block_move_target;
 use core_completion\cm_completion_details;
@@ -39,13 +40,9 @@ use core\hook\output\before_html_attributes;
 use core\hook\output\before_http_headers;
 use core\hook\output\before_standard_footer_html_generation;
 use core\hook\output\before_standard_top_of_body_html_generation;
-use core\output\action_menu\link as action_menu_link;
-use core\output\action_menu\link_primary as action_menu_link_primary;
 use core\output\actions\component_action;
 use core\output\actions\popup_action;
-use core\output\action_menu\filler as action_menu_filler;
 use core\plugin_manager;
-use core\output\action_menu\link_secondary as action_menu_link_secondary;
 use moodleform;
 use moodle_page;
 use moodle_url;
@@ -275,7 +272,9 @@ class core_renderer extends renderer_base {
             if (!isset($CFG->additionalhtmlhead)) {
                 $CFG->additionalhtmlhead = '';
             }
-            $CFG->additionalhtmlhead .= '<meta name="robots" content="noindex" />';
+            if (stripos($CFG->additionalhtmlhead, '<meta name="robots" content="noindex" />') === false) {
+                $CFG->additionalhtmlhead .= '<meta name="robots" content="noindex" />';
+            }
         }
 
         if (!empty($CFG->additionalhtmlhead)) {
@@ -523,8 +522,9 @@ class core_renderer extends renderer_base {
         $mods = [];
         $activitylist = [];
         foreach ($modules as $module) {
-            // Only add activities the user can access, aren't in stealth mode and have a url (eg. mod_label does not).
-            if (!$module->uservisible || $module->is_stealth() || empty($module->url)) {
+            // Only add activities the user can access, aren't in stealth mode, are of a type that is visible on the course,
+            // and have a url (eg. mod_label does not).
+            if (!$module->uservisible || $module->is_stealth() || empty($module->url) || !$module->is_of_type_that_can_display()) {
                 continue;
             }
             $mods[$module->id] = $module;
@@ -547,8 +547,8 @@ class core_renderer extends renderer_base {
 
         $nummods = count($mods);
 
-        // If there is only one mod then do nothing.
-        if ($nummods == 1) {
+        // If there are only one or fewer mods then do nothing.
+        if ($nummods <= 1) {
             return '';
         }
 
@@ -937,7 +937,14 @@ class core_renderer extends renderer_base {
         if (!$this->page->cm || !empty($this->page->layout_options['noactivityheader'])) {
             $header .= $this->skip_link_target('maincontent');
         }
-        return $header;
+
+        $hook = new after_http_headers(
+            renderer: $this,
+            output: $header,
+        );
+        di::get(hook_manager::class)->dispatch($hook);
+
+        return $hook->get_output();
     }
 
     /**
@@ -1296,7 +1303,7 @@ class core_renderer extends renderer_base {
 
         // We don't want the class icon there!
         foreach ($menu->get_secondary_actions() as $action) {
-            if ($action instanceof \action_menu_link && $action->has_class('icon')) {
+            if ($action instanceof action_menu\link && $action->has_class('icon')) {
                 $action->attributes['class'] = preg_replace('/(^|\s+)icon(\s+|$)/i', '', $action->attributes['class']);
             }
         }
@@ -1383,43 +1390,95 @@ class core_renderer extends renderer_base {
     }
 
     /**
-     * Renders an action_menu_link item.
+     * @deprecated Since Moodle 4.5. Will be removed in MDL-83221
+     */
+    #[\core\attribute\deprecated(
+        replacement: 'render_action_menu__link',
+        since: '4.5',
+        mdl: 'MDL-83164',
+    )]
+    protected function render_action_menu_link(\action_menu_link $action) {
+        \core\deprecation::emit_deprecation_if_present([$this, __FUNCTION__]);
+        return $this->render_action_menu__link($action);
+    }
+
+    /**
+     * @deprecated Since Moodle 4.5. Will be removed in MDL-83221
+     */
+    #[\core\attribute\deprecated(
+        replacement: 'render_action_menu__filler',
+        since: '4.5',
+        mdl: 'MDL-83164',
+    )]
+    protected function render_action_menu_filler(\action_menu_filler $action) {
+        \core\deprecation::emit_deprecation_if_present([$this, __FUNCTION__]);
+        return $this->render_action_menu__filler($action);
+    }
+
+    /**
+     * @deprecated Since Moodle 4.5. Will be removed in MDL-83221
+     */
+    #[\core\attribute\deprecated(
+        replacement: 'render_action_menu__link_primary',
+        since: '4.5',
+        mdl: 'MDL-83164',
+    )]
+    protected function render_action_menu_primary(\action_menu_link $action) {
+        \core\deprecation::emit_deprecation_if_present([$this, __FUNCTION__]);
+        return $this->render_action_menu__link_primary($action);
+    }
+
+    /**
+     * @deprecated Since Moodle 4.5. Will be removed in MDL-83221
+     */
+    #[\core\attribute\deprecated(
+        replacement: 'render_action_menu__link_secondary',
+        since: '4.5',
+        mdl: 'MDL-83164',
+    )]
+    protected function render_action_menu_secondary(\action_menu_link $action) {
+        \core\deprecation::emit_deprecation_if_present([$this, __FUNCTION__]);
+        return $this->render_action_menu__link_secondary($action);
+    }
+
+    /**
+     * Renders an action_menu link item.
      *
-     * @param action_menu_link $action
+     * @param action_menu\link $action
      * @return string HTML fragment
      */
-    protected function render_action_menu_link(action_menu_link $action) {
+    protected function render_action_menu__link(action_menu\link $action) {
         return $this->render_from_template('core/action_menu_link', $action->export_for_template($this));
     }
 
     /**
-     * Renders a primary action_menu_filler item.
+     * Renders a primary action_menu filler item.
      *
-     * @param action_menu_filler $action
+     * @param action_menu\filler $action
      * @return string HTML fragment
      */
-    protected function render_action_menu_filler(action_menu_filler $action) {
+    protected function render_action_menu__filler(action_menu\filler $action) {
         return html_writer::span('&nbsp;', 'filler');
     }
 
     /**
-     * Renders a primary action_menu_link item.
+     * Renders a primary action_menu link item.
      *
-     * @param action_menu_link_primary $action
+     * @param action_menu\link_primary $action
      * @return string HTML fragment
      */
-    protected function render_action_menu_link_primary(action_menu_link_primary $action) {
-        return $this->render_action_menu_link($action);
+    protected function render_action_menu__link_primary(action_menu\link_primary $action) {
+        return $this->render_action_menu__link($action);
     }
 
     /**
-     * Renders a secondary action_menu_link item.
+     * Renders a secondary action_menu link item.
      *
-     * @param action_menu_link_secondary $action
+     * @param action_menu\link_secondary $action
      * @return string HTML fragment
      */
-    protected function render_action_menu_link_secondary(action_menu_link_secondary $action) {
-        return $this->render_action_menu_link($action);
+    protected function render_action_menu__link_secondary(action_menu\link_secondary $action) {
+        return $this->render_action_menu__link($action);
     }
 
     /**
@@ -1445,7 +1504,7 @@ class core_renderer extends renderer_base {
         $context->skiptitle = strip_tags($bc->title);
         $context->showskiplink = !empty($context->skiptitle);
         $context->arialabel = $bc->arialabel;
-        $context->ariarole = !empty($bc->attributes['role']) ? $bc->attributes['role'] : 'complementary';
+        $context->ariarole = !empty($bc->attributes['role']) ? $bc->attributes['role'] : '';
         $context->class = $bc->attributes['class'];
         $context->type = $bc->attributes['data-block'];
         $context->title = $bc->title;
@@ -1473,7 +1532,7 @@ class core_renderer extends renderer_base {
         foreach ($items as $key => $string) {
             $item = html_writer::start_tag('li', ['class' => 'r' . $row]);
             if (!empty($icons[$key])) { // test if the content has an assigned icon
-                $item .= html_writer::tag('div', $icons[$key], ['class' => 'icon column c0']);
+                $item .= html_writer::tag('div', $icons[$key], ['class' => 'column c0 icon-size-3']);
             }
             $item .= html_writer::tag('div', $string, ['class' => 'column c1']);
             $item .= html_writer::end_tag('li');
@@ -2894,12 +2953,26 @@ EOD;
      *
      * @param string $contents The contents of the paragraph
      * @return string the HTML to output.
+     * @deprecated since 5.0. Use visually_hidden_text() instead.
+     * @todo Final deprecation in Moodle 6.0. See MDL-83671.
      */
+    #[\core\attribute\deprecated('core_renderer::visually_hidden_text()', since: '5.0', mdl: 'MDL-81825')]
     public function sr_text(string $contents): string {
+        \core\deprecation::emit_deprecation_if_present([$this, __FUNCTION__]);
+        return $this->visually_hidden_text($contents);
+    }
+
+    /**
+     * Outputs a visually hidden inline text (but accessible to assistive technologies).
+     *
+     * @param string $contents The contents of the paragraph
+     * @return string the HTML to output.
+     */
+    public function visually_hidden_text(string $contents): string {
         return html_writer::tag(
             'span',
             $contents,
-            ['class' => 'sr-only']
+            ['class' => 'visually-hidden']
         ) . ' ';
     }
 
@@ -3170,7 +3243,7 @@ EOD;
         );
 
         // Create a divider (well, a filler).
-        $divider = new action_menu_filler();
+        $divider = new action_menu\filler();
         $divider->primary = false;
 
         $am = new action_menu();
@@ -3207,7 +3280,7 @@ EOD;
                             ) . $value->title;
                         }
 
-                        $al = new action_menu_link_secondary(
+                        $al = new action_menu\link_secondary(
                             $value->url,
                             $pix,
                             $value->title,
@@ -3428,6 +3501,14 @@ EOD;
         if (empty($custommenuitems) && !empty($CFG->custommenuitems)) {
             $custommenuitems = $CFG->custommenuitems;
         }
+
+        // If filtering of the primary custom menu is enabled, apply only the string filters.
+        if (!empty($CFG->navfilter) && !empty($CFG->stringfilters)) {
+            // Apply filters that are enabled for Content and Headings.
+            $filtermanager = \filter_manager::instance();
+            $custommenuitems = $filtermanager->filter_string($custommenuitems, \context_system::instance());
+        }
+
         $custommenu = new custom_menu($custommenuitems, current_language());
         return $this->render_custom_menu($custommenu);
     }
@@ -3443,6 +3524,14 @@ EOD;
         if (empty($custommenuitems) && !empty($CFG->custommenuitems)) {
             $custommenuitems = $CFG->custommenuitems;
         }
+
+        // If filtering of the primary custom menu is enabled, apply only the string filters.
+        if (!empty($CFG->navfilter) && !empty($CFG->stringfilters)) {
+            // Apply filters that are enabled for Content and Headings.
+            $filtermanager = \filter_manager::instance();
+            $custommenuitems = $filtermanager->filter_string($custommenuitems, \context_system::instance());
+        }
+
         $custommenu = new custom_menu($custommenuitems, current_language());
         $langs = get_string_manager()->get_list_of_translations();
         $haslangmenu = $this->lang_menu() != '';
@@ -3728,6 +3817,7 @@ EOD;
      */
     public function blocks($region, $classes = [], $tag = 'aside', $fakeblocksonly = false) {
         $displayregion = $this->page->apply_theme_region_manipulations($region);
+        $headingid = $displayregion . '-block-region-heading';
         $classes = (array)$classes;
         $classes[] = 'block-region';
         $attributes = [
@@ -3735,12 +3825,23 @@ EOD;
             'class' => join(' ', $classes),
             'data-blockregion' => $displayregion,
             'data-droptarget' => '1',
+            'aria-labelledby' => $headingid,
         ];
+        // Generate an appropriate heading to uniquely identify the block region.
+        $blocksheading = match ($displayregion) {
+            'side-post' => get_string('blocks_supplementary'),
+            'content' => get_string('blocks_main'),
+            default => get_string('blocks'),
+        };
+        $content = html_writer::tag('h2', $blocksheading, ['class' => 'visually-hidden', 'id' => $headingid]);
         if ($this->page->blocks->region_has_content($displayregion, $this)) {
-            $content = html_writer::tag('h2', get_string('blocks'), ['class' => 'sr-only']) .
-                $this->blocks_for_region($displayregion, $fakeblocksonly);
-        } else {
-            $content = html_writer::tag('h2', get_string('blocks'), ['class' => 'sr-only']);
+            $content .= $this->blocks_for_region($displayregion, $fakeblocksonly);
+        }
+        // Given that <aside> has a default role of a complementary landmark and is supposed to be a top-level landmark,
+        // blocks rendered as part of the main content should not have a complementary role and should be rendered in a more generic
+        // container.
+        if ($displayregion === 'content' && $tag === 'aside') {
+            $tag = 'section';
         }
         return html_writer::tag($tag, $content, $attributes);
     }
@@ -4147,9 +4248,10 @@ EOD;
             }
         }
 
-        // Return the heading wrapped in an sr-only element so it is only visible to screen-readers for nocontextheader layouts.
+        // Return the heading wrapped in an visually-hidden element so it is only visible to screen-readers
+        // for nocontextheader layouts.
         if (!empty($this->page->layout_options['nocontextheader'])) {
-            return html_writer::div($heading, 'sr-only');
+            return html_writer::div($heading, 'visually-hidden');
         }
 
         $contextheader = new context_header($heading, $headinglevel, $imagedata, $userbuttons);
@@ -4463,6 +4565,7 @@ EOD;
      *               will be appended to the end, JS will toggle the rest of the tags
      * @param context $pagecontext specify if needed to overwrite the current page context for the view tag link
      * @param bool $accesshidelabel if true, the label should have class="accesshide" added.
+     * @param bool $displaylink Indicates whether the tag should be displayed as a link.
      * @return string
      */
     public function tag_list(
@@ -4471,9 +4574,10 @@ EOD;
         $classes = '',
         $limit = 10,
         $pagecontext = null,
-        $accesshidelabel = false
+        $accesshidelabel = false,
+        $displaylink = true,
     ) {
-        $list = new taglist($tags, $label, $classes, $limit, $pagecontext, $accesshidelabel);
+        $list = new taglist($tags, $label, $classes, $limit, $pagecontext, $accesshidelabel, $displaylink);
         return $this->render_from_template('core_tag/taglist', $list->export_for_template($this));
     }
 
@@ -4705,7 +4809,13 @@ EOD;
      */
     public function render_progress_bar_update(string $id, float $percent, string $msg, string $estimate,
         bool $error = false): string {
-        return html_writer::script(js_writer::function_call('updateProgressBar', [$id, $percent, $msg, $estimate, $error]));
+        return html_writer::script(js_writer::function_call('updateProgressBar', [
+            $id,
+            round($percent, 1),
+            $msg,
+            $estimate,
+            $error,
+        ]));
     }
 
     /**

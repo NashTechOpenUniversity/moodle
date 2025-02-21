@@ -27,7 +27,6 @@ use core\output\datafilter;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 abstract class condition {
-
     /** @var int The default filter type */
     const JOINTYPE_DEFAULT = datafilter::JOINTYPE_ANY;
 
@@ -48,18 +47,26 @@ abstract class condition {
     abstract public function get_title();
 
     /**
-     * Return filter class associated with this condition
+     * Return the Javascript filter class to provide the UI for this condition.
      *
-     * @return string filter class
+     * If left as null, this will use the default core/datafilter/filtertype class. Otherwise, override it to return
+     * the full path to the Javascript module path for the class.
+     *
+     * @return ?string filter class
      */
-    abstract public function get_filter_class();
+    public function get_filter_class() {
+        return null;
+    }
 
     /**
-     * Extract the required filter from the provided question bank view.
+     * Extract the required filter from the provided question bank view and set the initial values.
      *
-     * This will look for the filter matching {@see get_condition_key()}
+     * This will look for the filter matching {@see get_condition_key()} in the view's current filter parameter.
+     * If the filter is not being initialised to display the question bank UI (for example, to resolve a list of questions matching
+     * a set of filters), then the `$qbank` argument may be null, and any usage of it to set the initial filter state is skipped.
      *
-     * @param view|null $qbank
+     * @param ?view $qbank The question bank view the filter is being rendered for. This may only be used for setting the
+     *     initial state of the filter.
      */
     public function __construct(?view $qbank = null) {
         if (is_null($qbank)) {
@@ -140,9 +147,7 @@ abstract class condition {
      *
      * @return string
      */
-    public static function get_condition_key() {
-        return '';
-    }
+    abstract public static function get_condition_key();
 
     /**
      * Return an SQL fragment to be ANDed into the WHERE clause to filter which questions are shown.
@@ -201,6 +206,21 @@ abstract class condition {
     }
 
     /**
+     * Method to be overridden in condition classes to filter out anything invalid from the filterconditions array.
+     *
+     * This can be applied anywhere where the $filterconditions array exists, to let condition plugins remove elements
+     *  from the array, based on their own internal logic/validation. For example, this is used on the
+     *  /mod/quiz/editrandom.php page to filter out question categories which no longer exist, which previously
+     *  broke the editrandom page.
+     *
+     * @param array $filterconditions
+     * @return array
+     */
+    public function filter_invalid_values(array $filterconditions): array {
+        return $filterconditions;
+    }
+
+    /**
      * Given an array of filters, pick the entry that matches the condition key and return it.
      *
      * @param array $filters Array of filters, keyed by condition.
@@ -211,12 +231,13 @@ abstract class condition {
     }
 
     /**
-     * Build query from filter value
+     * Return the SQL WHERE condition and parameters to be ANDed with other filter conditions.
+     *
+     * The $filter parameter recieves an array with a 'values' key, containing an array of the filter values selected,
+     * and a 'jointype' key containing the selected join type.
      *
      * @param array $filter filter properties
-     * @return array where sql and params
+     * @return array ['SQL where condition', ['param1' => 'value1', 'param2' => 'value2', ...]]
      */
-    public static function build_query_from_filter(array $filter): array {
-        return ['', []];
-    }
+    abstract public static function build_query_from_filter(array $filter): array;
 }

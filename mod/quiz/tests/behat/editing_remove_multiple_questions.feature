@@ -14,12 +14,12 @@ Feature: Edit quiz page - remove multiple questions
     And the following "course enrolments" exist:
       | user     | course | role           |
       | teacher1 | C1     | editingteacher |
-    And the following "question categories" exist:
-      | contextlevel | reference | name           |
-      | Course       | C1        | Test questions |
     And the following "activities" exist:
-      | activity   | name   | course | idnumber |
-      | quiz       | Quiz 1 | C1     | quiz1    |
+      | activity   | name    | course | idnumber |
+      | quiz       | Quiz 1  | C1     | quiz1    |
+    And the following "question categories" exist:
+      | contextlevel    | reference | name           |
+      | Activity module | quiz1     | Test questions |
     And I log in as "teacher1"
 
   @javascript
@@ -261,9 +261,9 @@ Feature: Edit quiz page - remove multiple questions
     And I click on "selectquestion-2" "checkbox"
     And I click on "Delete selected" "button"
     And I click on "Yes" "button" in the "Confirm" "dialogue"
-    Then I should see "Random question based on filter condition" on quiz page "1"
-    And I should not see "Random question based on filter condition" on quiz page "2"
-    And I should not see "Random question based on filter condition" on quiz page "3"
+    Then I should see "Random (Test questions) based on filter condition" on quiz page "1"
+    And I should not see "Random (Test questions) based on filter condition" on quiz page "2"
+    And I should not see "Random (Test questions) based on filter condition" on quiz page "3"
     And I should see "Total of marks: 1.00"
     And I should see "Questions: 1"
 

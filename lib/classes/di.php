@@ -84,7 +84,7 @@ class di {
      * @return ContainerInterface
      */
     protected static function create_container(): ContainerInterface {
-        global $CFG, $DB;
+        global $CFG;
 
         // PHP Does not support function autoloading. We must manually include the file.
         require_once("{$CFG->libdir}/php-di/php-di/src/functions.php");
@@ -113,15 +113,31 @@ class di {
             \core\hook\manager::class => $hookmanager,
 
             // The database.
-            \moodle_database::class => $DB,
+            \moodle_database::class => function(): \moodle_database {
+                global $DB;
+
+                return $DB;
+            },
 
             // The string manager.
             \core_string_manager::class => fn() => get_string_manager(),
 
             // The Moodle Clock implementation, which itself is an extension of PSR-20.
             // Alias the PSR-20 clock interface to the Moodle clock. They are compatible.
-            \core\clock::class => fn() => new \core\system_clock(),
+            \core\clock::class => function () {
+                global $CFG;
+
+                // Web requests to the Behat site can use a frozen clock if configured.
+                if (defined('BEHAT_SITE_RUNNING') && !empty($CFG->behat_frozen_clock)) {
+                    require_once($CFG->libdir . '/testing/classes/frozen_clock.php');
+                    return new \frozen_clock((int)$CFG->behat_frozen_clock);
+                }
+                return new \core\system_clock();
+            },
             \Psr\Clock\ClockInterface::class => \DI\get(\core\clock::class),
+
+            // Note: libphonenumber PhoneNumberUtil uses a singleton.
+            \libphonenumber\PhoneNumberUtil::class => fn() => \libphonenumber\PhoneNumberUtil::getInstance(),
         ]);
 
         // Add any additional definitions using hooks.

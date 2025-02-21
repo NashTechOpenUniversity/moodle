@@ -570,11 +570,14 @@ $functions = array(
         'type' => 'read',
         'services' => array(MOODLE_OFFICIAL_MOBILE_SERVICE),
     ),
+    // Todo Remove this entry in Moodle 6.0 (MDL-83530).
     'core_course_get_module' => array(
         'classname'   => 'core_course_external',
         'methodname'  => 'get_module',
         'classpath'   => 'course/externallib.php',
-        'description' => 'Returns html with one activity module on course page',
+        'description' => '** DEPRECATED ** Please do not call this function any more (will be removed in Moodle 6.0).'
+            . 'Returns html with one activity module on course page.'
+            . 'Use fragment API using component core_courseformat and fragment cmitem instead.',
         'type'        => 'read',
         'ajax'        => true,
     ),
@@ -606,19 +609,25 @@ $functions = array(
         'ajax'          => true,
         'capabilities'  => 'moodle/course:manageactivities',
     ],
+    // Todo Remove this entry in Moodle 6.0 (MDL-83530).
     'core_course_edit_module' => array(
         'classname'   => 'core_course_external',
         'methodname'  => 'edit_module',
         'classpath'   => 'course/externallib.php',
-        'description' => 'Performs an action on course module (change visibility, duplicate, delete, etc.)',
+        'description' => '** DEPRECATED ** Please do not call this function any more (will be removed in Moodle 6.0).'
+            . ' Performs an action on course module (change visibility, duplicate, delete, etc.)'
+            . ' Use core_courseformat_update_course instead.',
         'type'        => 'write',
         'ajax'        => true,
     ),
+    // Todo Remove this entry in Moodle 6.0 (MDL-83530).
     'core_course_edit_section' => array(
         'classname'   => 'core_course_external',
         'methodname'  => 'edit_section',
         'classpath'   => 'course/externallib.php',
-        'description' => 'Performs an action on course section (change visibility, set marker, delete)',
+        'description' => '** DEPRECATED ** Please do not call this function any more (will be removed in Moodle 6.0).'
+            . 'Performs an action on course section (change visibility, set marker, delete)'
+            . ' Use core_courseformat_update_course instead.',
         'type'        => 'write',
         'ajax'        => true,
     ),
@@ -1633,6 +1642,13 @@ $functions = array(
         'description'   => 'Get number of unread notifications.',
         'type'          => 'read',
         'services'      => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+    'core_message_set_default_notification' => [
+        'classname'   => 'core_message\external\message_set_default_notification',
+        'description' => 'Set the default value for a given notification preference',
+        'capabilities' => 'moodle/site:config',
+        'type'        => 'write',
+        'ajax'        => true,
     ],
     'core_my_view_page' => [
         'classname'     => '\core_my\external\view_page',
@@ -3244,6 +3260,12 @@ $functions = array(
         'ajax'        => true,
         'readonlysession' => true,
     ],
+    'core_ai_delete_provider_instance' => [
+        'classname'   => \core_ai\external\delete_provider_instance::class,
+        'description' => 'Delete a provider instance',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
     'core_ai_set_policy_status' => [
         'classname'   => 'core_ai\external\set_policy_status',
         'description' => 'Set a users AI policy acceptance',
@@ -3263,6 +3285,36 @@ $functions = array(
         'description' => 'Update action',
         'type'        => 'write',
         'ajax'        => true,
+    ],
+    'core_ai_set_provider_status' => [
+        'classname'   => \core_ai\external\set_provider_status::class,
+        'description' => 'Set a providers status',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_sms_set_gateway_status' => [
+        'classname'   => 'core_sms\external\sms_gateway_status',
+        'description' => 'Set the sms gateway status',
+        'type'        => 'write',
+        'ajax'        => true,
+    ],
+    'core_question_move_questions' => [
+        'classname' => '\core_question\external\move_questions',
+        'description' => 'Bulk move questions to a new category.',
+        'type' => 'write',
+        'ajax' => true,
+    ],
+    'core_message_set_unsent_message' => [
+        'classname' => 'core_message\external\set_unsent_message',
+        'description' => 'Store an unsent message string',
+        'type' => 'write',
+        'ajax' => true,
+    ],
+    'core_message_get_unsent_message' => [
+        'classname' => 'core_message\external\get_unsent_message',
+        'description' => 'Get an unsent message string',
+        'type' => 'read',
+        'ajax' => true,
     ],
 );
 

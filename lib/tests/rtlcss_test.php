@@ -33,14 +33,14 @@ use Sabberworm\CSS\OutputFormat;
 /**
  * Class rtlcss_test.
  */
-class rtlcss_test extends basic_testcase {
+final class rtlcss_test extends basic_testcase {
     /**
      * Data provider.
      * @return array
      */
-    public function background_image_provider() {
+    public static function background_image_provider(): array {
         return [
-            /* Not supported by MoodleHQ/RTLCSS yet.
+            // Not supported by MoodleHQ/RTLCSS yet.
             [[
                 'should' => 'Should process string map in url (processUrls:true)',
                 'expected' => 'div { background-image: url(images/rtl.png), url(images/right.png);}',
@@ -70,7 +70,6 @@ class rtlcss_test extends basic_testcase {
                 'reversable' => true,
                 'skip' => true
             ]]
-            */
         ];
     }
 
@@ -78,7 +77,7 @@ class rtlcss_test extends basic_testcase {
      * Data provider.
      * @return array
      */
-    public function background_position_provider() {
+    public static function background_position_provider(): array {
         return [
             [[
                 'should' => 'Should complement percentage horizontal position ',
@@ -182,7 +181,7 @@ class rtlcss_test extends basic_testcase {
      * Data provider.
      * @return array
      */
-    public function background_provider() {
+    public static function background_provider(): array {
         return [
             [[
                 'should' => 'Should treat 0 as 0%',
@@ -271,7 +270,7 @@ class rtlcss_test extends basic_testcase {
      * Data provider.
      * @return array
      */
-    public function directives_provider() {
+    public static function directives_provider(): array {
         return [
             [[
                 'should' => 'Should ignore flipping - rule level (default)',
@@ -356,7 +355,7 @@ class rtlcss_test extends basic_testcase {
      * Data provider.
      * @return array
      */
-    public function properties_provider() {
+    public static function properties_provider(): array {
         return [
             [[
                 'should' => 'Should mirror property name: border-top-right-radius',
@@ -419,9 +418,9 @@ class rtlcss_test extends basic_testcase {
      * Data provider.
      * @return array
      */
-    public function special_provider() {
+    public static function special_provider(): array {
         return [
-            /* Not supported by MoodleHQ/RTLCSS yet.
+            // Not supported by MoodleHQ/RTLCSS yet.
             [[
                 'should' => 'Should not negate tokens',
                 'expected' => 'div { box-shadow: rgba(0, 128, 128, .98) inset -5em 1em 0;}',
@@ -429,7 +428,6 @@ class rtlcss_test extends basic_testcase {
                 'reversable' => true,
                 'skip' => true,
             ]]
-            */
         ];
     }
 
@@ -437,7 +435,7 @@ class rtlcss_test extends basic_testcase {
      * Data provider.
      * @return array
      */
-    public function transform_origin_provider() {
+    public static function transform_origin_provider(): array {
         return [
             [[
                 'should' => 'Should mirror (x-offset: 0 means 0%)',
@@ -612,9 +610,9 @@ class rtlcss_test extends basic_testcase {
      * Data provider.
      * @return array
      */
-    public function transforms_provider() {
+    public static function transforms_provider(): array {
         return [
-            /* Not supported by MoodleHQ/RTLCSS yet.
+            // Not supported by MoodleHQ/RTLCSS yet.
             [[
                 'should' => 'Should mirror transform : matrix',
                 'expected' => 'div { transform: matrix(2, 0.1, 20.75, 2, 2, 2); }',
@@ -888,7 +886,6 @@ class rtlcss_test extends basic_testcase {
                 'reversable' => false,
                 'skip' => true
             ]]
-            */
         ];
     }
 
@@ -896,7 +893,7 @@ class rtlcss_test extends basic_testcase {
      * Data provider.
      * @return array
      */
-    public function values_nsyntax_provider() {
+    public static function values_nsyntax_provider(): array {
         return [
             [[
                 'should' => 'Should mirror property value: border-radius (4 values)',
@@ -1017,7 +1014,7 @@ class rtlcss_test extends basic_testcase {
      * Data provider.
      * @return array
      */
-    public function values_provider() {
+    public static function values_provider(): array {
         return [
             [[
                 'should' => 'Should mirror property value: clear',

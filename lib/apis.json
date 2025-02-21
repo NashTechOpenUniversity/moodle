@@ -84,10 +84,15 @@
         "allowedlevel2": false,
         "allowedspread": false
     },
+    "courseformat": {
+        "component": "core_courseformat",
+        "allowedlevel2": true,
+        "allowedspread": true
+    },
     "customfield": {
-      "component": "core_customfield",
-      "allowedlevel2": true,
-      "allowedspread": true
+        "component": "core_customfield",
+        "allowedlevel2": true,
+        "allowedspread": true
     },
     "ddl": {
         "component": "core",
@@ -232,6 +237,11 @@
     "rating": {
         "component": "core_rating",
         "allowedlevel2": false,
+        "allowedspread": false
+    },
+    "redactor": {
+        "component": "core_files",
+        "allowedlevel2": true,
         "allowedspread": false
     },
     "reportbuilder": {

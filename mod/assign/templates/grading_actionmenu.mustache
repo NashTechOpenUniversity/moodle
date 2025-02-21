@@ -35,8 +35,9 @@
 
     Example context (json):
     {
-        "userselector": "<div class='user-search'></div>",
-        "groupselector": "<div class='group-selector'></div>",
+        "userselector": {"user selector": "context here"},
+        "groupselector": {"group selector": "context here"},
+        "initialselector": {"initial selector": "context here"},
         "statusselector": {
             "name": "filter",
             "value": "submitted",
@@ -67,23 +68,29 @@
 
 }}
 <div class="container-fluid tertiary-navigation full-width-bottom-border mb-2">
-    <div class="row">
+    <div class="d-flex">
         <div class="navitem">
             <h2>{{#str}}gradeitem:submissions, mod_assign{{/str}}</h2>
         </div>
         <div class="navitem-divider d-none d-sm-flex"></div>
         {{#userselector}}
             <div class="navitem">
-                {{{.}}}
+                {{>core/comboboxsearch}}
             </div>
             <div class="navitem-divider d-none d-sm-flex"></div>
         {{/userselector}}
         {{#groupselector}}
             <div class="navitem">
-                {{{.}}}
+                {{>core/comboboxsearch}}
             </div>
             <div class="navitem-divider d-none d-sm-flex"></div>
         {{/groupselector}}
+        {{#initialselector}}
+            <div class="navitem d-flex flex-column align-self-center">
+                {{>core/comboboxsearch}}
+            </div>
+            <div class="navitem-divider"></div>
+        {{/initialselector}}
         {{#statusselector}}
             <div class="navitem">
                 {{>core/select_menu}}
@@ -97,7 +104,7 @@
         {{/statusselector}}
         {{#extrafiltersdropdown}}
             <div class="navitem">
-                {{{.}}}
+            {{>core/local/dropdown/dialog}}
             </div>
             <div class="navitem-divider d-none d-sm-flex"></div>
         {{/extrafiltersdropdown}}
@@ -115,7 +122,7 @@
     </div>
 </div>
 <div class="container-fluid tertiary-navigation pt-0">
-    <div class="row pb-2">
+    <div class="d-flex flex-wrap pb-2">
         {{#quickgrading}}
             <div class="navitem m-0 ml-auto">
                 <div class="form-check align-self-center">

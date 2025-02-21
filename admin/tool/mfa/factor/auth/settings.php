@@ -25,25 +25,31 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$enabled = new admin_setting_configcheckbox('factor_auth/enabled',
-    new lang_string('settings:enablefactor', 'tool_mfa'),
-    new lang_string('settings:enablefactor_help', 'tool_mfa'), 0);
-$enabled->set_updatedcallback(function () {
-    \tool_mfa\manager::do_factor_action('auth', get_config('factor_auth', 'enabled') ? 'enable' : 'disable');
-});
-$settings->add($enabled);
+if ($ADMIN->fulltree) {
+    $settings->add(new admin_setting_heading('factor_auth/description', '',
+        new lang_string('settings:description', 'factor_auth')));
+    $settings->add(new admin_setting_heading('factor_auth/settings', new lang_string('settings', 'moodle'), ''));
 
-$settings->add(new admin_setting_configtext('factor_auth/weight',
-    new lang_string('settings:weight', 'tool_mfa'),
-    new lang_string('settings:weight_help', 'tool_mfa'), 100, PARAM_INT));
+    $enabled = new admin_setting_configcheckbox('factor_auth/enabled',
+        new lang_string('settings:enablefactor', 'tool_mfa'),
+        new lang_string('settings:enablefactor_help', 'tool_mfa'), 0);
+    $enabled->set_updatedcallback(function () {
+        \tool_mfa\manager::do_factor_action('auth', get_config('factor_auth', 'enabled') ? 'enable' : 'disable');
+    });
+    $settings->add($enabled);
 
-$authtypes = get_enabled_auth_plugins(true);
-$authselect = [];
-foreach ($authtypes as $type) {
-    $auth = get_auth_plugin($type);
-    $authselect[$type] = $auth->get_title();
+    $settings->add(new admin_setting_configtext('factor_auth/weight',
+        new lang_string('settings:weight', 'tool_mfa'),
+        new lang_string('settings:weight_help', 'tool_mfa'), 100, PARAM_INT));
+
+    $authtypes = get_enabled_auth_plugins(true);
+    $authselect = [];
+    foreach ($authtypes as $type) {
+        $auth = get_auth_plugin($type);
+        $authselect[$type] = $auth->get_title();
+    }
+
+    $settings->add(new admin_setting_configmulticheckbox('factor_auth/goodauth',
+        get_string('settings:goodauth', 'factor_auth'),
+        get_string('settings:goodauth_help', 'factor_auth'), [], $authselect));
 }
-
-$settings->add(new admin_setting_configmulticheckbox('factor_auth/goodauth',
-    get_string('settings:goodauth', 'factor_auth'),
-    get_string('settings:goodauth_help', 'factor_auth'), [], $authselect));

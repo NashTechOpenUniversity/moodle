@@ -16,6 +16,7 @@
 
 namespace core_ai\table;
 
+use core_ai\manager;
 use core_table\dynamic as dynamic_table;
 use flexible_table;
 use moodle_url;
@@ -35,6 +36,9 @@ class aiplacement_action_management_table extends flexible_table implements dyna
     /** @var array The list of actions this manager covers */
     protected array $actions;
 
+    /** @var \core_ai\manager The AI manager */
+    protected \core_ai\manager $manager;
+
     /**
      * Constructor.
      *
@@ -47,12 +51,13 @@ class aiplacement_action_management_table extends flexible_table implements dyna
         $this->pluginname = $pluginname;
 
         // Get the list of actions that this provider supports.
-        $this->actions = \core_ai\manager::get_supported_actions($this->pluginname);
+        $this->actions = manager::get_supported_actions($this->pluginname);
 
         parent::__construct($this->get_table_id());
 
         $this->setup_column_configuration();
         $this->set_filterset(new aiplacement_action_management_table_filterset());
+        $this->manager = \core\di::get(manager::class);
         $this->setup();
     }
 
@@ -127,19 +132,20 @@ class aiplacement_action_management_table extends flexible_table implements dyna
     protected function col_namedesc(stdClass $row): string {
         global $OUTPUT;
 
-        $providerurl = new moodle_url('/admin/settings.php', ['section' => 'aiprovider']);
-        if (!$this->has_provider($row->action)) {
-            return $OUTPUT->render_from_template('core_ai/admin_noproviders', [
-                'providerurl' => $providerurl->out(),
-            ]);
-        }
-
         $params = [
             'name' => $row->action::get_name(),
             'description' => $row->action::get_description(),
         ];
+        $output = $OUTPUT->render_from_template('core_admin/table/namedesc', $params);
 
-        return $OUTPUT->render_from_template('core_admin/table/namedesc', $params);
+        if (!$this->manager->is_action_available($row->action)) {
+            $providerurl = new moodle_url('/admin/settings.php', ['section' => 'aiprovider']);
+            $output .= $OUTPUT->render_from_template('core_ai/admin_noproviders', [
+                'providerurl' => $providerurl->out(),
+            ]);
+        }
+
+        return $output;
     }
 
     /**
@@ -168,7 +174,7 @@ class aiplacement_action_management_table extends flexible_table implements dyna
             ],
             'title' => $labelstr,
             'label' => $labelstr,
-            'labelclasses' => 'sr-only',
+            'labelclasses' => 'visually-hidden',
         ];
 
         return $OUTPUT->render_from_template('core_admin/setting_configtoggle', $params);
@@ -202,11 +208,11 @@ class aiplacement_action_management_table extends flexible_table implements dyna
      * Print the table.
      */
     public function out(): void {
-        foreach ($this->actions as $action) {
+        foreach ($this->actions as $actionclass) {
             // Construct the row data.
             $rowdata = (object) [
-                'action' => $action,
-                'enabled' => \core_ai\manager::is_action_enabled($this->pluginname, $action::get_basename()),
+                'action' => $actionclass,
+                'enabled' => $this->manager->is_action_enabled($this->pluginname, $actionclass),
             ];
             $this->add_data_keyed(
                 $this->format_row($rowdata),
@@ -226,19 +232,6 @@ class aiplacement_action_management_table extends flexible_table implements dyna
     public function guess_base_url(): void {
         $url = new moodle_url('/');
         $this->define_baseurl($url);
-    }
-
-    /**
-     * Check if the action has any enabled providers.
-     *
-     * Returns True if the action has a provider.
-     *
-     * @param string $action The action to check.
-     * @return bool True if the action has a provider.
-     */
-    private function has_provider(string $action): bool {
-        $providers = \core_ai\manager::get_providers_for_actions([$action], true);
-        return !empty($providers[$action]);
     }
 
     #[\Override]

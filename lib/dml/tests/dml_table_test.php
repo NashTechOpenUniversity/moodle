@@ -28,14 +28,14 @@ use xmldb_table;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @coversDefaultClass \core\dml\table
  */
-class dml_table_test extends \database_driver_testcase {
+final class dml_table_test extends \database_driver_testcase {
 
     /**
      * Data provider for various \core\dml\table method tests.
      *
      * @return  array
      */
-    public function get_field_select_provider(): array {
+    public static function get_field_select_provider(): array {
         return [
             'single field' => [
                 'tablename' => 'test_table_single',
@@ -45,7 +45,7 @@ class dml_table_test extends \database_driver_testcase {
                 'primarykey' => 'id',
                 'fieldprefix' => 'ban',
                 'tablealias' => 'banana',
-                'banana.id AS banid',
+                'expected' => 'banana.id AS banid',
             ],
             'multiple fields' => [
                 'tablename' => 'test_table_multiple',
@@ -57,7 +57,7 @@ class dml_table_test extends \database_driver_testcase {
                 'primarykey' => 'id',
                 'fieldprefix' => 'ban',
                 'tablealias' => 'banana',
-                'banana.id AS banid, banana.course AS bancourse, banana.name AS banname',
+                'expected' => 'banana.id AS banid, banana.course AS bancourse, banana.name AS banname',
             ],
         ];
     }
@@ -102,7 +102,7 @@ class dml_table_test extends \database_driver_testcase {
      *
      * @return  array
      */
-    public function extract_from_result_provider(): array {
+    public static function extract_from_result_provider(): array {
         return [
             'single table' => [
                 'fieldlist' => [
@@ -111,13 +111,13 @@ class dml_table_test extends \database_driver_testcase {
                     'flag' => ['flag', XMLDB_TYPE_CHAR, '255', null, null, null, 'lala'],
                 ],
                 'primarykey' => 'id',
-                'prefix' => 's',
+                'fieldprefix' => 's',
                 'result' => (object) [
                     'sid' => 1,
                     'scourse' => 42,
                     'sflag' => 'foo',
                 ],
-                'expectedrecord' => (object) [
+                'expected' => (object) [
                     'id' => 1,
                     'course' => 42,
                     'flag' => 'foo',
@@ -130,7 +130,7 @@ class dml_table_test extends \database_driver_testcase {
                     'flag' => ['flag', XMLDB_TYPE_CHAR, '255', null, null, null, 'lala'],
                 ],
                 'primarykey' => 'id',
-                'prefix' => 's',
+                'fieldprefix' => 's',
                 'result' => (object) [
                     'sid' => 1,
                     'scourse' => 42,
@@ -139,7 +139,7 @@ class dml_table_test extends \database_driver_testcase {
                     'ocourse' => 'course',
                     'oflag' => 'flag',
                 ],
-                'expectedrecord' => (object) [
+                'expected' => (object) [
                     'id' => 1,
                     'course' => 42,
                     'flag' => 'foo',

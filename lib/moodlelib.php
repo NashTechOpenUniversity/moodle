@@ -389,16 +389,8 @@ define ('BLOG_COURSE_LEVEL', 3);
 define ('BLOG_SITE_LEVEL', 4);
 define ('BLOG_GLOBAL_LEVEL', 5);
 
-
-// Tag constants.
-/**
- * To prevent problems with multibytes strings,Flag updating in nav not working on the review page. this should not exceed the
- * length of "varchar(255) / 3 (bytes / utf-8 character) = 85".
- * TODO: this is not correct, varchar(255) are 255 unicode chars ;-)
- *
- * @todo define(TAG_MAX_LENGTH) this is not correct, varchar(255) are 255 unicode chars ;-)
- */
-define('TAG_MAX_LENGTH', 50);
+/** The maximum length of a tag */
+define('TAG_MAX_LENGTH', 255);
 
 // Password policy constants.
 define ('PASSWORD_LOWER', 'abcdefghijklmnopqrstuvwxyz');
@@ -458,6 +450,15 @@ define('FEATURE_COMMENT', 'comment');
 define('FEATURE_RATE', 'rate');
 /** True if module supports backup/restore of moodle2 format */
 define('FEATURE_BACKUP_MOODLE2', 'backup_moodle2');
+
+/** True if module shares questions with other modules. */
+define('FEATURE_PUBLISHES_QUESTIONS', 'publishesquestions');
+
+/** Used by {@see course_modinfo::is_mod_type_visible_on_course()} to determine if a plugin should render to display */
+define('FEATURE_CAN_DISPLAY', 'candisplay');
+
+/** Can this module type be uninstalled */
+define('FEATURE_CAN_UNINSTALL', 'canuninstall');
 
 /** True if module can show description on course main page */
 define('FEATURE_SHOW_DESCRIPTION', 'showdescription');
@@ -1498,11 +1499,7 @@ function set_user_preference($name, $value, $user = null) {
     } else if (is_array($value)) {
         throw new coding_exception('Invalid value in set_user_preference() call, arrays are not allowed');
     }
-    // Value column maximum length is 1333 characters.
     $value = (string)$value;
-    if (core_text::strlen($value) > 1333) {
-        throw new coding_exception('Invalid value in set_user_preference() call, value is is too long for the value column');
-    }
 
     if (is_null($user)) {
         $user = $USER;
@@ -4800,6 +4797,11 @@ function remove_course_contents($courseid, $showfeedback = true, ?array $options
     // Delete every instance of every module,
     // this has to be done before deleting of course level stuff.
     $locations = core_component::get_plugin_list('mod');
+    // Sort mod instances that publish questions to the end of the list, so that they will be removed last.
+    // This is because they could have questions in use by other activities in this course.
+    uksort($locations, static function ($a, $b) {
+        return plugin_supports('mod', $a, FEATURE_PUBLISHES_QUESTIONS) <=> plugin_supports('mod', $b, FEATURE_PUBLISHES_QUESTIONS);
+    });
     foreach ($locations as $modname => $moddir) {
         if ($modname === 'NEWMODULE') {
             continue;
@@ -4885,12 +4887,6 @@ function remove_course_contents($courseid, $showfeedback = true, ?array $options
 
     if ($showfeedback) {
         echo $OUTPUT->notification($strdeleted.get_string('type_mod_plural', 'plugin'), 'notifysuccess');
-    }
-
-    // Delete questions and question categories.
-    question_delete_course($course);
-    if ($showfeedback) {
-        echo $OUTPUT->notification($strdeleted.get_string('questions', 'question'), 'notifysuccess');
     }
 
     // Delete content bank contents.
@@ -5361,35 +5357,6 @@ function generate_email_processing_address($modid, $modargs) {
 
     $header = $CFG->mailprefix . substr(base64_encode(pack('C', $modid)), 0, 2).$modargs;
     return $header . substr(md5($header.get_site_identifier()), 0, 16).'@'.$CFG->maildomain;
-}
-
-/**
- * ?
- *
- * @todo Finish documenting this function
- *
- * @param string $modargs
- * @param string $body Currently unused
- */
-function moodle_process_email($modargs, $body) {
-    global $DB;
-
-    // The first char should be an unencoded letter. We'll take this as an action.
-    switch ($modargs[0]) {
-        case 'B': { // Bounce.
-            list(, $userid) = unpack('V', base64_decode(substr($modargs, 1, 8)));
-            if ($user = $DB->get_record("user", array('id' => $userid), "id,email")) {
-                // Check the half md5 of their email.
-                $md5check = substr(md5($user->email), 0, 16);
-                if ($md5check == substr($modargs, -16)) {
-                    set_bounce_count($user);
-                }
-                // Else maybe they've already changed it?
-            }
-        }
-        break;
-        // Maybe more later?
-    }
 }
 
 // CORRESPONDENCE.
@@ -6014,7 +5981,7 @@ function generate_email_signoff() {
         $signoff .= $CFG->supportname."\n";
     }
 
-    $supportemail = $OUTPUT->supportemail(['class' => 'font-weight-bold']);
+    $supportemail = $OUTPUT->supportemail(['class' => 'fw-bold']);
 
     if ($supportemail) {
         $signoff .= "\n" . $supportemail . "\n";
@@ -7499,6 +7466,11 @@ function component_callback_exists($component, $function) {
     list($type, $name) = core_component::normalize_component($component);
     $component = $type . '_' . $name;
 
+    // Deprecated plugin type: callbacks not supported.
+    if (\core_component::is_plugintype_in_deprecation($type)) {
+        return false;
+    }
+
     $oldfunction = $name.'_'.$function;
     $function = $component.'_'.$function;
 
@@ -7545,6 +7517,15 @@ function component_class_callback($classname, $methodname, array $params, $defau
 
     if (!method_exists($classname, $methodname)) {
         return $default;
+    }
+
+    // If component can be found (flat class names not supported), and it's a deprecated plugintype, callbacks are unsupported.
+    $component = \core_component::get_component_from_classname($classname);
+    if ($component) {
+        [$type] = \core_component::normalize_component($component);
+        if (\core_component::is_plugintype_in_deprecation($type)) {
+            return $default;
+        }
     }
 
     $fullfunction = $classname . '::' . $methodname;
@@ -9049,10 +9030,10 @@ function get_performance_info() {
     $info['html'] .= '<li class="dbqueries col-sm-4">DB reads/writes: '.$info['dbqueries'].'</li> ';
     $info['txt'] .= 'db reads/writes: '.$info['dbqueries'].' ';
 
-    if ($DB->want_read_slave()) {
-        $info['dbreads_slave'] = $DB->perf_get_reads_slave();
-        $info['html'] .= '<li class="dbqueries col-sm-4">DB reads from slave: '.$info['dbreads_slave'].'</li> ';
-        $info['txt'] .= 'db reads from slave: '.$info['dbreads_slave'].' ';
+    if ($DB->want_read_replica()) {
+        $info['dbreads_replica'] = $DB->perf_get_reads_replica();
+        $info['html'] .= '<li class="dbqueries col-sm-4">DB reads from replica: '.$info['dbreads_replica'].'</li> ';
+        $info['txt'] .= 'db reads from replica: '.$info['dbreads_replica'].' ';
     }
 
     $info['dbtime'] = round($DB->perf_get_queries_time(), 5);
@@ -9896,11 +9877,11 @@ function get_home_page() {
             if (empty($CFG->enabledashboard) && $userhomepage == HOMEPAGE_MY) {
                 // If the user was using the dashboard but it's disabled, return the default home page.
                 $userhomepage = $defaultpage;
-            } else if (clean_param($userhomepage, PARAM_LOCALURL)) {
+            } else if (get_default_home_page_url()) {
                 return HOMEPAGE_URL;
             }
             return (int) $userhomepage;
-        } else if (clean_param($CFG->defaulthomepage, PARAM_LOCALURL)) {
+        } else if (get_default_home_page_url()) {
             return HOMEPAGE_URL;
         }
     }
@@ -9930,13 +9911,15 @@ function get_default_home_page(): int {
 function get_default_home_page_url(): ?\core\url {
     global $CFG;
 
-    if ($defaulthomepage = clean_param($CFG->defaulthomepage, PARAM_LOCALURL)) {
+    if (substr((string)$CFG->defaulthomepage, 0, 1) === '/' &&
+            ($defaulthomepage = clean_param($CFG->wwwroot . $CFG->defaulthomepage, PARAM_LOCALURL))) {
         return new \core\url($defaulthomepage);
     }
 
     if ($CFG->defaulthomepage == HOMEPAGE_USER) {
         $userhomepage = get_user_preferences('user_home_page_preference');
-        if ($userhomepage = clean_param($userhomepage, PARAM_LOCALURL)) {
+        if (substr((string)$userhomepage, 0, 1) === '/' &&
+                ($userhomepage = clean_param($CFG->wwwroot . $userhomepage, PARAM_LOCALURL))) {
             return new \core\url($userhomepage);
         }
     }

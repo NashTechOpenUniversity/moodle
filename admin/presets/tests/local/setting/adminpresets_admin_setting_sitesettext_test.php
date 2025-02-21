@@ -25,7 +25,7 @@ namespace core_adminpresets\local\setting;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @coversDefaultClass \core_adminpresets\local\setting\adminpresets_admin_setting_sitesettext
  */
-class adminpresets_admin_setting_sitesettext_test extends \advanced_testcase {
+final class adminpresets_admin_setting_sitesettext_test extends \advanced_testcase {
 
     /**
      * Test the behaviour of save_value() method.
@@ -66,26 +66,26 @@ class adminpresets_admin_setting_sitesettext_test extends \advanced_testcase {
      *
      * @return array
      */
-    public function save_value_provider(): array {
+    public static function save_value_provider(): array {
         return [
             'Fullname: different value' => [
                 'settingname' => 'fullname',
-                'setttingvalue' => 'New site fullname',
+                'settingvalue' => 'New site fullname',
                 'expectedsaved' => true,
             ],
             'Fullname: same value' => [
                 'settingname' => 'fullname',
-                'setttingvalue' => 'PHPUnit test site',
+                'settingvalue' => 'PHPUnit test site',
                 'expectedsaved' => false,
             ],
             'Summary: different value' => [
                 'settingname' => 'summary',
-                'setttingvalue' => 'This is a new site summary.',
+                'settingvalue' => 'This is a new site summary.',
                 'expectedsaved' => true,
             ],
             'Summary: same value' => [
                 'settingname' => 'summary',
-                'setttingvalue' => '',
+                'settingvalue' => '',
                 'expectedsaved' => false,
             ],
         ];

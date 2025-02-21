@@ -548,9 +548,14 @@ function course_create_sections_if_missing($courseorid, $sections) {
  * @param int|stdClass $beforemod id or object with field id corresponding to the module
  *     before which the module needs to be included. Null for inserting in the
  *     end of the section
+ * @param string $modname Optional, name of the module in the modules table. We need to do some checks
+ *      to see if this module type can be displayed to the course page.
+ *      If not passed a DB query will need to be run instead.
  * @return int The course_sections ID where the module is inserted
+ * @throws moodle_exception if a module that has feature flag FEATURE_CAN_DISPLAY set to false is attempted to be moved to
+ * a section number other than 0.
  */
-function course_add_cm_to_section($courseorid, $cmid, $sectionnum, $beforemod = null) {
+function course_add_cm_to_section($courseorid, $cmid, $sectionnum, $beforemod = null, string $modname = '') {
     global $DB, $COURSE;
     if (is_object($beforemod)) {
         $beforemod = $beforemod->id;
@@ -560,6 +565,20 @@ function course_add_cm_to_section($courseorid, $cmid, $sectionnum, $beforemod = 
     } else {
         $courseid = $courseorid;
     }
+
+    if (!$modname) {
+        $sql = "SELECT name
+                  FROM {modules} m
+                  JOIN {course_modules} cm ON cm.module = m.id
+                 WHERE cm.id = :cmid";
+        $modname = $DB->get_field_sql($sql, ['cmid' => $cmid], MUST_EXIST);
+    }
+
+    // Modules not visible on the course must ALWAYS be in section 0.
+    if ($sectionnum != 0 && !course_modinfo::is_mod_type_visible_on_course($modname)) {
+        throw new moodle_exception("Modules with FEATURE_CAN_DISPLAY set to false can not be moved from section 0");
+    }
+
     // Do not try to use modinfo here, there is no guarantee it is valid!
     $section = $DB->get_record('course_sections',
             array('course' => $courseid, 'section' => $sectionnum), '*', IGNORE_MISSING);
@@ -1031,8 +1050,11 @@ function course_module_bulk_update_calendar_events($modulename, $courseid = 0) {
  * @since  Moodle 3.3.4
  */
 function course_module_calendar_event_update_process($instance, $cm) {
+    global $CFG;
+
     // We need to call *_refresh_events() first because some modules delete 'old' events at the end of the code which
     // will remove the completion events.
+    include_once("$CFG->dirroot/mod/$cm->modname/lib.php");
     $refresheventsfunction = $cm->modname . '_refresh_events';
     if (function_exists($refresheventsfunction)) {
         call_user_func($refresheventsfunction, $cm->course, $instance, $cm);
@@ -1294,6 +1316,10 @@ function reorder_sections($sections, $origin_position, $target_position) {
 function moveto_module($mod, $section, $beforemod=NULL) {
     global $OUTPUT, $DB;
 
+    if ($section->section != 0 && !course_modinfo::is_mod_type_visible_on_course($mod->modname)) {
+        throw new coding_exception("Modules with FEATURE_CAN_DISPLAY set to false can not be moved from section 0");
+    }
+
     // Current module visibility state - return value of this function.
     $modvisible = $mod->visible;
 
@@ -1303,7 +1329,7 @@ function moveto_module($mod, $section, $beforemod=NULL) {
     }
 
     // Add the module into the new section.
-    course_add_cm_to_section($section->course, $mod->id, $section->section, $beforemod);
+    course_add_cm_to_section($section->course, $mod->id, $section->section, $beforemod, $mod->modname);
 
     // If moving to a hidden section then hide module.
     if ($mod->section != $section->id) {
@@ -1327,13 +1353,24 @@ function moveto_module($mod, $section, $beforemod=NULL) {
 /**
  * Returns the list of all editing actions that current user can perform on the module
  *
+ * @deprecated since Moodle 5.0
+ * @todo Remove this method in Moodle 6.0 (MDL-83530).
+ *
  * @param cm_info $mod The module to produce editing buttons for
  * @param int $indent The current indenting (default -1 means no move left-right actions)
  * @param int $sr The section to link back to (used for creating the links)
  * @return array array of action_link or pix_icon objects
  */
+#[\core\attribute\deprecated(
+    replacement: 'core_courseformat\output\local\content\cm\controlmenu',
+    since: '5.0',
+    mdl: 'MDL-83527',
+    reason: 'Replaced by an output class equivalent.',
+)]
 function course_get_cm_edit_actions(cm_info $mod, $indent = -1, $sr = null) {
     global $COURSE, $SITE, $CFG;
+
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
 
     static $str;
 
@@ -1718,10 +1755,14 @@ function course_format_uses_sections($format) {
  * The returned object's property (boolean)capable indicates that
  * the course format supports Moodle course ajax features.
  *
+ * @deprecated since Moodle 5.0 MDL-82351
+ * @todo MDL-83417 Remove this function in Moodle 6.0
  * @param string $format
  * @return stdClass
  */
+#[\core\attribute\deprecated(since: '5.0', mdl: 'MDL-82351')]
 function course_format_ajax_support($format) {
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
     $course = new stdClass();
     $course->format = $format;
     return course_get_format($course)->supports_ajax();
@@ -2738,7 +2779,7 @@ function course_ajax_enabled($course) {
     // Check that the course format supports ajax functionality
     // The site 'format' doesn't have information on course format support
     if ($SITE->id !== $course->id) {
-        $courseformatajaxsupport = course_format_ajax_support($course->format);
+        $courseformatajaxsupport = course_get_format($course)->supports_ajax();
         if (!$courseformatajaxsupport->capable) {
             return false;
         }
@@ -2761,20 +2802,26 @@ function course_ajax_enabled($course) {
  *          * pageparams    Additional parameters to pass through in the post
  * @return bool
  */
-function include_course_ajax($course, $usedmodules = array(), $enabledmodules = null, $config = null) {
+function include_course_ajax($course, $usedmodules = [], $enabledmodules = null, $config = null) {
     global $CFG, $PAGE, $SITE;
 
     // Init the course editor module to support UI components.
     $format = course_get_format($course);
     include_course_editor($format);
 
+    // TODO remove this if as part of MDL-83627.
     // Ensure that ajax should be included
     if (!course_ajax_enabled($course)) {
         return false;
     }
 
+    // TODO remove this if as part of MDL-83627.
     // Component based formats don't use YUI drag and drop anymore.
     if (!$format->supports_components() && course_format_uses_sections($course->format)) {
+        debugging(
+            'The old course editor will be removed in Moodle 6.0. Ensure your format return true to supports_components',
+            DEBUG_DEVELOPER
+        );
 
         if (!$config) {
             $config = new stdClass();
@@ -2850,9 +2897,9 @@ function include_course_ajax($course, $usedmodules = array(), $enabledmodules = 
         // Load drag and drop upload AJAX.
         require_once($CFG->dirroot.'/course/dnduploadlib.php');
         dndupload_add_to_course($course, $enabledmodules);
-    }
 
-    $PAGE->requires->js_call_amd('core_course/actions', 'initCoursePage', array($course->format));
+        $PAGE->requires->js_call_amd('core_course/actions', 'initCoursePage', [$course->format]);
+    }
 
     return true;
 }
@@ -2867,7 +2914,7 @@ function include_course_editor(course_format $format) {
 
     $course = $format->get_course();
 
-    if ($SITE->id === $course->id) {
+    if (!$format->supports_ajax()?->capable) {
         return;
     }
 
@@ -2894,7 +2941,11 @@ function include_course_editor(course_format $format) {
 function get_sorted_course_formats($enabledonly = false) {
     global $CFG;
 
-    $formats = core_plugin_manager::instance()->get_installed_plugins('format');
+    // Include both formats that exist on disk (but might not have been installed yet), and those
+    // which were installed but no longer exist on disk.
+    $installedformats = core_plugin_manager::instance()->get_installed_plugins('format');
+    $existingformats = core_component::get_plugin_list('format');
+    $formats = array_merge($installedformats, $existingformats);
 
     if (!empty($CFG->format_plugins_sortorder)) {
         $order = explode(',', $CFG->format_plugins_sortorder);
@@ -3066,6 +3117,13 @@ function duplicate_module($course, $cm, ?int $sectionid = null, bool $changename
     require_once($CFG->dirroot . '/backup/util/includes/backup_includes.php');
     require_once($CFG->dirroot . '/backup/util/includes/restore_includes.php');
     require_once($CFG->libdir . '/filelib.php');
+
+    // Plugins with this feature flag set to false must ALWAYS be in section 0.
+    if (!course_modinfo::is_mod_type_visible_on_course($cm->modname)) {
+        if (get_fast_modinfo($course)->get_section_info(0, MUST_EXIST)->id != $sectionid) {
+            throw new coding_exception('Modules with FEATURE_CAN_DISPLAY set to false can not be moved from section 0');
+        }
+    }
 
     $a          = new stdClass();
     $a->modtype = get_string('modulename', $cm->modname);
@@ -3624,6 +3682,7 @@ function course_get_user_navigation_options($context, $course = null) {
         'search' => false,
         'tags' => false,
         'communication' => false,
+        'overview' => false,
     ];
 
     $options->blogs = !empty($CFG->enableblogs) &&
@@ -3703,6 +3762,11 @@ function course_get_user_navigation_options($context, $course = null) {
         $capabilities = array('moodle/competency:coursecompetencyview', 'moodle/competency:coursecompetencymanage');
         $options->competencies = has_any_capability($capabilities, $context);
     }
+
+    if ($isloggedin && !$isfrontpage) {
+        $options->overview = has_capability('moodle/course:viewoverview', $context);
+    }
+
     return $options;
 }
 
@@ -4756,6 +4820,33 @@ function course_output_fragment_new_base_form($args) {
 }
 
 /**
+ * Get the course overview fragment.
+ *
+ * @param array $args the fragment arguments
+ * @return string the course overview fragment
+ */
+function course_output_fragment_course_overview($args) {
+    global $PAGE;
+    if (empty($args['modname']) || empty($args['courseid'])) {
+        throw new coding_exception('modname and courseid are required');
+    }
+    $modname = $args['modname'];
+    $course = get_course($args['courseid']);
+    can_access_course($course);
+
+    $content = '';
+    $format = course_get_format($course);
+    $renderer = $format->get_renderer($PAGE);
+
+    $overvietableclass = $format->get_output_classname('overview\\overviewtable');
+    /** @var \core_courseformat\output\local\overview\overviewtable $output */
+    $output = new $overvietableclass($course, $modname);
+    $content .= $renderer->render($output);
+
+    return $content;
+}
+
+/**
  * Get the current course image for the given course.
  *
  * @param \stdClass $course
@@ -4797,6 +4888,12 @@ function course_get_communication_instance_data(int $courseid): array {
  */
 function course_update_communication_instance_data(stdClass $data): void {
     $data->id = $data->instanceid; // For correct use in update_course.
+    // If the room name is set to empty, then set it course name.
+    $provider = $data->selectedcommunication ?? null;
+    $roomnameidentifier = $provider . 'roomname';
+    if ($provider && empty($data->$roomnameidentifier)) {
+        $data->$roomnameidentifier = $data->fullname ?? get_course($data->id)->fullname;
+    }
     core_communication\helper::update_course_communication_instance(
         course: $data,
         changesincoursecat: false,

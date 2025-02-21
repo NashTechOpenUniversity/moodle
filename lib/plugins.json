@@ -1,10 +1,12 @@
 {
     "standard": {
         "aiplacement": [
+            "courseassist",
             "editor"
         ],
         "aiprovider": [
-            "openai"
+            "openai",
+            "azureai"
         ],
         "antivirus": [
             "clamav"
@@ -272,7 +274,7 @@
             "rubric"
         ],
         "h5plib": [
-            "v126"
+            "v127"
         ],
         "local": [],
         "logstore": [
@@ -310,7 +312,6 @@
             "assign",
             "bigbluebuttonbn",
             "book",
-            "chat",
             "choice",
             "data",
             "feedback",
@@ -323,11 +324,11 @@
             "lesson",
             "lti",
             "page",
+            "qbank",
             "quiz",
             "resource",
             "scorm",
             "subsection",
-            "survey",
             "url",
             "wiki",
             "workshop"
@@ -486,6 +487,9 @@
             "simpledb",
             "solr"
         ],
+        "smsgateway": [
+            "aws"
+        ],
         "theme": [
             "boost",
             "classic"
@@ -603,7 +607,8 @@
             "tidy"
         ],
         "h5plib": [
-            "v124"
+            "v124",
+            "v126"
         ],
         "logstore": [
             "legacy"
@@ -615,7 +620,9 @@
             "jabber"
         ],
         "mod": [
-            "assignment"
+            "assignment",
+            "chat",
+            "survey"
         ],
         "portfolio": [
             "boxnet",

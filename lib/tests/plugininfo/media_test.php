@@ -28,7 +28,7 @@ use advanced_testcase;
  * @copyright   2023 Andrew Lyons <andrew@nicols.co.uk>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class media_test extends advanced_testcase {
+final class media_test extends advanced_testcase {
 
     /**
      * Test the get_enabled_plugins method.
@@ -67,7 +67,7 @@ class media_test extends advanced_testcase {
      *
      * @return array
      */
-    public function is_uninstall_allowed_provider(): array {
+    public static function is_uninstall_allowed_provider(): array {
         $plugins = media::get_enabled_plugins();
         return array_map(function ($plugin) {
             return [
@@ -83,13 +83,13 @@ class media_test extends advanced_testcase {
      * @param string $initialorder
      * @param string $pluginname
      * @param int $direction
-     * @param array $neworder
+     * @param array $expected
      */
     public function test_change_plugin_order(
         array $initialorder,
         string $pluginname,
         int $direction,
-        array $neworder,
+        array $expected,
     ): void {
         $this->resetAfterTest(true);
 
@@ -97,12 +97,12 @@ class media_test extends advanced_testcase {
         media::change_plugin_order($pluginname, $direction);
 
         $this->assertSame(
-            $neworder,
+            $expected,
             array_keys(media::get_sorted_plugins()),
         );
     }
 
-    public function change_plugin_order_provider(): array {
+    public static function change_plugin_order_provider(): array {
         $pluginmanager = \core_plugin_manager::instance();
         $allplugins = $pluginmanager->get_plugins_of_type('media');
         \core_collator::asort_objects_by_method($allplugins, 'get_rank', \core_collator::SORT_NUMERIC);

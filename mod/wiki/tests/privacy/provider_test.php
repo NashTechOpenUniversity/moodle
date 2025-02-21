@@ -43,7 +43,7 @@ require_once($CFG->dirroot.'/mod/wiki/locallib.php');
  * @copyright  2018 Marina Glancy
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class provider_test extends provider_testcase {
+final class provider_test extends provider_testcase {
 
     /** @var array */
     protected $users = [];
@@ -252,7 +252,7 @@ class provider_test extends provider_testcase {
         $this->assertEqualsCanonicalizing([
             $this->contexts[1]->id,
             $this->contexts[2]->id,
-        ], $contextids);
+        ], array_values($contextids));
 
         // Get contexts for the second user.
         $contextids = provider::get_contexts_for_userid($this->users[2]->id)->get_contextids();
@@ -260,7 +260,7 @@ class provider_test extends provider_testcase {
             $this->contexts[1]->id,
             $this->contexts[2]->id,
             $this->contexts[3]->id,
-        ], $contextids);
+        ], array_values($contextids));
 
         // Get contexts for the third user.
         $contextids = provider::get_contexts_for_userid($this->users[3]->id)->get_contextids();
@@ -268,7 +268,7 @@ class provider_test extends provider_testcase {
             $this->contexts[1]->id,
             $this->contexts[2]->id,
             $this->contexts[3]->id,
-        ], $contextids);
+        ], array_values($contextids));
     }
 
     /**

@@ -46,6 +46,7 @@ if (file_exists($configfile)) {
 define('CLI_SCRIPT', false); // prevents some warnings later
 define('AJAX_SCRIPT', false); // prevents some warnings later
 define('CACHE_DISABLE_ALL', true); // Disables caching.. just in case.
+define('NO_DEBUG_DISPLAY', false);
 define('PHPUNIT_TEST', false);
 define('IGNORE_COMPONENT_CACHE', true);
 define('MDL_PERF_TEST', false);
@@ -238,11 +239,6 @@ define('SITEID', 1);
 $hint_dataroot = '';
 $hint_admindir = '';
 $hint_database = '';
-
-// Are we in help mode?
-if (isset($_GET['help'])) {
-    install_print_help_page($_GET['help']);
-}
 
 //first time here? find out suitable dataroot
 if (is_null($CFG->dataroot)) {
@@ -494,7 +490,6 @@ if ($config->stage == INSTALL_DATABASETYPE) {
                        'auroramysql' => moodle_database::get_driver_instance('auroramysql', 'native'),
                        'mariadb'=> moodle_database::get_driver_instance('mariadb', 'native'),
                        'pgsql'  => moodle_database::get_driver_instance('pgsql',  'native'),
-                       'oci'    => moodle_database::get_driver_instance('oci',    'native'),
                        'sqlsrv' => moodle_database::get_driver_instance('sqlsrv', 'native'), // MS SQL*Server PHP driver
                       );
 

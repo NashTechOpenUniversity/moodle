@@ -17,7 +17,7 @@ Feature: Add badges to the system
     And I add the "Navigation" block if not present
     And I click on "Site pages" "list_item" in the "Navigation" "block"
     Given I click on "Site badges" "link" in the "Navigation" "block"
-    Then I should see "There are no matching badges available for users to earn"
+    Then I should see "There are no matching badges available for users to earn."
 
   @javascript @_file_upload
   Scenario: Add a site badge
@@ -32,7 +32,6 @@ Feature: Add badges to the system
       | Version        | v1                                                     |
       | Language       | English                                                |
       | Description    | Test badge description                                 |
-      | Image author   | http://author.example.com                              |
       | Image caption  | Test caption image                                     |
       | Tags           | Math, Physics                                          |
       | Issuer contact | issuer@example.com                                     |
@@ -53,7 +52,7 @@ Feature: Add badges to the system
     And I should see "Math"
     And I should see "Physics"
     And I navigate to "Badges > Manage badges" in site administration
-    And I should not see "There are no matching badges available for users to earn"
+    And I should not see "There are no matching badges available for users to earn."
 
   @javascript @_file_upload
   Scenario: Add a badge related
@@ -63,7 +62,6 @@ Feature: Add badges to the system
       | Version | v1 |
       | Language | French |
       | Description | Test badge related description |
-      | Image author | http://author.example.com |
       | Image caption | Test caption image |
     And I upload "badges/tests/behat/badge.png" file to "Image" filemanager
     And I press "Create badge"
@@ -74,7 +72,6 @@ Feature: Add badges to the system
       | Version | v2 |
       | Language | English |
       | Description | Test badge description |
-      | Image author | http://author.example.com |
       | Image caption | Test caption image |
     And I upload "badges/tests/behat/badge.png" file to "Image" filemanager
     And I press "Create badge"
@@ -96,7 +93,6 @@ Feature: Add badges to the system
       | Version | v1 |
       | Language | English |
       | Description | Test badge description |
-      | Image author | http://author.example.com |
       | Image caption | Test caption image |
     And I upload "badges/tests/behat/badge.png" file to "Image" filemanager
     When I press "Create badge"
@@ -120,7 +116,6 @@ Feature: Add badges to the system
       | Version | v1 |
       | Language | English |
       | Description | Test badge description |
-      | Image author | http://author.example.com |
       | Image caption | Test caption image |
     And I upload "badges/tests/behat/badge.png" file to "Image" filemanager
     When I press "Create badge"
@@ -153,7 +148,6 @@ Feature: Add badges to the system
       | Version | v1 |
       | Language | English |
       | Description | Test badge description |
-      | Image author | http://author.example.com |
       | Image caption | Test caption image |
     And I upload "badges/tests/behat/badge.png" file to "Image" filemanager
     And I press "Create badge"
@@ -164,7 +158,7 @@ Feature: Add badges to the system
     And I should see "Alignments (0)"
     And I should not see "Create badge"
     And I navigate to "Badges > Manage badges" in site administration
-    And I should not see "There are no matching badges available for users to earn"
+    And I should not see "There are no matching badges available for users to earn."
     # See buttons from the "Site badges" page.
     And I am on homepage
     When I click on "Site pages" "list_item" in the "Navigation" "block"
@@ -180,7 +174,6 @@ Feature: Add badges to the system
       | language       | ca                             |
       | description    | Test badge description         |
       | image          | badges/tests/behat/badge.png   |
-      | imageauthorurl | http://imtheauthor.example.com |
       | imagecaption   | My caption image               |
       | issuercontact  | testuser@example.com           |
     And the following "core_badges > Criterias" exist:
@@ -195,7 +188,6 @@ Feature: Add badges to the system
       | Version        | secondversion                                          |
       | Language       | English                                                |
       | Description    | Modified test badge description                        |
-      | Image author   | http://author.example.com                              |
       | Image caption  | Test caption image                                     |
       | Tags           | Math, History                                          |
       | Issuer contact | issuer@invalid.cat                                     |

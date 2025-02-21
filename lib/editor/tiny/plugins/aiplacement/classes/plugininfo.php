@@ -16,6 +16,7 @@
 
 namespace tiny_aiplacement;
 
+use aiplacement_editor\utils;
 use core\context;
 use core_ai\aiactions\generate_image;
 use core_ai\aiactions\generate_text;
@@ -89,28 +90,19 @@ class plugininfo extends plugin implements plugin_with_buttons, plugin_with_menu
      * @return array The allowed actions.
      */
     private static function get_allowed_actions(context $context, array $options): array {
-        [$plugintype, $pluginname] = explode('_', \core_component::normalize_componentname('aiplacement_editor'), 2);
-        $manager = \core_plugin_manager::resolve_plugininfo_class($plugintype);
         $allowedactions = [];
-        if ($manager::is_plugin_enabled($pluginname)) {
-            $providers = manager::get_providers_for_actions(array_values(self::$possibleactions), true);
-            foreach (self::$possibleactions as $action => $providerclass) {
-                if (
-                    has_capability("aiplacement/editor:{$action}", $context)
-                    && manager::is_action_enabled('aiplacement_editor', $action)
-                    && !empty($providers[$providerclass])
-                ) {
-                    if ($action == 'generate_image') {
-                        // For generate image, we need to check if the user has the capability to upload files.
-                        $canhavefiles = !empty($options['maxfiles']);
-                        $canhaveexternalfiles = !empty($options['return_types']) && ($options['return_types'] & FILE_EXTERNAL);
-                        $allowedactions[$action] = $canhavefiles || $canhaveexternalfiles;
-                    } else {
-                        $allowedactions[$action] = true;
-                    }
-                } else {
-                    $allowedactions[$action] = false;
-                }
+        foreach (self::$possibleactions as $action => $actionclass) {
+            $allowedactions[$action] = utils::is_html_editor_placement_action_available(
+                context: $context,
+                actionname: $action,
+                actionclass: $actionclass,
+            );
+
+            if ($allowedactions[$action] && $action == 'generate_image') {
+                // For generate image, we need to check if the user has the capability to upload files.
+                $canhavefiles = !empty($options['maxfiles']);
+                $canhaveexternalfiles = !empty($options['return_types']) && ($options['return_types'] & FILE_EXTERNAL);
+                $allowedactions[$action] = $canhavefiles || $canhaveexternalfiles;
             }
         }
         return $allowedactions;

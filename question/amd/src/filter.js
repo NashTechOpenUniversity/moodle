@@ -34,26 +34,28 @@ import Fragment from 'core/fragment';
  * @param {String} defaultcourseid Course ID for the default course to pass back to the view.
  * @param {String} defaultcategoryid Question bank category ID for the default course to pass back to the view.
  * @param {Number} perpage The number of questions to display per page.
- * @param {Number} contextId Context ID of the question bank view.
+ * @param {Number} bankContextId Context ID of the question bank being filtered.
+ * @param {Number} quizCmId Course module ID of the quiz as the viewing context.
  * @param {string} component Frankenstyle name of the component for the fragment API callback (e.g. core_question)
  * @param {string} callback Name of the callback for the fragment API (e.g question_data)
  * @param {string} view The class name of the question bank view class used for this page.
  * @param {Number} cmid If we are in an activitiy, the course module ID.
- * @param {string} pagevars JSON-encoded parameters from passed from the view, including filters and jointype.
- * @param {string} extraparams JSON-encoded additional parameters specific to this view class, used for re-rendering the view.
+ * @param {Object} pagevars JSON-encoded parameters from passed from the view, including filters and jointype.
+ * @param {Object} extraparams JSON-encoded additional parameters specific to this view class, used for re-rendering the view.
  */
 export const init = (
     filterRegionId,
     defaultcourseid,
     defaultcategoryid,
     perpage,
-    contextId,
+    bankContextId,
+    quizCmId,
     component,
     callback,
     view,
     cmid,
     pagevars,
-    extraparams
+    extraparams,
 ) => {
 
     const SELECTORS = {
@@ -71,7 +73,7 @@ export const init = (
     const filterSet = document.querySelector(`#${filterRegionId}`);
 
     const viewData = {
-        extraparams,
+        extraparams: JSON.stringify(extraparams),
         cmid,
         view,
         cat: defaultcategoryid,
@@ -109,15 +111,16 @@ export const init = (
                 if (!isNaN(viewData.jointype)) {
                     filterdata.jointype = viewData.jointype;
                 }
-                updateUrlParams(filterdata);
             }
         }
         // Load questions for first page.
         viewData.filter = JSON.stringify(filterdata);
         viewData.sortdata = JSON.stringify(sortData);
-        Fragment.loadFragment(component, callback, contextId, viewData)
+        viewData.quizcmid = quizCmId;
+        Fragment.loadFragment(component, callback, bankContextId, viewData)
             // Render questions for first page and pagination.
             .then((questionhtml, jsfooter) => {
+                updateUrlParams(filterdata);
                 const questionscontainer = document.querySelector(SELECTORS.QUESTION_CONTAINER_ID);
                 if (questionhtml === undefined) {
                     questionhtml = '';
@@ -195,7 +198,7 @@ export const init = (
                 }
             }
             viewData.qpage = 0;
-            coreFilter.updateTableFromFilter();
+            coreFilter.updateTableFromFilter(false);
         }
         if (paginationLink) {
             e.preventDefault();
@@ -203,7 +206,7 @@ export const init = (
             const qpage = paginationURL.searchParams.get('qpage');
             if (paginationURL.search !== null) {
                 viewData.qpage = qpage;
-                coreFilter.updateTableFromFilter();
+                coreFilter.updateTableFromFilter(false);
             }
         }
         if (clearLink) {
@@ -212,7 +215,6 @@ export const init = (
     });
 
     // Run apply filter at page load.
-    pagevars = JSON.parse(pagevars);
     let initialFilters;
     let jointype = null;
     if (pagevars.filter) {

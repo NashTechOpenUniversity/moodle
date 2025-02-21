@@ -41,7 +41,7 @@ require_once(__DIR__ . '/fixtures/test_analysis.php');
  * @copyright 2017 David Monllaó {@link http://www.davidmonllao.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class model_test extends \advanced_testcase {
+final class model_test extends \advanced_testcase {
 
     /** @var model Store Model. */
     protected $model;
@@ -525,7 +525,7 @@ class model_test extends \advanced_testcase {
             $this->markTestSkipped('PHPUNIT_LONGTEST is not defined');
         }
 
-        // 10000 should be enough to make oracle and mssql fail, if we want pgsql to fail we need around 70000
+        // 10000 should be enough to make mssql fail, if we want pgsql to fail we need around 70000
         // users, that is a few minutes just to create the users.
         $nusers = 10000;
 

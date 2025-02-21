@@ -571,10 +571,13 @@ class backup_course_structure_step extends backup_structure_step {
                                  FROM {course_format_options}
                                  WHERE courseid = ? AND sectionid = 0', [ backup::VAR_PARENTID ]);
 
-        $handler = core_course\customfield\course_handler::create();
-        $fieldsforbackup = $handler->get_instance_data_for_backup($this->task->get_courseid());
-        $handler->backup_define_structure($this->task->get_courseid(), $customfield);
-        $customfield->set_source_array($fieldsforbackup);
+        // Custom fields.
+        if ($this->get_setting_value('customfield')) {
+            $handler = core_course\customfield\course_handler::create();
+            $fieldsforbackup = $handler->get_instance_data_for_backup($this->task->get_courseid());
+            $handler->backup_define_structure($this->task->get_courseid(), $customfield);
+            $customfield->set_source_array($fieldsforbackup);
+        }
 
         // Some annotations
 
@@ -925,8 +928,7 @@ class backup_badges_structure_step extends backup_structure_step {
                 'timecreated', 'timemodified', 'usercreated', 'usermodified', 'issuername',
                 'issuerurl', 'issuercontact', 'expiredate', 'expireperiod', 'type', 'courseid',
                 'message', 'messagesubject', 'attachment', 'notification', 'status', 'nextcron',
-                'version', 'language', 'imageauthorname', 'imageauthoremail', 'imageauthorurl',
-                'imagecaption'));
+                'version', 'language', 'imagecaption'));
 
         $criteria = new backup_nested_element('criteria');
         $criterion = new backup_nested_element('criterion', array('id'), array('badgeid',
@@ -1444,17 +1446,20 @@ class backup_groups_structure_step extends backup_structure_step {
                 $member->set_source_table('groups_members', array('groupid' => backup::VAR_PARENTID));
             }
 
-            $groupcustomfieldarray = $this->get_group_custom_fields_for_backup(
-                $group->get_source_sql(),
-                [$this->get_backupid()]
-            );
-            $groupcustomfield->set_source_array($groupcustomfieldarray);
+            // Custom fields.
+            if ($this->get_setting_value('customfield')) {
+                $groupcustomfieldarray = $this->get_group_custom_fields_for_backup(
+                    $group->get_source_sql(),
+                    [$this->get_backupid()]
+                );
+                $groupcustomfield->set_source_array($groupcustomfieldarray);
 
-            $groupingcustomfieldarray = $this->get_grouping_custom_fields_for_backup(
-                $grouping->get_source_sql(),
-                [$this->get_backupid()]
-            );
-            $groupingcustomfield->set_source_array($groupingcustomfieldarray);
+                $groupingcustomfieldarray = $this->get_grouping_custom_fields_for_backup(
+                    $grouping->get_source_sql(),
+                    [$this->get_backupid()]
+                );
+                $groupingcustomfield->set_source_array($groupingcustomfieldarray);
+            }
         }
 
         // Define id annotations (as final)

@@ -25,7 +25,7 @@ namespace core_adminpresets;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @coversDefaultClass \core_adminpresets\helper
  */
-class helper_test extends \advanced_testcase {
+final class helper_test extends \advanced_testcase {
 
     /**
      * Test the behaviour of create_preset() method.
@@ -84,7 +84,7 @@ class helper_test extends \advanced_testcase {
      *
      * @return array
      */
-    public function create_preset_provider(): array {
+    public static function create_preset_provider(): array {
         return [
             'Default values' => [
             ],
@@ -177,7 +177,7 @@ class helper_test extends \advanced_testcase {
      *
      * @return array
      */
-    public function add_item_provider(): array {
+    public static function add_item_provider(): array {
         return [
             'Setting without plugin' => [
                 'name' => 'settingname',
@@ -239,7 +239,7 @@ class helper_test extends \advanced_testcase {
      *
      * @return array
      */
-    public function add_plugin_provider(): array {
+    public static function add_plugin_provider(): array {
         return [
             'Plugin: enabled (using int)' => [
                 'type' => 'plugintype',
@@ -290,7 +290,10 @@ class helper_test extends \advanced_testcase {
         $generator = $this->getDataGenerator()->get_plugin_generator('core_adminpresets');
         $generator->create_preset(['name' => 'Preset 1']);
 
+        $invokable = self::get_invokable();
+        set_error_handler($invokable, E_WARNING);
         $presetid = helper::change_default_preset($preset);
+        restore_error_handler();
 
         if (empty($settings) && empty($plugins)) {
             // The preset hasn't been applied.
@@ -321,7 +324,7 @@ class helper_test extends \advanced_testcase {
      *
      * @return array
      */
-    public function change_default_preset_provider(): array {
+    public static function change_default_preset_provider(): array {
         return [
             'Starter preset' => [
                 'preset' => 'starter',
@@ -331,7 +334,7 @@ class helper_test extends \advanced_testcase {
                 ],
                 'plugins' => [
                     'assign' => 1,
-                    'chat' => 0,
+                    'wiki' => 0,
                     'data' => 0,
                     'lesson' => 0,
                 ],
@@ -364,20 +367,20 @@ class helper_test extends \advanced_testcase {
                 'preset' => 'unexisting',
             ],
             'Valid XML file' => [
-                'preset' => __DIR__ . '/fixtures/import_settings_plugins.xml',
+                'preset' => self::get_fixture_path(__NAMESPACE__, 'import_settings_plugins.xml'),
                 'settings' => [
                     'allowemojipicker' => 1,
                     'enableportfolios' => 1,
                 ],
                 'plugins' => [
                     'assign' => 1,
-                    'chat' => 0,
+                    'page' => 0,
                     'data' => 0,
                     'lesson' => 1,
                 ],
             ],
             'Invalid XML file' => [
-                'preset' => __DIR__ . '/fixtures/invalid_xml_file.xml',
+                'preset' => self::get_fixture_path(__NAMESPACE__, 'invalid_xml_file.xml'),
             ],
             'Unexisting XML file' => [
                 'preset' => __DIR__ . '/fixtures/unexisting.xml',

@@ -26,13 +26,13 @@ use core_scss;
  * @copyright 2016 onwards Ankit Agarwal
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class scss_test extends \advanced_testcase {
+final class scss_test extends \advanced_testcase {
 
     /**
      * Data provider for is_valid_file
      * @return array
      */
-    public function is_valid_file_provider() {
+    public static function is_valid_file_provider(): array {
         $themedirectory = \core_component::get_component_directory('theme_boost');
         $realroot = realpath($themedirectory);
         return [
@@ -66,7 +66,7 @@ class scss_test extends \advanced_testcase {
     /**
      * Test cases for SassC compilation.
      */
-    public function scss_compilation_provider() {
+    public static function scss_compilation_provider(): array {
         return [
             'simple' => [
                 'scss' => '$font-stack: Helvetica, sans-serif;
@@ -132,9 +132,9 @@ CSS
      *
      * @dataProvider scss_compilation_provider
      * @param string $scss The raw scss to compile.
-     * @param string $expectedcss The expected CSS output.
+     * @param string $expected The expected CSS output.
      */
-    public function test_scss_compilation_with_sassc($scss, $expectedcss): void {
+    public function test_scss_compilation_with_sassc($scss, $expected): void {
         if (!defined('PHPUNIT_PATH_TO_SASSC')) {
             $this->markTestSkipped('Path to SassC not provided');
         }
@@ -142,6 +142,6 @@ CSS
         $this->resetAfterTest();
         set_config('pathtosassc', PHPUNIT_PATH_TO_SASSC);
         $compiler = new core_scss();
-        $this->assertSame($compiler->compile($scss), $expectedcss);
+        $this->assertSame($compiler->compile($scss), $expected);
     }
 }

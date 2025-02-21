@@ -43,10 +43,6 @@
     font-weight: 900;
 }
 
-.path-mod-assign.jsenabled .gradingoptionsform [type=submit] {
-    display: none;
-}
-
 .path-mod-assign.jsenabled .gradingtable .c1 select {
     display: none;
 }
@@ -133,14 +129,6 @@
 
 .path-mod-assign.jsenabled .gradingtable .c0 {
     display: table-cell;
-}
-
-.path-mod-assign .gradingbatchoperationsform {
-    display: none;
-}
-
-.path-mod-assign.jsenabled .gradingbatchoperationsform {
-    display: block;
 }
 
 .path-mod-assign .gradingtable table {
@@ -1247,4 +1235,12 @@ body.tox-fullscreen.path-mod-assign [data-region="grade-panel"] {
 /* Bug fix for TinyMCE menu when in fullscreen mode and when editor is nested in a popout.*/
 body.path-mod-assign [data-region="grade-panel"] .mform .fitem.has-popout .felement[data-fieldtype="editor"] {
     overflow: unset;
+}
+
+.path-mod-assign .initialsdropdown {
+    width: 460px;
+}
+
+.path-mod-assign .initialsdropdown::after {
+    content: '';
 }

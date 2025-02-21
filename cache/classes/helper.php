@@ -16,7 +16,7 @@
 
 namespace core_cache;
 
-use core_cache\administration_helper;
+use core\lang_string;
 use core\exception\coding_exception;
 use DirectoryIterator;
 
@@ -761,7 +761,7 @@ class helper {
                 $todelete = [];
                 foreach ($store->get_many($keys) as $key => $value) {
                     $expiresvalue = 0;
-                    if ($value instanceof cache_ttl_wrapper) {
+                    if ($value instanceof ttl_wrapper) {
                         $expiresvalue = $value->data;
                     } else if ($value instanceof cached_object) {
                         $expiresvalue = $value->restore_object();
@@ -777,7 +777,7 @@ class helper {
                     }
                 }
                 if ($todelete) {
-                    $outcome = (int) store->delete_many($todelete);
+                    $outcome = (int) $store->delete_many($todelete);
                     if ($output) {
                         $strdef = s($definition->get_id());
                         $strstore = s($store->my_name());

@@ -1,9 +1,9 @@
 # core_admin (subsystem) Upgrade notes
 
-## 4.5dev+
+## 4.5rc1
 
-### Added
+### Removed
 
-- Add availability_management_table is a table which extends from plugin_management_table. Create the availability_management_table can reusable the toggle button for enabled column.
+- The HTTP Server setting "Use slash arguments" (slasharguments) configuration setting and related to it has been removed. Calling the option with $CFG->slasharguments or get_config('slasharguments') is no longer available.
 
-  For more information see [MDL-81533](https://tracker.moodle.org/browse/MDL-81533)
+  For more information see [MDL-62640](https://tracker.moodle.org/browse/MDL-62640)

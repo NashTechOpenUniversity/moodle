@@ -12,7 +12,6 @@ Feature: Manage badges
       | language       | en                           |
       | description    | Test badge description       |
       | image          | badges/tests/behat/badge.png |
-      | imageauthorurl | http://author.example.com    |
       | imagecaption   | Test caption image           |
 
   Scenario: Copy a badge
@@ -47,7 +46,7 @@ Feature: Manage badges
     And I navigate to "Badges > Manage badges" in site administration
     And I press "Delete" action in the "Badge #1" report row
     And I press "Delete and remove existing issued badges"
-    Then I should see "There are no matching badges available for users to earn"
+    Then I should see "There are no matching badges available for users to earn."
 
   Scenario Outline: Filter managed badges
     Given the following "core_badges > Badges" exist:
@@ -154,7 +153,6 @@ Feature: Manage badges
       | language       | en                           |
       | description    | Test badge description       |
       | image          | badges/tests/behat/badge.png |
-      | imageauthorurl | http://author.example.com    |
       | imagecaption   | Test caption image           |
     And I log in as "admin"
     And I navigate to "Badges > Add a new badge" in site administration

@@ -1149,6 +1149,16 @@ class course_modinfo {
         // Because this is a versioned cache, there is no need to actually delete the cache item,
         // only increase the required version number.
     }
+
+    /**
+     * Can this module type be displayed on a course page or selected from the activity types when adding an activity to a course?
+     *
+     * @param string $modname The module type name
+     * @return bool
+     */
+    public static function is_mod_type_visible_on_course(string $modname): bool {
+        return plugin_supports('mod', $modname, FEATURE_CAN_DISPLAY, true);
+    }
 }
 
 
@@ -2568,6 +2578,15 @@ class cm_info implements IteratorAggregate {
     }
 
     /**
+     * Use this method if you want to check if the plugin overrides any visibility checks to block rendering to the display.
+     *
+     * @return bool
+     */
+    public function is_of_type_that_can_display(): bool {
+        return course_modinfo::is_mod_type_visible_on_course($this->modname);
+    }
+
+    /**
      * Whether this module is available but hidden from course page
      *
      * "Stealth" modules are the ones that are not shown on course page but available by following url.
@@ -3226,6 +3245,9 @@ class section_info implements IteratorAggregate {
      */
     private ?sectiondelegate $_delegateinstance = null;
 
+    /** @var cm_info[]|null Section cm_info activities, null when it is not loaded yet. */
+    private array|null $_sequencecminfos = null;
+
     /**
      * @var bool|null $_isorphan True if the section is orphan for some reason.
      */
@@ -3626,6 +3648,27 @@ class section_info implements IteratorAggregate {
     }
 
     /**
+     * Returns the course modules in this section.
+     *
+     * @return cm_info[]
+     */
+    public function get_sequence_cm_infos(): array {
+        if ($this->_sequencecminfos !== null) {
+            return $this->_sequencecminfos;
+        }
+        $sequence = $this->modinfo->sections[$this->_sectionnum] ?? [];
+        $cms = $this->modinfo->get_cms();
+        $result = [];
+        foreach ($sequence as $cmid) {
+            if (isset($cms[$cmid])) {
+                $result[] = $cms[$cmid];
+            }
+        }
+        $this->_sequencecminfos = $result;
+        return $result;
+    }
+
+    /**
      * Returns course ID - from course_sections table
      *
      * @return int
@@ -3658,7 +3701,7 @@ class section_info implements IteratorAggregate {
      * Get the delegate component instance.
      */
     public function get_component_instance(): ?sectiondelegate {
-        if (empty($this->_component)) {
+        if (!$this->is_delegated()) {
             return null;
         }
         if ($this->_delegateinstance !== null) {

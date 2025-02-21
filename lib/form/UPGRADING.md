@@ -1,9 +1,19 @@
 # core_form (subsystem) Upgrade notes
 
-## 4.5dev+
+## 5.0dev
+
+### Changed
+
+- The `cohort` form element now accepts new `includes` option, which is passed to the corresponding external service to determine which cohorts to return (self, parents, all)
+
+  For more information see [MDL-83641](https://tracker.moodle.org/browse/MDL-83641)
+
+## 4.5
 
 ### Added
 
-- Previously, the 'duration' form field type would allow users to input positive or negative durations. However looking at all the uses, everyone was expecting this input type to only accept times >= 0 seconds, and almost no-one was bothering to write manual form validation, leading to subtle bugs. So now, by default this field type will validate the input value is not negative. If you need the previous behaviour, there is a new option 'allownegative' which you can set to true. (The default is false.)
+- The `duration` form field type has been modified to validate that the supplied value is a positive value.
+  Previously it could be any numeric value, but every usage of this field in Moodle was expecting a positive value. When a negative value was provided and accepted, subtle bugs could occur.
+  Where a negative duration _is_ allowed, the `allownegative` attribute can be set to `true`.
 
   For more information see [MDL-82687](https://tracker.moodle.org/browse/MDL-82687)

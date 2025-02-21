@@ -33,7 +33,7 @@ require_once($CFG->dirroot . '/webservice/tests/helpers.php');
  * @copyright   2023 Andrew Lyons <andrew@nicols.co.uk>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class set_plugin_order_test extends \externallib_advanced_testcase {
+final class set_plugin_order_test extends \externallib_advanced_testcase {
     /**
      * Text execute method for editor plugins, which support ordering.
      *
@@ -72,7 +72,7 @@ class set_plugin_order_test extends \externallib_advanced_testcase {
      *
      * @return array
      */
-    public function execute_editor_provider(): array {
+    public static function execute_editor_provider(): array {
         $pluginmanager = \core_plugin_manager::instance();
         $allplugins = array_keys($pluginmanager->get_plugins_of_type('editor'));
 
@@ -86,45 +86,45 @@ class set_plugin_order_test extends \externallib_advanced_testcase {
         return [
             [
                 'initialstate' => 'textarea,tiny',
-                'pluginname' => 'editor_textarea',
+                'plugin' => 'editor_textarea',
                 'direction' => 1, // DOWN.
-                'expected' => $getorder([
+                'neworder' => $getorder([
                     'tiny',
                     'textarea',
                 ]),
-                'newtexteditors' => 'tiny,textarea',
+                'newstate' => 'tiny,textarea',
             ],
             [
                 'initialstate' => 'textarea,tiny',
-                'pluginname' => 'editor_textarea',
+                'plugin' => 'editor_textarea',
                 'direction' => -1, // UP.
-                'expected' => $getorder([
+                'neworder' => $getorder([
                     'textarea',
                     'tiny',
                 ]),
-                'newtexteditors' => 'textarea,tiny',
+                'newstate' => 'textarea,tiny',
             ],
             [
                 'initialstate' => 'textarea,tiny',
-                'pluginname' => 'editor_tiny',
+                'plugin' => 'editor_tiny',
                 'direction' => 1, // DOWN.
                 // Tiny is already at the bottom of the list of enabled plugins.
-                'expected' => $getorder([
+                'neworder' => $getorder([
                     'textarea',
                     'tiny',
                 ]),
-                'newtexteditors' => 'textarea,tiny',
+                'newstate' => 'textarea,tiny',
             ],
             [
                 'initialstate' => 'textarea,tiny',
-                'pluginname' => 'editor_atto',
+                'plugin' => 'editor_atto',
                 'direction' => 1, // DOWN.
                 // Atto is not enabled. Disabled editors are listed lexically after enabled editors.
-                'expected' => $getorder([
+                'neworder' => $getorder([
                     'textarea',
                     'tiny',
                 ]),
-                'newtexteditors' => 'textarea,tiny',
+                'newstate' => 'textarea,tiny',
             ],
         ];
     }
@@ -142,7 +142,7 @@ class set_plugin_order_test extends \externallib_advanced_testcase {
         $this->assertIsArray(set_plugin_order::execute($plugin, 1));
     }
 
-    public function execute_non_orderable_provider(): array {
+    public static function execute_non_orderable_provider(): array {
         return [
             // Activities do not support ordering.
             ['mod_assign'],

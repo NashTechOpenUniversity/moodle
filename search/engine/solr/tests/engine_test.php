@@ -46,8 +46,7 @@ require_once($CFG->dirroot . '/search/engine/solr/tests/fixtures/testable_engine
  *
  * @runTestsInSeparateProcesses
  */
-class engine_test extends \advanced_testcase {
-
+final class engine_test extends \advanced_testcase {
     /**
      * @var \core_search\manager
      */
@@ -145,7 +144,7 @@ class engine_test extends \advanced_testcase {
     /**
      * Simple data provider to allow tests to be run with file indexing on and off.
      */
-    public function file_indexing_provider() {
+    public static function file_indexing_provider(): array {
         return array(
             'file-indexing-on' => array(1),
             'file-indexing-off' => array(0)
@@ -1470,6 +1469,19 @@ class engine_test extends \advanced_testcase {
         $querydata->q = '42';
         $results = $this->search->search($querydata);
         $this->assertCount(1, $results);
+    }
+
+    /**
+     * Tests that the get_status function works OK on the real server (there are more detailed
+     * tests for this function in {@see mock_engine_test}).
+     *
+     * @covers \search_solr\check\connection
+     */
+    public function test_get_status(): void {
+        $status = $this->engine->get_status(5);
+        $this->assertTrue($status['connected']);
+        $this->assertTrue($status['foundcore']);
+        $this->assertGreaterThan(0, $status['indexsize']);
     }
 
     /**

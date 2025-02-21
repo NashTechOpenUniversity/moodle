@@ -100,6 +100,26 @@ class behat_general extends behat_base {
     }
 
     /**
+     * Checks, that current page PATH matches regular expression
+     *
+     * Example: Then the url should match "/course/index\.php"
+     * Example: Then the url should match "/mod/forum/view\.php\?id=[0-9]+"
+     * Example: And the url should match "^http://moodle\.org"
+     *
+     * @Then /^the url should match (?P<pattern>"(?:[^"]|\\")*")$/
+     * @param string $pattern The pattern that must match to the current url.
+     */
+    public function the_url_should_match($pattern) {
+        $url = $this->getSession()->getCurrentUrl();
+
+        if (preg_match($pattern, $url) === 1) {
+            return;
+        }
+
+        throw new ExpectationException(sprintf('The url "%s" should match with %s', $url, $pattern), $this->getSession());
+    }
+
+    /**
      * Reloads the current page.
      *
      * @Given /^I reload the page$/
@@ -134,7 +154,7 @@ class behat_general extends behat_base {
         // Getting the refresh time and the url if present.
         if (strstr($content, 'url') != false) {
 
-            list($waittime, $url) = explode(';', $content);
+            [$waittime, $url] = explode(';', $content);
 
             // Cleaning the URL value.
             $url = trim(substr($url, strpos($url, 'http')));
@@ -974,8 +994,8 @@ class behat_general extends behat_base {
             $msg .= " in the '{$containerelement}' '{$containerselectortype}'";
         }
 
-        list($preselector, $prelocator) = $this->transform_selector($preselectortype, $preelement);
-        list($postselector, $postlocator) = $this->transform_selector($postselectortype, $postelement);
+        [$preselector, $prelocator] = $this->transform_selector($preselectortype, $preelement);
+        [$postselector, $postlocator] = $this->transform_selector($postselectortype, $postelement);
 
         $newlines = [
             "\r\n",
@@ -1737,7 +1757,7 @@ EOF;
     public function following_should_download_between_and_bytes($link, $minexpectedsize, $maxexpectedsize) {
         // If the minimum is greater than the maximum then swap the values.
         if ((int)$minexpectedsize > (int)$maxexpectedsize) {
-            list($minexpectedsize, $maxexpectedsize) = array($maxexpectedsize, $minexpectedsize);
+            [$minexpectedsize, $maxexpectedsize] = [$maxexpectedsize, $minexpectedsize];
         }
 
         $exception = new ExpectationException('Error while downloading data from ' . $link, $this->getSession());
@@ -2101,7 +2121,7 @@ EOF;
         $validmodifiers = array('ctrl', 'alt', 'shift', 'meta');
         $char = $key;
         if (strpos($key, '-')) {
-            list($modifier, $char) = preg_split('/-/', $key, 2);
+            [$modifier, $char] = preg_split('/-/', $key, 2);
             $modifier = strtolower($modifier);
             if (!in_array($modifier, $validmodifiers)) {
                 throw new ExpectationException(sprintf('Unknown key modifier: %s.', $modifier),
@@ -2137,7 +2157,7 @@ EOF;
     }
 
     /**
-     * Checks if database family used is using one of the specified, else skip. (mysql, postgres, mssql, oracle, etc.)
+     * Checks if database family used is using one of the specified, else skip. (mysql, postgres, mssql, etc.)
      *
      * @Given /^database family used is one of the following:$/
      * @param TableNode $databasefamilies list of database.
@@ -2642,5 +2662,100 @@ EOF;
             $node, "NodeElement",
         ]);
         $this->execute("behat_general::i_wait_to_be_redirected");
+    }
+
+    /**
+     * Clicks on a specific link within a table row.
+     * Good for clicking links on tables where links have repeated text in diiferent rows.
+     *
+     * Example:
+     * - I click on the "Settings" link in the row containing "Text editor placement"
+     *
+     * @Given /^I click on the "(?P<linktext>(?:[^"]|\\")*)" link in the table row containing "(?P<rowtext>(?:[^"]|\\")*)"$/
+     * @param string $linktext
+     * @param string $rowtext
+     */
+    public function i_click_on_the_link_in_the_table_row_containing(string $linktext, string $rowtext): void {
+        $row = $this->getSession()->getPage()->find('xpath', "//tr[contains(., '{$rowtext}')]");
+        if (!$row) {
+            throw new Exception("Row containing '{$rowtext}' not found");
+        }
+        $link = $row->findLink($linktext);
+        if (!$link) {
+            throw new Exception("Link '{$linktext}' not found in the row containing '{$rowtext}'");
+        }
+        $link->click();
+    }
+
+    /**
+     * Checks if a specific text is present in a table row.
+     * Good for checking text in tables where text is repeated in different rows.
+     *
+     * Example:
+     * - I should see "This action is unavailable." in the table row containing "Generate text"
+     *
+     * @Then /^I should see "(?P<text>(?:[^"]|\\")*)" in the table row containing "(?P<rowtext>(?:[^"]|\\")*)"$/
+     * @param string $text
+     * @param string $rowtext
+     */
+    public function i_should_see_in_the_table_row_containing(string $text, string $rowtext): void {
+        $row = $this->getSession()->getPage()->find('xpath', "//tr[contains(., '{$rowtext}')]");
+        if (!$row) {
+            throw new Exception("Row containing '{$rowtext}' not found");
+        }
+        if (strpos($row->getText(), $text) === false) {
+            throw new Exception("Text '{$text}' not found in the row containing '{$rowtext}'");
+        }
+    }
+
+    /**
+     * Checks if a specific text is not present in a table row.
+     * Good for checking text in tables where text is repeated in different rows.
+     *
+     * Example:
+     * - I should not see "This action is unavailable." in the table row containing "Generate text"
+     *
+     * @Then /^I should not see "(?P<text>(?:[^"]|\\")*)" in the table row containing "(?P<rowtext>(?:[^"]|\\")*)"$/
+     * @param string $text
+     * @param string $rowtext
+     */
+    public function i_should_not_see_in_the_table_row_containing(string $text, string $rowtext): void {
+        $row = $this->getSession()->getPage()->find('xpath', "//tr[contains(., '{$rowtext}')]");
+        if (!$row) {
+            throw new Exception("Row containing '{$rowtext}' not found");
+        }
+        if (strpos($row->getText(), $text) !== false) {
+            throw new Exception("Text '{$text}' found in the row containing '{$rowtext}'");
+        }
+    }
+
+    /**
+     * Sets the current time for the remainder of this Behat test.
+     *
+     * This is not supported everywhere in Moodle: if code uses \core\clock through DI then
+     * it will work, but if it just calls time() it will still get the real time.
+     *
+     * @Given the time is frozen at :datetime
+     * @param string $datetime Date and time in a format that strtotime understands
+     */
+    public function the_time_is_frozen_at(string $datetime): void {
+        global $CFG;
+        require_once($CFG->libdir . '/testing/classes/frozen_clock.php');
+
+        $timestamp = strtotime($datetime);
+        // The config variable is used to set up a frozen clock in each Behat web request.
+        set_config('behat_frozen_clock', $timestamp);
+        // Simply setting a frozen clock in DI should work for future steps in Behat CLI process.
+        \core\di::set(\core\clock::class, new \frozen_clock($timestamp));
+    }
+
+    /**
+     * Stops freezing time so that it goes back to real time.
+     *
+     * @Given the time is no longer frozen
+     */
+    public function the_time_is_no_longer_frozen(): void {
+        unset_config('behat_frozen_clock');
+        \core\di::set(\core\clock::class, new \core\system_clock());
     }
 }

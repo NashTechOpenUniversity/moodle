@@ -27,7 +27,7 @@ namespace enrol_database;
  * @copyright  2011 Petr Skoda {@link http://skodak.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class sync_test extends \advanced_testcase {
+final class sync_test extends \advanced_testcase {
     protected static $courses = array();
     protected static $users = array();
     protected static $roles = array();
@@ -80,11 +80,6 @@ class sync_test extends \advanced_testcase {
                     }
                     set_config('dbtype', 'mysqli://'.rawurlencode($CFG->dbuser).':'.rawurlencode($CFG->dbpass).'@'.rawurlencode($CFG->dbhost).'/'.rawurlencode($CFG->dbname).'?socket='.rawurlencode($dbsocket), 'enrol_database');
                 }
-                break;
-
-            case 'oracle':
-                set_config('dbtype', 'oci8po', 'enrol_database');
-                set_config('dbsybasequoting', '1', 'enrol_database');
                 break;
 
             case 'postgres':

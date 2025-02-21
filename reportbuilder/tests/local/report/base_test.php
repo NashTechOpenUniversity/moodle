@@ -35,7 +35,7 @@ use ReflectionClass;
  * @copyright   2021 David Matamoros <davidmc@moodle.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class base_test extends advanced_testcase {
+final class base_test extends advanced_testcase {
 
     /**
      * Load required class
@@ -56,7 +56,7 @@ class base_test extends advanced_testcase {
         $systemreport->add_base_condition_simple('username', 'admin');
         [$where, $params] = $systemreport->get_base_condition();
         $this->assertStringMatchesFormat('username = :%a', $where);
-        $this->assertEqualsCanonicalizing(['admin'], $params);
+        $this->assertEqualsCanonicalizing(['admin'], array_values($params));
     }
 
     /**

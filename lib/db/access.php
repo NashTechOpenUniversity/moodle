@@ -1025,6 +1025,17 @@ $capabilities = array(
         )
     ),
 
+    'moodle/course:viewoverview' => [
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => [
+            'student' => CAP_ALLOW,
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+
     'moodle/course:changefullname' => array(
 
         'riskbitmask' => RISK_XSS,
@@ -2808,6 +2819,24 @@ $capabilities = array(
         'contextlevel' => CONTEXT_SYSTEM,
         'archetypes' => [
             'user' => CAP_ALLOW,
+        ],
+    ],
+    // Allow managers to view the AI policy acceptance report.
+    'moodle/ai:viewaipolicyacceptancereport' => [
+        'riskbitmask' => RISK_PERSONAL,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+    // Allow managers to view the AI usage report.
+    'moodle/ai:viewaiusagereport' => [
+        'riskbitmask' => RISK_PERSONAL,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
         ],
     ],
 );

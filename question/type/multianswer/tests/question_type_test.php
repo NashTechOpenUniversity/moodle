@@ -39,7 +39,7 @@ require_once($CFG->dirroot . '/question/type/multianswer/edit_multianswer_form.p
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers    \qtype_multianswer
  */
-class question_type_test extends \advanced_testcase {
+final class question_type_test extends \advanced_testcase {
     /** @var qtype_multianswer instance of the question type class to test. */
     protected $qtype;
 
@@ -192,7 +192,7 @@ class question_type_test extends \advanced_testcase {
         $this->assertEquals($question->createdby, $questiondata->createdby);
         $this->assertEquals($question->createdby, $questiondata->modifiedby);
         $this->assertEquals('', $questiondata->idnumber);
-        $this->assertEquals($syscontext->id, $questiondata->contextid);
+        $this->assertEquals($category->contextid, $questiondata->contextid);
 
         // Build the expected hint base.
         $hintbase = [

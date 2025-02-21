@@ -26,7 +26,7 @@ use enrol_lti\local\ltiadvantage\entity\deployment;
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @coversDefaultClass \enrol_lti\local\ltiadvantage\repository\application_registration_repository
  */
-class application_registration_repository_test extends \advanced_testcase {
+final class application_registration_repository_test extends \advanced_testcase {
     /**
      * Helper to generate a new application_registration object.
      *
@@ -98,28 +98,28 @@ class application_registration_repository_test extends \advanced_testcase {
      *
      * @dataProvider save_data_provider
      * @covers ::save
-     * @param array $regdata the registration data
+     * @param array $registrationdata the registration data
      */
-    public function test_save_new(array $regdata): void {
+    public function test_save_new(array $registrationdata): void {
         $this->resetAfterTest();
 
-        $reg = application_registration::create_draft($regdata['name'], $regdata['uniqueid']);
-        if (isset($regdata['platformid'])) {
-            $reg->set_platformid($regdata['platformid']);
+        $reg = application_registration::create_draft($registrationdata['name'], $registrationdata['uniqueid']);
+        if (isset($registrationdata['platformid'])) {
+            $reg->set_platformid($registrationdata['platformid']);
         }
-        if (isset($regdata['clientid'])) {
-            $reg->set_clientid($regdata['clientid']);
+        if (isset($registrationdata['clientid'])) {
+            $reg->set_clientid($registrationdata['clientid']);
         }
-        if (isset($regdata['authenticationrequesturl'])) {
-            $reg->set_authenticationrequesturl($regdata['authenticationrequesturl']);
+        if (isset($registrationdata['authenticationrequesturl'])) {
+            $reg->set_authenticationrequesturl($registrationdata['authenticationrequesturl']);
         }
-        if (isset($regdata['jwksurl'])) {
-            $reg->set_jwksurl($regdata['jwksurl']);
+        if (isset($registrationdata['jwksurl'])) {
+            $reg->set_jwksurl($registrationdata['jwksurl']);
         }
-        if (isset($regdata['accesstokenurl'])) {
-            $reg->set_accesstokenurl($regdata['accesstokenurl']);
+        if (isset($registrationdata['accesstokenurl'])) {
+            $reg->set_accesstokenurl($registrationdata['accesstokenurl']);
         }
-        if (!empty($regdata['setcomplete'])) {
+        if (!empty($registrationdata['setcomplete'])) {
             $reg->complete_registration();
         }
         $repository = new application_registration_repository();
@@ -135,7 +135,7 @@ class application_registration_repository_test extends \advanced_testcase {
      *
      * @return array the array of test data.
      */
-    public function save_data_provider(): array {
+    public static function save_data_provider(): array {
         return [
             'minimal draft' => [
                 'registrationdata' => [

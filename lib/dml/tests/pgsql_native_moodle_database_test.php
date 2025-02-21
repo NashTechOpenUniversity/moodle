@@ -29,6 +29,7 @@ use stdClass, ReflectionClass;
 use moodle_database, pgsql_native_moodle_database;
 use xmldb_table;
 use moodle_exception;
+use PHPUnit\Framework\Attributes\WithoutErrorHandler;
 
 /**
  * Test specific features of the Postgres dml.
@@ -39,7 +40,7 @@ use moodle_exception;
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers  \pgsql_native_moodle_database
  */
-class pgsql_native_moodle_database_test extends \advanced_testcase {
+final class pgsql_native_moodle_database_test extends \advanced_testcase {
 
     /**
      * Setup before class.
@@ -396,6 +397,7 @@ class pgsql_native_moodle_database_test extends \advanced_testcase {
     /**
      * Test SSL connection.
      */
+    #[WithoutErrorHandler]
     public function test_ssl_connection(): void {
         $pgconnerr = 'pg_connect(): Unable to connect to PostgreSQL server:';
 

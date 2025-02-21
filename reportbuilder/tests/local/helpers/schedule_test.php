@@ -263,6 +263,7 @@ final class schedule_test extends advanced_testcase {
 
         // There is only one row in the report (the only user on the site).
         $count = schedule::get_schedule_report_count($schedule);
+        $this->assertDebuggingCalled();
         $this->assertEquals(1, $count);
     }
 
@@ -271,7 +272,7 @@ final class schedule_test extends advanced_testcase {
      *
      * @return string[]
      */
-    public function get_schedule_report_file_format(): array {
+    public static function get_schedule_report_file_format(): array {
         return [
             ['csv'],
             ['excel'],
