@@ -347,6 +347,144 @@ class behat_mod_quiz extends behat_question_base {
         $quizobj->get_grade_calculator()->recompute_quiz_sumgrades();
     }
 
+
+    /**
+     * Fills in feedback for the boundary of a specific grade item.
+     *
+     * @When I set the value :feedback as the feedback for the boundary :boundary in the grade item :name
+     * @param string $feedback Feedback text.
+     * @param string $boundary The boundary data.
+     * @param string $name The grade item name.
+     */
+    public function i_set_the_value_as_the_feedback_for_the_boundary_in_the_grade_item(string $feedback,
+            string $boundary, string $name) {
+        // Find the wrapper element by the grade item name.
+        $xpathgradeitem = "//table[@id='mod_quiz-grade-item-list']" .
+            "//tr[.//span[contains(@class, 'displayvalue') and contains(text(), '$name')]]";
+        $gradeitemnode = $this->getSession()->getPage()->find('xpath', $xpathgradeitem);
+        if (!$gradeitemnode) {
+            throw new Exception("Row containing '{$name}' not found");
+        }
+
+        // Find the feedback form area below the grade item element.
+        $feedbackxpath = "following-sibling::tr[.//div[starts-with(@id, 'overall-feedback-detail') " .
+            "and contains(@class, 'show') and .//div[contains(@class, 'wrap-overallfeedback-form') " .
+            "and not(contains(@class, 'd-none'))]]]";
+        $feedbacknode = $gradeitemnode->find('xpath', $feedbackxpath);
+        if (!$feedbacknode) {
+            throw new Exception('The feedback form is hidden');
+        }
+
+        $feedbackboundariesxpath = ".//div[contains(@id, 'feedbackboundaries') and " .
+            ".//input[starts-with(@name, 'feedbackboundaries') and @value='$boundary']]";
+        // XPath for gradeboundarystatic.
+        $gradeboundarystaticxpath = ".//div[contains(@id, 'gradeboundarystatic') and " .
+            ".//div[starts-with(@data-name, 'gradeboundarystatic') and normalize-space(text())='$boundary']]";
+        // Find the element corresponding to the given boundary data.
+        $boundarynode = $feedbacknode->find('xpath', $feedbackboundariesxpath);
+
+        if (!$boundarynode) {
+            // Fallback: Find gradeboundarystatic div for the boundary 100%.
+            $boundarynode = $feedbacknode->find('xpath', $gradeboundarystaticxpath);
+        }
+
+        if (!$boundarynode) {
+            throw new Exception('Cannot find the element with the given boundary');
+        }
+
+        // Find the textarea element.
+        $editornode = "following-sibling::div[.//textarea[starts-with(@name, 'feedbacktext[') " .
+            "and contains(@name, '][') and contains(@name, '][text]')]]//textarea";
+        $textareanode = $boundarynode->find('xpath', $editornode);
+        if (!$textareanode) {
+            throw new Exception('No matching textarea found.');
+        }
+
+        // Get the textarea name.
+        $textareaname = $textareanode->getAttribute('name');
+
+        // Set the value of the textarea.
+        $field = behat_field_manager::get_form_field_from_label($textareaname, $this);
+        $field->set_value($feedback);
+    }
+
+    /**
+     * Set the boundary value in the grade item.
+     *
+     * @When I set the boundary field :fieldname to :boundary in the grade item :name
+     * @param string $fieldname The boundary field name.
+     * @param string $boundary The boundary value.
+     * @param string $name The grade item name.
+     */
+    public function i_set_the_boundary_field_to_in_the_grade_item(string $fieldname, string $boundary, string $name) {
+        // Find the wrapper element by the grade item name.
+        $xpathgradeitem = "//table[@id='mod_quiz-grade-item-list']" .
+            "//tr[.//span[contains(@class, 'displayvalue') and contains(text(), '$name')]]";
+        $gradeitemnode = $this->getSession()->getPage()->find('xpath', $xpathgradeitem);
+        if (!$gradeitemnode) {
+            throw new Exception("Row containing '{$name}' not found");
+        }
+
+        // Find the feedback form area below the grade item element.
+        $feedbackxpath = "following-sibling::tr[.//div[starts-with(@id, 'overall-feedback-detail') " .
+            "and contains(@class, 'show') and .//div[contains(@class, 'wrap-overallfeedback-form') " .
+            "and not(contains(@class, 'd-none'))]]]";
+        $feedbacknode = $gradeitemnode->find('xpath', $feedbackxpath);
+        if (!$feedbacknode) {
+            throw new Exception('The feedback form is hidden');
+        }
+
+        // Set the field.
+        $inputxpath = "//input[@name='$fieldname']";
+        $inputnode = $feedbacknode->find('xpath', $inputxpath);
+        $inputnode->setValue($boundary);
+        $fullxpath = $inputnode->getXpath();
+        // We need to set the attribute value to use the XPath query later.
+        $script = <<<EOF
+                document.evaluate("$fullxpath",
+                    document,
+                    null,
+                    XPathResult.FIRST_ORDERED_NODE_TYPE,
+                    null
+                ).singleNodeValue.setAttribute('value', "$boundary");
+EOF;
+        $this->getSession()->evaluateScript($script);
+    }
+
+    /**
+     * Add more grade item overall feedback.
+     *
+     * @When I add more feedback in the grade item :name
+     * @param string $name The grade item name.
+     */
+    public function i_add_more_feedback_in_the_grade_item(string $name) {
+        // Find the wrapper element by the grade item name.
+        $xpathgradeitem = "//table[@id='mod_quiz-grade-item-list']//tr[.//span[contains(@class, 'displayvalue') and " .
+            "contains(text(), '$name')]]";
+        $gradeitemnode = $this->getSession()->getPage()->find('xpath', $xpathgradeitem);
+        if (!$gradeitemnode) {
+            throw new Exception("Row containing '{$name}' not found");
+        }
+
+        // Find the feedback form area below the grade item element.
+        $feedbackxpath = "following-sibling::tr[.//div[starts-with(@id, 'overall-feedback-detail') and " .
+            "contains(@class, 'show') and .//div[contains(@class, 'wrap-overallfeedback-form') and " .
+            "not(contains(@class, 'd-none'))]]]";
+        $feedbacknode = $gradeitemnode->find('xpath', $feedbackxpath);
+        if (!$feedbacknode) {
+            throw new Exception('The feedback form is hidden');
+        }
+
+        // XPath to find the last button with the class 'feedbackadd-button' inside the feedback node.
+        $buttonxpath = ".//button[contains(@class, 'feedbackadd-button')][last()]";
+        $buttonnode = $feedbacknode->find('xpath', $buttonxpath);
+        if (!$buttonnode) {
+            throw new Exception('The add more button not found');
+        }
+        // Click the button.
+        $buttonnode->click();
+    }
+
     /**
      * Put the specified section headings to start at specified pages of a given quiz.
      *
