@@ -1,0 +1,8 @@
+issueNumber: MDL-81374
+notes:
+  mod_quiz:
+    - message: >-
+        A new set of methods has been added to `quiz\locallib` to process the overall feedback for grade items:
+        - `quiz_feedback_record_for_gradeitem`: Based on the given grade, this function calculates and retrieves the appropriate feedback.
+        - `quiz_feedback_for_gradeitem`: This function applies filters and formats the given feedback text before displaying it.
+      type: improved

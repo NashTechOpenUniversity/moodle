@@ -299,6 +299,10 @@ class attempt_summary_information implements renderable, named_templatable {
                 new grade_out_of($quiz, $gradeoutof->grade, $gradeoutof->maxgrade,
                     style: abs($gradeoutof->maxgrade - 100) < grade_calculator::ALMOST_ZERO ?
                         grade_out_of::NORMAL : grade_out_of::WITH_PERCENT));
+            $overallfeedback = $attemptobj->get_overall_feedback_for_grade_item($gradeitemid,
+                $gradeoutof->grade / $gradeoutof->maxgrade);
+            $this->add_item('feedbacks' . $gradeitemid, get_string('overallfeedback_for_n', 'mod_quiz',
+                format_string($gradeoutof->name)), $overallfeedback);
         }
 
         // Show raw marks only if they are different from the grade.
