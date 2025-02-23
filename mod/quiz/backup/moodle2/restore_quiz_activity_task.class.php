@@ -61,6 +61,8 @@ class restore_quiz_activity_task extends restore_activity_task {
         $contents[] = new restore_decode_content('quiz', ['intro'], 'quiz');
         $contents[] = new restore_decode_content('quiz_feedback',
                 ['feedbacktext'], 'quiz_feedback');
+        $contents[] = new restore_decode_content('quiz_grade_item_feedbacks',
+            ['feedbacktext'], 'quiz_grade_item_feedback');
 
         return $contents;
     }
