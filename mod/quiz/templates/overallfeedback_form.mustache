@@ -1,0 +1,35 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_quiz/overallfeedback_form
+
+    Displays an overall feedback form to allow the creation or editing of overall feedback data.
+
+    Example context (json):
+    {
+        "body": "<div>Overall feedback form</div>"
+    }
+}}
+<div class="wrap-overall-feedback-form p-3">
+    {{{body}}}
+</div>
+<div class="overallfeedback-footer border-top pt-3" data-region="footer">
+    <div class="overall-feedback-submitbuttons d-flex justify-content-end px-3">
+        <input type="submit" data-action="cancel" disabled name="addcancel" class="addcancel btn btn-secondary bg-white" value="{{#cleanstr}}cancel{{/cleanstr}}">
+        <input type="submit" data-action="save" disabled name="submitbutton" class="submitbutton btn btn-primary" value="{{#cleanstr}}save{{/cleanstr}}">
+    </div>
+</div>
