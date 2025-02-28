@@ -162,12 +162,18 @@ class question_usage_by_activity {
      * @param question_definition $question the question to add.
      * @param number $maxmark the maximum this question will be marked out of in
      *      this attempt (optional). If not given, $question->defaultmark is used.
+     * @param int $slotnumber the slot number. If not given, we will add the question to the last slot.
      * @return int the number used to identify this question within this usage.
      */
-    public function add_question(question_definition $question, $maxmark = null) {
+    public function add_question(question_definition $question, ?float $maxmark = null, ?int $slotnumber = null): int {
         $qa = new question_attempt($question, $this->get_id(), $this->observer, $maxmark);
-        $qa->set_slot($this->next_slot_number());
-        $this->questionattempts[$this->next_slot_number()] = $qa;
+        if ($slotnumber) {
+            $qa->set_slot($slotnumber);
+            $this->questionattempts[$slotnumber] = $qa;
+        } else {
+            $qa->set_slot($this->next_slot_number());
+            $this->questionattempts[$this->next_slot_number()] = $qa;
+        }
         $this->observer->notify_attempt_added($qa);
         return $qa->get_slot();
     }
