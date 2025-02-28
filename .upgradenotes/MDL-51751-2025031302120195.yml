@@ -1,0 +1,16 @@
+issueNumber: MDL-51751
+notes:
+  mod_quiz:
+    - message: The function `question_usage_by_activity\add_question` has a new parameter slotnumber,
+        which allows us to add a new question to a specific slot.
+        If the slot is empty, the question will be added to the last slot.
+      type: changed
+    - message: The function `qbank_helper\choose_question_for_redo` has a new parameter usedquestion,
+        which ensures that a random question returned has not been previously used.
+        If the usedquestion list is empty, the function may return a duplicate question.
+      type: changed
+    - message: Introducing a new function `quiz_attempt\get_missing_questions_on_usageid`, which retrieves the list of missing questions.
+        Those questions are currently being used by quizzes.
+      type: improved
+    - message: Introducing a new function `quiz_attempt\check_for_and_replace_missing_question` to replace missing questions in a quiz attempt.
+      type: improved
