@@ -656,11 +656,12 @@ class assign_submission_file extends assign_submission_plugin {
 
         $result = '';
         foreach ($dir['subdirs'] as $subdir) {
-            $result .= s($subdir['dirname']) . '/' . $this->format_submission_files($subdir);
+            $result .= html_writer::tag('strong', s($subdir['dirname'])) . '/' . $this->format_submission_files($subdir);
         }
 
         foreach ($dir['files'] as $file) {
-            $result .= s($file->get_filename()) . ' | ' . display_size($file->get_filesize()) . "<br>";
+            $result .= html_writer::tag('strong', s($file->get_filename())) .
+                    ' (' . display_size($file->get_filesize()) . ')<br>';
         }
 
         return $result;

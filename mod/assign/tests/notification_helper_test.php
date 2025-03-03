@@ -831,11 +831,12 @@ final class notification_helper_test extends \advanced_testcase {
 
         // Check the message contains the summary.
         $message = reset($messages);
-        $expectedsubject = get_string('submissionreceiptcontains', 'mod_assign');
+        $expectedsubject = get_string('submissionreceiptcontains', 'mod_assign', ['total' => 3]);
         $this->assertStringContainsString($expectedsubject, $message->fullmessagehtml);
-        $this->assertStringContainsString($expectedsubject, $message->fullmessage);
-        $this->assertStringContainsString($filename1, $message->fullmessage);
-        $this->assertStringContainsString($filename2, $message->fullmessage);
+        $this->assertStringContainsString(strtoupper($expectedsubject), $message->fullmessage);
+
+        $this->assertStringContainsString(strtoupper($filename1), $message->fullmessage);
+        $this->assertStringContainsString(strtoupper($filename2), $message->fullmessage);
         // Display word count in the summary of the online text.
         $this->assertStringContainsString('(3 words)', $message->fullmessage);
 

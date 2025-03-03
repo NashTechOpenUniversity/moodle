@@ -6642,13 +6642,19 @@ class assign {
             }
         }
 
-        if (count($summary)) {
-            $result = get_string('submissionreceiptcontains', 'assign') . "<br>";
-            $result .= implode("<br>", $summary);
-            return $result;
+        if (empty($summary)) {
+            return '';
         }
 
-        return '';
+        // Process submission summary by splitting items, removing empty values, and formatting them into a bullet point list.
+        $flattenedsummary = array_filter(array_map('trim', preg_split('/<br\s*\/?>/i',
+                implode('<br>', $summary))));
+        // Wrap summary items in <ul><li> elements for bullets.
+        $bulletlist = '<ul><li>' . implode('</li><li>', $flattenedsummary) . '</li></ul>';
+
+        return html_writer::tag('strong', get_string('submissionreceiptcontains', 'assign', [
+                'total' => count($flattenedsummary)
+                ])) . '<br>' . $bulletlist;
     }
 
     /**
