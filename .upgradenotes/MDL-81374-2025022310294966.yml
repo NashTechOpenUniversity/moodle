@@ -1,0 +1,20 @@
+issueNumber: MDL-81374
+notes:
+  mod_quiz:
+    - message: >-
+        A new set of methods has been added to `quiz_structure` to manage overall feedback for grade items:
+        - `populate_grade_item_feedbacks`: Loads all overall feedback for each grade item in a specific quiz and groups it by grade item ID. 
+        - `get_grade_item_feedbacks`: Retrieves overall feedback for a given quiz ID.
+        - `generate_overallfeedback_detail_data`: Generates detailed overall feedback for a given grade item. It returns data in the format:
+          [
+              { "feedbacktext": "100%", "boundarylabel": "less than or equal to 100%" },
+              { "feedbacktext": "90%", "boundarylabel": "less than 90%" },
+              ...
+          ]
+          This data is used to render the feedback details.
+        - `delete_grade_item_feedbacks`: Deletes all overall feedback for a given grade item.
+      type: improved
+    - message: >-
+        The service class `delete_grade_items` will now include an additional step to delete all overall feedback after successfully deleting a grade item.
+      type: changed
+

@@ -1,0 +1,61 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_quiz/overallfeedback_detail_table
+
+    Display the detailed table containing the overall feedback information.
+
+    Classes required for JS:
+    * none.
+
+    Example context (json):
+    {
+        "id": 1,
+        "feedbacks": [
+            {
+                "boundarylabel": "less than or equal 100%",
+                "feedbacktext": "Feedback 1"
+            },
+            {
+                "boundarylabel": "less than 90%",
+                "feedbacktext": "Feedback 2"
+            }
+        ]
+    }
+}}
+
+<table id="sub-table-overallfeedback-{{id}}" class="sub-table-overallfeedback w-100 my-3 py-1 text-start">
+<caption class="visually-hidden"> {{#str}} overallfeedbacktable, quiz {{/str}} </caption>
+    <thead>
+        <tr>
+            <th scope="col"> {{#str}} gradeboundary, quiz {{/str}} </th>
+            <th scope="col" colspan="3"> {{#str}} feedback, quiz {{/str}} </th>
+        </tr>
+    </thead>
+    <tbody>
+        {{#feedbacks}}
+        <tr>
+            <td>
+                {{boundarylabel}}
+            </td>
+            <td colspan="3">
+                {{{feedbacktext}}}
+            </td>
+        </tr>
+        {{/feedbacks}}
+    </tbody>
+</table>
