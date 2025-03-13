@@ -1097,6 +1097,102 @@ table.quizreviewsummary td.cell {
 #page-mod-quiz-editgrading .inplaceeditable .quickeditlink {
     color: var(--primary);
 }
+#mod_quiz-grade-item-list {
+    max-width: 830px;
+    display: table;
+    padding-bottom: 80px;
+}
+#mod_quiz-grade-item-list .action-menu .dropdown-menu a.dropdown-item[data-action-delete],
+#mod_quiz-grade-item-list .action-menu .dropdown-menu a.dropdown-item[data-action-delete] i.icon {
+    color: #ca3120;
+}
+#mod_quiz-grade-item-list .action-menu .dropdown-menu a.dropdown-item[data-action-delete]:hover,
+#mod_quiz-grade-item-list .action-menu .dropdown-menu a.dropdown-item[data-action-delete]:focus {
+    color: #fff;
+}
+#mod_quiz-grade-item-list .grade-item-actions-menu .dropdown-menu {
+    margin-top: 2px;
+    margin-left: -180px;
+}
+#mod_quiz-grade-item-list a.view-detail,
+#mod_quiz-grade-item-list a.view-detail:focus-visible,
+#mod_quiz-grade-item-list a.view-detail:hover {
+    outline: none;
+}
+#mod_quiz-grade-item-list .overall-feedback-submitbuttons {
+    gap: 10px;
+}
+#mod_quiz-grade-item-list .overall-feedback-submitbuttons input {
+    width: 120px;
+}
+#mod_quiz-grade-item-list tbody tr {
+    background-color: #fff;
+}
+#page-mod-quiz-editgrading .wrap-sub-table {
+    margin-left: 27px;
+    margin-right: 27px;
+}
+#page-mod-quiz-editgrading .wrap-overall-feedback-form .divider hr {
+    width: 100%;
+    margin: .5rem .25rem;
+    border-top: 2px dashed #dee2e6;
+}
+#page-mod-quiz-editgrading .wrap-overall-feedback-form .divider:has(.btn.add-content:hover) hr {
+    border-color: #0f6cbf;
+}
+#page-mod-quiz-editgrading .wrap-overall-feedback-form .divider .divider-content {
+    background: #fff;
+}
+#page-mod-quiz-editgrading .wrap-overall-feedback-form .divider .divider-content button {
+    color: white;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: #cecece;
+}
+#page-mod-quiz-editgrading .wrap-overall-feedback-form .divider .divider-content button:focus {
+    background-color: #0f6cbf;
+}
+#page-mod-quiz-editgrading .wrap-overall-feedback-form [data-groupname="gradeitem-feedback"] fieldset > div {
+    /* To make the delete button inline with the editor. */
+    flex-wrap: nowrap !important; /* stylelint-disable-line declaration-no-important */
+}
+#page-mod-quiz-editgrading .wrap-overall-feedback-form [data-groupname="gradeitem-feedback"] .fitem:last-child {
+    align-self: baseline;
+}
+#page-mod-quiz-editgrading .wrap-overall-feedback-form .divider .divider-content button:hover {
+    background: #0f6cbf;
+}
+#page-mod-quiz-editgrading .wrap-overall-feedback-form button[name="delete-feedback"] {
+    background: #fff;
+    color: #ca3120;
+    border: unset;
+    padding: 0.375rem 0.5rem;
+}
+#page-mod-quiz-editgrading .wrap-overall-feedback-form button[name="delete-feedback"] .icon {
+    margin: 0;
+}
+#page-mod-quiz-editgrading .sub-table-overallfeedback tr th {
+    border: unset;
+    padding: 0 0.75rem;
+}
+#page-mod-quiz-editgrading .sub-table-overallfeedback tr th:first-child {
+    width: 30%;
+    min-width: 136px;
+}
+#page-mod-quiz-editgrading .sub-table-overallfeedback tr td {
+    padding-bottom: 15px;
+}
+#page-mod-quiz-editgrading .sub-table-overallfeedback tr:first-child td {
+    border-top: unset;
+}
+#page-mod-quiz-editgrading .gradeitem-feedback button.cellmenubtn i.icon {
+    transform: rotate(90deg);
+}
+#page-mod-quiz-editgrading [data-groupname="gradeitem-feedback"] > div > p,
+#page-mod-quiz-editgrading #fitem_id_boundary_header {
+    font-weight: bold;
+}
 #page-mod-quiz-edit .inplaceeditable .quickeditlink {
     color: var(--primary);
     text-decoration: none;
