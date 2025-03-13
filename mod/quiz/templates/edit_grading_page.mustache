@@ -31,6 +31,7 @@
     Example context (json):
     {
         "quizid": 42,
+        "contextid": 16,
         "hasgradeitems": true,
         "gradeitems": [
             {
@@ -39,7 +40,22 @@
                 "name": "Reading & writing",
                 "displayname": "Reading &amp; writing",
                 "summarks": "10.00",
-                "isused": true
+                "isused": true,
+                "totaloverallfeedback": 1,
+                "overallfeedbacks":
+                    {
+                        "id": 1,
+                        "feedbacks": [
+                             {
+                                 "boundarylabel": "less than or equal 100%",
+                                 "feedbacktext": "Feedback 1"
+                             },
+                             {
+                                 "boundarylabel": "less than 90%",
+                                 "feedbacktext": "Feedback 2"
+                             }
+                         ]
+                    }
             }
         ],
         "hasslots": true,
@@ -88,13 +104,14 @@
     {{/hasgradeitems}}
 
     {{#hasgradeitems}}
-        <table class="generaltable table-responsive" id="mod_quiz-grade-item-list" data-quiz-id="{{quizid}}">
+        <table class="generaltable table-responsive border-bottom" id="mod_quiz-grade-item-list" data-quiz-id="{{quizid}}" data-context-id="{{contextid}}">
             <caption class="visually-hidden"> {{#str}} gradeitems, grades {{/str}} </caption>
             <thead>
                 <tr>
                     <th scope="col">{{#str}} gradeitem, grades {{/str}}</th>
                     <th scope="col">{{#str}} totalmarks, quiz {{/str}}</th>
-                    <th scope="col">{{#str}} actions {{/str}}</th>
+                    <th scope="col">{{#str}} overallfeedback, quiz {{/str}}</th>
+                    <th scope="col" class="text-center">{{#str}} actions {{/str}}</th>
                 </tr>
             </thead>
             <tbody>
@@ -103,6 +120,16 @@
                         <th scope="row" class="align-middle fw-normal py-1">
                             <span class="inplaceeditable inplaceeditable-text w-100"
                                 data-raw-name="{{name}}" data-edit-label="{{#str}} gradeitemnewname, quiz, {{{displayname}}} {{/str}}">
+                                    <a role="button" data-bs-toggle="collapse" class="view-detail text-decoration-none mr-3 {{^totaloverallfeedback}}invisible{{/totaloverallfeedback}}" href="#overall-feedback-detail-{{id}}" data-action-view-feedback="1" aria-controls="overall-feedback-detail-{{id}}">
+                                        <span class="icon expanded-icon icon-no-margin me-0 p-0 d-none" title="{{#str}} collapse, core {{/str}}">
+                                            {{#pix}} t/expandedchevron, core {{/pix}}
+                                            <span class="sr-only">{{#str}} collapse, core {{/str}}</span>
+                                        </span>
+                                        <span class="icon collapsed-icon icon-no-margin me-0 p-0" title="{{#str}} expand, core {{/str}}">
+                                            <span class="dir-rtl-hide">{{#pix}} t/collapsedchevron, core {{/pix}}</span>
+                                            <span class="dir-ltr-hide">{{#pix}} t/collapsedchevron_rtl, core {{/pix}}</span>
+                                        </span>
+                                    </a>
                                     <a href="#" class="quickeditlink w-100" data-action-edit="1" title="{{#str}} gradeitemedit, quiz, {{{displayname}}} {{/str}}">
                                         <span class="displayvalue">{{{displayname}}}</span>
                                         <span class="quickediticon">
@@ -111,16 +138,30 @@
                                     </a>
                             </span>
                         </th>
-                        <td class="align-middle text-end py-1">
+                        <td class="align-middle text-start py-1">
                             {{summarks}}
                         </td>
-                        <td class="align-middle text-center py-1">
-                            {{^isused}}
-                                <a href="#" data-action-delete="1">
-                                    {{#pix}} t/delete, core, {{#str}} gradeitemdelete, quiz, {{{name}}} {{/str}} {{/pix}}
-                                </a>
-                            {{/isused}}
+                        <td class="align-middle text-start py-1 total-overallfeedback">
+                            {{^totaloverallfeedback}} - {{/totaloverallfeedback}}
+                            {{#totaloverallfeedback}} {{totaloverallfeedback}} {{/totaloverallfeedback}}
                         </td>
+                        <td class="align-middle text-center py-1">
+                            {{>mod_quiz/cellmenu}}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="align-middle border-0 px-md-3 px-0 py-0" colspan="4">
+                            <div id="overall-feedback-detail-{{id}}" class="collapse py-0" data-gradeitem-id="{{id}}">
+                                <div class="border rounded-3 mb-4 wrap-sub-table mt-3 text-center">
+                                    <div class="wrap-overallfeedback-detail">
+                                        {{#overallfeedbacks}}
+                                            {{>mod_quiz/overallfeedback_detail_table}}
+                                        {{/overallfeedbacks}}
+                                    </div>
+                                    <div class="wrap-overallfeedback-form py-3 d-none text-start"></div>
+                                </div>
+                            </div>
+                       </td>
                     </tr>
                 {{/gradeitems}}
             </tbody>

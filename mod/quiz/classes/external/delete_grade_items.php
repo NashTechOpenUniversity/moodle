@@ -83,6 +83,8 @@ class delete_grade_items extends external_api {
         $structure = $quizobj->get_structure();
         foreach ($gradeitems as $gradeitemdata) {
             $structure->delete_grade_item($gradeitemdata['id']);
+            // Also delete the feedback for the grade item.
+            $structure->delete_grade_item_feedbacks($gradeitemdata['id']);
         }
 
         $transaction->allow_commit();

@@ -70,6 +70,9 @@ class structure {
     /** @var stdClass[] quiz_grade_items for this quiz indexed by id. */
     protected array $gradeitems = [];
 
+    /** @var stdClass[] quiz_grade_item_feedbacks for this quiz. */
+    protected array $gradeitemfeedbacks = [];
+
     /** @var bool caches the results of can_be_edited. */
     protected $canbeedited = null;
 
@@ -761,6 +764,27 @@ class structure {
         $this->sections = $DB->get_records('quiz_sections', ['quizid' => $this->quizobj->get_quizid()], 'firstslot');
         $this->populate_slots_with_sections();
         $this->populate_question_numbers();
+        $this->populate_grade_item_feedbacks();
+    }
+
+    /**
+     * Load all the feedback for the grade items based on quiz ID.
+     */
+    protected function populate_grade_item_feedbacks() {
+        global $DB;
+        $records = $DB->get_records('quiz_grade_item_feedbacks',
+            ['quizid' => $this->get_quizid()]);
+        // Group it by grade item id.
+        $gradeitemfeedbacks = [];
+        foreach ($records as $record) {
+            $gradeitemid = $record->gradeitemid;
+            if (!isset($gradeitemfeedbacks[$gradeitemid])) {
+                $gradeitemfeedbacks[$gradeitemid] = [];
+            }
+            $gradeitemfeedbacks[$gradeitemid][] = $record;
+        }
+
+        $this->gradeitemfeedbacks = $gradeitemfeedbacks;
     }
 
     /**
@@ -1500,12 +1524,57 @@ class structure {
     }
 
     /**
+     * Get the grade items feedbacks for this quiz.
+     *
+     * @return array[] quiz_grade_item_feedback rows, indexed by id.
+     */
+    public function get_grade_item_feedbacks(): array {
+        return $this->gradeitemfeedbacks;
+    }
+
+    /**
      * Get the grade items defined for this quiz.
      *
      * @return stdClass[] quiz_grade_item rows, indexed by id.
      */
     public function get_grade_items(): array {
         return $this->gradeitems;
+    }
+
+    /**
+     * Based on the grade item feedback, load the feedback text and boundary labels for the overall feedback detail table.
+     *
+     * @param int $gradeitemid The grade item id for feedbacks.
+     * @param array $gradeitemsfeedback The grade item feedback data.
+     * @return \stdClass The object contains the grade item ID and a list of feedback entries associated with that grade item.
+     */
+    public function generate_overallfeedback_detail_data(int $gradeitemid, array $gradeitemsfeedback): \stdClass {
+        $feedbacks = [];
+        $response = new \stdClass();
+        $formatoptions = new \stdClass();
+        $formatoptions->noclean = true;
+        $contextid = $this->get_context()->id;
+
+        foreach ($gradeitemsfeedback as $feedback) {
+            $feedbackdata = new \stdClass();
+            // Load the full feedback text.
+            $feedbacktext = file_rewrite_pluginfile_urls($feedback->feedbacktext, 'pluginfile.php',
+                $contextid, 'mod_quiz', 'grade_item_feedback', $feedback->id);
+            $feedbacktext = format_text($feedbacktext, $feedback->feedbacktextformat, $formatoptions);
+            $feedbackdata->feedbacktext = $feedbacktext;
+            // Return a suitable label based on the maximum grade of the feedback.
+            if ($feedback->maxgrade > 1) {
+                $feedbackdata->boundarylabel = get_string('overallfeedback_lessthanequal100', 'quiz');
+            } else {
+                $feedbackdata->boundarylabel = get_string('overallfeedback_lessthann', 'quiz', $feedback->maxgrade * 100);
+            }
+            $feedbacks[] = $feedbackdata;
+        }
+
+        $response->id = $gradeitemid;
+        $response->feedbacks = $feedbacks;
+
+        return $response;
     }
 
     /**
@@ -1656,6 +1725,20 @@ class structure {
             ],
         ])->trigger();
 
+        $transaction->allow_commit();
+    }
+
+    /**
+     * Delete overall feedback of each grade item.
+     *
+     * @param int $gradeitemid id of the grade item that need to be delete feedbacks.
+     */
+    public function delete_grade_item_feedbacks(int $gradeitemid) {
+        global $DB;
+
+        $transaction = $DB->start_delegated_transaction();
+        $DB->delete_records('quiz_grade_item_feedbacks', conditions: ['gradeitemid' => $gradeitemid]);
+        unset($this->gradeitemfeedbacks[$gradeitemid]);
         $transaction->allow_commit();
     }
 
