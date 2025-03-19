@@ -256,9 +256,16 @@ final class attempt_walkthrough_test extends \advanced_testcase {
         quiz_attempt_save_started($quizobj, $quba, $attempt);
         $this->assertEquals('1,2,3,0', $attempt->layout);
 
+        question_delete_question($question1->id);
+        try {
+            quiz_attempt::create($attempt->id);
+            $this->fail('Exception expected due to we do not have any question in category so we can not find a question to add');
+        } catch (\moodle_exception $e) {
+            $this->assertStringContainsString(get_string('notenoughrandomquestions', 'quiz'), $e->getMessage());
+        }
+
         // Verify slot 1 with a new question type.
         $question4 = $questiongenerator->create_question('essay', null, ['category' => $cat->id]);
-        question_delete_question($question1->id);
         $attemptobj = quiz_attempt::create($attempt->id);
         $this->assertEquals($attemptobj->get_question_attempt(1)->get_question_id(), $question4->id);
 
