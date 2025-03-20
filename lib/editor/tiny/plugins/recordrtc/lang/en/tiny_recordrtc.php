@@ -22,6 +22,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['alloweddownload'] = 'Allow clip download';
+$string['alloweddownload_help'] = 'Unticking this option means that the AV clip should not be downloadable via the browser media player menu, via the context menu, or display the download icon. However, it cannot be guaranteed that determined users cannot access and download the file by other means.';
 $string['allowedpausing'] = 'Allow pausing';
 $string['allowedtypes'] = 'Recording type';
 $string['allowedtypes_desc'] = 'Which types of recording can be made in the TinyMCE editor? In addition to this setting, there are capabilities which control access to recording options.';

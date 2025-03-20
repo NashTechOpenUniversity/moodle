@@ -48,7 +48,7 @@ if ($ADMIN->fulltree) {
         'editor_tiny/extended_valid_elements',
         new lang_string('extended_valid_elements', 'editor_tiny'),
         new lang_string('extended_valid_elements_desc', 'editor_tiny'),
-        'script[*],p[*],i[*]'
+        'script[*],p[*],i[*],audio[*],video[*]'
     );
 
     $settings->add($setting);

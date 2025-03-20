@@ -21,9 +21,10 @@
 
     Example context (json):
     {
-        "source": "https://example.com/someaudio.mp4"
+        "source": "https://example.com/someaudio.mp4",
+        "extraattributes": "controllist='nodownload'"
     }
 }}
-<video class="w-100" controls>
+<video class="w-100" controls {{{extraattributes}}}>
     <source src="{{ source }}">{{ source }}
 </video>

@@ -41,3 +41,16 @@
 .tiny_recordrtc video {
     border-radius: 8px;
 }
+
+.tiny_recordrtc .allowed_download {
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.tiny_recordrtc .allowed_download .form-check {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+}

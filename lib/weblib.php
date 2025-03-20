@@ -1136,6 +1136,8 @@ function purify_html($text, $options = array()) {
                 'controls' => 'Bool',
                 'width' => 'Length',
                 'height' => 'Length',
+                'controlslist' => 'Enum#nodownload,nofullscreen,noremoteplayback',
+                'oncontextmenu' => 'Text',
             ]);
             // https://html.spec.whatwg.org/#the-audio-element
             $def->addElement('audio', 'Inline', 'Optional: #PCDATA | Flow | source | track', 'Common', [
@@ -1145,7 +1147,9 @@ function purify_html($text, $options = array()) {
                 'autoplay' => 'Bool',
                 'loop' => 'Bool',
                 'muted' => 'Bool',
-                'controls' => 'Bool'
+                'controls' => 'Bool',
+                'controlslist' => 'Enum#nodownload,nofullscreen,noremoteplayback',
+                'oncontextmenu' => 'Text',
             ]);
             // https://html.spec.whatwg.org/#the-source-element
             $def->addElement('source', false, 'Empty', null, [
