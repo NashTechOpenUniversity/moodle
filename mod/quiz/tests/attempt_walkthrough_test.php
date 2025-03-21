@@ -283,6 +283,63 @@ final class attempt_walkthrough_test extends \advanced_testcase {
     }
 
     /**
+     * Create a quiz with deleted question when we preview and can start normally.
+     */
+    public function test_quiz_attempt_walkthrough_when_a_random_question_is_deleted_in_the_same_category(): void {
+        global $SITE;
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        // Make a quiz.
+        $quizgenerator = $this->getDataGenerator()->get_plugin_generator('mod_quiz');
+
+        $quiz = $quizgenerator->create_instance(['course' => $SITE->id, 'questionsperpage' => 0, 'grade' => 100.0,
+            'sumgrades' => 3]);
+
+        // Create a couple of questions.
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $cat = $questiongenerator->create_question_category();
+
+        // 3 questions in same category.
+        $question1 = $questiongenerator->create_question('truefalse', null, ['category' => $cat->id]);
+        $question2 = $questiongenerator->create_question('essay', null, ['category' => $cat->id]);
+        $question3 = $questiongenerator->create_question('shortanswer', null, ['category' => $cat->id]);
+
+        $this->add_random_questions($quiz->id, 1, $cat->id, 3);
+        $quizobj = quiz_settings::create($quiz->id);
+
+        // Start the attempt.
+        $quba = question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj->get_context());
+        $quba->set_preferred_behaviour($quizobj->get_quiz()->preferredbehaviour);
+
+        $timenow = time();
+        $attempt = quiz_create_attempt($quizobj, 1, false, $timenow, true);
+
+        // Verify question layout.
+        quiz_start_new_attempt($quizobj, $quba, $attempt, 1, $timenow);
+        quiz_attempt_save_started($quizobj, $quba, $attempt);
+        $this->assertEquals('1,2,3,0', $attempt->layout);
+
+        question_delete_question($question1->id);
+        question_delete_question($question2->id);
+        question_delete_question($question3->id);
+
+        $question4 = $questiongenerator->create_question('essay', null, ['category' => $cat->id]);
+        try {
+            quiz_attempt::create($attempt->id);
+            $this->fail('Exception expected due to we do not have enough questions in category');
+        } catch (\moodle_exception $e) {
+            $this->assertStringContainsString(get_string('notenoughrandomquestions', 'quiz'), $e->getMessage());
+        }
+        $question5 = $questiongenerator->create_question('shortanswer', null, ['category' => $cat->id]);
+        $question6 = $questiongenerator->create_question('truefalse', null, ['category' => $cat->id]);
+
+        // Verify new questions in the same slot since we have enough question.
+        $attemptobj = quiz_attempt::create($attempt->id);
+        $this->assertEquals(1, $attemptobj->get_attempt_number());
+    }
+
+    /**
      * Create a quiz containing one question and a close time.
      *
      * The question is the standard shortanswer test question.

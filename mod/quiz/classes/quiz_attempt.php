@@ -155,20 +155,33 @@ class quiz_attempt {
     public function check_for_and_replace_missing_question(array $missingquestions, quiz_settings $quizobj): void {
         global $DB, $PAGE;
         $transaction = $DB->start_delegated_transaction();
-
+        $newquestionused = [];
         foreach ($missingquestions as $oldquestion) {
             $qubaids = new  \qubaid_list([$oldquestion->questionusageid]);
             $newquestionid = qbank_helper::choose_question_for_redo($quizobj->get_quizid(),
-                $quizobj->get_context(), $oldquestion->slotid, $qubaids);
-            if ($newquestionid) {
-                // Delete all related question attempt data of the missing questions when we have a question to replace.
-                $DB->delete_records('question_attempt_step_data', ['attemptstepid' => $oldquestion->qasid]);
-                $DB->delete_records('question_attempt_steps', ['id' => $oldquestion->qasid]);
-                $DB->delete_records('question_attempts', ['id' => $oldquestion->questionattemptid]);
-            }
-            $newquestion = question_bank::load_question($newquestionid,
-                isset($quizobj->shuffleanswers) ? $quizobj->shuffleanswers : 0);
+                $quizobj->get_context(), $oldquestion->slotid, $qubaids, $newquestionused);
+            $oldquestion->newquestionid = $newquestionid;
+            $newquestionused[$newquestionid] = 1;
+        }
 
+        // Delete all related question attempt data of the missing questions.
+        $qasids = array_map(function($question) {
+            return $question->qasid;
+        }, $missingquestions);
+        [$qasidssql, $qasidsparams] = $DB->get_in_or_equal($qasids);
+        $DB->delete_records_select('question_attempt_step_data', "attemptstepid $qasidssql", $qasidsparams);
+        $DB->delete_records_select('question_attempt_steps', "id $qasidssql", $qasidsparams);
+
+        $qaids = array_map(function($question) {
+            return $question->questionattemptid;
+        }, $missingquestions);
+        [$qaidssql, $qaidsparams] = $DB->get_in_or_equal($qaids);
+        $DB->delete_records_select('question_attempts', "id $qaidssql", $qaidsparams);
+
+        foreach ($missingquestions as $oldquestion) {
+            $qubaids = new  \qubaid_list([$oldquestion->questionusageid]);
+            $newquestion = question_bank::load_question($oldquestion->newquestionid,
+                isset($quizobj->shuffleanswers) ? $quizobj->shuffleanswers : 0);
             $quba = question_engine::load_questions_usage_by_activity($oldquestion->questionusageid);
             // Choose the variant.
             if ($newquestion->get_num_variants() == 1) {
@@ -201,8 +214,8 @@ class quiz_attempt {
      */
     public static function get_missing_questions_on_usageid(int $usageid): array {
         global $DB;
-        return $DB->get_records_sql('SELECT quea.questionid, quea.slot, quea.questionusageid, qs.id as slotid,
-                                            qas.id as qasid, quea.id as questionattemptid
+        return $DB->get_records_sql('SELECT quea.id as questionattemptid, quea.questionid, quea.slot,
+                                            quea.questionusageid, qs.id as slotid, qas.id as qasid
                                        FROM {quiz_attempts} qa
                                        JOIN {question_usages} qu ON qu.id = qa.uniqueid
                                        JOIN {question_attempts} quea ON quea.questionusageid = qu.id
