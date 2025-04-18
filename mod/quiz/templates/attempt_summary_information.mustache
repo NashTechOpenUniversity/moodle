@@ -34,6 +34,12 @@
 }}
 {{#hasitems}}
 <table class="table generaltable generalbox quizreviewsummary mb-0">
+    {{#name}}
+           <caption class="accesshide">{{#str}} summaryofattemptscaption, mod_quiz, {{name}} {{/str}}</caption>
+       {{/name}}
+       {{^name}}
+           <caption class="accesshide">{{#str}} summaryofattemptscaption, mod_quiz, {{#str}} reviewattempt, mod_quiz{{/str}}{{/str}}</caption>
+       {{/name}}
     <tbody>
     {{#items}}
         <tr>
