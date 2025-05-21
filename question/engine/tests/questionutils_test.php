@@ -254,4 +254,15 @@ final class questionutils_test extends \advanced_testcase {
         $this->assertStringNotContainsString('<span lang="en" class="multilang">', $expected);
         $this->assertStringContainsString('<b>English</b>', $expected);
     }
+
+    /**
+     * Test the content contains floating elements.
+     *
+     * @covers ::has_floating_element
+     */
+    public function test_has_floating_element(): void {
+        $this->assertTrue(question_utils::has_floating_element('<div style="color:red;float: left;">'));
+        $this->assertTrue(question_utils::has_floating_element('<div style="float: right;">'));
+        $this->assertFalse(question_utils::has_floating_element('<div style="color: red">'));
+    }
 }

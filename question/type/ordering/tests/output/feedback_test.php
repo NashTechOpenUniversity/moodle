@@ -139,7 +139,7 @@ final class feedback_test extends qbehaviour_walkthrough_test_base {
                     'specificgradedetailfeedback' => [
                         'showpartialwrong' => 0,
                     ],
-                    'generalfeedback' => '<div class="clearfix">The correct answer is ' .
+                    'generalfeedback' => '<div>The correct answer is ' .
                         '"Modular Object Oriented Dynamic Learning Environment".</div>',
                     'rightanswer' => [
                         'hascorrectresponse' => true,
@@ -198,7 +198,7 @@ final class feedback_test extends qbehaviour_walkthrough_test_base {
                         'totalscore' => 28,
                         'totalmaxscore' => 30,
                     ],
-                    'generalfeedback' => '<div class="clearfix">The correct answer is ' .
+                    'generalfeedback' => '<div>The correct answer is ' .
                         '"Modular Object Oriented Dynamic Learning Environment".</div>',
                     'rightanswer' => [
                         'hascorrectresponse' => true,
@@ -218,7 +218,7 @@ final class feedback_test extends qbehaviour_walkthrough_test_base {
                     'specificgradedetailfeedback' => [
                         'showpartialwrong' => 0,
                     ],
-                    'generalfeedback' => '<div class="clearfix">The correct answer is ' .
+                    'generalfeedback' => '<div>The correct answer is ' .
                         '"Modular Object Oriented Dynamic Learning Environment".</div>',
                     'rightanswer' => [
                         'hascorrectresponse' => true,
@@ -232,7 +232,7 @@ final class feedback_test extends qbehaviour_walkthrough_test_base {
                 qtype_ordering_question::GRADING_RELATIVE_ALL_PREVIOUS_AND_NEXT,
                 ['rot' => 'horizontal', 'inprogress' => false, 'feedback' => false],
                 [
-                    'generalfeedback' => '<div class="clearfix">The correct answer is ' .
+                    'generalfeedback' => '<div>The correct answer is ' .
                         '"Modular Object Oriented Dynamic Learning Environment".</div>',
                     'rightanswer' => [
                         'hascorrectresponse' => true,
@@ -298,7 +298,7 @@ final class feedback_test extends qbehaviour_walkthrough_test_base {
                         'totalscore' => 20,
                         'totalmaxscore' => 30,
                     ],
-                    'generalfeedback' => '<div class="clearfix">The correct answer is ' .
+                    'generalfeedback' => '<div>The correct answer is ' .
                         '"Modular Object Oriented Dynamic Learning Environment".</div>',
                     'rightanswer' => [
                         'hascorrectresponse' => true,
@@ -359,7 +359,7 @@ final class feedback_test extends qbehaviour_walkthrough_test_base {
                         'totalscore' => 1,
                         'totalmaxscore' => 5,
                     ],
-                    'generalfeedback' => '<div class="clearfix">The correct answer is ' .
+                    'generalfeedback' => '<div>The correct answer is ' .
                         '"Modular Object Oriented Dynamic Learning Environment".</div>',
                     'rightanswer' => [
                         'hascorrectresponse' => true,
