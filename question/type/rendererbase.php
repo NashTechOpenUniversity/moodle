@@ -103,7 +103,8 @@ abstract class qtype_renderer extends plugin_renderer_base {
 
         if ($options->feedback) {
             $output .= html_writer::nonempty_tag('div', $this->specific_feedback($qa),
-                ['class' => 'specificfeedback clearfix']);
+                ['class' => 'specificfeedback' .
+                question_utils::has_floating_element($this->specific_feedback($qa)) ? 'clearfix' : '']);
             $hint = $qa->get_applicable_hint();
         }
 
