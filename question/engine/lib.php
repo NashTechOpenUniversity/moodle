@@ -1074,6 +1074,16 @@ abstract class question_utils {
     }
 
     /**
+     * Check if the text contains any floating elements.
+     *
+     * @param string $text the text to check.
+     * @return bool true if the text contains floating elements, false otherwise.
+     */
+    public static function has_floating_element(string $text): bool {
+        return preg_match('/(style\s*=\s*["\'][^"\']*float\s*:\s*(left|right)[^"\']*["\'])/s', $text) === 1;
+    }
+
+    /**
      * Get the options required to configure the filepicker for one of the editor
      * toolbar buttons.
      *
