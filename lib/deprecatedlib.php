@@ -230,237 +230,124 @@ function print_course_request_buttons() {
 }
 
 /**
- * Execute cron tasks
- *
- * @param int|null $keepalive The keepalive time for this cron run.
  * @deprecated since 4.2 Use \core\cron::run_main_process() instead.
  */
-function cron_run(?int $keepalive = null): void {
-    debugging(
-        'The cron_run() function is deprecated. Please use \core\cron::run_main_process() instead.',
-        DEBUG_DEVELOPER
-    );
-    \core\cron::run_main_process($keepalive);
+#[\core\attribute\deprecated('\core\cron::run_main_process()', since: '4.2', mdl: 'MDL-77186', final: true)]
+function cron_run() {
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
 }
 
 /**
- * Execute all queued scheduled tasks, applying necessary concurrency limits and time limits.
- *
- * @param   int     $timenow The time this process started.
  * @deprecated since 4.2 Use \core\cron::run_scheduled_tasks() instead.
  */
-function cron_run_scheduled_tasks(int $timenow) {
-    debugging(
-        'The cron_run_scheduled_tasks() function is deprecated. Please use \core\cron::run_scheduled_tasks() instead.',
-        DEBUG_DEVELOPER
-    );
-    \core\cron::run_scheduled_tasks($timenow);
+#[\core\attribute\deprecated('\core\cron::run_scheduled_tasks()', since: '4.2', mdl: 'MDL-77186', final: true)]
+function cron_run_scheduled_tasks() {
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
 }
 
 /**
- * Execute all queued adhoc tasks, applying necessary concurrency limits and time limits.
- *
- * @param   int     $timenow The time this process started.
- * @param   int     $keepalive Keep this function alive for N seconds and poll for new adhoc tasks.
- * @param   bool    $checklimits Should we check limits?
  * @deprecated since 4.2 Use \core\cron::run_adhoc_tasks() instead.
  */
-function cron_run_adhoc_tasks(int $timenow, $keepalive = 0, $checklimits = true) {
-    debugging(
-        'The cron_run_adhoc_tasks() function is deprecated. Please use \core\cron::run_adhoc_tasks() instead.',
-        DEBUG_DEVELOPER
-    );
-    \core\cron::run_adhoc_tasks($timenow, $keepalive, $checklimits);
+#[\core\attribute\deprecated('\core\cron::run_adhoc_tasks()', since: '4.2', mdl: 'MDL-77186', final: true)]
+function cron_run_adhoc_tasks() {
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
 }
 
 /**
- * Shared code that handles running of a single scheduled task within the cron.
- *
- * Not intended for calling directly outside of this library!
- *
- * @param \core\task\task_base $task
  * @deprecated since 4.2 Use \core\cron::run_inner_scheduled_task() instead.
  */
-function cron_run_inner_scheduled_task(\core\task\task_base $task) {
-    debugging(
-        'The cron_run_inner_scheduled_task() function is deprecated. Please use \core\cron::run_inner_scheduled_task() instead.',
-        DEBUG_DEVELOPER
-    );
-    \core\cron::run_inner_scheduled_task($task);
+#[\core\attribute\deprecated('\core\cron::run_inner_scheduled_task()', since: '4.2', mdl: 'MDL-77186', final: true)]
+function cron_run_inner_scheduled_task() {
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
 }
 
 /**
- * Shared code that handles running of a single adhoc task within the cron.
- *
- * @param \core\task\adhoc_task $task
  * @deprecated since 4.2 Use \core\cron::run_inner_adhoc_task() instead.
  */
-function cron_run_inner_adhoc_task(\core\task\adhoc_task $task) {
-    debugging(
-        'The cron_run_inner_adhoc_task() function is deprecated. Please use \core\cron::run_inner_adhoc_task() instead.',
-        DEBUG_DEVELOPER
-    );
-    \core\cron::run_inner_adhoc_task($task);
+#[\core\attribute\deprecated('\core\cron::run_inner_adhoc_task()', since: '4.2', mdl: 'MDL-77186', final: true)]
+function cron_run_inner_adhoc_task() {
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
 }
 
 /**
- * Sets the process title
- *
- * This makes it very easy for a sysadmin to immediately see what task
- * a cron process is running at any given moment.
- *
- * @param string $title process status title
+
  * @deprecated since 4.2 Use \core\cron::set_process_title() instead.
  */
-function cron_set_process_title(string $title) {
-    debugging(
-        'The cron_set_process_title() function is deprecated. Please use \core\cron::set_process_title() instead.',
-        DEBUG_DEVELOPER
-    );
-    \core\cron::set_process_title($title);
+#[\core\attribute\deprecated('\core\cron::set_process_title()', since: '4.2', mdl: 'MDL-77186', final: true)]
+function cron_set_process_title() {
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
 }
 
 /**
- * Output some standard information during cron runs. Specifically current time
- * and memory usage. This method also does gc_collect_cycles() (before displaying
- * memory usage) to try to help PHP manage memory better.
- *
  * @deprecated since 4.2 Use \core\cron::trace_time_and_memory() instead.
  */
+#[\core\attribute\deprecated('\core\cron::trace_time_and_memory()', since: '4.2', mdl: 'MDL-77186', final: true)]
 function cron_trace_time_and_memory() {
-    debugging(
-        'The cron_trace_time_and_memory() function is deprecated. Please use \core\cron::trace_time_and_memory() instead.',
-        DEBUG_DEVELOPER
-    );
-    \core\cron::trace_time_and_memory();
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
 }
 
 /**
- * Prepare the output renderer for the cron run.
- *
- * This involves creating a new $PAGE, and $OUTPUT fresh for each task and prevents any one task from influencing
- * any other.
- *
- * @param   bool    $restore Whether to restore the original PAGE and OUTPUT
  * @deprecated since 4.2 Use \core\cron::prepare_core_renderer() instead.
  */
-function cron_prepare_core_renderer($restore = false) {
-    debugging(
-        'The cron_prepare_core_renderer() function is deprecated. Please use \core\cron::prepare_core_renderer() instead.',
-        DEBUG_DEVELOPER
-    );
-    \core\cron::prepare_core_renderer($restore);
+#[\core\attribute\deprecated('\core\cron::prepare_core_renderer()', since: '4.2', mdl: 'MDL-77186', final: true)]
+function cron_prepare_core_renderer() {
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
 }
 
 /**
- * Sets up current user and course environment (lang, etc.) in cron.
- * Do not use outside of cron script!
- *
- * @param stdClass $user full user object, null means default cron user (admin),
- *                 value 'reset' means reset internal static caches.
- * @param stdClass $course full course record, null means $SITE
- * @param bool $leavepagealone If specified, stops it messing with global page object
- * @deprecated since 4.2. Use \core\core::setup_user() instead.
- * @return void
+ * @deprecated since 4.2. Use \core\cron::setup_user() instead.
  */
-function cron_setup_user($user = null, $course = null, $leavepagealone = false) {
-    debugging(
-        'The cron_setup_user() function is deprecated. ' .
-            'Please use \core\cron::setup_user() and reset_user_cache() as appropriate instead.',
-        DEBUG_DEVELOPER
-    );
-
-    if ($user === 'reset') {
-        \core\cron::reset_user_cache();
-        return;
-    }
-
-    \core\cron::setup_user($user, $course, $leavepagealone);
+#[\core\attribute\deprecated('\core\cron::setup_user()', since: '4.2', mdl: 'MDL-77837', final: true)]
+function cron_setup_user() {
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
 }
 
 /**
- * Get OAuth2 services for the external backpack.
- *
- * @return array
- * @throws coding_exception
  * @deprecated since 4.3.
  */
+#[\core\attribute\deprecated(since: '4.3', mdl: 'MDL-77837', final: true)]
 function badges_get_oauth2_service_options() {
-    debugging(
-        'badges_get_oauth2_service_options() is deprecated. Don\'t use it.',
-        DEBUG_DEVELOPER
-    );
-    global $DB;
-
-    $issuers = core\oauth2\api::get_all_issuers();
-    $options = ['' => 'None'];
-    foreach ($issuers as $issuer) {
-        $options[$issuer->get('id')] = $issuer->get('name');
-    }
-
-    return $options;
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
 }
 
 /**
- * Checks if the given device has a theme defined in config.php.
- *
- * @param string $device The device
  * @deprecated since 4.3.
- * @return bool
  */
-function theme_is_device_locked($device) {
-    debugging(
-        __FUNCTION__ . '() is deprecated.' .
-            'All functions associated with device specific themes are being removed.',
-        DEBUG_DEVELOPER
-    );
-    global $CFG;
-    $themeconfigname = core_useragent::get_device_type_cfg_var_name($device);
-    return isset($CFG->config_php_settings[$themeconfigname]);
+#[\core\attribute\deprecated(
+    since: '4.3',
+    reason: 'All functions associated with device specific themes are being removed',
+    mdl: 'MDL-77793',
+    final: true,
+)]
+function theme_is_device_locked() {
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
 }
 
 /**
- * Returns the theme named defined in config.php for the given device.
- *
- * @param string $device The device
  * @deprecated since 4.3.
- * @return string or null
  */
-function theme_get_locked_theme_for_device($device) {
-    debugging(
-        __FUNCTION__ . '() is deprecated.' .
-            'All functions associated with device specific themes are being removed.',
-        DEBUG_DEVELOPER
-    );
-    global $CFG;
-
-    if (!theme_is_device_locked($device)) {
-        return null;
-    }
-
-    $themeconfigname = core_useragent::get_device_type_cfg_var_name($device);
-    return $CFG->config_php_settings[$themeconfigname];
+#[\core\attribute\deprecated(
+    since: '4.3',
+    reason: 'All functions associated with device specific themes are being removed',
+    mdl: 'MDL-77793',
+    final: true,
+)]
+function theme_get_locked_theme_for_device() {
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
 }
 
 /**
- * Try to generate cryptographically secure pseudo-random bytes.
- *
- * Note this is achieved by fallbacking between:
- *  - PHP 7 random_bytes().
- *  - OpenSSL openssl_random_pseudo_bytes().
- *  - In house random generator getting its entropy from various, hard to guess, pseudo-random sources.
- *
- * @param int $length requested length in bytes
  * @deprecated since 4.3.
- * @return string binary data
  */
-function random_bytes_emulate($length) {
-    debugging(
-            __FUNCTION__ . '() is deprecated.' .
-            'Please use random_bytes instead.',
-            DEBUG_DEVELOPER
-    );
-    return random_bytes($length);
+#[\core\attribute\deprecated(
+    'random_bytes()',
+    since: '4.3',
+    reason: 'Since PHP 7.0 the random_bytes() is natively available and Moodle LMS requires greater than PHP 7.',
+    mdl: 'MDL-78698',
+    final: true,
+)]
+function random_bytes_emulate() {
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
 }
 
 /**
@@ -550,105 +437,6 @@ function endecrypt($pwd, $data, $case) {
     }
 
     return $cipher;
-}
-
-/**
- * @deprecated since Moodle 4.0
- */
-function question_preview_url() {
-    throw new coding_exception(__FUNCTION__ . '() has been removed.');
-}
-
-/**
- * @deprecated since Moodle 4.0
- */
-function question_preview_popup_params() {
-    throw new coding_exception(__FUNCTION__ . '() has been removed.');
-}
-
-/**
- * @deprecated since Moodle 4.0
- */
-function question_hash() {
-    throw new coding_exception(__FUNCTION__ . '() has been removed.');
-}
-
-/**
- * @deprecated since Moodle 4.0 MDL-71573
- */
-function question_make_export_url() {
-    throw new coding_exception(__FUNCTION__ . '() has been removed.');
-}
-
-/**
- * @deprecated since Moodle 4.0
- */
-function question_get_export_single_question_url() {
-    throw new coding_exception(__FUNCTION__ . '() has been removed.');
-}
-
-/**
- * @deprecated since Moodle 4.0 MDL-71585
- */
-function question_remove_stale_questions_from_category() {
-    throw new coding_exception(__FUNCTION__ . '() has been removed.');
-}
-
-/**
- * @deprecated since Moodle 4.0 MDL-71585
- */
-function flatten_category_tree() {
-    throw new coding_exception(__FUNCTION__ . '() has been removed.');
-}
-
-/**
- * @deprecated since Moodle 4.0 MDL-71585
- */
-function add_indented_names() {
-    throw new coding_exception(__FUNCTION__ . '() has been removed.');
-}
-
-/**
- * @deprecated since Moodle 4.0 MDL-71585
- */
-function question_category_select_menu() {
-    throw new coding_exception(__FUNCTION__ . '() has been removed.');
-}
-
-/**
- * @deprecated since Moodle 4.0 MDL-71585
- */
-function get_categories_for_contexts() {
-    throw new coding_exception(__FUNCTION__ . '() has been removed.');
-}
-
-/**
- * @deprecated since Moodle 4.0 MDL-71585
- */
-function question_category_options() {
-    throw new coding_exception(__FUNCTION__ . '() has been removed.');
-}
-
-/**
- * @deprecated since Moodle 4.0 MDL-71585
- */
-function question_add_context_in_key() {
-    throw new coding_exception(__FUNCTION__ . '() has been removed.');
-}
-
-/**
- * @deprecated since Moodle 4.0 MDL-71585
- */
-function question_fix_top_names() {
-    throw new coding_exception(__FUNCTION__ . '() has been removed.');
-}
-
-/**
- * @deprecated since Moodle 2.9
- */
-#[\core\attribute\deprecated('search_generate_SQL', since: '2.9', mdl: 'MDL-48939', final: true)]
-function search_generate_text_SQL() {
-    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
 }
 
 /**
@@ -964,4 +752,103 @@ function question_delete_course_category($category, $newcategory, $notused = fal
 function check_igbinary322_version(environment_results $result) {
     \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
     return null;
+}
+
+/**
+ * @deprecated since Moodle 4.3 MDL-79313
+ */
+#[\core\attribute\deprecated(null, since: '4.3', mdl: 'MDL-79313', final: true)]
+function calendar_top_controls() {
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
+}
+
+/**
+ * @deprecated since Moodle 4.3 MDL-79432
+ */
+#[\core\attribute\deprecated(null, since: '4.3', mdl: 'MDL-79432', final: true)]
+function calendar_get_link_previous() {
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
+}
+
+/**
+ * @deprecated since Moodle 4.3 MDL-79432
+ */
+#[\core\attribute\deprecated(null, since: '4.3', mdl: 'MDL-79432', final: true)]
+function calendar_get_link_next() {
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
+}
+
+/**
+ * Get the previous month.
+ *
+ * @param int $month the number of the month.
+ * @param int $year the number of the year.
+ * @return array previous month
+ *
+ * @deprecated since 5.0 MDL-79434 Use \core_calendar\type_factory::get_calendar_instance()->get_prev_month() instead,
+ *  but pay regard to the order of arguments!
+ * @todo MDL-84655 Remove this function in Moodle 6.0
+ */
+#[\core\attribute\deprecated(
+    '\core_calendar\type_factory::get_calendar_instance()->get_prev_month()',
+    since: '5.0',
+    mdl: 'MDL-79434'
+)]
+function calendar_sub_month($month, $year) {
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
+    return \core_calendar\type_factory::get_calendar_instance()->get_prev_month($year, $month);
+}
+
+/**
+ * Get the next following month.
+ *
+ * @param int $month the number of the month.
+ * @param int $year the number of the year.
+ * @return array the following month
+ *
+ * @deprecated since 5.0 MDL-84657 Use \core_calendar\type_factory::get_calendar_instance()->get_prev_month() instead,
+ *  but pay regard to the order of arguments!
+ * @todo MDL-84655 Remove this function in Moodle 6.0
+ */
+#[\core\attribute\deprecated(
+    '\core_calendar\type_factory::get_calendar_instance()->get_next_month()',
+    since: '5.0',
+    mdl: 'MDL-84657'
+)]
+function calendar_add_month($month, $year) {
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
+    return \core_calendar\type_factory::get_calendar_instance()->get_next_month($year, $month);
+}
+
+/**
+ * Copies a rectangular portion of the source image to another rectangle in the destination image
+ *
+ * This function calls imagecopyresampled() if it is available and GD version is 2 at least.
+ * Otherwise it reimplements the same behaviour. See the PHP manual page for more info.
+ *
+ * @link http://php.net/manual/en/function.imagecopyresampled.php
+ * @param resource|\GdImage $dst_img the destination GD image resource
+ * @param resource|\GdImage $src_img the source GD image resource
+ * @param int $dst_x vthe X coordinate of the upper left corner in the destination image
+ * @param int $dst_y the Y coordinate of the upper left corner in the destination image
+ * @param int $src_x the X coordinate of the upper left corner in the source image
+ * @param int $src_y the Y coordinate of the upper left corner in the source image
+ * @param int $dst_w the width of the destination rectangle
+ * @param int $dst_h the height of the destination rectangle
+ * @param int $src_w the width of the source rectangle
+ * @param int $src_h the height of the source rectangle
+ * @return ?bool tru on success, false otherwise
+ *
+ * @deprecated Since Moodle 5.0
+ * @todo Final deprecation on Moodle 6.0. See MDL-84734.
+ */
+#[\core\attribute\deprecated(
+    replacement: 'imagecopyresampled',
+    since: '5.0',
+    mdl: 'MDL-84449',
+    reason: 'GD is a strict requirement, so use imagecopyresampled() instead.'
+)]
+function imagecopybicubic($dst_img, $src_img, $dst_x, $dst_y, $src_x, $src_y, $dst_w, $dst_h, $src_w, $src_h) {
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
+    return imagecopyresampled($dst_img, $src_img, $dst_x, $dst_y, $src_x, $src_y, $dst_w, $dst_h, $src_w, $src_h);
 }

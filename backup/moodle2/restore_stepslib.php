@@ -490,7 +490,7 @@ class restore_gradebook_structure_step extends restore_structure_step {
         rebuild_course_cache($this->get_courseid(), true);
 
         // Restore marks items as needing update. Update everything now.
-        grade_regrade_final_grades($this->get_courseid());
+        grade_regrade_final_grades($this->get_courseid(), async: true);
     }
 
     /**
@@ -1859,9 +1859,13 @@ class restore_section_structure_step extends restore_structure_step {
             [$this->get_courseid()],
             'section DESC', 'id, section'
         );
+        // Here we add the new section to the end of the list so we make sure that all delegated sections are really
+        // all located after the normal sections. We can have case where delegated sections are located before the
+        // normal sections, so we need to move them to the end (mostly in the restore process more than in the duplicate
+        // process in which the order sections => delegated section is mostly there).
+        $sectionnum = $sectionnum + count($sectionstomove);
         foreach ($sectionstomove as $section) {
-            $sectionnum++;
-            $section->section = $sectionnum;
+            $section->section = $sectionnum--;
             $DB->update_record('course_sections', $section);
         }
     }
@@ -5356,8 +5360,7 @@ class restore_create_categories_and_questions extends restore_structure_step {
                 $potentialhints = $DB->get_records('question_hints',
                         array('questionid' => $newquestionid), '', 'id, hint');
                 foreach ($potentialhints as $potentialhint) {
-                    // Clean in the same way than {@link xml_writer::xml_safe_utf8()}.
-                    $cleanhint = preg_replace('/[\x-\x8\xb-\xc\xe-\x1f\x7f]/is','', $potentialhint->hint); // Clean CTRL chars.
+                    $cleanhint = core_text::trim_ctrl_chars($potentialhint->hint); // Clean CTRL chars.
                     $cleanhint = preg_replace("/\r\n|\r/", "\n", $cleanhint); // Normalize line ending.
                     if ($cleanhint === $data->hint) {
                         $newitemid = $data->id;
@@ -6394,6 +6397,7 @@ trait restore_question_set_reference_data_trait {
     public function process_question_set_reference($data) {
         global $DB;
         $data = (object) $data;
+        $owncontext = $data->usingcontextid == $data->questionscontextid;
         $data->usingcontextid = $this->get_mappingid('context', $data->usingcontextid);
         $data->itemid = $this->get_new_parentid('quiz_question_instance');
         $filtercondition = json_decode($data->filtercondition, true);
@@ -6406,8 +6410,22 @@ trait restore_question_set_reference_data_trait {
 
         // Map category id used for category filter condition and corresponding context id.
         $oldcategoryid = $filtercondition['filter']['category']['values'][0];
-        $newcategoryid = $this->get_mappingid('question_category', $oldcategoryid);
-        $filtercondition['filter']['category']['values'][0] = $newcategoryid;
+        // Decide if we're going to refer back to the original category, or to the new category.
+        // Are we restoring to a different site?
+        // Has the original context or category been deleted?
+        // Did the old category belong to the same context as the original set reference?
+        // Are we allowed to use its questions?
+        $questionscontext = context::instance_by_id($data->questionscontextid, IGNORE_MISSING);
+        if (
+            !$this->get_task()->is_samesite()
+            || !$questionscontext
+            || !$DB->record_exists('question_categories', ['id' => $oldcategoryid])
+            || $owncontext
+            || !has_capability('moodle/question:useall', $questionscontext)
+        ) {
+            $newcategoryid = $this->get_mappingid('question_category', $oldcategoryid);
+            $filtercondition['filter']['category']['values'][0] = $newcategoryid;
+        }
 
         if ($context = $this->get_mappingid('context', $data->questionscontextid)) {
             $data->questionscontextid = $context;

@@ -119,8 +119,8 @@ final class helper_test extends manage_category_test_base {
             MUST_EXIST
         );
 
-        // The following 2 lines have to be after the quiz_add_random_questions() call above.
-        // Otherwise, quiz_add_random_questions() will to be "smart" and use them instead of creating a new "random" question.
+        // The following 2 lines have to be after the add_random_questions() call above.
+        // Otherwise, add_random_questions() will have to be "smart" and use them instead of creating a new "random" question.
         $q1b = $this->create_question_in_a_category('random', $qcat1->id);
         $q2c = $this->create_question_in_a_category('random', $qcat2->id);
 
@@ -294,6 +294,40 @@ final class helper_test extends manage_category_test_base {
             $count = count($oldcategorycontext);
             $this->assertCount($count + 1, $categorycontext);
         }
+    }
+
+    /**
+     * Test that question_category_options function does not include the current category.
+     *
+     * @covers ::question_category_options
+     */
+    public function test_question_category_options_exclude_current(): void {
+        $this->setAdminUser();
+        $this->resetAfterTest();
+
+        // Create categories.
+        $quiz = $this->create_quiz();
+        $qcategory1 = $this->create_question_category_for_a_quiz($quiz);
+        $qcategory2 = $this->create_question_category_for_a_quiz($quiz, ['parent' => $qcategory1->id]);
+        $qcategory3 = $this->create_question_category_for_a_quiz($quiz);
+
+        $contexts = new \core_question\local\bank\question_edit_contexts(\context_module::instance($quiz->cmid));
+
+        $categorycontexts = helper::question_category_options($contexts->having_cap('moodle/question:add'));
+        // We get all categories without the currentcat parameter.
+        $categorycontext = $categorycontexts['Quiz: ' . $quiz->name];
+        $this->assertCount(3, $categorycontext);
+
+        // The currentcat category is excluded.
+        $newcategorycontexts = helper::question_category_options(
+            $contexts->having_cap('moodle/question:add'),
+            currentcat: $qcategory2->id,
+        );
+        $newcategorycontext = $newcategorycontexts['Quiz: ' . $quiz->name];
+        $this->assertCount(2, $newcategorycontext);
+        $this->assertContains($qcategory1->name, $newcategorycontext);
+        $this->assertNotContains($qcategory2->name, $newcategorycontext);
+        $this->assertContains($qcategory3->name, $newcategorycontext);
     }
 
     /**

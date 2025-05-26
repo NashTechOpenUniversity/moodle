@@ -1,6 +1,6 @@
 # core_reportbuilder (subsystem) Upgrade notes
 
-## 5.0dev
+## 5.0
 
 ### Added
 
@@ -10,6 +10,12 @@
 - New `get_deprecated_tables` method in base entity, to be overridden when an entity no longer uses a table (due to column/filter re-factoring, etc) in order to avoid breaking third-party reports
 
   For more information see [MDL-78118](https://tracker.moodle.org/browse/MDL-78118)
+- The base report class, used by both `\core_reportbuilder\system_report` and `\core_reportbuilder\datasource`, contains new methods for enhancing report rendering
+
+  * `set_report_action` allows for an action button to belong to your report, and be rendered alongside the filters button;
+  * `set_report_info_container` allows for content to be rendered by your report, between the action buttons and the table content
+
+  For more information see [MDL-82936](https://tracker.moodle.org/browse/MDL-82936)
 - The base aggregation class has a new `column_groupby` method, to be implemented in aggregation types to determime whether report tables should group by the fields of the aggregated column
 
   For more information see [MDL-83361](https://tracker.moodle.org/browse/MDL-83361)
@@ -22,21 +28,47 @@
 - Columns added to system reports can render help icons in table headers via `[set|get]_help_icon` column instance methods
 
   For more information see [MDL-84016](https://tracker.moodle.org/browse/MDL-84016)
+- The `groupconcat[distinct]` aggregation types support optional `'separator'` value to specify the text to display between aggregated items
+
+  For more information see [MDL-84537](https://tracker.moodle.org/browse/MDL-84537)
 
 ### Changed
 
 - The `get_active_conditions` method of the base report class has a new `$checkavailable` parameter to determine whether to check the returned conditions availability
 
   For more information see [MDL-82809](https://tracker.moodle.org/browse/MDL-82809)
+- When the `select` filter contains upto two options only then the operator field is removed, switching to a simpler value selection field only (this may affect your Behat scenarios)
+
+  For more information see [MDL-82913](https://tracker.moodle.org/browse/MDL-82913)
 - Report table instances no longer populate the `countsql` and `countparams` class properties. Instead calling code can access `totalrows` to obtain the same value, or by calling the helper method `report::get_report_row_count`
 
   For more information see [MDL-83718](https://tracker.moodle.org/browse/MDL-83718)
+- For columns implementing custom sorting via their `set_is_sortable` method, the specified sort fields must also be part of the columns initially selected fields
+
+  For more information see [MDL-83718](https://tracker.moodle.org/browse/MDL-83718)
+- The `select` filter type is now stricter in it's filtering, in that it will now discard values that aren't present in available filter options
+
+  For more information see [MDL-84213](https://tracker.moodle.org/browse/MDL-84213)
+- Aggregation types can access passed options set via the base class constructor in the `$this->options[]` class property. As such, their `format_value` method is no longer static and is always called from an instantiated class instance
+
+  For more information see [MDL-84537](https://tracker.moodle.org/browse/MDL-84537)
+- New `$options` argument added to the `column::set_aggregation` method for system reports, to set aggregation type-specific options
+
+  Report entities can call new `column::set_aggregation_options` to achieve the same
+
+  For more information see [MDL-84537](https://tracker.moodle.org/browse/MDL-84537)
 
 ### Deprecated
 
 - The `schedule` helper class `get_schedule_report_count` method is now deprecated, existing code should instead use `report::get_report_row_count`
 
   For more information see [MDL-74488](https://tracker.moodle.org/browse/MDL-74488)
+- The `render_new_report_button` method of the `core_reportbuilder` renderer has been deprecated. Instead, refer to the report instance `set_report_action` method
+
+  For more information see [MDL-82936](https://tracker.moodle.org/browse/MDL-82936)
+- Use of the `course_completion` table is deprecated in the `completion` entity, please use `course_completions` instead
+
+  For more information see [MDL-84135](https://tracker.moodle.org/browse/MDL-84135)
 
 ### Removed
 
@@ -45,7 +77,7 @@
   - `comment:context`
   - `comment:contexturl`
   - `enrolment:method` (plus enrolment formatter `enrolment_name` method)
-  - 'enrolment:role`
+  - `enrolment:role`
   - `file:context`
   - `file:contexturl`
   - `instance:context` (tag)
@@ -54,6 +86,9 @@
   Use of the `context` table is also deprecated in the `file` and `instance` (tag) entities
 
   For more information see [MDL-78118](https://tracker.moodle.org/browse/MDL-78118)
+- Various Oracle-specific support/workarounds in APIs and component report entities have been removed
+
+  For more information see [MDL-80173](https://tracker.moodle.org/browse/MDL-80173)
 - Final removal of support for `get_default_table_aliases` method. Entities must now implement `get_default_tables`, which is now abstract, to define the tables they use
 
   For more information see [MDL-80430](https://tracker.moodle.org/browse/MDL-80430)

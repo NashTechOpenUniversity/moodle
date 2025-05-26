@@ -148,12 +148,6 @@ $blocks-plus-gutter: calc(#{$blocks-column-width} + (#{$grid-gutter-width} * 0.5
     .multiline {
         white-space: normal;
     }
-    .btn.btn-link.btn-icon {
-        height: 36px;
-        width: 36px;
-        padding: 0;
-        border-radius: 50%;
-    }
 }
 .card-grid {
     display: flex;
@@ -265,6 +259,10 @@ $blocks-plus-gutter: calc(#{$blocks-column-width} + (#{$grid-gutter-width} * 0.5
             width: 100%;
         }
     }
+    // Make space for active item indicator.
+    .dropdown-item {
+        padding-left: map-get($spacers, 4);
+    }
 }
 
 //
@@ -297,7 +295,7 @@ $blocks-plus-gutter: calc(#{$blocks-column-width} + (#{$grid-gutter-width} * 0.5
 }
 .block_settings .block_tree [aria-expanded="true"] > p:before,
 .block_navigation .block_tree [aria-expanded="true"] > p:before {
-    @extend .fa-solid;
+    font: var(--fa-font-solid);
     content: fa-content($fa-var-angle-down);
     margin-right: 0;
     font-size: 16px;
@@ -306,7 +304,7 @@ $blocks-plus-gutter: calc(#{$blocks-column-width} + (#{$grid-gutter-width} * 0.5
 
 .block_settings .block_tree [aria-expanded="false"] > p:before,
 .block_navigation .block_tree [aria-expanded="false"] > p:before {
-    @extend .fa-solid;
+    font: var(--fa-font-solid);
     content: fa-content($fa-var-angle-right);
     margin-right: 0;
     font-size: 16px;
@@ -315,7 +313,7 @@ $blocks-plus-gutter: calc(#{$blocks-column-width} + (#{$grid-gutter-width} * 0.5
 .dir-rtl {
     .block_settings .block_tree [aria-expanded="false"] > p:before,
     .block_navigation .block_tree [aria-expanded="false"] > p:before {
-        @extend .fa-solid;
+        font: var(--fa-font-solid);
         content: fa-content($fa-var-angle-left);
     }
 }

@@ -2026,3 +2026,72 @@ function upgrade_convert_ai_providers_to_instances() {
         'action_summarise_text_systeminstruction'];
     array_walk($openaisettings, static fn($setting) => unset_config($setting, 'aiprovider_openai'));
 }
+
+/**
+ * Upgrade script to get all current AI providers and update their action config to include explain.
+ */
+function upgrade_add_explain_action_to_ai_providers() {
+    global $DB;
+    $currentrecords = $DB->get_recordset('ai_providers');
+
+    foreach ($currentrecords as $currentrecord) {
+        $actionconfig = json_decode($currentrecord->actionconfig, true);
+        if ($currentrecord->provider === 'aiprovider_openai\provider') {
+            $explainconfig = [
+                'enabled' => true,
+                'settings' => [
+                    'model' => 'gpt-4o',
+                    'endpoint' => 'https://api.openai.com/v1/chat/completions',
+                    'systeminstruction' => get_string('action_explain_text_instruction', 'core_ai'),
+                ],
+            ];
+        } else if ($currentrecord->provider === 'aiprovider_azureai\provider') {
+            $explainconfig = [
+                'enabled' => true,
+                'settings' => [
+                    'deployment' => '',
+                    'apiversion' => '2024-06-01',
+                    'systeminstruction' => get_string('action_explain_text_instruction', 'core_ai'),
+                ],
+            ];
+        }
+
+        // Update the record with the changes.
+        if (!empty($explainconfig)) {
+            $actionconfig['core_ai\aiactions\explain_text'] = $explainconfig;
+            $currentrecord->actionconfig = json_encode($actionconfig);
+            $DB->update_record('ai_providers', $currentrecord);
+        }
+    }
+
+    $currentrecords->close();
+}
+
+/**
+ * Creates a new ad-hoc task to upgrade the mime-type of files asynchronously.
+ * Thus, we can considerably reduce the time an upgrade takes.
+ *
+ * @param string $mimetype the desired mime-type
+ * @param string[] $extensions a list of file extensions, without the leading dot
+ * @return void
+ */
+function upgrade_create_async_mimetype_upgrade_task(string $mimetype, array $extensions): void {
+    global $DB;
+
+    // Create adhoc task for upgrading of existing files. Due to a code restriction on the upgrade, invoking any core
+    // functions is not permitted. Thus we craft our own ad-hoc task that will process all existing files.
+    $record = new \stdClass();
+    $record->classname = '\core_files\task\asynchronous_mimetype_upgrade_task';
+    $record->component = 'core';
+    $record->customdata = json_encode([
+        'mimetype' => $mimetype,
+        'extensions' => $extensions,
+    ]);
+
+    // Next run time based from nextruntime computation in \core\task\manager::queue_adhoc_task().
+    $clock = \core\di::get(\core\clock::class);
+    $nextruntime = $clock->time() - 1;
+    $record->nextruntime = $nextruntime;
+
+    $DB->insert_record('task_adhoc', $record);
+}

@@ -48,6 +48,8 @@
 
 defined('MOODLE_INTERNAL') || die;
 
+require_once(__DIR__ . '/deprecatedlib.php');
+
 /**
  * List of features supported in URL module
  * @param string $feature FEATURE_xx constant for requested feature
@@ -459,14 +461,6 @@ function lti_cron () {
  **/
 function lti_grades($basicltiid) {
     return null;
-}
-
-/**
- * @deprecated since Moodle 3.8
- */
-function lti_scale_used() {
-    throw new coding_exception('lti_scale_used() can not be used anymore. Plugins can implement ' .
-        '<modname>_scale_used_anywhere, all implementations of <modname>_scale_used are now ignored');
 }
 
 /**

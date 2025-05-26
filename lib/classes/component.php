@@ -116,7 +116,8 @@ class component {
     protected static $psr4namespaces = [
         \Aws::class => 'lib/aws-sdk/src',
         \CFPropertyList::class => 'lib/plist/src/CFPropertyList',
-        \Complex::class => 'lib/phpspreadsheet/markbaker/classes/src',
+        \Complex::class => 'lib/phpspreadsheet/markbaker/complex/classes/src',
+        \Composer\Pcre::class => 'lib/composer/pcre/src',
         \DI::class => 'lib/php-di/php-di/src',
         \GeoIp2::class => 'lib/maxmind/GeoIp2/src',
         \FastRoute::class => 'lib/nikic/fast-route/src',
@@ -132,7 +133,7 @@ class component {
         \Laravel\SerializableClosure::class => 'lib/laravel/serializable-closure/src',
         \lbuchs\WebAuthn::class => 'lib/webauthn/src',
         \libphonenumber::class => 'lib/giggsey/libphonenumber-for-php-lite/src',
-        \Matrix::class => 'lib/phpspreadsheet/markbaker/classes/src',
+        \Matrix::class => 'lib/phpspreadsheet/markbaker/matrix/classes/src',
         \MatthiasMullie\Minify::class => 'lib/minify/matthiasmullie-minify/src',
         \MatthiasMullie\PathConverter::class => 'lib/minify/matthiasmullie-pathconverter/src',
         \MaxMind\Db::class => 'lib/maxmind/MaxMind/src/MaxMind/Db',
@@ -140,7 +141,6 @@ class component {
         \MoodleHQ::class => [
             'lib/rtlcss/src/MoodleHQ',
         ],
-        \MyCLabs\Enum::class => 'lib/php-enum/src',
         \OpenSpout::class => 'lib/openspout/src',
         \Packback\Lti1p3::class => 'lib/lti1p3/src',
         \PHPMailer\PHPMailer::class => 'lib/phpmailer/src',
@@ -566,7 +566,7 @@ class component {
     /**
      * Are we in developer debug mode?
      *
-     * Note: You need to set "$CFG->debug = (E_ALL | E_STRICT);" in config.php,
+     * Note: You need to set "$CFG->debug = (E_ALL);" in config.php,
      *       the reason is we need to use this before we setup DB connection or caches for CFG.
      *
      * @return bool
@@ -581,7 +581,7 @@ class component {
             return false;
         }
 
-        if ($debug & E_ALL && $debug & E_STRICT) {
+        if ($debug & E_ALL) {
             return true;
         }
 

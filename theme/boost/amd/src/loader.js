@@ -27,6 +27,7 @@ import * as Bootstrap from './index';
 import Pending from 'core/pending';
 import {DefaultAllowlist} from './bootstrap/util/sanitizer';
 import setupBootstrapPendingChecks from './pending';
+import EventHandler from './bootstrap/dom/event-handler';
 
 /**
  * Rember the last visited tabs.
@@ -73,10 +74,10 @@ const enablePopovers = () => {
     document.addEventListener('keydown', e => {
         const popoverTrigger = e.target.closest('[data-bs-toggle="popover"]');
         if (e.key === 'Escape' && popoverTrigger) {
-            Bootstrap.Popover.getInstance(popoverTrigger).hide();
+            Bootstrap.Popover.getOrCreateInstance(popoverTrigger).hide();
         }
         if (e.key === 'Enter' && popoverTrigger) {
-            Bootstrap.Popover.getInstance(popoverTrigger).show();
+            Bootstrap.Popover.getOrCreateInstance(popoverTrigger).show();
         }
     });
     document.addEventListener('click', e => {
@@ -84,7 +85,7 @@ const enablePopovers = () => {
         if (!popoverTrigger) {
             return;
         }
-        const popover = Bootstrap.Popover.getInstance(popoverTrigger);
+        const popover = Bootstrap.Popover.getOrCreateInstance(popoverTrigger);
         if (!popover._isShown()) {
             popover.show();
         }
@@ -98,6 +99,21 @@ const enablePopovers = () => {
 const enableTooltips = () => {
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     [...tooltipTriggerList].map(tooltipTriggerEl => new Bootstrap.Tooltip(tooltipTriggerEl));
+};
+
+/**
+ * Realocate Bootstrap events to the body element.
+ *
+ * Bootstrap 5 has a unique event handling mechanism that attaches all event handlers at the document level
+ * during the capture phase, rather than the usual bubbling phase. As a result, original Bootstrap events
+ * cannot be stopped or prevented, since the document is the first node executed in the capture phase.
+ * For certain advanced UI elements, such as form autocomplete, it is important to capture key-down events before
+ * Bootstrap's handlers to prevent unintended closures of elements. Therefore, we need to change the Bootstrap handler
+ * so that it operates one level lower, specifically at the body level.
+ */
+const realocateBootstrapEvents = () => {
+    EventHandler.off(document, 'keydown.bs.dropdown.data-api', '.dropdown-menu', Bootstrap.Dropdown.dataApiKeydownHandler);
+    EventHandler.on(document.body, 'keydown.bs.dropdown.data-api', '.dropdown-menu', Bootstrap.Dropdown.dataApiKeydownHandler);
 };
 
 const pendingPromise = new Pending('theme_boost/loader:init');
@@ -116,6 +132,9 @@ enablePopovers();
 
 // Enable all tooltips.
 enableTooltips();
+
+// Realocate Bootstrap events to the body element.
+realocateBootstrapEvents();
 
 pendingPromise.resolve();
 

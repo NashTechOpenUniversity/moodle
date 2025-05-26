@@ -89,6 +89,11 @@
         }
     }
 
+    // Make space for active item indicator.
+    .dropdown-item {
+        padding-left: map-get($spacers, 4);
+    }
+
     .dropdown-item[aria-current="true"],
     .dropdown-item.active {
         background-color: transparent;
@@ -102,7 +107,7 @@
             }
         }
         &:before {
-            @extend .fa-solid;
+            font: var(--fa-font-solid);
             content: fa-content($fa-var-check);
         }
     }

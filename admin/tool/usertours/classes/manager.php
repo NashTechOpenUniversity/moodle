@@ -291,6 +291,7 @@ class manager {
             $action = \html_writer::start_tag('li');
             $linkproperties = $config->linkproperties;
             $linkproperties['href'] = $config->link;
+            $linkproperties['class'] = 'text-body';
             $action .= \html_writer::start_tag('a', $linkproperties);
             $action .= $OUTPUT->pix_icon($config->img, $config->title, 'tool_usertours', ['class' => 'iconsize-medium']);
             $action .= \html_writer::div($config->title);
@@ -398,6 +399,7 @@ class manager {
             }
 
             $form->display();
+            $PAGE->requires->js_call_amd('tool_usertours/tour_filters', 'init');
             $this->footer();
         }
     }
@@ -503,8 +505,9 @@ class manager {
      * @param   int         $tourid     The ID of the tour to duplicate.
      */
     protected function duplicate_tour($tourid) {
-        $tour = helper::get_tour($tourid);
+        require_sesskey();
 
+        $tour = helper::get_tour($tourid);
         $export = $tour->to_record();
         // Remove the id.
         unset($export->id);

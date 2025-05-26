@@ -16,7 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings for component 'glossary', language 'en', branch 'MOODLE_20_STABLE'
+ * Strings for component 'mod_glossary', language 'en', branch 'MOODLE_20_STABLE'
  *
  * @package mod_glossary
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
@@ -206,14 +206,13 @@ $string['glossary:managecategories'] = 'Manage categories';
 $string['glossary:managecomments'] = 'Manage comments';
 $string['glossary:manageentries'] = 'Manage entries';
 $string['glossary:rate'] = 'Rate entries';
-$string['glossary:view'] = 'View entries';
-$string['glossarytype'] = 'Glossary type';
-$string['glossarytype_help'] = 'A main glossary is a glossary in which entries from secondary glossaries can be imported. There can only be one main glossary in a course. If glossary entry import is not required, all glossaries in the course can be secondary glossaries.';
 $string['glossary:view'] = 'View glossary';
 $string['glossary:viewallratings'] = 'View all raw ratings given by individuals';
 $string['glossary:viewanyrating'] = 'View total ratings that anyone received';
 $string['glossary:viewrating'] = 'View the total rating you received';
 $string['glossary:write'] = 'Create new entries';
+$string['glossarytype'] = 'Glossary type';
+$string['glossarytype_help'] = 'A main glossary is a glossary in which entries from secondary glossaries can be imported. There can only be one main glossary in a course. If glossary entry import is not required, all glossaries in the course can be secondary glossaries.';
 $string['guestnoedit'] = 'Guests are not allowed to edit glossaries';
 $string['changeto'] = 'change to {$a}';
 $string['importcategories'] = 'Import categories';
@@ -337,9 +336,6 @@ $string['withauthor'] = 'Concepts with author';
 $string['withoutauthor'] = 'Concepts without author';
 $string['writtenby'] = 'by';
 $string['youarenottheauthor'] = 'You are not the author of this comment, so you are not allowed to edit it.';
-
-// Deprecated since 4.3.
-$string['completionentriesgroup'] = 'Require entries';
 
 // Deprecated since 4.5.
 $string['tagsdeleted'] = 'Glossary tags have been deleted';

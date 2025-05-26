@@ -127,7 +127,7 @@ if (!empty($add)) {
     $sectionname = get_section_name($course, $cw);
     $fullmodulename = get_string('modulename', $module->name);
     $pageheading = get_string('editsettings', 'moodle');
-    $pagetitle = get_string('edita', 'moodle', $fullmodulename) . ': ' . $cm->name;
+    $pagetitle = get_string('edita', 'moodle', $fullmodulename) . moodle_page::TITLE_SEPARATOR . $cm->name;
     $navbaraddition = null;
 
 } else {
@@ -202,13 +202,6 @@ if ($mform->is_cancelled()) {
             $options['sr'] = $sectionreturn;
         }
         $url = course_get_url($course, $cw->section, $options);
-    }
-
-    // If we need to regrade the course with a progress bar as a result of updating this module,
-    // redirect first to the page that will do this.
-    if (isset($fromform->needsfrontendregrade)) {
-        $url = new moodle_url('/course/modregrade.php', ['id' => $fromform->coursemodule,
-                'url' => $url->out_as_local_url(false)]);
     }
 
     redirect($url);

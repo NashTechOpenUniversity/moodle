@@ -49,8 +49,6 @@ define('GLOSSARY_CONTINUOUS', 'continuous');
 define('GLOSSARY_DICTIONARY', 'dictionary');
 define('GLOSSARY_FULLWITHOUTAUTHOR', 'fullwithoutauthor');
 
-require_once(__DIR__ . '/deprecatedlib.php');
-
 /// STANDARD FUNCTIONS ///////////////////////////////////////////////////////////
 /**
  * @global object
@@ -863,14 +861,6 @@ function glossary_grade_item_delete($glossary) {
 }
 
 /**
- * @deprecated since Moodle 3.8
- */
-function glossary_scale_used() {
-    throw new coding_exception('glossary_scale_used() can not be used anymore. Plugins can implement ' .
-        '<modname>_scale_used_anywhere, all implementations of <modname>_scale_used are now ignored');
-}
-
-/**
  * Checks if scale is being used by any instance of glossary
  *
  * This is used to find out if scale used anywhere
@@ -1370,7 +1360,7 @@ function glossary_print_entry_lower_section($course, $cm, $glossary, $entry, $mo
         echo '<table>';
         if ( $aliases ) {
             $id = "keyword-{$entry->id}";
-            echo '<tr valign="top"><td class="aliases">' .
+            echo '<tr valign="top"><td class="aliases hstack gap-2">' .
                 '<label for="' . $id . '">' . get_string('aliases', 'glossary') . ': </label>' .
                 $aliases . '</td></tr>';
         }

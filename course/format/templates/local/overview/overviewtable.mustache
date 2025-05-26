@@ -26,7 +26,7 @@
             {
                 "key": "name",
                 "name": "Activity Name",
-                "textalign": "text-left"
+                "textalign": "text-start"
             },
             {
                 "key": "completion",
@@ -42,13 +42,15 @@
                         "overview": "name",
                         "value": "Assignment 1",
                         "content": "Assignment 1",
-                        "textalign": "text-left"
+                        "textalign": "text-start"
                     },
                     {
                         "overview": "completion",
                         "value": "1",
                         "content": "Complete",
-                        "textalign": "text-center"
+                        "textalign": "text-center",
+                        "alertcount": 1,
+                        "alertlabel": "Assignment 1 has 1 alert"
                     }
                 ]
             },
@@ -59,20 +61,22 @@
                         "overview": "name",
                         "value": "Quiz 1",
                         "content": "Quiz 1",
-                        "textalign": "text-left"
+                        "textalign": "text-start"
                     },
                     {
                         "overview": "completion",
                         "value": "0",
                         "content": "Incomplete",
-                        "textalign": "text-center"
+                        "textalign": "text-center",
+                        "alertcount": 0,
+                        "alertlabel": ""
                     }
                 ]
             }
         ]
     }
 }}
-<div class="course-overview border border-secondary border-1 rounded">
+<div class="course-overview border border-secondary border-1 rounded pt-2">
     <table
         class="course-overview-table boxaligncenter {{!
             }} table table-responsive w-100 d-block d-md-table"
@@ -97,6 +101,10 @@
                 class="{{textalign}}"
                 data-mdl-overview-item="{{overview}}"
                 data-mdl-overview-value="{{value}}"
+                {{#alertcount}}
+                data-mdl-overview-alertcount="{{alertcount}}"
+                data-mdl-overview-alertlabel="{{alertlabel}}"
+                {{/alertcount}}
             >
                 {{{content}}}
             </td>

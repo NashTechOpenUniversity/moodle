@@ -655,26 +655,16 @@ abstract class base {
     }
 
     /**
-     * Set if the current format instance will show multiple sections or an individual one.
-     *
-     * Some formats has the hability to swith from one section to multiple sections per page.
-     *
-     * @param int $singlesection zero for all sections or a section number
      * @deprecated Since 4.4. Use set_sectionnum instead.
-     * @todo MDL-80116 This will be deleted in Moodle 4.8.
      */
+    #[\core\attribute\deprecated(
+        replacement: 'base::set_sectionnum',
+        since: '4.4',
+        mdl: 'MDL-80248',
+        final: true,
+    )]
     public function set_section_number(int $singlesection): void {
-
-        debugging(
-            'The method core_courseformat\base::set_section_number() has been deprecated, please use set_sectionnum() instead.',
-            DEBUG_DEVELOPER
-        );
-
-        if ($singlesection === 0) {
-            // Convert zero to null, to guarantee all the sections are displayed.
-            $singlesection = null;
-        }
-        $this->set_sectionnum($singlesection);
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     /**
@@ -713,29 +703,17 @@ abstract class base {
     }
 
     /**
-     * Set if the current format instance will show multiple sections or an individual one.
-     *
-     * Some formats has the hability to swith from one section to multiple sections per page,
-     * output components will use this method to know if the current display is a single or
-     * multiple sections.
-     *
-     * @return int zero for all sections or the sectin number
      * @deprecated Since 4.4. Use get_sectionnum instead.
-     * @todo MDL-80116 This will be deleted in Moodle 4.8.
      */
+    #[\core\attribute\deprecated(
+        replacement: 'base::get_sectionnum',
+        since: '4.4',
+        mdl: 'MDL-80248',
+        final: true,
+    )]
     public function get_section_number(): int {
-
-        debugging(
-            'The method core_courseformat\base::get_section_number() has been deprecated, please use get_sectionnum() instead.',
-            DEBUG_DEVELOPER
-        );
-
-        if ($this->singlesection === null) {
-            // Convert null to zero, to guarantee all the sections are displayed.
-            return 0;
-        }
-
-        return $this->singlesection;
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
+        return 0;
     }
 
     /**
@@ -989,11 +967,11 @@ abstract class base {
             }
         }
 
-        if ($targetsectionid) {
-            $params['sectionid'] = $targetsectionid;
+        if (isset($targetsectionid)) {
+            $params['targetsectionid'] = $targetsectionid;
         }
-        if ($targetcmid) {
-            $params['cmid'] = $targetcmid;
+        if (isset($targetcmid)) {
+            $params['targetcmid'] = $targetcmid;
         }
         if ($returnurl) {
             $params['returnurl'] = $returnurl->out_as_local_url();

@@ -50,12 +50,12 @@
         ]
     }
 }}
-<label for="core-filter_row-{{filtertype}}-mode-{{uniqid}}" class="sr-only">{{label}}</label>
+<label for="core-filter_row-{{filtertype}}-mode-{{uniqid}}" class="visually-hidden">{{label}}</label>
 <select
     id="core-filter_row-{{filtertype}}-mode-{{uniqid}}"
     name="{{filtertype}}-mode"
     data-filterfield="{{filtertype}}-mode"
-    class="custom-select mr-2 mt-1"
+    class="form-select"
 >
     {{#modeoptions}}
         <option value="{{value}}" {{selected}}>{{label}}</option>

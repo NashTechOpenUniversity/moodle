@@ -150,6 +150,7 @@ $string['settings:redir_exclusions_help'] = 'Each new line is a relative URL fro
 $string['settings:weight'] = 'Factor weight';
 $string['settings:weight_help'] = 'The weight of this factor if passed. A user needs at least 100 points to log in.';
 $string['setupfactor'] = 'Set up factor';
+$string['setupfactorbuttonadditional'] = 'Add additional factor';
 $string['state:fail'] = 'Fail';
 $string['state:locked'] = 'Locked';
 $string['state:neutral'] = 'Neutral';
@@ -171,13 +172,6 @@ $string['verifyalt'] = 'Try another way to verify:';
 $string['weight'] = 'Weight';
 $string['yesremove'] = 'Yes, remove';
 $string['yesreplace'] = 'Yes, replace';
-
-// Deprecated since Moodle 4.4.
-$string['created'] = 'Created';
-$string['createdfromip'] = 'Created from IP';
-$string['lastverified'] = 'Last verified';
-$string['revoke'] = 'Revoke';
-$string['setup'] = 'Setup';
 
 // Deprecated since Moodle 5.0.
 $string['inputrequired'] = 'User input';

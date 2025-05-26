@@ -405,22 +405,6 @@ form.popupform div {
     overflow: auto;
 }
 
-// Position required for table sizing inside a flex container.
-.no-overflow > .generaltable {
-    margin-bottom: 0;
-}
-
-.no-overflow,
-.table-responsive {
-    .generaltable {
-        .visually-hidden,
-        .accesshide {
-            position: relative;
-            display: block;
-        }
-    }
-}
-
 // Accessibility features
 
 // Accessibility: text 'seen' by screen readers but not visual users.
@@ -2220,6 +2204,10 @@ $footer-link-color: $bg-inverse-link-color !default;
     bottom: calc(4rem + #{$stickyfooter-height});
 }
 
+.hasstickyfooter .maintenancewarning {
+    bottom: #{$stickyfooter-height};
+}
+
 .popover.footer {
     .popover-body {
         padding: 0;
@@ -2250,6 +2238,10 @@ $footer-link-color: $bg-inverse-link-color !default;
     .jsenabled .btn-footer-communication {
         display: block;
         z-index: $zindex-dropdown;
+    }
+    .jsenabled .maintenancewarning,
+    .jsenabled.hasstickyfooter:has(.drawer-right-toggle) .maintenancewarning {
+        right: 5rem;
     }
 }
 
@@ -2561,7 +2553,7 @@ $picker-emojis-per-row: 7 !default;
 .emoji-auto-complete {
     height: $picker-row-height;
 
-    .btn.btn-link.btn-icon.emoji-button {
+    .btn.btn-icon.emoji-button {
         height: $picker-emoji-button-size;
         width: $picker-emoji-button-size;
         line-height: $picker-emoji-button-size;
@@ -2647,8 +2639,11 @@ $picker-emojis-per-row: 7 !default;
             }
         }
     }
+    // Navs and Tabs in small screens.
     .nav-tabs:not(.more-nav),
     .nav-pills {
+        --#{$prefix}nav-tabs-link-active-color: #{$nav-pills-link-active-color};
+        --#{$prefix}nav-tabs-link-active-bg: #{$nav-pills-link-active-bg};
         margin: 0;
         border: 0;
         padding: $spacer * 0.125;
@@ -2658,11 +2653,10 @@ $picker-emojis-per-row: 7 !default;
             text-align: center;
         }
         .nav-link {
-            background: $white;
             border: 0;
             margin: $spacer * 0.125;
-            &.active {
-                @include button-outline-variant($blue, $active-border: $gray-600);
+            &:not(.active) {
+                background-color: var(--#{$prefix}body-bg);
             }
         }
     }
@@ -2926,7 +2920,7 @@ body.dragging {
 }
 
 .dropdown-toggle::after {
-    @extend .fa-solid;
+    font: var(--fa-font-solid);
     content: fa-content($fa-var-chevron-down);
     margin-right: 0;
     margin-left: 4px;
@@ -2944,7 +2938,7 @@ body.dragging {
 // TODO: Check if these are still needed.
 .dropleft .dropdown-toggle::before {
     border: 0;
-    @extend .fa-solid;
+    font: var(--fa-font-solid);
     content: fa-content($fa-var-chevron-left);
     font-size: 9px;
     margin-left: 0;
@@ -2958,7 +2952,7 @@ body.dragging {
 
 .dropright .dropdown-toggle::after {
     border: 0;
-    @extend .fa-solid;
+    font: var(--fa-font-solid);
     content: fa-content($fa-var-chevron-right);
 }
 
@@ -2969,7 +2963,7 @@ body.dragging {
 
 .dropup .dropdown-toggle::after {
     border: 0;
-    @extend .fa-solid;
+    font: var(--fa-font-solid);
     content: fa-content($fa-var-chevron-up);
 }
 
@@ -2993,8 +2987,13 @@ body.dragging {
             padding-left: 2.5rem;
         }
     }
-    .dropdown-item[aria-selected="true"] {
-        font-weight: bold;
+
+    .dropdown-item {
+        padding: map-get($spacers, 1) map-get($spacers, 4);
+
+        [aria-selected="true"] {
+            font-weight: bold;
+        }
     }
 }
 
@@ -3081,11 +3080,9 @@ blockquote {
             display: none;
         }
     }
-    button {
+    .showmore-button {
         float: right;
-        &.btn-link {
-            text-decoration: none;
-        }
+        text-decoration: none;
         .icon {
             font-size: $btn-font-size-sm;
             margin: 0;

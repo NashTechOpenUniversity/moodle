@@ -34,10 +34,10 @@ define('DEBUG_NONE', 0);
 define('DEBUG_MINIMAL', E_ERROR | E_PARSE);
 /** Errors, warnings and notices */
 define('DEBUG_NORMAL', E_ERROR | E_PARSE | E_WARNING | E_NOTICE);
-/** All problems except strict PHP warnings */
-define('DEBUG_ALL', E_ALL & ~E_STRICT);
-/** DEBUG_ALL with all debug messages and strict warnings */
-define('DEBUG_DEVELOPER', E_ALL | E_STRICT);
+/** All problems. Formerly, all problems, except the erstwhile strict PHP warnings before E_STRICT got deprecated. */
+define('DEBUG_ALL', E_ALL);
+/** Same as DEBUG_ALL since E_STRICT was deprecated. */
+define('DEBUG_DEVELOPER', E_ALL);
 
 /** Remove any memory limits */
 define('MEMORY_UNLIMITED', -1);
@@ -387,15 +387,6 @@ function get_exception_info($ex): stdClass {
     $info->debuginfo   = $debuginfo;
 
     return $info;
-}
-
-/**
- * @deprecated since Moodle 3.8 MDL-61038 - please do not use this function any more.
- * @see \core\uuid::generate()
- */
-function generate_uuid() {
-    throw new coding_exception('generate_uuid() cannot be used anymore. Please use ' .
-        '\core\uuid::generate() instead.');
 }
 
 /**

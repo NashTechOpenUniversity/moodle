@@ -25,8 +25,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
+use core\exception\moodle_exception;
 use core\navigation\views\primary;
 use core\navigation\views\secondary;
 use core\navigation\output\primary as primaryoutput;
@@ -1671,20 +1670,6 @@ class moodle_page {
     }
 
     /**
-     * @deprecated since Moodle 3.4
-     */
-    public function https_required() {
-        throw new coding_exception('https_required() cannot be used anymore.');
-    }
-
-    /**
-     * @deprecated since Moodle 3.4
-     */
-    public function verify_https_required() {
-        throw new coding_exception('verify_https_required() cannot be used anymore.');
-    }
-
-    /**
      * Allows to 'serialize' the edited page information and store it in the session cache
      *
      * Due to Moodle architectural decision and non-SPA approach, a lot of page setup is
@@ -2181,7 +2166,7 @@ class moodle_page {
         global $DB;
         $category = $DB->get_record('course_categories', array('id' => $categoryid));
         if (!$category) {
-            throw new moodle_exception('unknowncategory');
+            throw new moodle_exception('unknowncategory', a: $categoryid);
         }
         $this->_categories[$category->id] = $category;
         $parentcategoryids = explode('/', trim($category->path, '/'));

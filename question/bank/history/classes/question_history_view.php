@@ -90,10 +90,12 @@ class question_history_view extends view {
         return $this->requiredcolumns;
     }
 
+    /**
+     * @deprecated since Moodle 4.3 MDL-72321
+     */
+    #[\core\attribute\deprecated('filtering objects', since: '4.3', mdl: 'MDL-72321', final: true)]
     protected function display_advanced_search_form($advancedsearch): void {
-        foreach ($advancedsearch as $searchcondition) {
-            echo $searchcondition->display_options_adv();
-        }
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     public function allow_add_questions(): bool {
@@ -103,7 +105,7 @@ class question_history_view extends view {
 
     #[\Override]
     protected function default_sort(): array {
-        return ['qbank_history__version_number_column' => 1];
+        return ['qbank_history__version_number_column' => SORT_ASC];
     }
 
     protected function build_query(): void {

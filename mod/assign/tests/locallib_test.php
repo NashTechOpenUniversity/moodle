@@ -1724,13 +1724,14 @@ final class locallib_test extends \advanced_testcase {
         \core\cron::setup_user();
         \assign::cron();
 
-        $course = $this->getDataGenerator()->create_course();
+        $course = $this->getDataGenerator()->create_course(['shortname' => 'E&U']);
         $teacher = $this->getDataGenerator()->create_and_enrol($course, 'editingteacher');
         $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
 
         // Now create an assignment and add some feedback.
         $this->setUser($teacher);
         $assign = $this->create_instance($course, [
+            'name' => 'Escaping & Unescaping',
             'sendstudentnotifications' => 1,
             'markingworkflow' => 1,
         ]);
@@ -1765,8 +1766,45 @@ final class locallib_test extends \advanced_testcase {
         $messages = $sink->get_messages();
 
         $this->assertEquals(1, count($messages));
-        $this->assertEquals(1, $messages[0]->notification);
-        $this->assertEquals($assign->get_instance()->name, $messages[0]->contexturlname);
+
+        // Get some bits we will need to verify the content of the message.
+        $assignname = $assign->get_instance()->name;
+        $assignurl = (new \moodle_url('/mod/assign/view.php', ['id' => $assign->get_course_module()->id]))->out();
+        $teachername = fullname($teacher);
+        $assignsurl = (new \moodle_url('/mod/assign/index.php', ['id' => $course->id]))->out();
+        $courseurl = (new \moodle_url('/course/view.php', ['id' => $course->id]))->out();
+
+        $message = $messages[0];
+        $this->assertEquals(1, $message->notification);
+        $this->assertEquals(format_string($assign->get_instance()->name), $message->contexturlname);
+        $this->assertEquals("$teachername has given feedback for assignment $assignname", $message->subject, );
+        $this->assertEquals("E&U -> Assignment -> Escaping & Unescaping
+---------------------------------------------------------------------
+$teachername has posted some feedback on your
+assignment submission for 'Escaping & Unescaping'
+
+You can see it appended to your assignment submission:
+
+    $assignurl
+
+---------------------------------------------------------------------
+",
+            $message->fullmessage,
+        );
+        $this->assertEquals(
+            '<p><font face="sans-serif">
+    <a href="' . $courseurl . '">E&amp;U</a> ->
+    <a href="' . $assignsurl . '">Assignment</a> ->
+    <a href="' . $assignurl . '">Escaping &amp; Unescaping</a>
+</font></p>
+<hr>
+<font face="sans-serif"><p>' . $teachername . ' has posted some feedback on your ' .
+            'assignment submission for \'Escaping &amp; Unescaping\'.
+You can see it appended to your <a href="' . $assignurl .
+            '">assignment submission</a>.</p></font>
+<hr>',
+            $message->fullmessagehtml
+        );
     }
 
     public function test_cron_message_includes_courseid(): void {
@@ -4257,7 +4295,7 @@ Anchor link 2:<a title=\"bananas\" href=\"../logo-240x60.gif\">Link text</a>
         $assign = $this->create_instance($course);
         $valid = $assign->get_filters();
 
-        $this->assertEquals(count($valid), 6);
+        $this->assertEquals(count($valid), 7);
     }
 
     /**
@@ -4467,59 +4505,6 @@ Anchor link 2:<a title=\"bananas\" href=\"../logo-240x60.gif\">Link text</a>
         $event2 = $DB->get_record('event', $params);
         $this->assertNotEmpty($event2);
         $this->assertSame('This one should be re-created', $event2->description);
-    }
-
-    /**
-     * Test submissions that need grading output after one ungraded submission
-     */
-    public function test_submissions_need_grading(): void {
-        global $PAGE;
-
-        $this->resetAfterTest();
-        $course = $this->getDataGenerator()->create_course();
-        $teacher = $this->getDataGenerator()->create_and_enrol($course, 'teacher');
-        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
-
-        // Setup the assignment.
-        $this->setUser($teacher);
-        $time = time();
-        $assign = $this->create_instance($course, [
-                'assignsubmission_onlinetext_enabled' => 1,
-            ]);
-        $PAGE->set_url(new \moodle_url('/mod/assign/view.php', [
-            'id' => $assign->get_course_module()->id,
-            'action' => 'grading',
-        ]));
-
-        // Check for 0 submissions.
-        $summary = $assign->view('viewcourseindex');
-
-        $this->assertStringContainsString('/mod/assign/view.php?id=' .
-            $assign->get_course_module()->id . '&amp;action=grading">' .
-            get_string('numberofsubmissionsneedgradinglabel', 'assign', 0) . '</a>', $summary);
-
-        // Simulate an assignment submission.
-        $this->setUser($student);
-        $submission = $assign->get_user_submission($student->id, true);
-        $submission->status = ASSIGN_SUBMISSION_STATUS_SUBMITTED;
-        $assign->testable_update_submission($submission, $student->id, true, false);
-        $data = new \stdClass();
-        $data->onlinetext_editor = [
-            'itemid' => file_get_unused_draft_itemid(),
-            'text' => 'Submission text',
-            'format' => FORMAT_MOODLE,
-        ];
-        $plugin = $assign->get_submission_plugin_by_type('onlinetext');
-        $plugin->save($submission, $data);
-
-        // Check for 1 ungraded submission.
-        $this->setUser($teacher);
-
-        $summary = $assign->view('viewcourseindex');
-
-        $this->assertStringContainsString('/mod/assign/view.php?id=' .
-            $assign->get_course_module()->id .  '&amp;action=grading">' .
-            get_string('numberofsubmissionsneedgradinglabel', 'assign', 1) . '</a>', $summary);
     }
 
     /**
@@ -4815,5 +4800,32 @@ Anchor link 2:<a title=\"bananas\" href=\"../logo-240x60.gif\">Link text</a>
         $result = $assign->get_error_messages();
         $this->assertIsArray($result);
         $this->assertNotEmpty($result);
+    }
+
+    /**
+     * Test that assignment grades are pushed to the gradebook when anonymous
+     * submissions and marking workflow are enabled (MDL-83195).
+     * @covers \assign::gradebook_item_update
+     */
+    public function test_release_grade_anon(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_and_enrol($course, 'teacher');
+        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
+
+        $assign = $this->create_instance($course, [
+            'blindmarking' => 1,
+            'markingworkflow' => 1,
+            'markinganonymous' => 1,
+        ]);
+
+        // Add a grade and change the workflow status to "Released".
+        $this->mark_submission($teacher, $assign, $student, 50.0,  [
+            'workflowstate' => ASSIGN_MARKING_WORKFLOW_STATE_RELEASED,
+        ]);
+
+        // Make sure the grade has been pushed to the gradebook.
+        $gradinginfo = grade_get_grades($course->id, 'mod', 'assign', $assign->get_instance()->id, $student->id);
+        $this->assertEquals(50, (int)$gradinginfo->items[0]->grades[$student->id]->grade);
     }
 }

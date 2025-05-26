@@ -28,6 +28,7 @@ use core_question\local\bank\question_version_status;
 use \mod_quiz\structure;
 use \html_writer;
 use qbank_previewquestion\question_preview_options;
+use question_bank;
 use renderable;
 
 /**
@@ -304,7 +305,7 @@ class edit_renderer extends \plugin_renderer_base {
         $selectallid = 'questionselectall';
         $selectalltext = get_string('selectall', 'moodle');
         $deselectalltext = get_string('deselectall', 'moodle');
-        $mastercheckbox = new \core\output\checkbox_toggleall($this->togglegroup, true, [
+        $togglercheckbox = new \core\output\checkbox_toggleall($this->togglegroup, true, [
             'id' => $selectallid,
             'name' => $selectallid,
             'value' => 1,
@@ -313,7 +314,7 @@ class edit_renderer extends \plugin_renderer_base {
             'deselectall' => $deselectalltext,
         ], true);
 
-        $selectdeselect = html_writer::div($this->render($mastercheckbox), 'selectmultiplecommandbuttons');
+        $selectdeselect = html_writer::div($this->render($togglercheckbox), 'selectmultiplecommandbuttons');
         $output .= html_writer::tag('div', $selectdeselect, $toolbaroptions);
         return $output;
     }
@@ -867,7 +868,7 @@ class edit_renderer extends \plugin_renderer_base {
         $qtype = $structure->get_question_type_for_slot($slot);
         $slotinfo = $structure->get_slot_by_number($slot);
         $questionicons = '';
-        if ($qtype !== 'random') {
+        if ($qtype !== 'random' && question_bank::is_qtype_usable($qtype)) {
             $questionicons .= $this->question_preview_icon($structure->get_quiz(),
                     $structure->get_question_in_slot($slot),
                     null, null, $slotinfo->requestedversion ?: question_preview_options::ALWAYS_LATEST);
@@ -923,6 +924,11 @@ class edit_renderer extends \plugin_renderer_base {
      */
     public function question_preview_icon($quiz, $questiondata, $label = null, $variant = null, $restartversion = null) {
         $question = clone($questiondata);
+
+        if (!question_bank::is_qtype_usable($question->qtype)) {
+            return '';
+        }
+
         if (isset($question->questionid)) {
 
             $question->id = $question->questionid;
@@ -1057,7 +1063,7 @@ class edit_renderer extends \plugin_renderer_base {
 
         $instancename = quiz_question_tostring($question);
 
-        $qtype = \question_bank::get_qtype($question->qtype, false);
+        $qtype = question_bank::get_qtype($question->qtype, false);
         $namestr = $qtype->local_name();
 
         $icon = $this->pix_icon('icon', $namestr, $qtype->plugin_name(), ['title' => $namestr,
@@ -1068,10 +1074,21 @@ class edit_renderer extends \plugin_renderer_base {
         // Need plain question name without html tags for link title.
         $title = shorten_text(format_string($question->name), 100);
 
-        // Display the link itself.
-        $activitylink = $icon . html_writer::tag('span', $editicon . $instancename, ['class' => 'instancename']);
-        $output .= html_writer::link($editurl, $activitylink,
-                ['title' => get_string('editquestion', 'quiz').' '.$title]);
+        // If the question is invalid, don't show the link as it won't work.
+        if (!question_bank::is_qtype_usable($question->qtype)) {
+            $output .= html_writer::span($title);
+            $output .= html_writer::span(
+                get_string('invalidquestiontype', 'question', $question->originalqtype),
+                'badge bg-danger text-white ms-3'
+            );
+        } else {
+
+            // Display the link itself.
+            $activitylink = $icon . html_writer::tag('span', $editicon . $instancename, ['class' => 'instancename']);
+            $output .= html_writer::link($editurl, $activitylink,
+                ['title' => get_string('editquestion', 'quiz') . ' ' . $title]);
+
+        }
 
         return $output;
     }
@@ -1105,7 +1122,7 @@ class edit_renderer extends \plugin_renderer_base {
         }
 
         $configuretitle = get_string('configurerandomquestion', 'quiz');
-        $qtype = \question_bank::get_qtype($question->qtype, false);
+        $qtype = question_bank::get_qtype($question->qtype, false);
         $namestr = $qtype->local_name();
         $icon = $this->pix_icon('icon', $namestr, $qtype->plugin_name(), ['class' => 'icon activityicon']);
 
@@ -1289,7 +1306,7 @@ class edit_renderer extends \plugin_renderer_base {
                 'questiondependsonprevious',
         ], 'quiz');
 
-        foreach (\question_bank::get_all_qtypes() as $qtype => $notused) {
+        foreach (question_bank::get_all_qtypes() as $qtype => $notused) {
             $this->page->requires->string_for_js('pluginname', 'qtype_' . $qtype);
         }
 

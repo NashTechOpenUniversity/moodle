@@ -27,6 +27,7 @@ require_once($CFG->dirroot . '/grade/export/lib.php');
 
 use \core_grades\output\action_bar;
 use \core_grades\output\general_action_bar;
+use \core\output\single_select;
 
 /**
  * This class iterates over all users that are graded in a course.
@@ -412,12 +413,25 @@ class graded_users_iterator {
  * @param int    $includeall bool include all option
  * @param bool   $return If true, will return the HTML, otherwise, will print directly
  * @return null
+ * @todo Final deprecation on Moodle 6.0. See MDL-84680.
  */
+#[\core\attribute\deprecated('grade_get_graded_users_select()', since: '5.0', mdl: 'MDL-84673')]
 function print_graded_users_selector($course, $actionpage, $userid=0, $groupid=0, $includeall=true, $return=false) {
-    global $CFG, $USER, $OUTPUT;
+    \core\deprecation::emit_deprecation_if_present(__FUNCTION__);
+    global $OUTPUT;
     return $OUTPUT->render(grade_get_graded_users_select(substr($actionpage, 0, strpos($actionpage, '/')), $course, $userid, $groupid, $includeall));
 }
 
+/**
+ * Return a selection popup form of the graded users in a course.
+ *
+ * @param string $report name of the report
+ * @param int    $course id of the course
+ * @param int    $userid id of the currently selected user (or 'all' if they are all selected)
+ * @param int    $groupid id of requested group, 0 means all
+ * @param bool   $includeall bool include all option
+ * @return single_select
+ */
 function grade_get_graded_users_select($report, $course, $userid, $groupid, $includeall) {
     global $USER, $CFG;
 
@@ -992,6 +1006,20 @@ function print_grade_page_head(int $courseid, string $active_type, ?string $acti
         $output = $OUTPUT->heading($heading);
     }
 
+    // If any grade penalty plugins are enabled, notify the user that grade penalties will not be applied to imported grades.
+    if ($active_type === 'import') {
+        foreach (core_plugin_manager::instance()->get_plugins_of_type('gradepenalty') as $plugin) {
+            if ($plugin->is_enabled()) {
+                $output .= $OUTPUT->notification(
+                    get_string('gradepenalties', 'gradeimport_csv'),
+                    \core\output\notification::NOTIFY_INFO,
+                    false,
+                );
+                break;
+            }
+        }
+    }
+
     if ($return) {
         $returnval .= $output;
     } else {
@@ -1528,26 +1556,11 @@ class grade_structure {
     }
 
     /**
-     * Returns an action icon leading to the grade analysis page
-     *
-     * @param grade_grade $grade
-     * @return string
-     * @deprecated since Moodle 4.2 - The row is not shown anymore - we have actions menu.
-     * @todo MDL-77307 This will be deleted in Moodle 4.6.
+     * @deprecated since Moodle 4.2 - The row is not shown anymore - we have {@see core\output\action_menu}.
      */
+    #[\core\attribute\deprecated('core\output\action_menu', since: '4.2', mdl: 'MDL-77033', final: true)]
     public function get_grade_analysis_icon(grade_grade $grade) {
-        global $OUTPUT;
-        debugging('The function get_grade_analysis_icon() is deprecated, please do not use it anymore.',
-            DEBUG_DEVELOPER);
-
-        $url = $this->get_grade_analysis_url($grade);
-        if (is_null($url)) {
-            return '';
-        }
-
-        $title = get_string('gradeanalysis', 'core_grades');
-        return $OUTPUT->action_icon($url, new pix_icon('t/preview', ''), null,
-                ['title' => $title, 'aria-label' => $title]);
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     /**
@@ -1587,7 +1600,7 @@ class grade_structure {
         if ($menuitems) {
             $menu = new action_menu($menuitems);
             $icon = $OUTPUT->pix_icon('i/moremenu', get_string('actions'));
-            $extraclasses = 'btn btn-link btn-icon icon-size-3 d-flex align-items-center justify-content-center no-caret';
+            $extraclasses = 'btn btn-link btn-icon d-flex no-caret';
             $menu->set_menu_trigger($icon, $extraclasses);
             $menu->set_menu_left();
 
@@ -1657,41 +1670,11 @@ class grade_structure {
     }
 
     /**
-     * Return a reset icon for the given element.
-     *
-     * @param array  $element An array representing an element in the grade_tree
-     * @param object $gpr A grade_plugin_return object
-     * @param bool $returnactionmenulink return the instance of action_menu_link instead of string
-     * @return string|action_menu_link
-     * @deprecated since Moodle 4.2 - The row is not shown anymore - we have actions menu.
-     * @todo MDL-77307 This will be deleted in Moodle 4.6.
+     * @deprecated since Moodle 4.2 - The row is not shown anymore - we have {@see core\output\action_menu}.
      */
+    #[\core\attribute\deprecated('core\output\action_menu', since: '4.2', mdl: 'MDL-77033', final: true)]
     public function get_reset_icon($element, $gpr, $returnactionmenulink = false) {
-        global $CFG, $OUTPUT;
-        debugging('The function get_reset_icon() is deprecated, please do not use it anymore.',
-            DEBUG_DEVELOPER);
-
-        // Limit to category items set to use the natural weights aggregation method, and users
-        // with the capability to manage grades.
-        if ($element['type'] != 'category' || $element['object']->aggregation != GRADE_AGGREGATE_SUM ||
-                !has_capability('moodle/grade:manage', $this->context)) {
-            return $returnactionmenulink ? null : '';
-        }
-
-        $str = get_string('resetweights', 'grades', $this->get_params_for_iconstr($element));
-        $url = new moodle_url('/grade/edit/tree/action.php', array(
-            'id' => $this->courseid,
-            'action' => 'resetweights',
-            'eid' => $element['eid'],
-            'sesskey' => sesskey(),
-        ));
-
-        if ($returnactionmenulink) {
-            return new action_menu_link_secondary($gpr->add_url_params($url), new pix_icon('t/reset', $str),
-                get_string('resetweightsshort', 'grades'));
-        } else {
-            return $OUTPUT->action_icon($gpr->add_url_params($url), new pix_icon('t/reset', $str));
-        }
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     /**
@@ -1791,90 +1774,11 @@ class grade_structure {
     }
 
     /**
-     * Return edit icon for give element
-     *
-     * @param array  $element An array representing an element in the grade_tree
-     * @param object $gpr A grade_plugin_return object
-     * @param bool $returnactionmenulink return the instance of action_menu_link instead of string
-     * @return string|action_menu_link
-     * @deprecated since Moodle 4.2 - The row is not shown anymore - we have actions menu.
-     * @todo MDL-77307 This will be deleted in Moodle 4.6.
+     * @deprecated since Moodle 4.2 - The row is not shown anymore - we have {@see core\output\action_menu}.
      */
+    #[\core\attribute\deprecated('core\output\action_menu', since: '4.2', mdl: 'MDL-77033', final: true)]
     public function get_edit_icon($element, $gpr, $returnactionmenulink = false) {
-        global $CFG, $OUTPUT;
-
-        debugging('The function get_edit_icon() is deprecated, please do not use it anymore.',
-            DEBUG_DEVELOPER);
-
-        if (!has_capability('moodle/grade:manage', $this->context)) {
-            if ($element['type'] == 'grade' and has_capability('moodle/grade:edit', $this->context)) {
-                // oki - let them override grade
-            } else {
-                return $returnactionmenulink ? null : '';
-            }
-        }
-
-        static $strfeedback   = null;
-        static $streditgrade = null;
-        if (is_null($streditgrade)) {
-            $streditgrade = get_string('editgrade', 'grades');
-            $strfeedback  = get_string('feedback');
-        }
-
-        $strparams = $this->get_params_for_iconstr($element);
-
-        $object = $element['object'];
-
-        switch ($element['type']) {
-            case 'item':
-            case 'categoryitem':
-            case 'courseitem':
-                $stredit = get_string('editverbose', 'grades', $strparams);
-                if (empty($object->outcomeid) || empty($CFG->enableoutcomes)) {
-                    $url = new moodle_url('/grade/edit/tree/item.php',
-                            array('courseid' => $this->courseid, 'id' => $object->id));
-                } else {
-                    $url = new moodle_url('/grade/edit/tree/outcomeitem.php',
-                            array('courseid' => $this->courseid, 'id' => $object->id));
-                }
-                break;
-
-            case 'category':
-                $stredit = get_string('editverbose', 'grades', $strparams);
-                $url = new moodle_url('/grade/edit/tree/category.php',
-                        array('courseid' => $this->courseid, 'id' => $object->id));
-                break;
-
-            case 'grade':
-                $stredit = $streditgrade;
-                if (empty($object->id)) {
-                    $url = new moodle_url('/grade/edit/tree/grade.php',
-                            array('courseid' => $this->courseid, 'itemid' => $object->itemid, 'userid' => $object->userid));
-                } else {
-                    $url = new moodle_url('/grade/edit/tree/grade.php',
-                            array('courseid' => $this->courseid, 'id' => $object->id));
-                }
-                if (!empty($object->feedback)) {
-                    $feedback = addslashes_js(trim(format_string($object->feedback, $object->feedbackformat)));
-                }
-                break;
-
-            default:
-                $url = null;
-        }
-
-        if ($url) {
-            if ($returnactionmenulink) {
-                return new action_menu_link_secondary($gpr->add_url_params($url),
-                    new pix_icon('t/edit', $stredit),
-                    get_string('editsettings'));
-            } else {
-                return $OUTPUT->action_icon($gpr->add_url_params($url), new pix_icon('t/edit', $stredit));
-            }
-
-        } else {
-            return $returnactionmenulink ? null : '';
-        }
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     /**
@@ -2004,65 +1908,11 @@ class grade_structure {
     }
 
     /**
-     * Return hiding icon for give element
-     *
-     * @param array  $element An array representing an element in the grade_tree
-     * @param object $gpr A grade_plugin_return object
-     * @param bool $returnactionmenulink return the instance of action_menu_link instead of string
-     * @return string|action_menu_link
-     * @deprecated since Moodle 4.2 - The row is not shown anymore - we have actions menu.
-     * @todo MDL-77307 This will be deleted in Moodle 4.6.
+     * @deprecated since Moodle 4.2 - The row is not shown anymore - we have {@see core\output\action_menu}.
      */
+    #[\core\attribute\deprecated('core\output\action_menu', since: '4.2', mdl: 'MDL-77033', final: true)]
     public function get_hiding_icon($element, $gpr, $returnactionmenulink = false) {
-        global $CFG, $OUTPUT;
-        debugging('The function get_hiding_icon() is deprecated, please do not use it anymore.',
-            DEBUG_DEVELOPER);
-
-        if (!$element['object']->can_control_visibility()) {
-            return $returnactionmenulink ? null : '';
-        }
-
-        if (!has_capability('moodle/grade:manage', $this->context) and
-            !has_capability('moodle/grade:hide', $this->context)) {
-            return $returnactionmenulink ? null : '';
-        }
-
-        $strparams = $this->get_params_for_iconstr($element);
-        $strshow = get_string('showverbose', 'grades', $strparams);
-        $strhide = get_string('hideverbose', 'grades', $strparams);
-
-        $url = new moodle_url('/grade/edit/tree/action.php', array('id' => $this->courseid, 'sesskey' => sesskey(), 'eid' => $element['eid']));
-        $url = $gpr->add_url_params($url);
-
-        if ($element['object']->is_hidden()) {
-            $type = 'show';
-            $tooltip = $strshow;
-
-            // Change the icon and add a tooltip showing the date
-            if ($element['type'] != 'category' and $element['object']->get_hidden() > 1) {
-                $type = 'hiddenuntil';
-                $tooltip = get_string('hiddenuntildate', 'grades',
-                        userdate($element['object']->get_hidden()));
-            }
-
-            $url->param('action', 'show');
-
-            if ($returnactionmenulink) {
-                $hideicon = new action_menu_link_secondary($url, new pix_icon('t/'.$type, $tooltip), get_string('show'));
-            } else {
-                $hideicon = $OUTPUT->action_icon($url, new pix_icon('t/'.$type, $tooltip, 'moodle', array('alt'=>$strshow, 'class'=>'smallicon')));
-            }
-
-        } else {
-            $url->param('action', 'hide');
-            if ($returnactionmenulink) {
-                $hideicon = new action_menu_link_secondary($url, new pix_icon('t/hide', $strhide), get_string('hide'));
-            } else {
-                $hideicon = $OUTPUT->action_icon($url, new pix_icon('t/hide', $strhide));
-            }
-        }
-
-        return $hideicon;
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     /**
@@ -2108,64 +1958,11 @@ class grade_structure {
     }
 
     /**
-     * Return locking icon for given element
-     *
-     * @param array  $element An array representing an element in the grade_tree
-     * @param object $gpr A grade_plugin_return object
-     *
-     * @return string
-     * @deprecated since Moodle 4.2 - The row is not shown anymore - we have actions menu.
-     * @todo MDL-77307 This will be deleted in Moodle 4.6.
+     * @deprecated since Moodle 4.2 - The row is not shown anymore - we have {@see core\output\action_menu}.
      */
+    #[\core\attribute\deprecated('core\output\action_menu', since: '4.2', mdl: 'MDL-77033', final: true)]
     public function get_locking_icon($element, $gpr) {
-        global $CFG, $OUTPUT;
-        debugging('The function get_locking_icon() is deprecated, please do not use it anymore.',
-            DEBUG_DEVELOPER);
-
-        $strparams = $this->get_params_for_iconstr($element);
-        $strunlock = get_string('unlockverbose', 'grades', $strparams);
-        $strlock = get_string('lockverbose', 'grades', $strparams);
-
-        $url = new moodle_url('/grade/edit/tree/action.php', array('id' => $this->courseid, 'sesskey' => sesskey(), 'eid' => $element['eid']));
-        $url = $gpr->add_url_params($url);
-
-        // Don't allow an unlocking action for a grade whose grade item is locked: just print a state icon
-        if ($element['type'] == 'grade' && $element['object']->grade_item->is_locked()) {
-            $strparamobj = new stdClass();
-            $strparamobj->itemname = $element['object']->grade_item->itemname;
-            $strnonunlockable = get_string('nonunlockableverbose', 'grades', $strparamobj);
-
-            $action = html_writer::tag('span', $OUTPUT->pix_icon('t/locked', $strnonunlockable),
-                    array('class' => 'action-icon'));
-
-        } else if ($element['object']->is_locked()) {
-            $type = 'unlock';
-            $tooltip = $strunlock;
-
-            // Change the icon and add a tooltip showing the date
-            if ($element['type'] != 'category' and $element['object']->get_locktime() > 1) {
-                $type = 'locktime';
-                $tooltip = get_string('locktimedate', 'grades',
-                        userdate($element['object']->get_locktime()));
-            }
-
-            if (!has_capability('moodle/grade:manage', $this->context) and !has_capability('moodle/grade:unlock', $this->context)) {
-                $action = '';
-            } else {
-                $url->param('action', 'unlock');
-                $action = $OUTPUT->action_icon($url, new pix_icon('t/'.$type, $tooltip, 'moodle', array('alt'=>$strunlock, 'class'=>'smallicon')));
-            }
-
-        } else {
-            if (!has_capability('moodle/grade:manage', $this->context) and !has_capability('moodle/grade:lock', $this->context)) {
-                $action = '';
-            } else {
-                $url->param('action', 'lock');
-                $action = $OUTPUT->action_icon($url, new pix_icon('t/lock', $strlock));
-            }
-        }
-
-        return $action;
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     /**
@@ -2235,55 +2032,11 @@ class grade_structure {
     }
 
     /**
-     * Return calculation icon for given element
-     *
-     * @param array  $element An array representing an element in the grade_tree
-     * @param object $gpr A grade_plugin_return object
-     * @param bool $returnactionmenulink return the instance of action_menu_link instead of string
-     * @return string|action_menu_link
-     * @deprecated since Moodle 4.2 - The row is not shown anymore - we have actions menu.
-     * @todo MDL-77307 This will be deleted in Moodle 4.6.
+     * @deprecated since Moodle 4.2 - The row is not shown anymore - we have {@see core\output\action_menu}.
      */
+    #[\core\attribute\deprecated('core\output\action_menu', since: '4.2', mdl: 'MDL-77033', final: true)]
     public function get_calculation_icon($element, $gpr, $returnactionmenulink = false) {
-        global $CFG, $OUTPUT;
-        debugging('The function get_calculation_icon() is deprecated, please do not use it anymore.',
-            DEBUG_DEVELOPER);
-
-        if (!has_capability('moodle/grade:manage', $this->context)) {
-            return $returnactionmenulink ? null : '';
-        }
-
-        $type   = $element['type'];
-        $object = $element['object'];
-
-        if ($type == 'item' or $type == 'courseitem' or $type == 'categoryitem') {
-            $strparams = $this->get_params_for_iconstr($element);
-            $streditcalculation = get_string('editcalculationverbose', 'grades', $strparams);
-
-            $is_scale = $object->gradetype == GRADE_TYPE_SCALE;
-            $is_value = $object->gradetype == GRADE_TYPE_VALUE;
-
-            // show calculation icon only when calculation possible
-            if (!$object->is_external_item() and ($is_scale or $is_value)) {
-                if ($object->is_calculated()) {
-                    $icon = 't/calc';
-                } else {
-                    $icon = 't/calc_off';
-                }
-
-                $url = new moodle_url('/grade/edit/tree/calculation.php', array('courseid' => $this->courseid, 'id' => $object->id));
-                $url = $gpr->add_url_params($url);
-                if ($returnactionmenulink) {
-                    return new action_menu_link_secondary($url,
-                        new pix_icon($icon, $streditcalculation),
-                        get_string('editcalculation', 'grades'));
-                } else {
-                    return $OUTPUT->action_icon($url, new pix_icon($icon, $streditcalculation));
-                }
-            }
-        }
-
-        return $returnactionmenulink ? null : '';
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     /**
@@ -3384,29 +3137,11 @@ abstract class grade_helper {
     protected static $aggregationstrings = null;
 
     /**
-     * Cached grade tree plugin strings
-     * @var array
-     */
-    protected static $langstrings = [];
-
-    /**
-     * First checks the cached language strings, then returns match if found, or uses get_string()
-     * to get it from the DB, caches it then returns it.
-     *
      * @deprecated since 4.3
-     * @todo MDL-78780 This will be deleted in Moodle 4.7.
-     * @param string $strcode
-     * @param string|null $section Optional language section
-     * @return string
      */
-    public static function get_lang_string(string $strcode, ?string $section = null): string {
-        debugging('grade_helper::get_lang_string() is deprecated, please use' .
-            ' get_string() instead.', DEBUG_DEVELOPER);
-
-        if (empty(self::$langstrings[$strcode])) {
-            self::$langstrings[$strcode] = get_string($strcode, $section);
-        }
-        return self::$langstrings[$strcode];
+    #[\core\attribute\deprecated('get_string', since: '4.3', mdl: 'MDL-78561', final: true)]
+    public static function get_lang_string(): void {
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     /**

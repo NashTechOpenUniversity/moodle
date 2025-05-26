@@ -392,7 +392,7 @@
                 padding-left: 24px;
             }
 
-            &.generaltable {
+            &.table {
 
                 tr {
                     &.spacer {
@@ -490,10 +490,6 @@
                                     display: flex;
                                     min-height: 30px;
                                     align-items: center;
-
-                                    .form-check {
-                                        padding: 0;
-                                    }
 
                                     a {
                                         &.toggle-category {
@@ -658,7 +654,7 @@
 .path-grade-report-user .user-grade {
     border: none;
 
-    &.generaltable {
+    &.table {
         .levelodd {
             background-color: $table-accent-bg;
         }

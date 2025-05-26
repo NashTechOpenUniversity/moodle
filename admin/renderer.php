@@ -1733,13 +1733,13 @@ class core_admin_renderer extends plugin_renderer_base {
             $this->page->url,
             get_string('overviewall', 'core_plugin'),
             ['title' => get_string('filterall', 'core_plugin'), 'data-filterby' => 'all', 'class' => 'active']
-        ).' '.html_writer::span($numtotal, 'badge number number-all');
+        ).' '.html_writer::span($numtotal, 'badge text-dark number number-all');
 
         $infoext = html_writer::link(
             new moodle_url($this->page->url, [], 'additional'),
             get_string('overviewext', 'core_plugin'),
             ['title' => get_string('filtercontribonly', 'core_plugin'), 'data-filterby' => 'additional']
-        ).' '.html_writer::span($numextension, 'badge number number-additional');
+        ).' '.html_writer::span($numextension, 'badge text-dark number number-additional');
 
         if ($numupdatable) {
             $infoupdatable = html_writer::link(
@@ -1922,15 +1922,15 @@ class core_admin_renderer extends plugin_renderer_base {
                     $source = '';
                 } else {
                     $row->attributes['class'] .= ' additional';
-                    $source = html_writer::div(get_string('sourceext', 'core_plugin'), 'source badge mr-1 bg-info text-white');
+                    $source = html_writer::div(get_string('sourceext', 'core_plugin'), 'source badge me-1 text-bg-info');
                 }
 
                 if ($status === core_plugin_manager::PLUGIN_STATUS_MISSING) {
                     $row->attributes['class'] .= ' missing';
-                    $msg = html_writer::div(get_string('status_missing', 'core_plugin'), 'statusmsg badge bg-danger text-white');
+                    $msg = html_writer::div(get_string('status_missing', 'core_plugin'), 'statusmsg badge text-bg-danger');
                 } else if ($status === core_plugin_manager::PLUGIN_STATUS_NEW) {
                     $row->attributes['class'] .= ' newplugin';
-                    $msg = html_writer::div(get_string('status_new', 'core_plugin'), 'statusmsg badge bg-success text-white');
+                    $msg = html_writer::div(get_string('status_new', 'core_plugin'), 'statusmsg badge text-bg-success');
                 } else {
                     $msg = '';
                 }
@@ -2063,7 +2063,7 @@ class core_admin_renderer extends plugin_renderer_base {
             get_string('status'),
         );
         $servertable->colclasses = array('centeralign name', 'centeralign info', 'leftalign report', 'leftalign plugin', 'centeralign status');
-        $servertable->attributes['class'] = 'admintable environmenttable generaltable table-sm';
+        $servertable->attributes['class'] = 'table table-striped admintable environmenttable generaltable table-sm';
         $servertable->id = 'serverstatus';
 
         $serverdata = array('ok'=>array(), 'warn'=>array(), 'error'=>array());
@@ -2076,7 +2076,7 @@ class core_admin_renderer extends plugin_renderer_base {
             get_string('status'),
         );
         $othertable->colclasses = array('aligncenter info', 'alignleft report', 'alignleft plugin', 'aligncenter status');
-        $othertable->attributes['class'] = 'admintable environmenttable generaltable table-sm';
+        $othertable->attributes['class'] = 'table table-striped admintable environmenttable generaltable table-sm';
         $othertable->id = 'otherserverstatus';
 
         $otherdata = array('ok'=>array(), 'warn'=>array(), 'error'=>array());
@@ -2177,29 +2177,33 @@ class core_admin_renderer extends plugin_renderer_base {
                 } else {
                     $report = $this->doc_link(join('/', $linkparts), get_string($stringtouse, 'admin', $rec), true);
                 }
-                // Enclose report text in div so feedback text will be displayed underneath it.
-                $report = html_writer::div($report);
 
                 // Format error or warning line
                 if ($errorline) {
                     $messagetype = 'error';
                     $statusclass = 'bg-danger text-white';
+                    $feedbackclass = 'alert-danger';
                 } else if ($warningline) {
                     $messagetype = 'warn';
                     $statusclass = 'bg-warning text-dark';
+                    $feedbackclass = 'alert-warning';
                 } else {
                     $messagetype = 'ok';
                     $statusclass = 'bg-success text-white';
+                    $feedbackclass = 'alert-success';
                 }
                 $status = html_writer::span($status, 'badge ' . $statusclass);
                 // Here we'll store all the feedback found
                 $feedbacktext = '';
                 // Append the feedback if there is some
-                $feedbacktext .= $environment_result->strToReport($environment_result->getFeedbackStr(), $messagetype);
+                $feedbacktext .= $environment_result->strToReport($environment_result->getFeedbackStr(),
+                    "alert {$feedbackclass} px-2 py-1 m-1");
                 //Append the bypass if there is some
-                $feedbacktext .= $environment_result->strToReport($environment_result->getBypassStr(), 'warn');
+                $feedbacktext .= $environment_result->strToReport($environment_result->getBypassStr(),
+                    'alert alert-warning px-2 py-1 m-1');
                 //Append the restrict if there is some
-                $feedbacktext .= $environment_result->strToReport($environment_result->getRestrictStr(), 'error');
+                $feedbacktext .= $environment_result->strToReport($environment_result->getRestrictStr(),
+                    'alert alert-danger px-2 py-1 m-1');
 
                 $report .= $feedbacktext;
 
@@ -2243,10 +2247,11 @@ class core_admin_renderer extends plugin_renderer_base {
 
         $output = '';
         $output .= $this->header();
-        $output .= $this->container_start('upgradekeyreq');
         $output .= $this->heading(get_string('upgradekeyreq', 'core_admin'));
+        $output .= $this->container_start('upgradekeyreq w-25');
         $output .= html_writer::start_tag('form', array('method' => 'POST', 'action' => $url));
         $output .= html_writer::empty_tag('input', [
+            'id' => 'upgradekey',
             'name' => 'upgradekey',
             'type' => 'password',
             'class' => 'form-control w-auto',

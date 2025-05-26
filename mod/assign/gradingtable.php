@@ -321,6 +321,11 @@ class assign_grading_table extends table_sql implements renderable {
                 $where .= '))';
                 $params['submitted'] = ASSIGN_SUBMISSION_STATUS_SUBMITTED;
 
+            } else if ($filter == ASSIGN_FILTER_GRADED) {
+                $where .= ' AND (s.timemodified IS NOT NULL AND
+                                 s.timemodified < g.timemodified AND g.grade IS NOT NULL)';
+                $params['submitted'] = ASSIGN_SUBMISSION_STATUS_SUBMITTED;
+
             } else if ($filter == ASSIGN_FILTER_GRANTED_EXTENSION) {
                 $where .= ' AND uf.extensionduedate > 0 ';
 
@@ -753,9 +758,10 @@ class assign_grading_table extends table_sql implements renderable {
      * @param boolean $editable
      * @param int $userid The user id of the user this grade belongs to
      * @param int $modified Timestamp showing when the grade was last modified
+     * @param float $deductedmark The deducted mark if penalty is applied
      * @return string The formatted grade
      */
-    public function display_grade($grade, $editable, $userid, $modified) {
+    public function display_grade($grade, $editable, $userid, $modified, float $deductedmark = 0) {
         if ($this->is_downloading()) {
             if ($this->assignment->get_instance()->grade >= 0) {
                 if ($grade == -1 || $grade === null) {
@@ -772,7 +778,7 @@ class assign_grading_table extends table_sql implements renderable {
                 return $scale;
             }
         }
-        return $this->assignment->display_grade($grade, $editable, $userid, $modified);
+        return $this->assignment->display_grade($grade, $editable, $userid, $modified, $deductedmark);
     }
 
     /**
@@ -1035,7 +1041,7 @@ class assign_grading_table extends table_sql implements renderable {
 
         $grade = $this->get_gradebook_data_for_user($row->userid);
         if ($grade) {
-            $o = $this->display_grade($grade->grade, false, $row->userid, $row->timemarked);
+            $o = $this->display_grade($grade->grade, false, $row->userid, $row->timemarked, $grade->deductedmark);
         }
 
         return $o;
@@ -1928,7 +1934,7 @@ class assign_grading_table extends table_sql implements renderable {
         // Start of main data table.
 
         if ($this->responsive) {
-            echo html_writer::start_tag('div', ['class' => 'no-overflow']);
+            echo html_writer::start_tag('div', ['class' => 'table-responsive']);
         }
         echo html_writer::start_tag('table', $this->attributes) . $this->render_caption();
     }

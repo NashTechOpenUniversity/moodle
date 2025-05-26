@@ -97,8 +97,8 @@ $iconwidthsizes: map-merge((
     }
 
     &.emoticon {
-        max-width: map-get($iconwidthsizes, 3);
-        max-height: map-get($iconsizes, 3);
+        width: map-get($iconsizes, 3);
+        height: map-get($iconsizes, 3);
     }
 }
 
@@ -157,6 +157,8 @@ img.icon {
         .icon {
             height: $length !important; /* stylelint-disable-line declaration-no-important */
             width: map-get($iconwidthsizes, $size) !important; /* stylelint-disable-line declaration-no-important */
+            max-height: $length !important; /* stylelint-disable-line declaration-no-important */
+            max-width: map-get($iconwidthsizes, $size) !important; /* stylelint-disable-line declaration-no-important */
             font-size: $length !important; /* stylelint-disable-line declaration-no-important */
         }
     }
@@ -186,58 +188,6 @@ img.icon {
         .collapsed-icon {
             display: flex;
             align-items: center;
-        }
-    }
-}
-
-// Revisit these styles when MDL-78284 lands with new icons.
-// Icon container will be removed and icons will be used directly.
-.activityiconcontainer {
-    width: $activity-iconcontainer-width;
-    height: $activity-iconcontainer-height;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    border-radius: 4px;
-    padding: 0.7rem;
-    .activityicon,
-    .icon {
-        margin: 0;
-        font-size: $icon-medium-height;
-        height: $icon-medium-height;
-        width: $icon-medium-width;
-        max-height: $icon-medium-height;
-        max-width: $icon-medium-width;
-    }
-    &.small {
-        width: $activity-iconcontainer-width - 10px;
-        height: $activity-iconcontainer-height - 10px;
-        max-width: $activity-iconcontainer-width - 10px;
-        max-height: $activity-iconcontainer-height - 10px;
-    }
-    &.smaller {
-        width: $activity-iconcontainer-width - 20px;
-        height: $activity-iconcontainer-height - 20px;
-        max-width: $activity-iconcontainer-width - 20px;
-        max-height: $activity-iconcontainer-height - 20px;
-        .activityicon {
-            width: $icon-medium-width;
-            height: $icon-medium-height;
-            max-width: $icon-medium-width;
-            max-height: $icon-medium-height;
-        }
-    }
-}
-
-@each $type, $value in $activity-icon-colors {
-    .activityiconcontainer.#{$type} {
-        &:not(.isbranded) {
-            .activityicon,
-            .icon {
-                &:not(.nofilter) {
-                    @include recolor-icon($value, 1);
-                }
-            }
         }
     }
 }
@@ -277,6 +227,51 @@ img.icon {
         background-color: darken($gray-400, 8%);
         .icon {
             color: $white;
+        }
+    }
+}
+
+/*
+ * Activity icons
+ */
+
+.activityiconcontainer {
+    width: $activity-iconcontainer-width;
+    height: $activity-iconcontainer-height;
+    max-width: $activity-iconcontainer-width;
+    max-height: $activity-iconcontainer-height;
+    &.small {
+        width: $activity-iconcontainer-width - 10px;
+        height: $activity-iconcontainer-height - 10px;
+        max-width: $activity-iconcontainer-width - 10px;
+        max-height: $activity-iconcontainer-height - 10px;
+    }
+    &.smaller {
+        width: $activity-iconcontainer-width - 20px;
+        height: $activity-iconcontainer-height - 20px;
+        max-width: $activity-iconcontainer-width - 20px;
+        max-height: $activity-iconcontainer-height - 20px;
+    }
+    .activityicon,
+    .icon {
+        margin: 0;
+        font-size: inherit;
+        width: inherit;
+        height: inherit;
+        max-width: inherit;
+        max-height: inherit;
+    }
+}
+
+@each $type, $value in $activity-icon-colors {
+    .activityiconcontainer.#{$type} {
+        &:not(.isbranded) {
+            .activityicon,
+            .icon {
+                &:not(.nofilter) {
+                    @include recolor-icon($value, 1);
+                }
+            }
         }
     }
 }

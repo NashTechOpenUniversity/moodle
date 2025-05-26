@@ -23,7 +23,6 @@ use core_block\output\block_contents;
 use core_block\output\block_move_target;
 use core_completion\cm_completion_details;
 use core\context;
-use core_course\output\activity_information;
 use core_tag\output\taglist;
 use core_text;
 use core_useragent;
@@ -42,6 +41,7 @@ use core\hook\output\before_standard_footer_html_generation;
 use core\hook\output\before_standard_top_of_body_html_generation;
 use core\output\actions\component_action;
 use core\output\actions\popup_action;
+use core\output\local\properties\badge;
 use core\plugin_manager;
 use moodleform;
 use moodle_page;
@@ -331,7 +331,7 @@ class core_renderer extends renderer_base {
             $timeleft = $CFG->maintenance_later - time();
             // If timeleft less than 30 sec, set the class on block to error to highlight.
             $errorclass = ($timeleft < 30) ? 'alert-error alert-danger' : 'alert-warning';
-            $output .= $this->box_start($errorclass . ' moodle-has-zindex maintenancewarning m-3 alert');
+            $output .= $this->box_start($errorclass . ' moodle-has-zindex maintenancewarning alert');
             $a = new stdClass();
             $a->hour = (int)($timeleft / 3600);
             $a->min = (int)(floor($timeleft / 60) % 60);
@@ -462,25 +462,11 @@ class core_renderer extends renderer_base {
     }
 
     /**
-     * Returns information about an activity.
-     *
      * @deprecated since Moodle 4.3 MDL-78744
-     * @todo MDL-78926 This method will be deleted in Moodle 4.7
-     * @param cm_info $cminfo The course module information.
-     * @param cm_completion_details $completiondetails The completion details for this activity module.
-     * @param array $activitydates The dates for this activity module.
-     * @return string the activity information HTML.
-     * @throws coding_exception
      */
-    public function activity_information(cm_info $cminfo, cm_completion_details $completiondetails, array $activitydates): string {
-        debugging('activity_information method is deprecated.', DEBUG_DEVELOPER);
-        if (!$completiondetails->has_completion() && empty($activitydates)) {
-            // No need to render the activity information when there's no completion info and activity dates to show.
-            return '';
-        }
-        $activityinfo = new activity_information($cminfo, $completiondetails, $activitydates);
-        $renderer = $this->page->get_renderer('core', 'course');
-        return $renderer->render($activityinfo);
+    #[\core\attribute\deprecated(null, since: '4.3', mdl: 'MDL-78744', final: true)]
+    public function activity_information() {
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     /**
@@ -1352,7 +1338,9 @@ class core_renderer extends renderer_base {
         }
 
         // Add the action link.
-        $renderedresult .= $this->render_action_link($check->get_action_link());
+        if ($actionlink = $check->get_action_link()) {
+            $renderedresult .= $this->render_action_link($actionlink);
+        }
 
         return $renderedresult;
     }
@@ -2081,7 +2069,7 @@ class core_renderer extends renderer_base {
                 'action' => $rateurl->out_omit_querystring(),
             ];
             $formstart  = html_writer::start_tag('form', $formattrs);
-            $formstart .= html_writer::start_tag('div', ['class' => 'ratingform']);
+            $formstart .= html_writer::start_tag('div', ['class' => 'ratingform hstack gap-2']);
 
             // add the hidden inputs
             foreach ($inputs as $name => $value) {
@@ -2147,15 +2135,6 @@ class core_renderer extends renderer_base {
         }
 
         return $this->heading($image . $text . $help, $level, $classnames);
-    }
-
-    /**
-     * Returns HTML to display a help icon.
-     *
-     * @deprecated since Moodle 2.0
-     */
-    public function old_help_icon($helpidentifier, $title, $component = 'moodle', $linktext = '') {
-        throw new coding_exception('old_help_icon() can not be used any more, please see help_icon().');
     }
 
     /**
@@ -2501,15 +2480,6 @@ EOD;
     }
 
     /**
-     * @deprecated since Moodle 3.2
-     */
-    public function update_module_button() {
-        throw new coding_exception('core_renderer::update_module_button() can not be used anymore. Activity ' .
-            'modules should not add the edit module button, the link is already available in the Administration block. ' .
-            'Themes can choose to display the link in the buttons row consistently for all module types.');
-    }
-
-    /**
      * Returns HTML to display a "Turn editing on/off" button in a form.
      *
      * @param moodle_url $url The URL + params to send through when clicking the button
@@ -2753,38 +2723,6 @@ EOD;
     }
 
     /**
-     * @deprecated since Moodle 3.1 MDL-30811 - please do not use this function any more.
-     */
-    public function notify_problem() {
-        throw new coding_exception('core_renderer::notify_problem() can not be used any more, ' .
-            'please use \core\notification::add(), or \core\output\notification as required.');
-    }
-
-    /**
-     * @deprecated since Moodle 3.1 MDL-30811 - please do not use this function any more.
-     */
-    public function notify_success() {
-        throw new coding_exception('core_renderer::notify_success() can not be used any more, ' .
-            'please use \core\notification::add(), or \core\output\notification as required.');
-    }
-
-    /**
-     * @deprecated since Moodle 3.1 MDL-30811 - please do not use this function any more.
-     */
-    public function notify_message() {
-        throw new coding_exception('core_renderer::notify_message() can not be used any more, ' .
-            'please use \core\notification::add(), or \core\output\notification as required.');
-    }
-
-    /**
-     * @deprecated since Moodle 3.1 MDL-30811 - please do not use this function any more.
-     */
-    public function notify_redirect() {
-        throw new coding_exception('core_renderer::notify_redirect() can not be used any more, ' .
-            'please use \core\notification::add(), or \core\output\notification as required.');
-    }
-
-    /**
      * Render a notification (that is, a status message about something that has
      * just happened).
      *
@@ -2974,6 +2912,35 @@ EOD;
             $contents,
             ['class' => 'visually-hidden']
         ) . ' ';
+    }
+
+    /**
+     * Outputs a screen reader only inline text.
+     *
+     * @param string $contents The content of the badge
+     * @param badge $badgestyle The style of the badge (default is PRIMARY)
+     * @param string $title An optional title of the badge
+     * @return string the HTML to output.
+     */
+    public function notice_badge(
+        string $contents,
+        badge $badgestyle = badge::PRIMARY,
+        string $title = '',
+    ): string {
+        if ($contents === '') {
+            return '';
+        }
+        // We want the badges to be read as content in parentesis.
+        $contents = trim($this->visually_hidden_text(' ('))
+            . $contents
+            . trim($this->visually_hidden_text(')'));
+
+        $attributes = ['class' => 'ms-1 ' . $badgestyle->classes()];
+        if ($title !== '') {
+            $attributes['title'] = $title;
+        }
+
+        return html_writer::tag('span', $contents, $attributes);
     }
 
     /**
@@ -4407,7 +4374,10 @@ EOD;
                 // We only add a list to the full settings menu if we didn't include every node in the short menu.
                 if ($skipped) {
                     $text = get_string('morenavigationlinks');
-                    $url = new moodle_url('/course/admin.php', ['courseid' => $this->page->course->id]);
+                    $url = \core\router\util::get_path_for_callable(
+                        [\core_course\route\controller\course_management::class, 'administer_course'],
+                        ['course' => $this->page->course->id],
+                    );
                     $link = new action_link($url, $text, null, null, new pix_icon('t/edit', $text));
                     $menu->add_secondary_action($link);
                 }
@@ -4421,7 +4391,10 @@ EOD;
                 // We only add a list to the full settings menu if we didn't include every node in the short menu.
                 if ($skipped) {
                     $text = get_string('morenavigationlinks');
-                    $url = new moodle_url('/course/admin.php', ['courseid' => $this->page->course->id]);
+                    $url = \core\router\util::get_path_for_callable(
+                        [\core_course\route\controller\course_management::class, 'administer_course'],
+                        ['course' => $this->page->course->id],
+                    );
                     $link = new action_link($url, $text, null, null, new pix_icon('t/edit', $text));
                     $menu->add_secondary_action($link);
                 }

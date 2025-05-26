@@ -16,7 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings for component 'lesson', language 'en', branch 'MOODLE_20_STABLE'
+ * Strings for component 'mod_lesson', language 'en', branch 'MOODLE_20_STABLE'
  *
  * @package mod_lesson
  * @copyright  1999 onwards Martin Dougiamas  {@link http://moodle.com}
@@ -456,8 +456,6 @@ $string['practice_help'] = 'A practice lesson does not appear in the gradebook.'
 $string['preprocesserror'] = 'Error occurred during pre-processing!';
 $string['prerequisiteisobsolete'] = 'The prerequisite lesson option is due to be removed. Please use access restrictions instead.';
 $string['prerequisitelesson'] = 'Prerequisite lesson';
-$string['preview'] = 'Preview';
-$string['previewlesson'] = 'Preview {$a}';
 $string['previewpagenamed'] = 'Preview page: {$a}';
 $string['previouspage'] = 'Previous page';
 $string['privacy:metadata:attempts:userid'] = 'The user ID';
@@ -595,7 +593,6 @@ $string['usersnone'] = 'No students have access to this lesson';
 $string['viewessayanswers'] = 'View essay answers';
 $string['viewgrades'] = 'View grades';
 $string['viewreports'] = 'View {$a->attempts} completed {$a->student} attempts';
-$string['viewreports2'] = 'View {$a} completed attempts';
 $string['warning'] = 'Warning';
 $string['welldone'] = 'Well done!';
 $string['whatdofirst'] = 'What would you like to do first?';
@@ -609,12 +606,11 @@ $string['yourcurrentgradeis'] = 'Your current grade is {$a}';
 $string['yourcurrentgradeisoutof'] = 'Your current grade is {$a->grade} out of {$a->total}';
 $string['youshouldview'] = 'You should answer at least: {$a}';
 
-// Deprecated since 4.3.
-$string['completiontimespent'] = 'Student must do this activity at least for';
-
-// Deprecated since Moodle 4.4.
-$string['grade'] = 'Grade';
-
 // Deprecated since Moodle 4.5.
 $string['useroverridesdeleted'] = 'User overrides deleted';
 $string['groupoverridesdeleted'] = 'Group overrides deleted';
+
+// Deprecated since Moodle 5.0.
+$string['preview'] = 'Preview';
+$string['previewlesson'] = 'Preview {$a}';
+$string['viewreports2'] = 'View {$a} completed attempts';

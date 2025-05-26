@@ -155,7 +155,7 @@ if (!empty($instanceid) && !empty($roleid)) {
         $table->define_headers(array(get_string('user'), $actionheader));
     } else {
         $table->define_columns(array('fullname', 'count', 'select'));
-        $mastercheckbox = new \core\output\checkbox_toggleall('participants-table', true, [
+        $togglercheckbox = new \core\output\checkbox_toggleall('participants-table', true, [
             'id' => 'select-all-participants',
             'name' => 'select-all-participants',
             'label' => get_string('select'),
@@ -163,11 +163,11 @@ if (!empty($instanceid) && !empty($roleid)) {
             'selectall' => get_string('select'),
             'deselectall' => get_string('select'),
         ]);
-        $table->define_headers(array(get_string('user'), $actionheader, $OUTPUT->render($mastercheckbox)));
+        $table->define_headers([get_string('user'), $actionheader, $OUTPUT->render($togglercheckbox)]);
     }
     $table->define_baseurl($baseurl);
 
-    $table->set_attribute('class', 'generaltable generalbox reporttable');
+    $table->set_attribute('class', 'table generaltable reporttable');
 
     $table->sortable(true,'lastname','ASC');
     $table->no_sorting('select');
@@ -260,6 +260,8 @@ if (!empty($instanceid) && !empty($roleid)) {
 
     // Get record from sql_internal_table_reader and merge with records got from legacy log (if needed).
     if (!$onlyuselegacyreader) {
+        $anonymoussql = !has_capability('moodle/site:viewanonymousevents', $context) ? 'AND l.anonymous = 0' : '';
+
         $sql = "SELECT ra.userid, $usernamefields, u.idnumber, COUNT(DISTINCT l.timecreated) AS count
                   FROM {user} u
                   JOIN {role_assignments} ra ON u.id = ra.userid AND ra.contextid $relatedctxsql AND ra.roleid = :roleid
@@ -268,7 +270,7 @@ if (!empty($instanceid) && !empty($roleid)) {
                      ON l.contextinstanceid = :instanceid
                        AND l.timecreated > :timefrom" . $crudsql ."
                        AND l.edulevel = :edulevel
-                       AND l.anonymous = 0
+                       " . $anonymoussql . "
                        AND l.contextlevel = :contextlevel
                        AND (l.origin = 'web' OR l.origin = 'ws')
                        AND l.userid = ra.userid";

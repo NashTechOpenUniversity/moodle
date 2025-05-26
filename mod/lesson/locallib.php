@@ -891,7 +891,7 @@ function lesson_get_overview_report_table_and_data(lesson $lesson, $currentgroup
         $deselectall = get_string('deselectallattempts', 'lesson');
         // Build the select/deselect all control.
         $selectallid = 'selectall-attempts';
-        $mastercheckbox = new \core\output\checkbox_toggleall('lesson-attempts', true, [
+        $togglercheckbox = new \core\output\checkbox_toggleall('lesson-attempts', true, [
             'id' => $selectallid,
             'name' => $selectallid,
             'value' => 1,
@@ -900,7 +900,7 @@ function lesson_get_overview_report_table_and_data(lesson $lesson, $currentgroup
             'deselectall' => $deselectall,
             'labelclasses' => 'form-check-label'
         ]);
-        $attemptsheader = $OUTPUT->render($mastercheckbox);
+        $attemptsheader = $OUTPUT->render($togglercheckbox);
     }
     $headers [] = $attemptsheader;
 
@@ -3762,8 +3762,6 @@ abstract class lesson_base {
         }
         return !empty($this->properties->{$key});
     }
-
-    //NOTE: E_STRICT does not allow to change function signature!
 
     /**
      * If implemented should create a new instance, save it in the DB and return it

@@ -52,4 +52,18 @@ class renderer extends plugin_renderer_base {
 
         return $this->render_from_template('mod_feedback/create_template', ['id' => $id]);
     }
+
+    /**
+     * Builds the feedback page title.
+     *
+     * @param array $titleparts the different parts to add to the title.
+     * @param string $pagetitle the page title to add to the rest of the parts. Empty by default.
+     */
+    public function set_title(array $titleparts, string $pagetitle = '') {
+        if (!empty($pagetitle)) {
+            array_unshift($titleparts, $pagetitle);
+        }
+        $title = implode(\moodle_page::TITLE_SEPARATOR, $titleparts);
+        $this->page->set_title($title);
+    }
 }

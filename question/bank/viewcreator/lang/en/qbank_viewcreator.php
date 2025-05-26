@@ -22,7 +22,6 @@
  * @author     Ghaly Marc-Alexandre <marc-alexandreghaly@catalyst-ca.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
 $string['history'] = 'History';
 $string['modifiedby'] = 'Modified by';
 $string['timemodified'] = 'Time modified';

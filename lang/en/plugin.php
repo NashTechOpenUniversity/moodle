@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Defines names of plugin types and some strings used at the plugin managment
+ * Strings for component 'core_plugin', language 'en'.
  *
  * @package    core
  * @subpackage plugin
@@ -135,8 +135,6 @@ $string['type_communication'] = 'Communication provider';
 $string['type_communication_plural'] = 'Communication providers';
 $string['type_contenttype'] = 'Content bank';
 $string['type_contenttype_plural'] = 'Content bank plugins';
-$string['type_contentbank'] = 'Content bank';
-$string['type_contentbank_plural'] = 'Content bank plugins';
 $string['type_customfield'] = 'Custom field';
 $string['type_customfield_plural'] = 'Custom fields';
 $string['type_coursereport'] = 'Course report';
@@ -158,6 +156,8 @@ $string['type_gradeexport'] = 'Grade export method';
 $string['type_gradeexport_plural'] = 'Grade export methods';
 $string['type_gradeimport'] = 'Grade import method';
 $string['type_gradeimport_plural'] = 'Grade import methods';
+$string['type_gradepenalty'] = 'Grade penalty';
+$string['type_gradepenalty_plural'] = 'Grade penalties';
 $string['type_gradereport'] = 'Gradebook report';
 $string['type_gradereport_plural'] = 'Gradebook reports';
 $string['type_gradingform'] = 'Advanced grading method';
@@ -269,7 +269,3 @@ $string['validationmsglevel_warning'] = 'Warning';
 $string['version'] = 'Version';
 $string['versiondb'] = 'Current version';
 $string['versiondisk'] = 'New version';
-
-// Deprecated since Moodle 4.2.
-$string['type_contentbank'] = 'Content bank';
-$string['type_contentbank_plural'] = 'Content bank plugins';

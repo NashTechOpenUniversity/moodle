@@ -37,30 +37,11 @@ class provider extends \core_ai\provider {
             \core_ai\aiactions\generate_text::class,
             \core_ai\aiactions\generate_image::class,
             \core_ai\aiactions\summarise_text::class,
+            \core_ai\aiactions\explain_text::class,
         ];
     }
 
-    /**
-     * Generate a user id.
-     *
-     * This is a hash of the site id and user id,
-     * this means we can determine who made the request
-     * but don't pass any personal data to AzureAI.
-     *
-     * @param string $userid The user id.
-     * @return string The generated user id.
-     */
-    public function generate_userid(string $userid): string {
-        global $CFG;
-        return hash('sha256', $CFG->siteidentifier . $userid);
-    }
-
-    /**
-     * Update a request to add any headers required by the provider.
-     *
-     * @param RequestInterface $request
-     * @return RequestInterface
-     */
+    #[\Override]
     public function add_authentication_headers(RequestInterface $request): RequestInterface {
         return $request
             ->withAddedHeader('api-key', $this->config['apikey']);
@@ -74,7 +55,7 @@ class provider extends \core_ai\provider {
         $actionname = substr($action, (strrpos($action, '\\') + 1));
         $customdata['actionname'] = $actionname;
         $customdata['action'] = $action;
-        if ($actionname === 'generate_text' || $actionname === 'summarise_text') {
+        if ($actionname === 'generate_text' || $actionname === 'summarise_text' || $actionname === 'explain_text') {
             return new form\action_generate_text_form(customdata: $customdata);
         } else if ($actionname === 'generate_image') {
             return new form\action_generate_image_form(customdata: $customdata);
@@ -90,7 +71,7 @@ class provider extends \core_ai\provider {
                 'actionname' => $actionname,
                 'action' => $action,
         ];
-        if ($actionname === 'generate_text' || $actionname === 'summarise_text') {
+        if ($actionname === 'generate_text' || $actionname === 'summarise_text' || $actionname === 'explain_text') {
             $mform = new form\action_generate_text_form(customdata: $customdata);
             return $mform->get_defaults();
         } else if ($actionname === 'generate_image') {

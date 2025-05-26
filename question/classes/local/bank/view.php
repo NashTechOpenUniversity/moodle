@@ -29,15 +29,11 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->dirroot . '/question/editlib.php');
 
 use coding_exception;
-use core\plugininfo\qbank;
 use core\output\datafilter;
-use core_plugin_manager;
 use core_question\local\bank\condition;
 use core_question\local\statistics\statistics_bulk_loader;
 use core_question\output\question_bank_filter_ui;
 use core_question\local\bank\column_manager_base;
-use qbank_deletequestion\hidden_condition;
-use qbank_editquestion\editquestion_helper;
 use qbank_managecategories\category_condition;
 
 /**
@@ -235,6 +231,10 @@ class view {
         $this->cm = $cm;
         $this->extraparams = $extraparams;
 
+        // Add the default qperpage to extra params array so we can switch back and forth between it and "all".
+        $this->extraparams['defaultqperpage'] = $this->pagesize;
+        $this->extraparams['maxqperpage'] = MAXIMUM_QUESTIONS_PER_PAGE;
+
         if ($cm === null) {
             debugging('Passing $cm to the view constructor is now required.', DEBUG_DEVELOPER);
         }
@@ -267,6 +267,9 @@ class view {
         $this->init_question_actions();
         $this->init_sort();
         $this->init_bulk_actions();
+
+        // Record that this question bank has been used.
+        question_bank_helper::add_bank_context_to_recently_viewed($contexts->lowest());
     }
 
     /**
@@ -324,25 +327,16 @@ class view {
     }
 
     /**
-     * Initialize search conditions from plugins
-     * local_*_get_question_bank_search_conditions() must return an array of
-     * \core_question\bank\search\condition objects.
-     *
      * @deprecated Since Moodle 4.3
-     * @todo Final deprecation on Moodle 4.7 MDL-78090
      */
+    #[\core\attribute\deprecated(
+        'create a qbank plugin and implement a filter object',
+        since: '4.3',
+        mdl: 'MDL-72321',
+        final: true
+    )]
     protected function init_search_conditions(): void {
-        debugging(
-            'Function init_search_conditions() has been deprecated, please create a qbank plugin' .
-                'and implement a filter object instead.',
-            DEBUG_DEVELOPER
-        );
-        $searchplugins = get_plugin_list_with_function('local', 'get_question_bank_search_conditions');
-        foreach ($searchplugins as $component => $function) {
-            foreach ($function($this) as $searchobject) {
-                $this->add_searchcondition($searchobject);
-            }
-        }
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     /**
@@ -597,8 +591,17 @@ class view {
     }
 
     /**
-     * Default sort for question data.
-     * @return int[]
+     * Get the default sort columns for this view of the question bank.
+     *
+     * The array keys in the return value need be the standard keys used
+     * to represent sorts. That is [plugin_frankenstyle]__[class_name] and then
+     * and optional bit like '-name' if the column supports muliple ways of sorting.
+     *
+     * The array values should be one of the constants SORT_ASC or SORT_DESC for the default order.
+     *
+     * Therefore, the default implementation below is a good example.
+     *
+     * @return int[] sort key => SORT_ASC or SORT_DESC.
      */
     protected function default_sort(): array {
         $defaultsort = [];
@@ -792,15 +795,18 @@ class view {
      */
     protected function load_page_questions(): \moodle_recordset {
         global $DB;
+
+        // Load the questions based on the page we are on.
         $questions = $DB->get_recordset_sql($this->loadsql, $this->sqlparams,
-            (int)$this->pagevars['qpage'] * (int)$this->pagevars['qperpage'], $this->pagevars['qperpage']);
+            (int)$this->pagevars['qpage'] * (int)$this->pagevars['qperpage'], (int)$this->pagevars['qperpage']);
+
         if (!$questions->valid()) {
             $questions->close();
             // No questions on this page. Reset to the nearest page that contains questions.
             $this->pagevars['qpage'] = max(0,
-                ceil($this->totalcount / $this->pagevars['qperpage']) - 1);
+                ceil($this->totalcount / (int)$this->pagevars['qperpage']) - 1);
             $questions = $DB->get_recordset_sql($this->loadsql, $this->sqlparams,
-                $this->pagevars['qpage'] * (int) $this->pagevars['qperpage'], $this->pagevars['qperpage']);
+                (int)$this->pagevars['qpage'] * (int)$this->pagevars['qperpage'], (int)$this->pagevars['qperpage']);
         }
         return $questions;
     }
@@ -859,13 +865,6 @@ class view {
      */
     public function get_most_specific_context(): \context {
         return $this->contexts->lowest();
-    }
-
-    /**
-     * @deprecated since Moodle 4.0
-     */
-    public function preview_question_url() {
-        throw new coding_exception(__FUNCTION__ . '() has been removed.');
     }
 
     /**
@@ -937,146 +936,53 @@ class view {
     }
 
     /**
-     * Print the text if category id not available.
-     *
      * @deprecated since Moodle 4.3 MDL-72321
-     * @todo Final deprecation on Moodle 4.7 MDL-78090
      */
+    #[\core\attribute\deprecated(
+        'question/bank/managecategories/classes/category_confition.php',
+        since: '4.3',
+        mdl: 'MDL-72321',
+        final: true
+    )]
     protected function print_choose_category_message(): void {
-        debugging(
-            'Function print_choose_category_message() is deprecated, all the features for this method is currently ' .
-                'handled by the qbank filter api, please have a look at ' .
-                'question/bank/managecategories/classes/category_confition.php for more information.',
-            DEBUG_DEVELOPER
-        );
-        echo \html_writer::start_tag('p', ['style' => "\"text-align:center;\""]);
-        echo \html_writer::tag('b', get_string('selectcategoryabove', 'question'));
-        echo \html_writer::end_tag('p');
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     /**
-     * Gets current selected category.
-     * @param string $categoryandcontext
-     * @return false|mixed|\stdClass
-     *
      * @deprecated since Moodle 4.3 MDL-72321
-     * @todo Final deprecation on Moodle 4.7 MDL-78090
      */
+    #[\core\attribute\deprecated(
+        'question/bank/managecategories/classes/category_confition.php',
+        since: '4.3',
+        mdl: 'MDL-72321',
+        final: true
+    )]
     protected function get_current_category($categoryandcontext) {
-        debugging(
-            'Function get_current_category() is deprecated, all the features for this method is currently handled by ' .
-            'the qbank filter api, please have a look at question/bank/managecategories/classes/category_confition.php ' .
-            'for more information.',
-            DEBUG_DEVELOPER
-        );
-        global $DB, $OUTPUT;
-        [$categoryid, $contextid] = explode(',', $categoryandcontext);
-        if (!$categoryid) {
-            $this->print_choose_category_message();
-            return false;
-        }
-
-        if (!$category = $DB->get_record('question_categories',
-            ['id' => $categoryid, 'contextid' => $contextid])) {
-            echo $OUTPUT->box_start('generalbox questionbank');
-            echo $OUTPUT->notification('Category not found!');
-            echo $OUTPUT->box_end();
-            return false;
-        }
-
-        return $category;
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     /**
-     * Display the form with options for which questions are displayed and how they are displayed.
-     *
-     * @param bool $showquestiontext Display the text of the question within the list.
      * @deprecated since Moodle 4.3 MDL-72321
-     * @todo Final deprecation on Moodle 4.7 MDL-78090
      */
+    #[\core\attribute\deprecated('filtering objects', since: '4.3', mdl: 'MDL-72321', final: true)]
     protected function display_options_form($showquestiontext): void {
-        debugging(
-            'Function display_options_form() is deprecated, this method has been replaced with mustaches in filters, ' .
-                'please use filtering objects',
-            DEBUG_DEVELOPER
-        );
-        global $PAGE;
-
-        // The html will be refactored in the filter feature implementation.
-        echo \html_writer::start_tag('form', ['method' => 'get',
-            'action' => new \moodle_url($this->baseurl), 'id' => 'displayoptions']);
-        echo \html_writer::start_div();
-
-        $excludes = ['recurse', 'showhidden', 'qbshowtext'];
-        // If the URL contains any tags then we need to prevent them
-        // being added to the form as hidden elements because the tags
-        // are managed separately.
-        if ($this->baseurl->param('qtagids[0]')) {
-            $index = 0;
-            while ($this->baseurl->param("qtagids[{$index}]")) {
-                $excludes[] = "qtagids[{$index}]";
-                $index++;
-            }
-        }
-        echo \html_writer::input_hidden_params($this->baseurl, $excludes);
-
-        $advancedsearch = [];
-
-        foreach ($this->searchconditions as $searchcondition) {
-            if ($searchcondition->display_options_adv()) {
-                $advancedsearch[] = $searchcondition;
-            }
-        }
-        if (!empty($advancedsearch)) {
-            $this->display_advanced_search_form($advancedsearch);
-        }
-
-        $go = \html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('go')]);
-        echo \html_writer::tag('noscript', \html_writer::div($go), ['class' => 'inline']);
-        echo \html_writer::end_div();
-        echo \html_writer::end_tag('form');
-        $PAGE->requires->yui_module('moodle-question-searchform', 'M.question.searchform.init');
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     /**
-     * Print the "advanced" UI elements for the form to select which questions. Hidden by default.
-     *
-     * @param array $advancedsearch
      * @deprecated since Moodle 4.3 MDL-72321
-     * @todo Final deprecation on Moodle 4.7 MDL-78090
      */
+    #[\core\attribute\deprecated('filtering objects', since: '4.3', mdl: 'MDL-72321', final: true)]
     protected function display_advanced_search_form($advancedsearch): void {
-        debugging(
-            'Function display_advanced_search_form() is deprecated, this method has been replaced with mustaches in ' .
-            'filters, please use filtering objects',
-            DEBUG_DEVELOPER
-        );
-        print_collapsible_region_start('', 'advancedsearch',
-            get_string('advancedsearchoptions', 'question'),
-            'question_bank_advanced_search');
-        foreach ($advancedsearch as $searchcondition) {
-            echo $searchcondition->display_options_adv();
-        }
-        print_collapsible_region_end();
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     /**
-     * Display the checkbox UI for toggling the display of the question text in the list.
-     * @param bool $showquestiontext the current or default value for whether to display the text.
      * @deprecated since Moodle 4.3 MDL-72321
-     * @todo Final deprecation on Moodle 4.7 MDL-78090
      */
+    #[\core\attribute\deprecated('filtering objects', since: '4.3', mdl: 'MDL-72321', final: true)]
     protected function display_showtext_checkbox($showquestiontext): void {
-        debugging('Function display_showtext_checkbox() is deprecated, please use filtering objects', DEBUG_DEVELOPER);
-        global $PAGE;
-        $displaydata = [
-            'checked' => $showquestiontext
-        ];
-        if (class_exists('qbank_viewquestiontext\\question_text_row')) {
-            if (\core\plugininfo\qbank::is_plugin_enabled('qbank_viewquestiontext')) {
-                echo $PAGE->get_renderer('core_question', 'bank')->render_showtext_checkbox($displaydata);
-            }
-        }
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     /**
@@ -1136,6 +1042,7 @@ class view {
         // We probably do not want to raise it to unlimited, so randomly picking 5 minutes.
         // Note: We do not call this in the loop because quiz ob_ captures this function (see raise() PHP doc).
         \core_php_time_limit::raise(300);
+        raise_memory_limit(MEMORY_EXTRA);
 
         [$categoryid, $contextid] = category_condition::validate_category_param($this->pagevars['cat']);
         $catcontext = \context::instance_by_id($contextid);
@@ -1161,16 +1068,7 @@ class view {
         );
         echo $this->get_plugin_controls($catcontext, $categoryid);
 
-        $this->build_query();
-        $totalquestions = $this->get_question_count();
-        $questionsrs = $this->load_page_questions();
-        $questions = [];
-        foreach ($questionsrs as $question) {
-            if (!empty($question->id)) {
-                $questions[$question->id] = $question;
-            }
-        }
-        $questionsrs->close();
+        $questions = $this->load_questions();
 
         // This html will be refactored in the bulk actions implementation.
         echo \html_writer::start_tag('form', ['action' => $this->baseurl, 'method' => 'post', 'id' => 'questionsubmit']);
@@ -1183,7 +1081,7 @@ class view {
         // Embeded filterconditon into the div.
         echo \html_writer::start_tag('div',
             ['class' => 'categoryquestionscontainer', 'data-filtercondition' => $filtercondition]);
-        if ($totalquestions > 0) {
+        if ($this->totalcount > 0) {
             // Bulk load any required statistics.
             $this->load_required_statistics($questions);
 
@@ -1257,64 +1155,19 @@ class view {
     }
 
     /**
-     * Display the top pagination bar.
-     *
-     * @param object $pagination
      * @deprecated since Moodle 4.3
-     * @todo Final deprecation on Moodle 4.7 MDL-78091
      */
+    #[\core\attribute\deprecated('display_questions()', since: '4.3', mdl: 'MDL-72321', final: true)]
     public function display_top_pagnation($pagination): void {
-        debugging(
-            'Function display_top_pagnation() is deprecated, please use display_questions() for ajax based pagination.',
-            DEBUG_DEVELOPER
-        );
-        global $PAGE;
-        $displaydata = [
-            'pagination' => $pagination
-        ];
-        echo $PAGE->get_renderer('core_question', 'bank')->render_question_pagination($displaydata);
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     /**
-     * Display bottom pagination bar.
-     *
-     * @param string $pagination
-     * @param int $totalnumber
-     * @param int $perpage
-     * @param \moodle_url $pageurl
      * @deprecated since Moodle 4.3
-     * @todo Final deprecation on Moodle 4.7 MDL-78091
      */
+    #[\core\attribute\deprecated('display_questions()', since: '4.3', mdl: 'MDL-72321', final: true)]
     public function display_bottom_pagination($pagination, $totalnumber, $perpage, $pageurl): void {
-        debugging(
-            'Function display_bottom_pagination() is deprecated, please use display_questions() for ajax based pagination.',
-            DEBUG_DEVELOPER
-        );
-        global $PAGE;
-        $displaydata = array (
-            'extraclasses' => 'pagingbottom',
-            'pagination' => $pagination,
-            'biggertotal' => true,
-        );
-        if ($totalnumber > $this->pagesize) {
-            $displaydata['showall'] = true;
-            if ($perpage == $this->pagesize) {
-                $url = new \moodle_url($pageurl, array_merge($pageurl->params(),
-                    ['qpage' => 0, 'qperpage' => MAXIMUM_QUESTIONS_PER_PAGE]));
-                if ($totalnumber > MAXIMUM_QUESTIONS_PER_PAGE) {
-                    $displaydata['totalnumber'] = MAXIMUM_QUESTIONS_PER_PAGE;
-                } else {
-                    $displaydata['biggertotal'] = false;
-                    $displaydata['totalnumber'] = $totalnumber;
-                }
-            } else {
-                $url = new \moodle_url($pageurl, array_merge($pageurl->params(),
-                    ['qperpage' => $this->pagesize]));
-                $displaydata['totalnumber'] = $this->pagesize;
-            }
-            $displaydata['showallurl'] = $url;
-        }
-        echo $PAGE->get_renderer('core_question', 'bank')->render_question_pagination($displaydata);
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     /**
@@ -1406,6 +1259,7 @@ class view {
      */
     public function load_questions() {
         $this->build_query();
+        $this->get_question_count();
         $questionsrs = $this->load_page_questions();
         $questions = [];
         foreach ($questionsrs as $question) {
@@ -1429,7 +1283,7 @@ class view {
         // Start of the table.
         echo \html_writer::start_tag('table', [
             'id' => 'categoryquestions',
-            'class' => 'question-bank-table generaltable',
+            'class' => 'question-bank-table table generaltable',
             'data-defaultsort' => json_encode($this->sort),
         ]);
 
@@ -1454,32 +1308,19 @@ class view {
     }
 
     /**
-     * Start of the table html.
-     *
-     * @see print_table()
      * @deprecated since Moodle 4.3 MDL-72321
-     * @todo Final deprecation on Moodle 4.7 MDL-78090
      */
+    #[\core\attribute\deprecated('print_table()', since: '4.3', mdl: 'MDL-72321', final: true)]
     protected function start_table() {
-        debugging('Function start_table() is deprecated, please use print_table() instead.', DEBUG_DEVELOPER);
-        echo '<table id="categoryquestions" class="table table-responsive">' . "\n";
-        echo "<thead>\n";
-        $this->print_table_headers();
-        echo "</thead>\n";
-        echo "<tbody>\n";
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     /**
-     * End of the table html.
-     *
-     * @see print_table()
      * @deprecated since Moodle 4.3 MDL-72321
-     * @todo Final deprecation on Moodle 4.7 MDL-78090
      */
+    #[\core\attribute\deprecated('print_table()', since: '4.3', mdl: 'MDL-72321', final: true)]
     protected function end_table() {
-        debugging('Function end_table() is deprecated, please use print_table() instead.', DEBUG_DEVELOPER);
-        echo "</tbody>\n";
-        echo "</table>\n";
+        \core\deprecation::emit_deprecation_if_present([self::class, __FUNCTION__]);
     }
 
     /**
@@ -1521,6 +1362,11 @@ class view {
     public function print_table_row($question, $rowcount): void {
         $rowclasses = implode(' ', $this->get_row_classes($question, $rowcount));
         $attributes = [];
+
+        // If the question type is invalid we highlight it red.
+        if (!\question_bank::is_qtype_usable($question->qtype)) {
+            $rowclasses .= ' table-danger';
+        }
         if ($rowclasses) {
             $attributes['class'] = $rowclasses;
         }
@@ -1532,20 +1378,6 @@ class view {
         foreach ($this->extrarows as $row) {
             $row->display($question, $rowclasses);
         }
-    }
-
-    /**
-     * @deprecated since Moodle 4.0
-     */
-    public function process_actions(): void {
-        throw new coding_exception(__FUNCTION__ . '() has been removed.');
-    }
-
-    /**
-     * @deprecated since Moodle 4.0
-     */
-    public function process_actions_needing_ui() {
-        throw new coding_exception(__FUNCTION__ . '() has been removed.');
     }
 
     /**
@@ -1611,9 +1443,8 @@ class view {
     public function display_questions_table(): string {
         $this->add_standard_search_conditions();
         $questions = $this->load_questions();
-        $totalquestions = $this->get_question_count();
         $questionhtml = '';
-        if ($totalquestions > 0) {
+        if ($this->get_question_count() > 0) {
             $this->load_required_statistics($questions);
             ob_start();
             $this->display_questions($questions, $this->pagevars['qpage'], $this->pagevars['qperpage']);

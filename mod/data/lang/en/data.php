@@ -16,7 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings for component 'data', language 'en', branch 'MOODLE_20_STABLE'
+ * Strings for component 'mod_data', language 'en', branch 'MOODLE_20_STABLE'
  *
  * @package   mod_data
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
@@ -88,12 +88,10 @@ $string['csvimport_help'] = 'Entries may be imported via a plain text file with 
 $string['csvwithselecteddelimiter'] = '<abbr title="Comma Separated Values">CSV</abbr>';
 $string['data:addinstance'] = 'Add a new database';
 $string['data:approve'] = 'Approve and undo approved entries';
-$string['data:comment'] = 'Write comments';
 $string['data:exportallentries'] = 'Export all database entries';
 $string['data:exportentry'] = 'Export a database entry';
 $string['data:exportownentry'] = 'Export own database entry';
 $string['data:exportuserinfo'] = 'Export user information';
-$string['data:managecomments'] = 'Manage comments';
 $string['data:manageentries'] = 'Manage entries';
 $string['data:managetemplates'] = 'Manage templates';
 $string['data:manageuserpresets'] = 'Manage presets';
@@ -473,13 +471,9 @@ $string['viewtodate'] = 'Read only to';
 $string['viewtodatevalidation'] = 'The read only to date cannot be before the read only from date.';
 $string['wrongdataid'] = 'Wrong data ID provided';
 
-// Deprecated since Moodle 4.2.
-$string['fieldids'] = 'Field ids';
-
-// Deprecated since Moodle 4.3.
-$string['completionentries'] = 'Require entries';
-
-// Deprecated since Moodle 4.4.
-
 // Deprecated since Moodle 4.5.
 $string['tagsdeleted'] = 'Database tags have been deleted';
+
+// Deprecated since Moodle 5.0.
+$string['data:comment'] = 'Write comments';
+$string['data:managecomments'] = 'Manage comments';

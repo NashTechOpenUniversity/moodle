@@ -38,6 +38,7 @@ define('ASSIGN_FILTER_SUBMITTED', 'submitted');
 define('ASSIGN_FILTER_NOT_SUBMITTED', 'notsubmitted');
 define('ASSIGN_FILTER_SINGLE_USER', 'singleuser');
 define('ASSIGN_FILTER_REQUIRE_GRADING', 'requiregrading');
+define('ASSIGN_FILTER_GRADED', 'graded');
 define('ASSIGN_FILTER_GRANTED_EXTENSION', 'grantedextension');
 define('ASSIGN_FILTER_DRAFT', 'draft');
 
@@ -150,10 +151,10 @@ class assign {
      */
     private $cache;
 
-    /** @var array list of the installed submission plugins */
+    /** @var assign_submission_plugin[] list of the installed submission plugins */
     private $submissionplugins;
 
-    /** @var array list of the installed feedback plugins */
+    /** @var assign_feedback_plugin[] list of the installed feedback plugins */
     private $feedbackplugins;
 
     /** @var string action to be used to return to this page
@@ -699,8 +700,6 @@ class assign {
             $o .= $this->view_plugin_grading_batch_operation();
         } else if ($action == 'viewpluginpage') {
              $o .= $this->view_plugin_page();
-        } else if ($action == 'viewcourseindex') {
-             $o .= $this->view_course_index();
         } else if ($action == 'viewbatchsetmarkingworkflowstate') {
              $o .= $this->view_batch_set_workflow_state();
         } else if ($action == 'viewbatchmarkingallocation') {
@@ -792,6 +791,10 @@ class assign {
                 $update->markinganonymous = $formdata->markinganonymous;
             }
         }
+
+        // Grade penalties.
+        $update->gradepenalty = $formdata->gradepenalty ?? 0;
+
         $returnid = $DB->insert_record('assign', $update);
         $this->instance = $DB->get_record('assign', array('id'=>$returnid), '*', MUST_EXIST);
         // Cache the course record.
@@ -1581,6 +1584,9 @@ class assign {
             $update->markinganonymous = 0;
         }
 
+        // Grade penalties.
+        $update->gradepenalty = $formdata->gradepenalty ?? 0;
+
         $result = $DB->update_record('assign', $update);
         $this->instance = $DB->get_record('assign', array('id'=>$update->id), '*', MUST_EXIST);
 
@@ -1612,6 +1618,13 @@ class assign {
         $update->id = $this->get_instance()->id;
         $update->nosubmissions = (!$this->is_any_submission_plugin_enabled()) ? 1: 0;
         $DB->update_record('assign', $update);
+
+        // Check if we need to recalculate penalty for existing grades.
+        if (!empty($formdata->recalculatepenalty) && $formdata->recalculatepenalty === 'yes') {
+            $assign = clone $this->get_instance();
+            $assign->cmidnumber = $this->get_course_module()->idnumber;
+            assign_update_grades($assign);
+        }
 
         return $result;
     }
@@ -1746,6 +1759,31 @@ class assign {
                 $plugin->data_preprocessing($defaultvalues);
             }
         }
+    }
+
+    /**
+     * Allow each plugin to validiate the data from the assignments settings form.
+     *
+     * @param array $data as passed to mod_assign_mod_form::validation().
+     * @param array $files as passed to mod_assign_mod_form::validation().
+     * @return array and validation errors that should be displayed.
+     */
+    public function plugin_settings_validation(array $data, array $files): array {
+        $errors = [];
+
+        foreach ($this->submissionplugins as $plugin) {
+            if ($plugin->is_visible()) {
+                $errors = array_merge($errors, $plugin->settings_validation($data, $files));
+            }
+        }
+
+        foreach ($this->feedbackplugins as $plugin) {
+            if ($plugin->is_visible()) {
+                $errors = array_merge($errors, $plugin->settings_validation($data, $files));
+            }
+        }
+
+        return $errors;
     }
 
     /**
@@ -1992,10 +2030,11 @@ class assign {
      * @param boolean $editing Are we allowing changes to this grade?
      * @param int $userid The user id the grade belongs to
      * @param int $modified Timestamp from when the grade was last modified
+     * @param float $deductedmark The deducted mark if penalty is applied
      * @return string User-friendly representation of grade
      */
-    public function display_grade($grade, $editing, $userid=0, $modified=0) {
-        global $DB;
+    public function display_grade($grade, $editing, $userid = 0, $modified = 0, float $deductedmark = 0) {
+        global $DB, $PAGE;
 
         static $scalegrades = array();
 
@@ -2020,7 +2059,6 @@ class assign {
                               maxlength="10"
                               class="quickgrade"/>';
                 $o .= '&nbsp;/&nbsp;' . format_float($this->get_instance()->grade, $this->get_grade_item()->get_decimals());
-                return $o;
             } else {
                 if ($grade == -1 || $grade === null) {
                     $o .= '-';
@@ -2032,9 +2070,18 @@ class assign {
                         $o .= '&nbsp;/&nbsp;' . format_float($this->get_instance()->grade, $item->get_decimals());
                     }
                 }
-                return $o;
             }
 
+            // Add penalty indicator, icon only.
+            $penaltyindicator = '';
+            if ($deductedmark > 0) {
+                $gradegrade = new \grade_grade();
+                $gradegrade->deductedmark = $deductedmark;
+                $gradegrade->overridden = $userid > 0 ? $this->get_grade_item()->get_grade($userid)->overridden : 0;
+                $penaltyindicator = \core_grades\penalty_manager::show_penalty_indicator($gradegrade);
+            }
+
+            return $penaltyindicator . $o;
         } else {
             // Scale.
             if (empty($this->cache['scale'])) {
@@ -2345,6 +2392,9 @@ class assign {
                     $params = array_merge($params, $keywordsparams);
                 }
             }
+
+            // Exclude suspended users from the list of participants.
+            $additionalfilters .= " AND u.suspended = 0 AND u.auth <> 'nologin'";
 
             $sql = "SELECT $fields
                       FROM {user} u
@@ -3253,97 +3303,6 @@ class assign {
     }
 
     /**
-     * View a summary listing of all assignments in the current course.
-     *
-     * @return string
-     */
-    private function view_course_index() {
-        global $USER;
-
-        $o = '';
-
-        $course = $this->get_course();
-        $strplural = get_string('modulenameplural', 'assign');
-
-        if (!$cms = get_coursemodules_in_course('assign', $course->id, 'm.duedate')) {
-            $o .= $this->get_renderer()->notification(get_string('thereareno', 'moodle', $strplural));
-            $o .= $this->get_renderer()->continue_button(new moodle_url('/course/view.php', array('id' => $course->id)));
-            return $o;
-        }
-
-        $strsectionname = '';
-        $usesections = course_format_uses_sections($course->format);
-        $modinfo = get_fast_modinfo($course);
-
-        if ($usesections) {
-            $strsectionname = course_get_format($course)->get_generic_section_name();
-            $sections = $modinfo->get_section_info_all();
-        }
-        $courseindexsummary = new assign_course_index_summary($usesections, $strsectionname);
-
-        $timenow = time();
-
-        $currentsection = '';
-        foreach ($modinfo->instances['assign'] as $cm) {
-            if (!$cm->uservisible) {
-                continue;
-            }
-
-            $timedue = $cms[$cm->id]->duedate;
-
-            $sectionname = '';
-            if ($usesections && $cm->sectionnum) {
-                $sectionname = get_section_name($course, $sections[$cm->sectionnum]);
-            }
-
-            $submitted = '';
-            $context = context_module::instance($cm->id);
-
-            $assignment = new assign($context, $cm, $course);
-
-            // Apply overrides.
-            $assignment->update_effective_access($USER->id);
-            $timedue = $assignment->get_instance()->duedate;
-
-            if (has_capability('mod/assign:submit', $context) &&
-                !has_capability('moodle/site:config', $context)) {
-                $cangrade = false;
-                if ($assignment->get_instance()->teamsubmission) {
-                    $usersubmission = $assignment->get_group_submission($USER->id, 0, false);
-                } else {
-                    $usersubmission = $assignment->get_user_submission($USER->id, false);
-                }
-
-                if (!empty($usersubmission->status)) {
-                    $submitted = get_string('submissionstatus_' . $usersubmission->status, 'assign');
-                } else {
-                    $submitted = get_string('submissionstatus_', 'assign');
-                }
-
-                $gradinginfo = grade_get_grades($course->id, 'mod', 'assign', $cm->instance, $USER->id);
-                if (isset($gradinginfo->items[0]->grades[$USER->id]) &&
-                        !$gradinginfo->items[0]->grades[$USER->id]->hidden ) {
-                    $grade = $gradinginfo->items[0]->grades[$USER->id]->str_grade;
-                } else {
-                    $grade = '-';
-                }
-            } else if (has_capability('mod/assign:grade', $context)) {
-                $submitted = $assignment->count_submissions_with_status(ASSIGN_SUBMISSION_STATUS_SUBMITTED);
-                $grade = $assignment->count_submissions_need_grading();
-                $cangrade = true;
-            }
-
-            $courseindexsummary->add_assign_info($cm->id, $cm->get_formatted_name(),
-                $sectionname, $timedue, $submitted, $grade, $cangrade);
-        }
-
-        $o .= $this->get_renderer()->render($courseindexsummary);
-        $o .= $this->view_footer();
-
-        return $o;
-    }
-
-    /**
      * View a page rendered by a plugin.
      *
      * Uses url parameters 'pluginaction', 'pluginsubtype', 'plugin', and 'id'.
@@ -3759,13 +3718,6 @@ class assign {
     }
 
     /**
-     * @deprecated since 2.7 - Use new events system instead.
-     */
-    public function add_to_log() {
-        throw new coding_exception(__FUNCTION__ . ' has been deprecated, please do not use it any more');
-    }
-
-    /**
      * Lazy load the page renderer and expose the renderer to plugins.
      *
      * @return assign_renderer
@@ -3977,6 +3929,7 @@ class assign {
             if ($attemptnumber >= 0) {
                 $grade->attemptnumber = $attemptnumber;
             }
+            $grade->penalty = 0.0;
 
             $gid = $DB->insert_record('assign_grades', $grade);
             $grade->id = $gid;
@@ -4580,7 +4533,11 @@ class assign {
         $o .= $actionformtext;
 
         if ($this->is_blind_marking() && has_capability('mod/assign:viewblinddetails', $this->get_context())) {
-            $o .= $this->get_renderer()->notification(get_string('blindmarkingenabledwarning', 'assign'), 'notifymessage');
+            if ($this->is_marking_anonymous()) {
+                $o .= $this->get_renderer()->notification(get_string('blindmarkingenabledwarning', 'assign'), 'notifymessage');
+            } else {
+                $o .= $this->get_renderer()->notification(get_string('blindmarkingnogradewarning', 'assign'), 'notifymessage');
+            }
         }
 
         // Print the table of submissions.
@@ -4651,7 +4608,8 @@ class assign {
             $jsparams['markingallocation'] = !empty($this->get_instance()->markingallocation);
             $jsparams['cmid'] = $this->get_course_module()->id;
             $jsparams['sesskey'] = sesskey();
-
+            $jsparams['supportssubmissions'] = $this->is_any_submission_plugin_enabled();
+            $jsparams['hassubmissions'] = $this->count_submissions() > 0;
             $PAGE->requires->js_call_amd('mod_assign/bulkactions/grading/bulk_actions', 'init', [$jsparams]);
         }
 
@@ -5462,9 +5420,25 @@ class assign {
                         '',
                         $cangrade
                     );
-                    $gradefordisplay = $gradebookgrade->str_long_grade;
+                    // Display the penalty indicator next to the penalized grade, if applicable.
+                    $penaltyindicator = \core_grades\penalty_manager::show_penalty_indicator(
+                        new \grade_grade([
+                            'deductedmark' => $gradebookgrade->deductedmark ?? 0,
+                            'overridden' => $gradebookgrade->overridden ?? 0,
+                        ], false)
+                    );
+
+                    $gradefordisplay = $penaltyindicator . $gradebookgrade->str_long_grade;
                 } else {
-                    $gradefordisplay = $this->display_grade($gradebookgrade->grade, false);
+                    // This grade info is the grade from gradebook.
+                    // We need user id to determine if the grade is overridden or not.
+                    $gradefordisplay = $this->display_grade(
+                        $gradebookgrade->grade,
+                        false,
+                        $user->id,
+                        0,
+                        $gradebookgrade->deductedmark
+                    );
                 }
                 $gradeddate = $gradebookgrade->dategraded;
 
@@ -5671,21 +5645,53 @@ class assign {
                 }
             }
 
+            // The assign grade for each attempt is not stored in the gradebook.
+            // We need to calculate them from assign_grade records.
+            [$penalisedgrade, $deductedmark] = $this->calculate_penalised_grade($grade);
+
             // Now get the gradefordisplay.
             if ($controller) {
                 $controller->set_grade_range(make_grades_menu($this->get_instance()->grade), $this->get_instance()->grade > 0);
-                $grade->gradefordisplay = $controller->render_grade($PAGE,
-                                                                     $grade->id,
-                                                                     $gradingitem,
-                                                                     $grade->grade,
-                                                                     $cangrade);
+                // Display the penalty indicator next to the penalized grade, if applicable.
+                $penaltyindicator = \core_grades\penalty_manager::show_penalty_indicator(
+                    new \grade_grade([
+                        'deductedmark' => $deductedmark,
+                        'overridden' => $userid > 0 ? $this->get_grade_item()->get_grade($userid)->overridden : 0,
+                    ], false)
+                );
+                $gradeoutput = $penaltyindicator . format_float($penalisedgrade, $this->get_grade_item()->get_decimals());
+
+                $grade->gradefordisplay = $controller->render_grade($PAGE, $grade->id, $gradingitem, $gradeoutput, $cangrade);
             } else {
-                $grade->gradefordisplay = $this->display_grade($grade->grade, false);
+                // We do not need user id here as the overriden grade should not affect the previous attempts.
+                $grade->gradefordisplay = $this->display_grade($penalisedgrade, false, 0, 0, $deductedmark);
             }
 
         }
 
         return $grades;
+    }
+
+    /**
+     * Calculate penalised grade and deducted mark.
+     *
+     * @param stdClass $grade The grade object
+     * @return array [$penalisedgrade, $deductedmark] the penalised grade and the deducted mark
+     */
+    public function calculate_penalised_grade(stdClass $grade): array {
+        $penalisedgrade = $grade->grade;
+        $deductedmark = 0;
+
+        // No calculation needed if the grade is null or negative.
+        if (is_null($penalisedgrade) || $penalisedgrade < 0) {
+            return [$penalisedgrade, $deductedmark];
+        }
+
+        if ($grade->penalty > 0) {
+            $deductedmark = $grade->grade * $grade->penalty / 100;
+            $penalisedgrade = $grade->grade - $deductedmark;
+        }
+        return [$penalisedgrade, $deductedmark];
     }
 
     /**
@@ -6031,7 +6037,7 @@ class assign {
         require_once($CFG->dirroot.'/mod/assign/lib.php');
         // Do not push grade to gradebook if blind marking is active as
         // the gradebook would reveal the students.
-        if ($this->is_blind_marking()) {
+        if ($this->is_blind_marking() && !$this->is_marking_anonymous()) {
             return false;
         }
 
@@ -6452,70 +6458,6 @@ class assign {
     }
 
     /**
-     * Format a notification for plain text.
-     *
-     * @param string $messagetype
-     * @param stdClass $info
-     * @param stdClass $course
-     * @param stdClass $context
-     * @param string $modulename
-     * @param string $assignmentname
-     */
-    protected static function format_notification_message_text($messagetype,
-                                                             $info,
-                                                             $course,
-                                                             $context,
-                                                             $modulename,
-                                                             $assignmentname) {
-        $formatparams = array('context' => $context->get_course_context());
-        $posttext  = format_string($course->shortname, true, $formatparams) .
-                     ' -> ' .
-                     $modulename .
-                     ' -> ' .
-                     format_string($assignmentname, true, $formatparams) . "\n";
-        $posttext .= '---------------------------------------------------------------------' . "\n";
-        $posttext .= get_string($messagetype . 'text', 'assign', $info)."\n";
-        $posttext .= "\n---------------------------------------------------------------------\n";
-        return $posttext;
-    }
-
-    /**
-     * Format a notification for HTML.
-     *
-     * @param string $messagetype
-     * @param stdClass $info
-     * @param stdClass $course
-     * @param stdClass $context
-     * @param string $modulename
-     * @param stdClass $coursemodule
-     * @param string $assignmentname
-     */
-    protected static function format_notification_message_html($messagetype,
-                                                             $info,
-                                                             $course,
-                                                             $context,
-                                                             $modulename,
-                                                             $coursemodule,
-                                                             $assignmentname) {
-        global $CFG;
-        $formatparams = array('context' => $context->get_course_context());
-        $posthtml  = '<p><font face="sans-serif">' .
-                     '<a href="' . $CFG->wwwroot . '/course/view.php?id=' . $course->id . '">' .
-                     format_string($course->shortname, true, $formatparams) .
-                     '</a> ->' .
-                     '<a href="' . $CFG->wwwroot . '/mod/assign/index.php?id=' . $course->id . '">' .
-                     $modulename .
-                     '</a> ->' .
-                     '<a href="' . $CFG->wwwroot . '/mod/assign/view.php?id=' . $coursemodule->id . '">' .
-                     format_string($assignmentname, true, $formatparams) .
-                     '</a></font></p>';
-        $posthtml .= '<hr /><font face="sans-serif">';
-        $posthtml .= '<p>' . get_string($messagetype . 'html', 'assign', $info) . '</p>';
-        $posthtml .= '</font><hr />';
-        return $posthtml;
-    }
-
-    /**
      * Message someone about something (static so it can be called from cron).
      *
      * @param stdClass $userfrom
@@ -6524,12 +6466,13 @@ class assign {
      * @param string $eventtype
      * @param int $updatetime
      * @param stdClass $coursemodule
-     * @param stdClass $context
+     * @param context $context
      * @param stdClass $course
-     * @param string $modulename
+     * @param string $modulename - no longer used.
      * @param string $assignmentname
      * @param bool $blindmarking
      * @param int $uniqueidforuser
+     * @param array $extrainfo extra values to pass to any language strings or templates used in preparing the message.
      * @return void
      */
     public static function send_assignment_notification($userfrom,
@@ -6543,9 +6486,15 @@ class assign {
                                                         $modulename,
                                                         $assignmentname,
                                                         $blindmarking,
-                                                        $uniqueidforuser) {
+                                                        $uniqueidforuser,
+                                                        $extrainfo = []) {
         global $CFG, $PAGE;
 
+        // We put more data into info that is used by the default language strings,
+        // so that there is more flexibility for organisations that want to use
+        // Language Customisation to customise the messages.
+
+        // Information about the sender - normally the user who performed the action.
         $info = new stdClass();
         if ($blindmarking) {
             $userfrom = clone($userfrom);
@@ -6554,30 +6503,60 @@ class assign {
             $userfrom->lastname = $uniqueidforuser;
             $userfrom->email = $CFG->noreplyaddress;
         } else {
-            $info->username = fullname($userfrom, true);
+            $info->username = core_user::get_fullname($userfrom, $context, ['override' => true]);
         }
-        $info->assignment = format_string($assignmentname, true, array('context'=>$context));
-        $info->url = $CFG->wwwroot.'/mod/assign/view.php?id='.$coursemodule->id;
+
+        // Information about the recipient (for greeting, etc.).
+        $info->recipentname = core_user::get_fullname($userto, $context, ['override' => true]);
+
+        // Information about the assignment.
+        $info->assignment = format_string($assignmentname, true, ['context' => $context]);
+        $info->url = $CFG->wwwroot . '/mod/assign/view.php?id=' . $coursemodule->id;
+        // Note: URLs here avoid the & character to avoid escaping issues between text and HTML messages.
+        $info->assignmentlink  = '<a href="' . $info->url . '">' . s($info->assignment) . ' report</a>';
+        $info->assigncmid = $coursemodule->id;
+
+        // Information about the course.
+        $info->courseshortname = format_string($course->shortname, true, ['context' => $context]);
+        $info->coursefullname = format_string($course->fullname, true, ['context' => $context]);
+        // Note: URLs here avoid the & character to avoid escaping issues between text and HTML messages.
+        $info->courseurl = $CFG->wwwroot . '/course/view.php?id=' . $course->id;
+        $info->courseassignsurl = $CFG->wwwroot . '/mod/assign/index.php?id=' . $course->id;
+
+        // Time of the action.
         $info->timeupdated = userdate($updatetime, get_string('strftimerecentfull'));
 
-        $postsubject = get_string($messagetype . 'small', 'assign', $info);
-        $posttext = self::format_notification_message_text($messagetype,
-                                                           $info,
-                                                           $course,
-                                                           $context,
-                                                           $modulename,
-                                                           $assignmentname);
+        // Other data passed in.
+        $info = (object) array_merge((array) $info, $extrainfo);
+
+        // Since format_string returns text with HTML characters escaped,
+        // we need to un-escape before including in the plain text email and subject line.
+        // (Test with a course or assignment called "Escaping & unescaping" to understand).
+        $plaintextinfo = clone $info;
+        $plaintextinfo->assignment = html_entity_decode($info->assignment);
+        $plaintextinfo->courseshortname = html_entity_decode($info->courseshortname);
+        $plaintextinfo->coursefullname = html_entity_decode($info->coursefullname);
+
+        // Prepare the message subject and bodies.
+        $postsubject = get_string($messagetype . 'small', 'assign', $plaintextinfo);
+        $smsmessage = get_string($messagetype . 'sms', 'assign', $plaintextinfo);
+
+        $renderer = $PAGE->get_renderer('mod_assign');
+        $context = clone $plaintextinfo;
+        $context->messagetext = get_string($messagetype . 'text', 'assign', $plaintextinfo);
+        // Mustache strips off all training whitespace, but we want a newline at the end.
+        $posttext = $renderer->render_from_template(
+            'mod_assign/messages/notification_text', $context) . "\n";
+
         $posthtml = '';
         if ($userto->mailformat == 1) {
-            $posthtml = self::format_notification_message_html($messagetype,
-                                                               $info,
-                                                               $course,
-                                                               $context,
-                                                               $modulename,
-                                                               $coursemodule,
-                                                               $assignmentname);
+            $context = clone $info;
+            $context->messagehtml = get_string($messagetype . 'html', 'assign', $info);
+            $posthtml = $renderer->render_from_template(
+                'mod_assign/messages/notification_html', $context);
         }
 
+        // Build the message object.
         $eventdata = new \core\message\message();
         $eventdata->courseid         = $course->id;
         $eventdata->modulename       = 'assign';
@@ -6587,6 +6566,7 @@ class assign {
         $eventdata->fullmessage      = $posttext;
         $eventdata->fullmessageformat = FORMAT_PLAIN;
         $eventdata->fullmessagehtml  = $posthtml;
+        $eventdata->fullmessagesms   = $smsmessage;
         $eventdata->smallmessage     = $postsubject;
 
         $eventdata->name            = $eventtype;
@@ -6621,9 +6601,10 @@ class assign {
      * @param string $messagetype
      * @param string $eventtype
      * @param int $updatetime
+     * @param array $extrainfo extra values to pass to any language strings or templates used in preparing the message.
      * @return void
      */
-    public function send_notification($userfrom, $userto, $messagetype, $eventtype, $updatetime) {
+    public function send_notification($userfrom, $userto, $messagetype, $eventtype, $updatetime, $extrainfo = []) {
         global $USER;
         $userid = core_user::is_real_user($userfrom->id) ? $userfrom->id : $USER->id;
         $uniqueid = $this->get_uniqueid_for_user($userid);
@@ -6638,7 +6619,8 @@ class assign {
                                            $this->get_module_name(),
                                            $this->get_instance()->name,
                                            $this->is_blind_marking(),
-                                           $uniqueid);
+                                           $uniqueid,
+                                           $extrainfo);
     }
 
     /**
@@ -6686,19 +6668,68 @@ class assign {
         } else {
             $user = $USER;
         }
+        // Prepare extra data for submission receipt notification.
+        $extrainfo = $this->get_submission_summaries_for_messages($submission);
         if ($submission->userid == $USER->id) {
             $this->send_notification(core_user::get_noreply_user(),
                                      $user,
                                      'submissionreceipt',
                                      'assign_notification',
-                                     $submission->timemodified);
+                                     $submission->timemodified,
+                                     $extrainfo);
         } else {
             $this->send_notification($USER,
                                      $user,
                                      'submissionreceiptother',
                                      'assign_notification',
-                                     $submission->timemodified);
+                                     $submission->timemodified,
+                                     $extrainfo);
         }
+    }
+
+    /**
+     * Produce a summary of a submission that can be used in messages.
+     *
+     * This function iterates through all enabled submission plugins and calls their
+     * `get_submission_summary` method (if implemented). It aggregates the results
+     * into a formatted summary string.
+     *
+     * @param stdClass $submission the submission the message is about. Row from assign_submission table.
+     * @return string[] with two elements:
+     *      'submissionsummarytext' => a plain text summary,
+     *      'submissionsummaryhtml' => an HTML summary.
+     */
+    protected function get_submission_summaries_for_messages(stdClass $submission): array {
+        $textsummaries = [];
+        $htmlsummaries = [];
+        foreach ($this->submissionplugins as $plugin) {
+            if ($plugin->is_enabled() && $plugin->is_visible()) {
+                [$textsummary, $htmlsummary] = $plugin->submission_summary_for_messages($submission);
+                if ($textsummary) {
+                    $textsummaries[] = $textsummary;
+                }
+                if ($htmlsummary) {
+                    $htmlsummaries[] = $htmlsummary;
+                }
+            }
+        }
+
+        $textsummary = '';
+        if ($textsummaries) {
+            $textsummary = get_string('submissioncontains', 'assign') . "\n\n" .
+                implode("\n", $textsummaries);
+        }
+
+        $htmlsummary = '';
+        if ($htmlsummaries) {
+            $htmlsummary = html_writer::tag('h2', get_string('submissioncontains', 'assign')) .
+                implode('', $htmlsummaries);
+        }
+
+        return [
+            'submissionsummarytext' => $textsummary,
+            'submissionsummaryhtml' => $htmlsummary,
+        ];
     }
 
     /**
@@ -7363,20 +7394,6 @@ class assign {
     }
 
     /**
-     * @deprecated since 2.7
-     */
-    public function format_grade_for_log() {
-        throw new coding_exception(__FUNCTION__ . ' has been deprecated, please do not use it any more');
-    }
-
-    /**
-     * @deprecated since 2.7
-     */
-    public function format_submission_for_log() {
-        throw new coding_exception(__FUNCTION__ . ' has been deprecated, please do not use it any more');
-    }
-
-    /**
      * Require a valid sess key and then call copy_previous_attempt.
      *
      * @param  array $notices Any error messages that should be shown
@@ -7762,7 +7779,7 @@ class assign {
      * @return void
      */
     public function add_grade_form_elements(MoodleQuickForm $mform, stdClass $data, $params) {
-        global $USER, $CFG, $SESSION;
+        global $USER, $CFG, $SESSION, $PAGE;
         $settings = $this->get_instance();
 
         $rownum = isset($params['rownum']) ? $params['rownum'] : 0;
@@ -7882,6 +7899,16 @@ class assign {
                 $usergrade = $gradinginfo->items[0]->grades[$userid]->str_grade;
             }
             $gradestring = $usergrade;
+        }
+
+        // Penalty indicator.
+        $userassigngrade = $gradinginfo->items[0]->grades[$userid];
+        if (isset($userassigngrade->grade)) {
+            $gradegrade = new \grade_grade();
+            $gradegrade->deductedmark = $userassigngrade->deductedmark;
+            $gradegrade->overridden = $userassigngrade->overridden;
+            $penaltyindicator = \core_grades\penalty_manager::show_penalty_indicator($gradegrade);
+            $gradestring = $penaltyindicator . $gradestring;
         }
 
         if ($this->get_instance()->markingworkflow) {
@@ -8381,15 +8408,6 @@ class assign {
                         $grade->feedbackfiles = $plugin->files_for_gradebook($grade);
                     }
                     $this->update_grade($grade);
-                    $assign = clone $this->get_instance();
-                    $assign->cmidnumber = $this->get_course_module()->idnumber;
-                    // Set assign gradebook feedback plugin status.
-                    $assign->gradefeedbackenabled = $this->is_gradebook_feedback_enabled();
-
-                    // If markinganonymous is enabled then allow to release grades anonymously.
-                    if (isset($assign->markinganonymous) && $assign->markinganonymous == 1) {
-                        assign_update_grades($assign, $userid);
-                    }
                     $user = $DB->get_record('user', array('id' => $userid), '*', MUST_EXIST);
                     \mod_assign\event\workflow_state_updated::create_from_user($this, $user, $state)->trigger();
                 }
@@ -9587,6 +9605,7 @@ class assign {
                 ASSIGN_FILTER_DRAFT,
                 ASSIGN_FILTER_SUBMITTED,
                 ASSIGN_FILTER_REQUIRE_GRADING,
+                ASSIGN_FILTER_GRADED,
             ],
             [
                 ASSIGN_FILTER_GRANTED_EXTENSION,
@@ -9709,6 +9728,15 @@ class assign {
         }
 
         return !empty($submission) && $submission->status !== ASSIGN_SUBMISSION_STATUS_SUBMITTED && $timedattemptstarted;
+    }
+
+    /**
+     * Is "Allow partial release of grades while marking anonymously" enabled?
+     *
+     * @return bool
+     */
+    public function is_marking_anonymous(): bool {
+        return isset($this->get_instance()->markinganonymous) && $this->get_instance()->markinganonymous;
     }
 }
 

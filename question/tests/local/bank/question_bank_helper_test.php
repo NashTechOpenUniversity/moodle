@@ -85,6 +85,11 @@ final class question_bank_helper_test extends \advanced_testcase {
         $sharedmod1context = \context_module::instance($sharedmod1->cmid);
         $sharedmod1qcat1 = $qgen->create_question_category(['contextid' => $sharedmod1context->id]);
         $sharedmod1qcat2 = $qgen->create_question_category(['contextid' => $sharedmod1context->id]);
+        $sharedmod1qcat2child = $qgen->create_question_category([
+            'contextid' => $sharedmod1context->id,
+            'parent' => $sharedmod1qcat2->id,
+            'name' => 'A, B, C',
+        ]);
         $privatemod1 = $privatemodgen->create_instance(['course' => $course1]);
         $privatemod1context = \context_module::instance($privatemod1->cmid);
         $privatemod1qcat1 = $qgen->create_question_category(['contextid' => $privatemod1context->id]);
@@ -95,6 +100,10 @@ final class question_bank_helper_test extends \advanced_testcase {
         $sharedmod2context = \context_module::instance($sharedmod2->cmid);
         $sharedmod2qcat1 = $qgen->create_question_category(['contextid' => $sharedmod2context->id]);
         $sharedmod2qcat2 = $qgen->create_question_category(['contextid' => $sharedmod2context->id]);
+        $sharedmod2qcat2child = $qgen->create_question_category([
+            'contextid' => $sharedmod2context->id,
+            'parent' => $sharedmod2qcat2->id,
+        ]);
         $privatemod2 = $privatemodgen->create_instance(['course' => $course2]);
         $privatemod2context = \context_module::instance($privatemod2->cmid);
         $privatemod1qcat1 = $qgen->create_question_category(['contextid' => $privatemod2context->id]);
@@ -121,7 +130,7 @@ final class question_bank_helper_test extends \advanced_testcase {
             // Must all be mod_qbanks.
             $this->assertEquals('qbank', $courseinstance->cminfo->modname);
             // Must have 2 categories each bank.
-            $this->assertCount(2, $courseinstance->questioncategories);
+            $this->assertCount(3, $courseinstance->questioncategories);
             // Must not include the bank the user does not have access to.
             $this->assertNotEquals($sharedmod3->name, $courseinstance->name);
             $this->assertNotEquals($privatemod3->name, $courseinstance->name);
@@ -149,6 +158,54 @@ final class question_bank_helper_test extends \advanced_testcase {
         }
         // Expect count of 1 bank instances.
         $this->assertEquals(1, $count);
+    }
+
+    /**
+     * We should be able to filter sharable question bank instances by name.
+     *
+     * @covers ::get_activity_instances_with_shareable_questions
+     * @return void
+     */
+    public function test_get_instances_by_name(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $user = self::getDataGenerator()->create_user();
+        $roles = $DB->get_records('role', [], '', 'shortname, id');
+        self::setUser($user);
+
+        $sharedmodgen = self::getDataGenerator()->get_plugin_generator('mod_qbank');
+        $category1 = self::getDataGenerator()->create_category();
+        $course1 = self::getDataGenerator()->create_course(['category' => $category1->id]);
+        role_assign($roles['editingteacher']->id, $user->id, \core\context\course::instance($course1->id));
+
+        $sharedmods = [];
+        for ($i = 1; $i <= 21; $i++) {
+            $sharedmods[$i] = $sharedmodgen->create_instance(['course' => $course1, 'name' => "Shared bank {$i}"]);
+        }
+        $sharedmods[22] = $sharedmodgen->create_instance(['course' => $course1, 'name' => "Another bank"]);
+
+        // We get all banks with no parameters.
+        $allsharedbanks = question_bank_helper::get_activity_instances_with_shareable_questions();
+        $this->assertCount(22, $allsharedbanks);
+
+        // Searching for "2", we get the 4 banks with "2" in the name.
+        $twobanks = question_bank_helper::get_activity_instances_with_shareable_questions(search: '2');
+        $this->assertCount(4, $twobanks);
+        $this->assertEquals(
+            [$sharedmods[2]->cmid, $sharedmods[12]->cmid, $sharedmods[20]->cmid, $sharedmods[21]->cmid],
+            array_map(fn($bank) => $bank->modid, $twobanks),
+        );
+
+        // Searching for "Shared bank" with no limit, we should get all 21, but not "Another bank".
+        $sharedbanks = question_bank_helper::get_activity_instances_with_shareable_questions(search: 'Shared bank');
+        $this->assertCount(21, $sharedbanks);
+        $this->assertEmpty(array_filter($sharedbanks, fn($bank) => in_array($bank->name, ['Another bank'])));
+
+        // Searching for "Shared bank" with a limit of 20, we should get all except number 21 and "Another bank".
+        $limitedbanks = question_bank_helper::get_activity_instances_with_shareable_questions(search: 'Shared bank', limit: 20);
+        $this->assertCount(20, $limitedbanks);
+        $this->assertEmpty(array_filter($limitedbanks, fn($bank) => in_array($bank->name, ['Shared bank 21', 'Another bank'])));
     }
 
     /**
@@ -213,7 +270,8 @@ final class question_bank_helper_test extends \advanced_testcase {
         self::setAdminUser();
 
         $coursename = random_string(question_bank_helper::BANK_NAME_MAX_LENGTH);
-        $course = self::getDataGenerator()->create_course(['shortname' => $coursename]);
+        $courseshortname = \core_text::substr($coursename, 0, 255);
+        $course = self::getDataGenerator()->create_course(['shortname' => $courseshortname]);
 
         $this->expectExceptionMessage('The provided bankname is too long for the database field.');
         question_bank_helper::create_default_open_instance(
@@ -354,7 +412,17 @@ final class question_bank_helper_test extends \advanced_testcase {
     public static function bank_name_strings(): array {
         $longname = 'One two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen ' .
             'eighteen nineteen twenty twenty-one twenty-two twenty-three twenty-four twenty-five twenty-six twenty-seven ' .
-            'twenty-eight twenty-nine thirty thirty-one';
+            'twenty-eight twenty-nine thirty thirty-one thirty-two thirty-three thirty-four thirty-five thirty-six thirty-seven ' .
+            'thirty-eight thirty-nine forty forty-one forty-two forty-three forty-four forty-five forty-six forty-seven ' .
+            'forty-eight forty-nine fifty fifty-one fifty-two fifty-three fifty-four fifty-five fifty-six fifty-seven ' .
+            'fifty-eight fifty-nine sixty sixty-one sixty-two sixty-three sixty-four sixty-five sixty-six sixty-seven ' .
+            'sixty-eight sixty-nine seventy seventy-one seventy-two seventy-three seventy-four seventy-five seventy-six ' .
+            'seventy-seven seventy-eight seventy-nine eighty eighty-one eighty-two eighty-three eighty-four eighty-five ' .
+            'eighty-six eighty-seven eighty-eight eighty-nine ninety ninety-one ninety-two ninety-three ninety-four ninety-five ' .
+            'ninety-six ninety-seven ninety-eight ninety-nine one hundred one hundred one one hundred two one hundred three ' .
+            'one hundred four one hundred five one hundred six one hundred seven one hundred eight one hundred nine ' .
+            'one hundred ten one hundred eleven one hundred twelve one hundred thirteen one hundred fourteen one hundred fifteen ' .
+            'one hundred sixteen one hundred seventeen';
         return [
             'String with no parameters' => [
                 'systembank',
@@ -374,7 +442,17 @@ final class question_bank_helper_test extends \advanced_testcase {
                 $longname,
                 'Top for One two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen ' .
                     'seventeen eighteen nineteen twenty twenty-one twenty-two twenty-three twenty-four twenty-five twenty-six ' .
-                    'twenty-seven twenty-eight ...',
+                    'twenty-seven twenty-eight twenty-nine thirty thirty-one thirty-two thirty-three thirty-four thirty-five ' .
+                    'thirty-six thirty-seven thirty-eight thirty-nine forty forty-one forty-two forty-three forty-four ' .
+                    'forty-five forty-six forty-seven forty-eight forty-nine fifty fifty-one fifty-two fifty-three fifty-four ' .
+                    'fifty-five fifty-six fifty-seven fifty-eight fifty-nine sixty sixty-one sixty-two sixty-three sixty-four ' .
+                    'sixty-five sixty-six sixty-seven sixty-eight sixty-nine seventy seventy-one seventy-two seventy-three ' .
+                    'seventy-four seventy-five seventy-six seventy-seven seventy-eight seventy-nine eighty eighty-one ' .
+                    'eighty-two eighty-three eighty-four eighty-five eighty-six eighty-seven eighty-eight eighty-nine ' .
+                    'ninety ninety-one ninety-two ninety-three ninety-four ninety-five ninety-six ninety-seven ninety-eight ' .
+                    'ninety-nine one hundred one hundred one one hundred two one hundred three one hundred four ' .
+                    'one hundred five one hundred six one hundred seven one hundred eight one hundred nine one hundred ten ' .
+                    'one hundred eleven one hundred twelve one hundred thirteen one hundred fourteen one hundred fifteen one ...',
             ],
             'String with short array parameter' => [
                 'defaultbank',
@@ -388,23 +466,49 @@ final class question_bank_helper_test extends \advanced_testcase {
                 ['coursename' => $longname],
                 'One two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen ' .
                     'eighteen nineteen twenty twenty-one twenty-two twenty-three twenty-four twenty-five twenty-six ' .
-                    'twenty-seven twenty-eight ... course question bank',
+                    'twenty-seven twenty-eight twenty-nine thirty thirty-one thirty-two thirty-three thirty-four thirty-five ' .
+                    'thirty-six thirty-seven thirty-eight thirty-nine forty forty-one forty-two forty-three forty-four ' .
+                    'forty-five forty-six forty-seven forty-eight forty-nine fifty fifty-one fifty-two fifty-three fifty-four ' .
+                    'fifty-five fifty-six fifty-seven fifty-eight fifty-nine sixty sixty-one sixty-two sixty-three sixty-four ' .
+                    'sixty-five sixty-six sixty-seven sixty-eight sixty-nine seventy seventy-one seventy-two seventy-three ' .
+                    'seventy-four seventy-five seventy-six seventy-seven seventy-eight seventy-nine eighty eighty-one ' .
+                    'eighty-two eighty-three eighty-four eighty-five eighty-six eighty-seven eighty-eight eighty-nine ninety ' .
+                    'ninety-one ninety-two ninety-three ninety-four ninety-five ninety-six ninety-seven ninety-eight ' .
+                    'ninety-nine one hundred one hundred one one hundred two one hundred three one hundred four ' .
+                    'one hundred five one hundred six one hundred seven one hundred eight one hundred nine one hundred ten ' .
+                    'one hundred eleven one hundred twelve one hundred thirteen one hundred fourteen one hundred fifteen ... ' .
+                    'course question bank',
             ],
             'String with multiple long array parameters' => [
                 'markoutofmax',
                 'question',
                 ['mark' => $longname, 'max' => $longname],
                 'Mark One two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen ' .
-                    'eighteen ... out of One two three four five six seven eight nine ten eleven twelve thirteen fourteen ' .
-                    'fifteen sixteen seventeen eighteen ...',
+                    'eighteen nineteen twenty twenty-one twenty-two twenty-three twenty-four twenty-five twenty-six twenty-seven ' .
+                    'twenty-eight twenty-nine thirty thirty-one thirty-two thirty-three thirty-four thirty-five thirty-six ' .
+                    'thirty-seven thirty-eight thirty-nine forty forty-one forty-two forty-three forty-four forty-five forty-six ' .
+                    'forty-seven forty-eight forty-nine fifty fifty-one fifty-two fifty-three fifty-four fifty-five fifty-six ' .
+                    'fifty-seven fifty-eight fifty-nine sixty sixty-one sixty-two sixty-three sixty-four sixty-five sixty-six ' .
+                    'sixty-seven ... out of One two three four five six seven eight nine ten eleven twelve thirteen fourteen ' .
+                    'fifteen sixteen seventeen eighteen nineteen twenty twenty-one twenty-two twenty-three twenty-four ' .
+                    'twenty-five twenty-six twenty-seven twenty-eight twenty-nine thirty thirty-one thirty-two thirty-three ' .
+                    'thirty-four thirty-five thirty-six thirty-seven thirty-eight thirty-nine forty forty-one forty-two ' .
+                    'forty-three forty-four forty-five forty-six forty-seven forty-eight forty-nine fifty fifty-one fifty-two ' .
+                    'fifty-three fifty-four fifty-five fifty-six fifty-seven fifty-eight fifty-nine sixty sixty-one sixty-two ' .
+                    'sixty-three sixty-four sixty-five sixty-six sixty-seven ...',
             ],
             'Long lang string' => [
                 'howquestionsbehave_help',
                 'question',
                 null,
-                'Students can interact with the questions in the quiz in various different ways. For example, you may wish the ' .
-                    'students to enter an answer to each question and then submit the entire quiz, before anything is graded or ' .
-                    'they get any feedback. That would ...',
+                "Students can interact with the questions in the quiz in various different ways. For example, you may wish the " .
+                    "students to enter an answer to each question and then submit the entire quiz, before anything is graded or " .
+                    "they get any feedback. That would be 'Deferred feedback' mode.\n\n" .
+                    "Alternatively, you may wish for students to submit each question as they go along to get immediate " .
+                    "feedback, and if they do not get it right immediately, have another try for fewer marks. That would be " .
+                    "'Interactive with multiple tries' mode.\n" .
+                    "\n" .
+                    "Those are probably the two most commonly used modes of behaviour. ",
             ],
         ];
     }

@@ -16,7 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings for component 'forum', language 'en', branch 'MOODLE_20_STABLE'
+ * Strings for component 'mod_forum', language 'en', branch 'MOODLE_20_STABLE'
  *
  * @package   mod_forum
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
@@ -608,7 +608,6 @@ $string['prunedpost'] = 'A new discussion has been created from that post';
 $string['pruneheading'] = 'Split the discussion and move this post to a new discussion';
 $string['qandaforum'] = 'Q and A forum';
 $string['qandanotify'] = 'This is a question and answer forum. To see other replies, you must first post your reply.';
-$string['re'] = 'Re:';
 $string['readtherest'] = 'Read the rest of this topic';
 $string['removeallforumtags'] = 'All forum tags';
 $string['removefromfavourites'] = 'Unstar this discussion';
@@ -779,21 +778,16 @@ $string['gradeitemnameforwholeforum'] = '{$a->name} whole forum';
 $string['gradeitemnameforrating'] = '{$a->name} rating';
 $string['grades:gradesavedfor'] = 'Grade saved for {$a->fullname}';
 $string['grades:gradesavefailed'] = 'Unable to save grade for {$a->fullname}: {$a->error}';
-$string['notgraded'] = 'Not graded';
 $string['nousersmatch'] = 'No user(s) found for given criteria';
 $string['showmoreusers'] = 'Show more users';
 $string['viewconversation'] = 'View discussion';
 $string['viewgrades'] = 'View grades';
-
-// Deprecated since Moodle 4.3.
-$string['completionpostsgroup'] = 'Require posts';
-$string['completiondiscussionsgroup'] = 'Require discussions';
-$string['completiondiscussionshelp'] = 'requiring discussions to complete';
-$string['completionrepliesgroup'] = 'Require replies';
-$string['completionreplieshelp'] = 'requiring replies to complete';
 
 // Deprecated since Moodle 4.5.
 $string['privacy:request:delete:discussion:name'] = 'Delete at the request of the author';
 $string['privacy:request:delete:post:message'] = 'The content of this post has been deleted at the request of its author.';
 $string['privacy:request:delete:post:subject'] = 'Delete at the request of the author';
 $string['tagsdeleted'] = 'Forum tags have been deleted';
+
+// Deprecated since Moodle 5.0.
+$string['re'] = 'Re:';

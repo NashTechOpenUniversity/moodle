@@ -694,17 +694,6 @@ class course_modinfo {
     }
 
     /**
-     * This method can not be used anymore.
-     *
-     * @see course_modinfo::build_course_cache()
-     * @deprecated since 2.6
-     */
-    public static function build_section_cache($courseid) {
-        throw new coding_exception('Function course_modinfo::build_section_cache() can not be used anymore.' .
-            ' Please use course_modinfo::build_course_cache() whenever applicable.');
-    }
-
-    /**
      * Builds a list of information about sections on a course to be stored in
      * the course cache. (Does not include information that is already cached
      * in some other way.)
@@ -1482,6 +1471,12 @@ class cm_info implements IteratorAggregate {
     private $iconcomponent;
 
     /**
+     * The instance record form the module table
+     * @var stdClass
+     */
+    private $instancerecord;
+
+    /**
      * Name of module e.g. 'forum' (this is the same name as the module's main database
      * table) - from cached data in modinfo field
      * @var string
@@ -2217,6 +2212,25 @@ class cm_info implements IteratorAggregate {
     }
 
     /**
+     * Return the activity database table record.
+     *
+     * The instance record will be cached after the first call.
+     *
+     * @return stdClass
+     */
+    public function get_instance_record() {
+        global $DB;
+        if (!isset($this->instancerecord)) {
+            $this->instancerecord = $DB->get_record(
+                table: $this->modname,
+                conditions: ['id' => $this->instance],
+                strictness: MUST_EXIST,
+            );
+        }
+        return $this->instancerecord;
+    }
+
+    /**
      * Returns the section delegated by this module, if any.
      *
      * @return ?section_info
@@ -2611,18 +2625,6 @@ class cm_info implements IteratorAggregate {
     }
 
     /**
-     * This method can not be used anymore.
-     *
-     * @see \core_availability\info_module::filter_user_list()
-     * @deprecated Since Moodle 2.8
-     */
-    private function get_deprecated_group_members_only() {
-        throw new coding_exception('$cm->groupmembersonly can not be used anymore. ' .
-                'If used to restrict a list of enrolled users to only those who can ' .
-                'access the module, consider \core_availability\info_module::filter_user_list.');
-    }
-
-    /**
      * Getter method for property $availableinfo, ensures that dynamic data is retrieved
      *
      * @return string Available info (HTML)
@@ -2684,17 +2686,6 @@ class cm_info implements IteratorAggregate {
     }
 
     /**
-     * This method has been deprecated and should not be used.
-     *
-     * @see $uservisible
-     * @deprecated Since Moodle 2.8
-     */
-    public function is_user_access_restricted_by_group() {
-        throw new coding_exception('cm_info::is_user_access_restricted_by_group() can not be used any more.' .
-            ' Use $cm->uservisible to decide whether the current user can access an activity.');
-    }
-
-    /**
      * Checks whether mod/...:view capability restricts the current user's access.
      *
      * @return bool True if the user access is restricted.
@@ -2713,19 +2704,6 @@ class cm_info implements IteratorAggregate {
 
         // You are blocked if you don't have the capability.
         return !has_capability($capability, $this->get_context(), $userid);
-    }
-
-    /**
-     * Checks whether the module's conditional access settings mean that the
-     * user cannot see the activity at all
-     *
-     * @deprecated since 2.7 MDL-44070
-     */
-    public function is_user_access_restricted_by_conditional_access() {
-        throw new coding_exception('cm_info::is_user_access_restricted_by_conditional_access() ' .
-                'can not be used any more; this function is not needed (use $cm->uservisible ' .
-                'and $cm->availableinfo to decide whether it should be available ' .
-                'or appear)');
     }
 
     /**

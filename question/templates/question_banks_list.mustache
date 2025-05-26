@@ -59,7 +59,7 @@
             ],
             "triggerattributes": [],
             "menutrigger": "<i class=\"icon fa fa-ellipsis-v fa-fw \"  title=\"Edit\" role=\"img\" aria-label=\"Edit\"><\/i>",
-            "triggerextraclasses": "btn btn-icon d-flex align-items-center justify-content-center no-caret ",
+            "triggerextraclasses": "btn btn-icon d-flex no-caret ",
             "triggerrole": "button",
             "iconraw": "",
             "actiontext": "",
@@ -203,13 +203,13 @@
 
 <div class="question-banks-list">
     <ul class="list-unstyled">
-        <li class="media mb-2 mr-2">
-            <div class="{{purpose}} activityiconcontainer icon-size-6 modicon_{{modname}}">
+        <li class="d-flex mb-2 me-2">
+            <div class="flex-shrink-0 {{purpose}} activityiconcontainer icon-size-6 modicon_{{modname}}">
                 <a href="{{managequestions.url}}">
                     <img class="icon activityicon" aria-hidden="true" src="{{iconurl}}" alt="modicon_{{modname}}"/>
                 </a>
             </div>
-            <div class="media-body align-self-center ms-3">
+            <div class="flex-grow-1 align-self-center ms-3">
                 {{#managequestions}}
                     {{> core/action_link}}
                 {{/managequestions}}

@@ -75,7 +75,7 @@ class core_message_renderer extends plugin_renderer_base {
     public function manage_messageoutputs($processors) {
         // Display the current workflows
         $table = new html_table();
-        $table->attributes['class'] = 'admintable generaltable';
+        $table->attributes['class'] = 'admintable table generaltable';
         $table->data        = array();
         $table->head        = array(
             get_string('name'),
@@ -143,6 +143,12 @@ class core_message_renderer extends plugin_renderer_base {
             // Settings for each processor
             foreach ($processors as $processor) {
                 $setting = new StdClass();
+
+                $supportsprocessor = true;
+                if ($processor->name === 'sms') {
+                    $supportsprocessor = core_message\helper::supports_sms_notifications($provider);
+                }
+                $setting->supportsprocessor = $supportsprocessor;
 
                 $setting->lockedsetting = $providersettingprefix.'locked['.$processor->name.']';
                 $preference = $processor->name.'_provider_'.$providersettingprefix.'locked';

@@ -2086,6 +2086,11 @@ class grade_item extends grade_object {
         }
         // end of hack alert
 
+        // Only reset the deducted mark if the grade has changed.
+        if ($grade->timemodified !== $oldgrade->timemodified) {
+            $grade->deductedmark = 0;
+        }
+
         $gradechanged = false;
         if (empty($grade->id)) {
             $result = (bool)$grade->insert($source, $isbulkupdate);
@@ -2144,6 +2149,21 @@ class grade_item extends grade_object {
         }
 
         return $result;
+    }
+
+    /**
+     * Update penalty value for given user
+     *
+     * @param int $userid The graded user
+     * @param float $deductedmark The mark deducted from final grade
+     */
+    public function update_deducted_mark(int $userid, float $deductedmark): void {
+        $grade = new grade_grade([
+                'itemid' => $this->id,
+                'userid' => $userid,
+            ]);
+        $grade->deductedmark = $deductedmark;
+        $grade->update();
     }
 
     /**

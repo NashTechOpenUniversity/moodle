@@ -176,7 +176,7 @@ if ($canbulkmessaging) {
 
     // Build the select/deselect all control.
     $selectallid = 'selectall-non-respondents';
-    $mastercheckbox = new \core\output\checkbox_toggleall('feedback-non-respondents', true, [
+    $togglercheckbox = new \core\output\checkbox_toggleall('feedback-non-respondents', true, [
         'id' => $selectallid,
         'name' => $selectallid,
         'value' => 1,
@@ -186,7 +186,7 @@ if ($canbulkmessaging) {
         'deselectall' => get_string('select'),
         'labelclasses' => 'm-0',
     ]);
-    $tableheaders[] = $OUTPUT->render($mastercheckbox);
+    $tableheaders[] = $OUTPUT->render($togglercheckbox);
 }
 
 $table = new flexible_table('feedback-shownonrespondents-'.$course->id);
@@ -198,7 +198,7 @@ $table->define_baseurl($baseurl);
 $table->sortable(true, 'lastname', SORT_DESC);
 $table->set_attribute('cellspacing', '0');
 $table->set_attribute('id', 'showentrytable');
-$table->set_attribute('class', 'generaltable generalbox');
+$table->set_attribute('class', 'table generaltable');
 $table->set_control_variables(array(
             TABLE_VAR_SORT    => 'ssort',
             TABLE_VAR_IFIRST  => 'sifirst',

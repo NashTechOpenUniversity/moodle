@@ -194,7 +194,7 @@ $string['backupdaterecordtype'] = '<br />{$a->recordtype} - {$a->recordname}<br 
 $string['backupdetails'] = 'Backup details';
 $string['backuperrorinvaliddestination'] = 'The backup destination folder does not exist or is not writable.';
 $string['backupexecuteathelp'] = 'Choose what time automated backups should run at.';
-$string['backupfailed'] = 'Some of your courses weren\'t saved!!';
+$string['backupfailed'] = 'Some of your courses weren\'t saved.';
 $string['backupfilename'] = 'backup';
 $string['backupfinished'] = 'Backup completed successfully';
 $string['backupfromthissite'] = 'Backup was made on this site?';
@@ -343,6 +343,7 @@ $string['copyrightnotice'] = 'Copyright notice';
 $string['coresystem'] = 'System';
 $string['cost'] = 'Cost';
 $string['costdefault'] = 'Default cost';
+$string['count_of_total'] = '<strong>{$a->count}</strong> of {$a->total}';
 $string['counteditems'] = '{$a->count} {$a->items}';
 $string['country'] = 'Country';
 $string['course'] = 'Course';
@@ -351,7 +352,7 @@ $string['courseadministration'] = 'Course administration';
 $string['courseapprovedemail'] = 'Your requested course is approved, <a href="{$a->url}">{$a->name}</a>, and you are a {$a->teacher}.';
 $string['courseapprovedemail2'] = 'Your requested course is approved: <a href="{$a->url}">{$a->name}</a>.';
 $string['courseapprovedfailed'] = 'Failed to save the course as approved!';
-$string['courseapprovedsubject'] = 'Your course has been approved!';
+$string['courseapprovedsubject'] = 'Your course has been approved.';
 $string['courseavailable'] = 'This course is available to students';
 $string['courseavailablenot'] = 'This course is not available to students';
 $string['coursebackup'] = 'Course backup';
@@ -395,7 +396,7 @@ $string['courseoverviewfiles'] = 'Course image';
 $string['courseoverviewfilesext'] = 'Course image file extensions';
 $string['courseoverviewfileslimit'] = 'Course image files limit';
 $string['courseoverviewfiles_help'] = 'The course image is displayed in My courses and in the list of available courses on the Home page. Site administrators can enable additional file types and the use of multiple files. If you use multiple files, they will all be displayed in the list of available courses in the Home page.';
-$string['courseinfo'] = 'Course info';
+$string['courseinfo'] = 'Course information';
 $string['coursenotaccessible'] = 'This course does not allow public access';
 $string['courselegacyfiles'] = 'Legacy course files';
 $string['courselegacyfiles_help'] = 'The course files area provides some backward compatibility with Moodle 1.9 and earlier.  All files in this area are always accessible to all participants in the course (whether you link to them or not) and there is no way to know where any of these files are being used in Moodle.
@@ -540,7 +541,7 @@ $string['deletecoursecheck'] = 'Are you absolutely sure you want to completely d
 $string['deleted'] = 'Deleted';
 $string['deletedactivity'] = 'Deleted {$a}';
 $string['deletedcourse'] = '{$a} has been completely deleted';
-$string['deletednot'] = 'Could not delete {$a} !';
+$string['deletednot'] = 'Could not delete {$a}.';
 $string['deletecheck'] = 'Delete {$a} ?';
 $string['deletechecktype'] = 'Are you sure that you want to delete this {$a->type}?';
 $string['deletechecktypename'] = 'Are you sure that you want to delete the {$a->type} "{$a->name}"?';
@@ -834,6 +835,7 @@ $string['eventcoursemodulecreated'] = 'Course module created';
 $string['eventcoursemoduledeleted'] = 'Course module deleted';
 $string['eventcoursemoduleupdated'] = 'Course module updated';
 $string['eventcoursemoduleviewed'] = 'Course module viewed';
+$string['eventcourseoverviewviewed'] = 'Course activities overview page viewed';
 $string['eventcoursessearched'] = 'Courses searched';
 $string['eventcourseresetended'] = 'Course reset ended';
 $string['eventcourseresetstarted'] = 'Course reset started';
@@ -1038,6 +1040,11 @@ $string['hiddensectionsinvisible'] = 'Hidden sections are completely invisible';
 $string['hiddenwithbrackets'] = '(hidden)';
 $string['hide'] = 'Hide';
 $string['hideadvancedsettings'] = 'Hide advanced settings';
+$string['hidecategory'] = 'Hide category?';
+$string['hidecategorymany'] = 'The category {$a->category} contains {$a->coursecount} courses.
+<br/>If you hide it, users without permission to view hidden categories will no longer have access to the courses.';
+$string['hidecategoryone'] = 'The category {$a->category} contains 1 course.
+<br/>If you hide it, users without permission to view hidden categories will no longer have access to the course.';
 $string['hidechartdata'] = 'Hide chart data';
 $string['hidefromstudents'] = 'Hide on course page';
 $string['hideoncoursepage'] = 'Make available but don\'t show on course page';
@@ -1096,7 +1103,6 @@ $string['courseduration_desc'] = 'The course duration is used to calculate the d
 $string['courseenddateenabled'] = 'Course end date enabled by default';
 $string['courseenddateenabled_desc'] = 'This setting determines if the course end date will be enabled by default for new courses and set to the date calculated from the course duration.';
 $string['eventcontentviewed'] = 'Content viewed';
-$string['filter'] = 'Filter';
 $string['filteroption'] = '{$a->criteria}: {$a->value}';
 $string['filterrowlegend'] = 'Filter {$a}';
 $string['filters'] = 'Filters';
@@ -1196,7 +1202,7 @@ $string['labelvalue'] = '{$a->label}: {$a->value}';
 $string['langltr'] = 'Language direction left-to-right';
 $string['langrtl'] = 'Language direction right-to-left';
 $string['language'] = 'Language';
-$string['languagegood'] = 'This language pack is up-to-date! :-)';
+$string['languagegood'] = 'This language pack is up-to-date.';
 $string['languageselector'] = 'Language selector';
 $string['last'] = 'Last';
 $string['lastaccess'] = 'Last access';
@@ -1444,6 +1450,8 @@ $string['movedown'] = 'Move down';
 $string['movefilestohere'] = 'Move files to here';
 $string['movefull'] = 'Move {$a} to this location';
 $string['movehere'] = 'Move to here';
+$string['moveitemdown'] = 'Move {$a} down';
+$string['moveitemup'] = 'Move {$a} up';
 $string['moveleft'] = 'Move left';
 $string['moremenu'] = 'More';
 $string['moreactions'] = 'More actions';
@@ -1651,13 +1659,13 @@ $string['passwordsdiffer'] = 'These passwords do not match';
 $string['passwordset'] = 'Your password has been set.';
 $string['path'] = 'Path';
 $string['pathnotexists'] = 'Path doesn\'t exist in your server!';
-$string['pathslasherror'] = 'Path can\'t end with a slash!!';
-$string['paymentinstant'] = 'Use the button below to pay and be enrolled within minutes!';
+$string['pathslasherror'] = 'The path can\'t end with a slash.';
+$string['paymentinstant'] = 'Use the button below to pay and be enrolled within minutes.';
 $string['paymentpending'] = '(<small><b><u>{$a}</u></b> pending</small>)';
-$string['paymentrequired'] = 'This course requires a payment for entry.';
+$string['paymentrequired'] = 'This course requires a payment for entry';
 $string['payments'] = 'Payments';
-$string['paymentsorry'] = 'Thank you for your payment!  Unfortunately your payment has not yet been fully processed, and you are not yet registered to enter the course "{$a->fullname}".  Please try continuing to the course in a few seconds, but if you continue to have trouble then please alert the {$a->teacher} or the site administrator';
-$string['paymentthanks'] = 'Thank you for your payment!  You are now enrolled in your course:<br />"{$a}"';
+$string['paymentsorry'] = 'Thanks for your payment. When it is processed, you will be able to enter the course {$a->fullname}.  Please wait then try again. If you continue to have trouble, contact the {$a->teacher} or the site administrator.';
+$string['paymentthanks'] = 'Thanks for your payment. You are now enrolled in the course {$a}.';
 $string['pendingrequests'] = 'Pending requests';
 $string['percents'] = '{$a}%';
 $string['periodending'] = 'Period ending ({$a})';
@@ -2448,58 +2456,6 @@ $string['yourteacher'] = 'your {$a}';
 $string['yourwordforx'] = 'Your word for \'{$a}\'';
 $string['zippingbackup'] = 'Zipping backup';
 $string['deprecatedeventname'] = '{$a} (no longer in use)';
-
-// Deprecated since Moodle 4.3.
-$string['clicktochangeinbrackets'] = '{$a} (Click to change)';
-$string['modshowcmtitle'] = 'Show activity';
-$string['makeavailablecmtitle'] = 'Make activity available';
-$string['moodlenet:sharetyperesource'] = 'resource';
-
-// Deprecated since Moodle 4.4.
-$string['emailpasswordsent'] = 'Thank you for confirming the change of password.
-An email containing your new password has been sent to your address at<br /><b>{$a->email}</b>.<br />
-The new password was automatically generated - you might like to
-<a href="{$a->link}">change your password</a> to something easier to remember.';
-$string['passwordsenttext'] = '<p>An email has been sent to your address at {$a->email}.</p>
-   <p><b>Please check your email for your new password</b></p>
-   <p>The new password was automatically generated, so you might like to
-   <a href="{$a->link}">change it to something easier to remember</a>.</p>';
-$string['passwordsent'] = 'Password has been sent';
-$string['passwordrecovery'] = 'Yes, help me log in';
-$string['passwordconfirmchange'] = 'Confirm password change';
-$string['passwordnohelp'] = 'No help is available to find your lost password. Please contact your Moodle administrator.';
-$string['showallusers'] = 'Show all users';
-$string['markedthistopic'] = 'This section is highlighted as the current section';
-$string['markthistopic'] = 'Highlight this section as the current section';
-$string['socialheadline'] = 'Social forum - latest topics';
-$string['weekhide'] = 'Hide this week from {$a}';
-$string['weeklyoutline'] = 'Weekly outline';
-$string['weekshow'] = 'Show this week to {$a}';
-$string['topicoutline'] = 'Topic outline';
-$string['topicshow'] = 'Show this topic to {$a}';
-$string['topichide'] = 'Hide this topic from {$a}';
-$string['summary_help'] = 'The idea of a summary is a short text to prepare students for the activities within the topic or week. The text is shown on the course page under the section name.';
-$string['editsummary'] = 'Edit summary';
-$string['format_help'] = 'The course format determines the layout of the course page.
-
-* Single activity - The course contains only one activity or resource.
-* Social - The course is centred around a main forum on the course page. Additional activities and resources can be added using the Social activities block.
-* Custom sections - The course is divided into customisable sections.
-* Weekly sections - The course is divided into sections corresponding to each week, beginning from the course start date.';
-$string['addinganewto'] = 'Adding a new {$a->what} to {$a->to}';
-$string['editinga'] = 'Editing {$a}';
-$string['updatinga'] = 'Updating: {$a}';
-$string['updatingain'] = 'Updating {$a->what} in {$a->in}';
-$string['summaryof'] = 'Summary of {$a}';
-$string['from'] = 'From';
-$string['to'] = 'To';
-$string['viewresults'] = 'View results for {$a}';
-$string['coursesearch'] = 'Search courses';
-$string['coursesearch_help'] = 'You can search for multiple words at once and can refine your search as follows:
-
-* word - find any match of this word within the text
-* +word - only exact matching words will be found
-* -word - don\'t include results containing this word.';
 
 // Deprecated since Moodle 4.5.
 $string['commentscount'] = 'Comments ({$a})';

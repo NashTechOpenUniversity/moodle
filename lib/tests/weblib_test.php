@@ -538,7 +538,7 @@ final class weblib_test extends advanced_testcase {
 
         set_debugging(DEBUG_ALL);
         $this->assertEquals(DEBUG_ALL, $CFG->debug);
-        $this->assertFalse($CFG->debugdeveloper);
+        $this->assertTrue($CFG->debugdeveloper);
 
         set_debugging(DEBUG_NORMAL);
         $this->assertEquals(DEBUG_NORMAL, $CFG->debug);
@@ -991,7 +991,7 @@ EXPECTED;
 
         $html = "<p>This is a test.</p><p><img src=\"{$url1}\" alt=\"\"></p>
                 <br>Test content.<p></p><p><img src=\"{$url2}\" alt=\"\" width=\"2048\" height=\"1536\"
-                class=\"img-fluid atto_image_button_text-bottom\"><br></p>";
+                class=\"img-fluid \"><br></p>";
         $draftareas = array(
             array(
                 'urlbase' => 'draftfile.php',

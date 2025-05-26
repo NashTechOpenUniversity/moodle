@@ -46,7 +46,7 @@ $strintro        = get_string('moduleintro');
 $strlastmodified = get_string('lastmodified');
 
 $PAGE->set_url('/mod/folder/index.php', array('id' => $course->id));
-$PAGE->set_title($course->shortname.': '.$strfolders);
+$PAGE->set_title($course->shortname . \moodle_page::TITLE_SEPARATOR . $strfolders);
 $PAGE->set_heading($course->fullname);
 $PAGE->set_secondary_active_tab('coursehome');
 $PAGE->navbar->add($strfolders);
@@ -63,7 +63,7 @@ if (!$folders = get_all_instances_in_course('folder', $course)) {
 $usesections = course_format_uses_sections($course->format);
 
 $table = new html_table();
-$table->attributes['class'] = 'generaltable mod_index';
+$table->attributes['class'] = 'table generaltable mod_index';
 
 if ($usesections) {
     $strsectionname = course_get_format($course)->get_generic_section_name();

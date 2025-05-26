@@ -1303,24 +1303,6 @@ function xmldb_main_upgrade($oldversion) {
     }
 
     // Moodle 5.0 Upgrade.
-    // Remove survey.
-    if ($oldversion < 2024120500.01) {
-        if (!file_exists($CFG->dirroot . "/mod/survey/version.php")) {
-            uninstall_plugin('mod', 'survey');
-        }
-        // Main savepoint reached.
-        upgrade_main_savepoint(true, 2024120500.01);
-    }
-
-    // Remove chat.
-    if ($oldversion < 2024120500.02) {
-        if (!file_exists($CFG->dirroot . "/mod/chat/version.php")) {
-            uninstall_plugin('mod', 'chat');
-        }
-        // Main savepoint reached.
-        upgrade_main_savepoint(true, 2024120500.02);
-    }
-
     if ($oldversion < 2024121800.00) {
         $smsgateways = $DB->get_records('sms_gateways');
         foreach ($smsgateways as $gateway) {
@@ -1410,6 +1392,341 @@ function xmldb_main_upgrade($oldversion) {
 
         // Main savepoint reached.
         upgrade_main_savepoint(true, 2025013100.01);
+    }
+
+    if ($oldversion < 2025022100.01) {
+        // Define table ai_action_explain_text to be created.
+        $table = new xmldb_table('ai_action_explain_text');
+
+        // Adding fields to table ai_action_explain_text.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('prompt', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('responseid', XMLDB_TYPE_CHAR, '128', null, null, null, null);
+        $table->add_field('fingerprint', XMLDB_TYPE_CHAR, '128', null, null, null, null);
+        $table->add_field('generatedcontent', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('finishreason', XMLDB_TYPE_CHAR, '128', null, null, null, null);
+        $table->add_field('prompttokens', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('completiontoken', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+
+        // Adding keys to table ai_action_explain_text.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+
+        // Conditionally launch create table for ai_action_explain_text.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Add explain action config to the AI providers.
+        upgrade_add_explain_action_to_ai_providers();
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025022100.01);
+    }
+
+    if ($oldversion < 2025022100.02) {
+        // Due to a code restriction on the upgrade, invoking any core functions is not permitted.
+        // Thus, to acquire the list of provider plugins,
+        // we should extract them from the `config_plugins` database table.
+        $condition = $DB->sql_like('plugin', ':pattern');
+        $params = ['pattern' => 'aiprovider_%', 'name' => 'version'];
+        $sql = "SELECT plugin FROM {config_plugins} WHERE {$condition} AND name = :name";
+        $providers = $DB->get_fieldset_sql($sql, $params);
+        foreach ($providers as $provider) {
+            // Replace the provider's language string with the provider component's name.
+            if (get_string_manager()->string_exists('pluginname', $provider)) {
+                $providername = get_string('pluginname', $provider);
+                $sql = 'UPDATE {ai_action_register}
+                        SET provider = :provider
+                        WHERE LOWER(provider) = :providername';
+                $DB->execute($sql, ['provider' => $provider, 'providername' => strtolower($providername)]);
+            }
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025022100.02);
+    }
+
+    // Uninstall auth_cas and remove dependencies.
+    if ($oldversion < 2025030500.00) {
+        if (!file_exists($CFG->dirroot . "/auth/cas/version.php")) {
+            uninstall_plugin('auth', 'cas');
+
+            // Remove the sensiblesettings config for auth_cas.
+            $sensiblesettingsraw = explode(',', get_config('adminpresets', 'sensiblesettings'));
+            $sensiblesettings = array_map('trim', $sensiblesettingsraw);
+
+            if (($key = array_search('bind_pw@@auth_cas', $sensiblesettings)) !== false) {
+                unset($sensiblesettings[$key]);
+            }
+            $sensiblesettings = implode(', ', $sensiblesettings);
+            set_config('sensiblesettings', $sensiblesettings, 'adminpresets');
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025030500.00);
+    }
+
+    if ($oldversion < 2025030500.01) {
+        // If atto is no longer present, remove it.
+        if (!file_exists("{$CFG->dirroot}/lib/editor/atto/version.php")) {
+            // Remove each of the subplugins first. These are no longer on disk so the standard `uninstall_plugin` approach
+            // on atto itself will not remove them.
+            $plugins = array_keys(core_plugin_manager::instance()->get_plugins_of_type('atto'));
+
+            // Now remove each.
+            foreach ($plugins as $pluginname) {
+                uninstall_plugin('atto', $pluginname);
+            }
+
+            // Finally uninstall the actual plugin.
+            uninstall_plugin('editor', 'atto');
+        }
+
+        upgrade_main_savepoint(true, 2025030500.01);
+    }
+
+    // Remove portfolio_mahara.
+    if ($oldversion < 2025030600.02) {
+        if (!file_exists($CFG->dirroot . "/portfolio/mahara/version.php")) {
+            uninstall_plugin('portfolio', 'mahara');
+        }
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025030600.02);
+    }
+
+    // Remove enrol_mnet.
+    if ($oldversion < 2025030600.03) {
+        if (!file_exists($CFG->dirroot . "/enrol/mnet/version.php")) {
+            uninstall_plugin('enrol', 'mnet');
+        }
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025030600.03);
+    }
+
+    // Remove block_mnet_hosts.
+    if ($oldversion < 2025030600.04) {
+        if (!file_exists($CFG->dirroot . "/blocks/mnet_hosts/version.php")) {
+            uninstall_plugin('block', 'mnet_hosts');
+
+            // Delete all the admin preset plugin states concerning mnet_hosts in adminpresets_plug table.
+            $DB->delete_records('adminpresets_plug', ['name' => 'mnet_hosts']);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025030600.04);
+    }
+
+    // Remove auth_mnet.
+    if ($oldversion < 2025030600.05) {
+        if (!file_exists($CFG->dirroot . "/auth/mnet/version.php")) {
+            uninstall_plugin('auth', 'mnet');
+        }
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025030600.05);
+    }
+
+    if ($oldversion < 2025030600.06) {
+        // If mlbackend_php is no longer present, remove it.
+        if (!file_exists($CFG->dirroot . '/lib/mlbackend/php/version.php')) {
+            // Clean config.
+            uninstall_plugin('mlbackend', 'php');
+
+            // Change the processor if mlbackend_php is set.
+            if (get_config('analytics', 'predictionsprocessor') === '\mlbackend_php\processor') {
+                set_config('predictionsprocessor', '\mlbackend_python\processor', 'analytics');
+                // We can't be sure mlbackend_python is set up correctly, so we disable analytics.
+                set_config('enableanalytics', false);
+            }
+
+            // Cleanup any references to mlbackend_php.
+            $select = $DB->sql_like('predictionsprocessor', ':predictionsprocessor', false);
+            $params = ['predictionsprocessor' => '%' . $DB->sql_like_escape('mlbackend_php') . '%'];
+            $DB->set_field_select(
+                table: 'analytics_models',
+                newfield: 'predictionsprocessor',
+                newvalue: null,
+                select: $select,
+                params: $params,
+            );
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025030600.06);
+    }
+
+    if ($oldversion < 2025030600.07) {
+        $providers = $DB->get_records('ai_providers', ['enabled' => 1]);
+        // Formatting the value.
+        $value = ','. implode(',', array_column($providers, 'id'));
+        // Create the order config setting.
+        set_config('provider_order', $value, 'core_ai');
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025030600.07);
+    }
+
+    // Remove mnetservice_enrol.
+    if ($oldversion < 2025030600.08) {
+        if (!file_exists($CFG->dirroot . "/mnet/service/enrol/version.php")) {
+            uninstall_plugin('mnetservice', 'enrol');
+        }
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025030600.08);
+    }
+
+    if ($oldversion < 2025031800.00) {
+        // Add index for querying delegated sections.
+        $table = new xmldb_table('course_sections');
+        $index = new xmldb_index('component_itemid', XMLDB_INDEX_NOTUNIQUE, ['component', 'itemid']);
+
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025031800.00);
+    }
+
+    if ($oldversion < 2025031800.03) {
+
+        // Define field penalty to be added to grade_grades.
+        $table = new xmldb_table('grade_grades');
+        $field = new xmldb_field('deductedmark', XMLDB_TYPE_NUMBER, '10, 5', null,
+            XMLDB_NOTNULL, null, '0', 'aggregationweight');
+
+        // Conditionally launch add field penalty.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025031800.03);
+    }
+
+    if ($oldversion < 2025031800.04) {
+
+        // Define field overriddenmark to be added to grade_grades.
+        $table = new xmldb_table('grade_grades');
+        $field = new xmldb_field('overriddenmark', XMLDB_TYPE_NUMBER, '10, 5', null,
+            XMLDB_NOTNULL, null, '0', 'deductedmark');
+
+        // Conditionally launch add field penalty.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025031800.04);
+    }
+
+    if ($oldversion < 2025032800.01) {
+        // Upgrade webp mime type for existing webp files.
+        upgrade_create_async_mimetype_upgrade_task('image/webp', ['webp']);
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025032800.01);
+    }
+
+    // Remove chat and survey and respective analytics indicators.
+    if ($oldversion < 2025040100.01) {
+        $indicatorstoremove = [];
+        $sqllikes = [];
+        $sqlparams = [];
+
+        if (!file_exists($CFG->dirroot . "/mod/survey/version.php")) {
+            uninstall_plugin('mod', 'survey');
+            $DB->delete_records('adminpresets_plug', ['plugin' => 'mod', 'name' => 'survey']);
+            $indicatorstoremove['survey'] = [
+                '\mod_survey\analytics\indicator\cognitive_depth',
+                '\mod_survey\analytics\indicator\social_breadth',
+            ];
+            $sqlparams['surveypluginname'] = '%' . $DB->sql_like_escape('mod_survey') . '%';
+            $sqllikes['survey'] = $DB->sql_like('indicators', ':surveypluginname');
+        }
+        if (!file_exists($CFG->dirroot . "/mod/chat/version.php")) {
+            uninstall_plugin('mod', 'chat');
+            $DB->delete_records('adminpresets_plug', ['plugin' => 'mod', 'name' => 'chat']);
+            $indicatorstoremove['chat'] = [
+                '\mod_chat\analytics\indicator\cognitive_depth',
+                '\mod_chat\analytics\indicator\social_breadth',
+            ];
+            $sqlparams['chatpluginname'] = '%' . $DB->sql_like_escape('mod_chat') . '%';
+            $sqllikes['chat'] = $DB->sql_like('indicators', ':chatpluginname');
+        }
+
+        foreach ($indicatorstoremove as $module => $indicators) {
+            $models = $DB->get_recordset_select('analytics_models', $sqllikes[$module], $sqlparams);
+            foreach ($models as $model) {
+                $currentindicators = json_decode($model->indicators, true);
+                if (!empty($indicators) && !empty($currentindicators)) {
+                    $newindicators = array_values(array_diff($currentindicators, $indicators));
+                    $model->indicators = json_encode($newindicators);
+                    $DB->update_record('analytics_models', $model);
+                }
+            }
+            $models->close();
+        }
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025040100.01);
+    }
+
+    // Remove overriddenmark field from grade_grades.
+    if ($oldversion < 2025040700.00) {
+        $table = new xmldb_table('grade_grades');
+        $field = new xmldb_field('overriddenmark');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025040700.00);
+    }
+
+    // Automatically generated Moodle v5.0.0 release upgrade line.
+    // Put any upgrade step following this.
+
+    if ($oldversion < 2025051600.02) {
+
+        // Changing precision of field name on table badge to (1333).
+
+        $table = new xmldb_table('badge');
+        $field = new xmldb_field('name', XMLDB_TYPE_CHAR, '1333', null, XMLDB_NOTNULL, null, null, 'id');
+
+        // Launch change of precision for field name.
+        $dbman->change_field_precision($table, $field);
+
+        // Changing precision of field issuername on table badge to (1333).
+
+        $table = new xmldb_table('badge');
+        $field = new xmldb_field('issuername', XMLDB_TYPE_CHAR, '1333', null, XMLDB_NOTNULL, null, null, 'usermodified');
+
+        // Launch change of precision for field issuername.
+        $dbman->change_field_precision($table, $field);
+
+        // Changing precision of field name on table course_sections to (1333).
+
+        $table = new xmldb_table('course_sections');
+        $field = new xmldb_field('name', XMLDB_TYPE_CHAR, '1333', null, null, null, null, 'section');
+
+        // Launch change of precision for field name.
+        $dbman->change_field_precision($table, $field);
+
+        // Changing precision of field itemname on table grade_items to (1333).
+
+        $table = new xmldb_table('grade_items');
+        $field = new xmldb_field('itemname', XMLDB_TYPE_CHAR, '1333', null, null, null, null, 'categoryid');
+
+        // Launch change of precision for field itemname.
+        $dbman->change_field_precision($table, $field);
+
+        // Changing precision of field itemname on table grade_items_history to (1333).
+        $table = new xmldb_table('grade_items_history');
+        $field = new xmldb_field('itemname', XMLDB_TYPE_CHAR, '1333', null, null, null, null, 'categoryid');
+
+        // Launch change of precision for field itemname.
+        $dbman->change_field_precision($table, $field);
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025051600.02);
     }
 
     return true;

@@ -16,21 +16,23 @@
 
 namespace aiprovider_azureai;
 
+use core_ai\manager;
+
 /**
  * Test Azure AI provider methods.
  *
  * @package    aiprovider_azureai
  * @copyright  2024 Matt Porritt <matt.porritt@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \core_ai\provider\azureai
+ * @covers     \aiprovider_azureai\provider
  */
 final class provider_test extends \advanced_testcase {
 
-    /** @var \core_ai\manager */
-    private $manager;
+    /** @var manager $manager */
+    private manager $manager;
 
-    /** @var \core_ai\provider */
-    private $provider;
+    /** @var provider $provider */
+    private provider $provider;
 
     /**
      * Overriding setUp() function to always reset after tests.
@@ -54,10 +56,11 @@ final class provider_test extends \advanced_testcase {
     public function test_get_action_list(): void {
         $actionlist = $this->provider->get_action_list();
         $this->assertIsArray($actionlist);
-        $this->assertEquals(3, count($actionlist));
+        $this->assertEquals(4, count($actionlist));
         $this->assertContains(\core_ai\aiactions\generate_text::class, $actionlist);
         $this->assertContains(\core_ai\aiactions\generate_image::class, $actionlist);
         $this->assertContains(\core_ai\aiactions\summarise_text::class, $actionlist);
+        $this->assertContains(\core_ai\aiactions\explain_text::class, $actionlist);
     }
 
     /**
@@ -82,8 +85,10 @@ final class provider_test extends \advanced_testcase {
             'enableglobalratelimit' => true,
             'globalratelimit' => 5,
         ];
+
+        /** @var provider $provider */
         $provider = $this->manager->create_provider_instance(
-            classname: '\aiprovider_openai\provider',
+            classname: provider::class,
             name: 'dummy',
             config: $config,
         );

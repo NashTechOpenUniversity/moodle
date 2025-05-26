@@ -14,20 +14,6 @@
     text-align: left;
 }
 
-.environmenttable {
-    .warn {
-        @extend .alert-warning;
-    }
-
-    .error {
-        @extend .alert-danger;
-    }
-
-    .ok {
-        @extend .alert-success;
-    }
-}
-
 .path-admin .admintable.environmenttable .name,
 .path-admin .admintable.environmenttable .info,
 .path-admin #assignrole .admintable .role,
@@ -139,6 +125,10 @@
 #page-admin-roles-define .definenotice {
     margin: 1em 10% 2em 10%;
     text-align: left;
+}
+
+#page-admin-index .upgradekeyreq {
+    min-width: 220px;
 }
 
 #page-admin-index .adminwarning.availableupdatesinfo .moodleupdateinfo span {
@@ -276,7 +266,7 @@
     padding: .15em .5em;
 }
 
-#trustedhosts .generaltable {
+#trustedhosts .table {
     margin-left: auto;
     margin-right: auto;
     width: 500px;
@@ -624,8 +614,12 @@
     position: fixed;
     bottom: 0;
     right: 0;
+    margin: 1rem;
     overflow: hidden;
     z-index: $zindex-dropdown;
+}
+.jsenabled .maintenancewarning {
+    @include transition(0.2s);
 }
 
 .modal.modal-in-page {

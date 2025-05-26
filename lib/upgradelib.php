@@ -455,6 +455,12 @@ function upgrade_stale_php_files_present(): bool {
     global $CFG;
 
     $someexamplesofremovedfiles = [
+        // Removed in 5.0.
+        '/admin/process_email.php',
+        '/badges/preferences_form.php',
+        '/lib/ajax/setuserpref.php',
+        '/lib/cronlib.php',
+        '/question/classes/local/bank/action_column_base.php',
         // Removed in 4.5.
         '/backup/util/ui/classes/copy/copy.php',
         '/backup/util/ui/yui/build/moodle-backup-backupselectall/moodle-backup-backupselectall.js',
@@ -2502,6 +2508,9 @@ function check_upgrade_key($upgradekeyhash) {
         if ($upgradekeyhash === null or $upgradekeyhash !== sha1($CFG->config_php_settings['upgradekey'])) {
             if (!$PAGE->headerprinted) {
                 $PAGE->set_title(get_string('upgradekeyreq', 'admin'));
+                $PAGE->requires->js_call_amd('core/togglesensitive', 'init', ['upgradekey']);
+
+                /** @var core_admin_renderer $output */
                 $output = $PAGE->get_renderer('core', 'admin');
                 echo $output->upgradekey_form_page(new moodle_url('/admin/index.php', array('cache' => 0)));
                 die();

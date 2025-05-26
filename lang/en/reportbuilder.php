@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings for component 'reportbuilder', language 'en'
+ * Strings for component 'core_reportbuilder', language 'en'
  *
  * @package    core_reportbuilder
  * @copyright  2020 Sara Arjona <sara@moodle.com>
@@ -240,6 +240,7 @@ $string['renameaudience'] = 'Rename audience \'{$a}\'';
 $string['renamecolumn'] = 'Rename column \'{$a}\'';
 $string['renamefilter'] = 'Rename filter \'{$a}\'';
 $string['reportbuilder'] = 'Report builder';
+$string['reportbuildercustomfields'] = 'Custom report fields';
 $string['reportcreated'] = 'Report created';
 $string['reportdeleted'] = 'Report deleted';
 $string['reports'] = 'Reports';
@@ -291,9 +292,6 @@ $string['userfullnamewithpicturelink'] = 'Full name with picture and link';
 $string['usermodified'] = 'Modified by';
 $string['userselect'] = 'Select user';
 $string['viewreport'] = 'View report';
-
-// Deprecated since Moodle 4.4.
-$string['filterdurationunit'] = '{$a} unit';
 
 // Deprecated since Moodle 4.5.
 $string['filterdatefrom'] = 'Date from';

@@ -67,7 +67,7 @@ if ($todelete) {
     if ($questionstomove) {
         $categorycontext = context::instance_by_id($category->contextid);
         $moveform = new question_move_form($thispageurl,
-            ['contexts' => [$categorycontext], 'currentcat' => $todelete]);
+            ['contexts' => [$categorycontext], 'currentcat' => "$todelete"]);
         if ($moveform->is_cancelled()) {
             $thispageurl->remove_all_params();
             if (!is_null($cmid)) {
@@ -100,7 +100,6 @@ $PAGE->activityheader->disable();
 // Print horizontal nav if needed.
 $renderer = $PAGE->get_renderer('core_question', 'bank');
 
-$categoriesrenderer = $PAGE->get_renderer('qbank_managecategories');
 echo $OUTPUT->header();
 $qbankaction = new \core_question\output\qbank_action_menu($thispageurl);
 echo $renderer->render($qbankaction);

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Strings for component 'error', language 'en', branch 'MOODLE_20_STABLE'
+ * Strings for component 'core_error', language 'en', branch 'MOODLE_20_STABLE'
  *
  * @package   core
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
@@ -260,7 +260,6 @@ $string['erroroutput'] = 'Error output, so disabling automatic redirect.';
 $string['errorparsingxml'] = 'Error parsing XML: {$a->errorstring} at line {$a->errorline}, char {$a->errorchar}';
 $string['errorreadingfile'] = 'Error reading file "{$a}"';
 $string['errorsavingrequest'] = 'An error occurred when trying to save your request.';
-$string['errorsettinguserpref'] = 'Error setting user preference';
 $string['errorunzippingfiles'] = 'Error unzipping files';
 $string['expiredkey'] = 'Expired key';
 $string['externalauthpassworderror'] = 'Non-empty password for external authentication';
@@ -339,8 +338,8 @@ $string['invalidcoursenameshort'] = 'Invalid short course name';
 $string['invalidcountrycode'] = 'Invalid country code: {$a}';
 $string['invaliddata'] = 'Data submitted is invalid';
 $string['invaliddatarootpermissions'] = 'Invalid permissions detected when trying to create a directory. Turn debugging on for further details.';
-$string['invaliddatetimebetween'] = 'Invalid datetime filter. "After" value {$a->after} was later than "before" value {$a->before}.';
-$string['invaliddatetimemode'] = 'Invalid mode for datetime filter: {$a}';
+$string['invaliddatetimebetween'] = '{$a->after} must be before {$a->before}.';
+$string['invaliddatetimemode'] = 'Invalid mode for time modified filter: {$a}';
 $string['invaliddevicetype'] = 'Invalid device type';
 $string['invalidelementid'] = 'Incorrect element ID!';
 $string['invalidentry'] = 'This is not valid entry!';
@@ -484,7 +483,6 @@ $string['nosite'] = 'Could not find a top-level course!';
 $string['nositeid'] = 'No site ID';
 $string['nostartdatenoenddate'] = 'A course end date can only be set if a start date is also set.';
 $string['nostatstodisplay'] = 'Sorry, there is no available data to display';
-$string['notallowedtoupdateprefremotely'] = 'You are not allowed to update this user preference remotely';
 $string['notavailable'] = 'That is not currently available';
 $string['notfound'] = 'Not found';
 $string['notlocalisederrormessage'] = '{$a}';
@@ -654,17 +652,11 @@ $string['alreadyloggedin'] = 'You are already logged in as {$a}, you need to log
 $string['youcannotdeletecategory'] = 'You cannot delete category \'{$a}\' because you can neither delete the contents, nor move them elsewhere.';
 $string['protected_cc_not_supported'] = 'Protected cartridges not supported.';
 
-// Deprecated since Moodle 4.3.
-$string['prefixtoolong'] = '<p>Error: database table prefix is too long ({$a->dbfamily})</p>
-<p>The site administrator must fix this problem. Maximum length for table prefixes in {$a->dbfamily} is {$a->maxlength} characters.</p>';
-
-// Deprecated since Moodle 4.4.
-$string['cannotmarktopic'] = 'Could not mark that section for this course';
-$string['unknownhelp'] = 'Unknown help section {$a}';
-
 // Deprecated since Moodle 4.5.
 $string['cannotsetpassword'] = 'Could not set user password!';
 $string['myisamproblem'] = 'Database tables are using MyISAM database engine, it is recommended to use ACID compliant engine with full transaction support such as InnoDB.';
 
 // Deprecated since Moodle 5.0.
 $string['cannotdeletecategoryquestions'] = 'Could not delete questions from category \'{$a}\'';
+$string['errorsettinguserpref'] = 'Error setting user preference';
+$string['notallowedtoupdateprefremotely'] = 'You are not allowed to update this user preference remotely';

@@ -1693,15 +1693,21 @@ class flexible_table {
             $this->request[TABLE_VAR_DIR] => $sortorder,
         ];
 
+        if ($order != SORT_ASC) {
+            $sortlabel = get_string('sortbyxreverse', 'moodle', $text);
+        } else {
+            $sortlabel = get_string('sortbyx', 'moodle', $text);
+        }
+
         return html_writer::link(
             $this->baseurl->out(false, $params),
-            $text . get_accesshide(get_string('sortby') . ' ' .
-                $text . ' ' . $this->sort_order_name($isprimary, $order)),
+            $text,
             [
                     'data-sortable' => $this->is_sortable($column),
                     'data-sortby' => $column,
                     'data-sortorder' => $sortorder,
                     'role' => 'button',
+                    'aria-label' => $sortlabel,
             ]
         ) . ' ' . $this->sort_icon($isprimary, $order);
     }
@@ -1866,7 +1872,7 @@ class flexible_table {
         // Start of main data table.
 
         if ($this->responsive) {
-            echo html_writer::start_tag('div', ['class' => 'no-overflow']);
+            echo html_writer::start_tag('div', ['class' => 'table-responsive']);
         }
         echo html_writer::start_tag('table', $this->attributes) . $this->render_caption();
     }

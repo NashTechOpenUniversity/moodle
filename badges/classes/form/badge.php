@@ -58,17 +58,20 @@ class badge extends moodleform {
         // When downloading badge, it will be necessary to clean the name as PARAM_FILE.
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', null, 'required');
-        $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
+        $mform->addRule('name', get_string('maximumchars', '', 1333), 'maxlength', 1333, 'client');
 
         $mform->addElement('text', 'version', get_string('version', 'badges'), ['size' => '70']);
         $mform->setType('version', PARAM_TEXT);
-        $mform->addHelpButton('version', 'version', 'badges');
 
         $languages = get_string_manager()->get_list_of_languages();
         $mform->addElement('select', 'language', get_string('language'), $languages);
-        $mform->addHelpButton('language', 'language', 'badges');
 
-        $mform->addElement('textarea', 'description', get_string('description', 'badges'), 'wrap="virtual" rows="8" cols="70"');
+        $mform->addElement(
+            'textarea',
+            'description',
+            get_string('description', 'badges'),
+            'wrap="virtual" rows="8" cols="70" placeholder="' . s(get_string('descriptioninfo', 'badges')) . '"',
+        );
         $mform->setType('description', PARAM_NOTAGS);
         $mform->addRule('description', null, 'required');
 
@@ -82,10 +85,11 @@ class badge extends moodleform {
             $currentimage = $mform->createElement('static', 'currentimage', get_string('currentimage', 'badges'));
             $mform->insertElementBefore($currentimage, 'image');
         }
-        $mform->addHelpButton('image', 'badgeimage', 'badges');
+        $mform->addElement('static', 'imageinfo', null, get_string('badgeimageinfo', 'badges'));
+
         $mform->addElement('text', 'imagecaption', get_string('imagecaption', 'badges'), ['size' => '70']);
         $mform->setType('imagecaption', PARAM_TEXT);
-        $mform->addHelpButton('imagecaption', 'imagecaption', 'badges');
+
         $mform->addElement('tags', 'tags', get_string('tags', 'badges'), ['itemtype' => 'badge', 'component' => 'core_badges']);
 
         $mform->addElement('header', 'issuerdetails', get_string('issuerdetails', 'badges'));
@@ -93,10 +97,10 @@ class badge extends moodleform {
         $mform->addElement('text', 'issuername', get_string('issuername', 'badges'), ['size' => '70']);
         $mform->setType('issuername', PARAM_NOTAGS);
         $mform->addRule('issuername', null, 'required');
+        $mform->addRule('issuername', get_string('maximumchars', '', 1333), 'maxlength', 1333, 'client');
         $site = get_site();
         $issuername = $CFG->badges_defaultissuername ?: $site->fullname;
         $mform->setDefault('issuername', $issuername);
-        $mform->addHelpButton('issuername', 'issuername', 'badges');
 
         $mform->addElement('text', 'issuercontact', get_string('contact', 'badges'), ['size' => '70']);
         if (isset($CFG->badges_defaultissuercontact)) {
@@ -104,7 +108,7 @@ class badge extends moodleform {
         }
         $mform->setType('issuercontact', PARAM_RAW);
         $mform->addRule('issuercontact', null, 'email');
-        $mform->addHelpButton('issuercontact', 'contact', 'badges');
+
         // Set issuer URL.
         // Have to parse URL because badge issuer origin cannot be a subfolder in wwwroot.
         $url = parse_url($CFG->wwwroot);
@@ -124,7 +128,6 @@ class badge extends moodleform {
         $issuancedetails[] = $mform->createElement('static', 'expiryperiods_break', null, get_string('after', 'badges'));
 
         $mform->addGroup($issuancedetails, 'expirydategr', get_string('expirydate', 'badges'), [' '], false);
-        $mform->addHelpButton('expirydategr', 'expirydate', 'badges');
         $mform->setDefault('expiry', 0);
         $mform->setDefault('expiredate', strtotime('+1 year'));
         $mform->disabledIf('expiredate[day]', 'expiry', 'neq', 1);

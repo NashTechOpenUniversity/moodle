@@ -408,6 +408,8 @@ define ('PEPPER_ENTROPY', 112);
 
 /** True if module can provide a grade */
 define('FEATURE_GRADE_HAS_GRADE', 'grade_has_grade');
+/** True if module can support grade penalty */
+define('FEATURE_GRADE_HAS_PENALTY', 'grade_has_penalty');
 /** True if module supports outcomes */
 define('FEATURE_GRADE_OUTCOMES', 'outcomes');
 /** True if module supports advanced grading methods */
@@ -1194,10 +1196,11 @@ function purge_all_caches() {
  *
  * @param bool[] $options Specific parts of the cache to purge. Valid options are:
  *        'muc'    Purge MUC caches?
- *        'courses' Purge all course caches, or specific course caches (CLI only)
+ *        'courses' Purge all course caches, or specific course caches
  *        'theme'  Purge theme cache?
  *        'lang'   Purge language string cache?
  *        'js'     Purge javascript cache?
+ *        'template' Purge template cache
  *        'filter' Purge text filter cache?
  *        'other'  Purge all other caches?
  */
@@ -1519,19 +1522,30 @@ function set_user_preference($name, $value, $user = null) {
         return true;
     }
 
-    if ($preference = $DB->get_record('user_preferences', array('userid' => $user->id, 'name' => $name))) {
-        if ($preference->value === $value and isset($user->preference[$name]) and $user->preference[$name] === $value) {
-            // Preference already set to this value.
-            return true;
-        }
-        $DB->set_field('user_preferences', 'value', $value, array('id' => $preference->id));
+    $retry = 0;
+    $saved = false;
 
-    } else {
-        $preference = new stdClass();
-        $preference->userid = $user->id;
-        $preference->name   = $name;
-        $preference->value  = $value;
-        $DB->insert_record('user_preferences', $preference);
+    while (!$saved && $retry++ < 2) {
+        if ($preference = $DB->get_record('user_preferences', ['userid' => $user->id, 'name' => $name])) {
+            if ($preference->value === $value && isset($user->preference[$name]) && $user->preference[$name] === $value) {
+                // Preference already set to this value.
+                return true;
+            }
+            $DB->set_field('user_preferences', 'value', $value, ['id' => $preference->id]);
+            $saved = true;
+        } else {
+            $preference = new stdClass();
+            $preference->userid = $user->id;
+            $preference->name   = $name;
+            $preference->value  = $value;
+            try {
+                $DB->insert_record('user_preferences', $preference);
+                $saved = true;
+            } catch (dml_write_exception $e) {
+                // We have an insert race, so just ignore and try again.
+                $saved = false;
+            }
+        }
     }
 
     // Update value in cache.
@@ -4734,11 +4748,12 @@ function delete_course($courseorid, $showfeedback = true) {
  * @param int $courseid The id of the course that is being deleted
  * @param bool $showfeedback Whether to display notifications of each action the function performs.
  * @param array $options extra options
+ * @param bool $coursedeletion Are we calling this as part of deleting the course?
  * @return bool true if all the removals succeeded. false if there were any failures. If this
  *             method returns false, some of the removals will probably have succeeded, and others
  *             failed, but you have no way of knowing which.
  */
-function remove_course_contents($courseid, $showfeedback = true, ?array $options = null) {
+function remove_course_contents($courseid, $showfeedback = true, ?array $options = null, bool $coursedeletion = true) {
     global $CFG, $DB, $OUTPUT;
 
     require_once($CFG->libdir.'/badgeslib.php');
@@ -4821,7 +4836,7 @@ function remove_course_contents($courseid, $showfeedback = true, ?array $options
                 foreach ($instances as $cm) {
                     if ($cm->id) {
                         // Delete activity context questions and question categories.
-                        question_delete_activity($cm);
+                        question_delete_activity($cm, coursedeletion: $coursedeletion);
                         // Notify the competency subsystem.
                         \core_competency\api::hook_course_module_deleted($cm);
 
@@ -5073,8 +5088,7 @@ function reset_course_userdata($data) {
 
     // Calculate the time shift of dates.
     if (!empty($data->reset_start_date)) {
-        // Time part of course startdate should be zero.
-        $data->timeshift = $data->reset_start_date - usergetmidnight($data->reset_start_date_old);
+        $data->timeshift = $data->reset_start_date - $data->reset_start_date_old;
     } else {
         $data->timeshift = 0;
     }
@@ -5326,7 +5340,7 @@ function reset_course_userdata($data) {
     if (!empty($data->reset_gradebook_items)) {
         remove_course_grades($data->courseid, false);
         grade_grab_course_grades($data->courseid);
-        grade_regrade_final_grades($data->courseid);
+        grade_regrade_final_grades($data->courseid, async: true);
         $status[] = array('component' => $componentstr, 'item' => get_string('removeallcourseitems', 'grades'), 'error' => false);
 
     } else if (!empty($data->reset_gradebook_grades)) {
@@ -5580,14 +5594,16 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml = '', 
         return false;
     }
 
-    if (defined('BEHAT_SITE_RUNNING')) {
-        // Fake email sending in behat.
+    if (defined('BEHAT_SITE_RUNNING') && !defined('TEST_EMAILCATCHER_MAIL_SERVER') &&
+            !defined('TEST_EMAILCATCHER_API_SERVER')) {
+
+        // Behat tests are running and we are not using email catcher so fake email sending.
         return true;
     }
 
     if (!empty($CFG->noemailever)) {
         // Hidden setting for development sites, set in config.php if needed.
-        debugging('Not sending email due to $CFG->noemailever config setting', DEBUG_NORMAL);
+        debugging('Not sending email due to $CFG->noemailever config setting', DEBUG_DEVELOPER);
         return true;
     }
 

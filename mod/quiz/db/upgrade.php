@@ -120,6 +120,34 @@ function xmldb_quiz_upgrade($oldversion) {
 
     // Automatically generated Moodle v4.5.0 release upgrade line.
     // Put any upgrade step following this.
+    if ($oldversion < 2025011300) {
+        // Define field precreateattempts to be added to quiz.
+        $table = new xmldb_table('quiz');
+        $field = new xmldb_field('precreateattempts', XMLDB_TYPE_INTEGER, '1', null, null, null, null, 'allowofflineattempts');
+
+        // Conditionally launch add field precreateattempts.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2025011300, 'quiz');
+    }
+
+    // Automatically generated Moodle v5.0.0 release upgrade line.
+    // Put any upgrade step following this.
+
+    if ($oldversion < 2025041401) {
+
+        // Changing precision of field name on table quiz to (1333).
+        $table = new xmldb_table('quiz');
+        $field = new xmldb_field('name', XMLDB_TYPE_CHAR, '1333', null, XMLDB_NOTNULL, null, null, 'course');
+
+        // Launch change of precision for field name.
+        $dbman->change_field_precision($table, $field);
+
+        // Quiz savepoint reached.
+        upgrade_mod_savepoint(true, 2025041401, 'quiz');
+    }
 
     return true;
 }

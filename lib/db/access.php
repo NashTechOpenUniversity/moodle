@@ -1506,6 +1506,7 @@ $capabilities = array(
         'captype' => 'read',
         'contextlevel' => CONTEXT_COURSE,
         'archetypes' => array(
+            'teacher' => CAP_ALLOW,
             'editingteacher' => CAP_ALLOW,
             'manager' => CAP_ALLOW
         ),
@@ -1515,6 +1516,7 @@ $capabilities = array(
         'captype' => 'read',
         'contextlevel' => CONTEXT_COURSE,
         'archetypes' => array(
+            'teacher' => CAP_ALLOW,
             'editingteacher' => CAP_ALLOW,
             'manager' => CAP_ALLOW
         ),
@@ -2743,6 +2745,14 @@ $capabilities = array(
 
     // Allow users to create/edit all custom reports.
     'moodle/reportbuilder:editall' => [
+        'captype' => 'write',
+        'riskbitmap' => RISK_PERSONAL,
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [],
+    ],
+
+    // Allow users to configure custom fields for custom reports.
+    'moodle/reportbuilder:configurecustomfields' => [
         'captype' => 'write',
         'riskbitmap' => RISK_PERSONAL,
         'contextlevel' => CONTEXT_SYSTEM,

@@ -80,11 +80,6 @@ if ($manager->can_manage_templates()) {
     }
 }
 
-if ($rid) {
-    // When editing an existing record, we require the session key.
-    require_sesskey();
-}
-
 // Get Group information for permission testing and record creation.
 $currentgroup = groups_get_activity_group($cm);
 $groupmode = groups_get_activity_groupmode($cm);
@@ -104,7 +99,7 @@ if (!has_capability('mod/data:manageentries', $context)) {
 // RSS and CSS and JS meta.
 if (!empty($CFG->enablerssfeeds) && !empty($CFG->data_enablerssfeeds) && $data->rssarticles > 0) {
     $courseshortname = format_string($course->shortname, true, array('context' => context_course::instance($course->id)));
-    $rsstitle = $courseshortname . ': ' . format_string($data->name);
+    $rsstitle = $courseshortname . \moodle_page::TITLE_SEPARATOR . format_string($data->name);
     rss_add_http_header($context, 'mod_data', $data, $rsstitle);
 }
 if ($data->csstemplate) {

@@ -1,6 +1,25 @@
 # mod_assign Upgrade notes
 
-## 5.0dev
+## 5.0
+
+### Added
+
+- Assign sub-plugins have a new method `assign_plugin::settings_validation` which can be overridden to validate the data when the assignments form is saved.
+
+  For more information see [MDL-83440](https://tracker.moodle.org/browse/MDL-83440)
+- There is a new method `submission_summary_for_messages()` for submission sub-plugins to summarise what has been submitted for inclusion in confirmation messages to students.
+
+  For more information see [MDL-84387](https://tracker.moodle.org/browse/MDL-84387)
+- When the assignment activity sends notifications, it now sets more information in the $a object passed to the languages strings for the message subject and body. This is to give more flexibility to people using Language Customisation. The avaiable information is the same as the template context for the two templates in the next paragraph, but without the messagetext/html.
+  Also, the overall structure of these messages is now rendered using templates mod_assign/messages/notification_html and mod_assign/messages/notification_html, so they can be overridden by themes. As a result of this, the methods format_notification_message_text and format_notification_message_html (which should have been private to mod_assign and not used anywhere else) have been removed.
+
+  For more information see [MDL-84733](https://tracker.moodle.org/browse/MDL-84733)
+
+### Deprecated
+
+- The assign_course_index_summary is now deprecated. The assign index is now generated using the mod_assign\course\overview integration class.
+
+  For more information see [MDL-83888](https://tracker.moodle.org/browse/MDL-83888)
 
 ### Fixed
 

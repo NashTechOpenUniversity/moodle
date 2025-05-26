@@ -1,6 +1,6 @@
 # core_courseformat (subsystem / plugintype) Upgrade notes
 
-## 5.0dev
+## 5.0
 
 ### Added
 
@@ -25,6 +25,12 @@
 
 ### Deprecated
 
+- The state actions section_move and all related functions are final deprecated and cannot be used anymore. Use the newer section_move_after from now on.
+
+  For more information see [MDL-80116](https://tracker.moodle.org/browse/MDL-80116)
+- The core_courseformat::base get_section_number and set_section_number are now final deprecated. Use get_sectionum and set_sectionnum instead.
+
+  For more information see [MDL-80116](https://tracker.moodle.org/browse/MDL-80116)
 - All course editing YUI modules are now deprecated. All course formats not using components must migrate before 6.0. Follow the devdocs guide https://moodledev.io/docs/5.0/apis/plugintypes/format/migration to know how to proceed.
 
   For more information see [MDL-82341](https://tracker.moodle.org/browse/MDL-82341)
@@ -37,9 +43,18 @@
 - Deprecate the use of element ID selectors in favor of querySelector for Reactive component initialisation. We will use '#id' instead of 'id' for example.
 
   For more information see [MDL-83339](https://tracker.moodle.org/browse/MDL-83339)
+- The core_courseformat_create_module web service has been deprecated. Please use core_courseformat_new_module as its replacement.
+
+  For more information see [MDL-83469](https://tracker.moodle.org/browse/MDL-83469)
+- The state mutation addModule, primarily used for creating mod_subsection instances, has been deprecated. Replace it with newModule. Additionally, all course formats using links with data-action="addModule" must be updated to use data-action="newModule" and include a data-sectionid attribute specifying the target section ID.
+
+  For more information see [MDL-83469](https://tracker.moodle.org/browse/MDL-83469)
 - Using arrays to define course menu items is deprecated. All course formats that extend the section or activity control menus (format_NAME\output\courseformat\content\section\controlmenu or format_NAME\output\courseformat\cm\section\controlmenu) should return standard action_menu_link objects instead.
 
   For more information see [MDL-83527](https://tracker.moodle.org/browse/MDL-83527)
+- The externservercourse.php feature used to override the course view page has been deprecated in favor of using hooks. The following hooks are available to do  something similar: \core_course\hook\before_course_viewed.
+
+  For more information see [MDL-83764](https://tracker.moodle.org/browse/MDL-83764)
 
 ### Removed
 

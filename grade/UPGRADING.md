@@ -1,9 +1,51 @@
 # core_grades (subsystem) Upgrade notes
 
-## 5.0dev
+## 5.1dev
 
 ### Removed
 
+- The previously deprecate methods have been removed:
+    - grade_structure::get_grade_analysis_icon
+    - grade_structure::get_reset_icon
+    - grade_structure::get_edit_icon
+    - grade_structure::get_hiding_icon
+    - grade_structure::get_locking_icon
+    - grade_structure::get_calculation_icon
+
+  For more information see [MDL-77307](https://tracker.moodle.org/browse/MDL-77307)
+
+## 5.0
+
+### Added
+
+- `grade_regrade_final_grades()` now has an additional `async` parameter, which allows full course
+  regrades to be performed in the background. This avoids blocking the user for long periods and
+  while making changes to a large course. The actual regrade is performed using the
+  `\core_course\task\regrade_final_grades` adhoc task, which calls `grade_regrade_final_grades()`
+  with `async: false`.
+
+  For more information see [MDL-81714](https://tracker.moodle.org/browse/MDL-81714)
+
+### Changed
+
+- The `grade_object::fetch_all_helper()` now accepts a new `$sort` parameter with a default value is `id ASC` to sort the grade instances
+
+  For more information see [MDL-85115](https://tracker.moodle.org/browse/MDL-85115)
+
+### Deprecated
+
+- Deprecate print_graded_users_selector() from Moodle 2 era
+
+  For more information see [MDL-84673](https://tracker.moodle.org/browse/MDL-84673)
+
+### Removed
+
+- Removed unused grade_edit_tree_column_select class
+
+  For more information see [MDL-77668](https://tracker.moodle.org/browse/MDL-77668)
+- The previously deprecated `grade_helper::get_lang_string` method has been removed
+
+  For more information see [MDL-78780](https://tracker.moodle.org/browse/MDL-78780)
 - Final deprecation of
     grade_structure::get_element_type_string(),
     grade_structure::get_element_header(),
@@ -11,6 +53,12 @@
     grade_structure::get_activity_link()
 
   For more information see [MDL-79907](https://tracker.moodle.org/browse/MDL-79907)
+- The external function core_grades_get_enrolled_users_for_search_widget has been fully removed.
+
+  For more information see [MDL-84036](https://tracker.moodle.org/browse/MDL-84036)
+- The external function core_grades_get_groups_for_search_widget has been fully removed.
+
+  For more information see [MDL-84036](https://tracker.moodle.org/browse/MDL-84036)
 
 ## 4.5
 

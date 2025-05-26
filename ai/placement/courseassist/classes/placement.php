@@ -29,6 +29,7 @@ class placement extends \core_ai\placement {
     public static function get_action_list(): array {
         return [
             \core_ai\aiactions\summarise_text::class,
+            \core_ai\aiactions\explain_text::class,
         ];
     }
 

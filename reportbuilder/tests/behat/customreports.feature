@@ -1,4 +1,4 @@
-@core_reportbuilder @javascript
+@core @core_reportbuilder @javascript
 Feature: Manage custom reports
   In order to manage custom reports
   As an admin
@@ -96,8 +96,8 @@ Feature: Manage custom reports
     And I click on "Save" "button" in the "New report" "dialogue"
     And I click on "Close 'Manager report' editor" "button"
     And the following should exist in the "Reports list" table:
-      | Name           | Tags     | Report source |
-      | Manager report | Cat, Dog | Users         |
+      | Name           | Tags    | Report source |
+      | Manager report | Cat Dog | Users         |
     # Manager can edit their own report, but not those of other users.
     And I set the field "Edit report name" in the "Manager report" "table_row" to "Manager report (renamed)"
     Then the "Edit report content" item should exist in the "Actions" action menu of the "Manager report (renamed)" "table_row"
@@ -148,8 +148,8 @@ Feature: Manage custom reports
     And I click on "Save" "button" in the "Edit report details" "dialogue"
     Then I should see "Report updated"
     And the following should exist in the "Reports list" table:
-      | Name              | Tags     | Report source |
-      | My renamed report | Cat, Dog | Users         |
+      | Name              | Tags    | Report source |
+      | My renamed report | Cat Dog | Users         |
 
   Scenario Outline: Filter custom reports
     Given the following "core_reportbuilder > Reports" exist:
@@ -159,9 +159,9 @@ Feature: Manage custom reports
     And I log in as "admin"
     When I navigate to "Reports > Report builder > Custom reports" in site administration
     And the following should exist in the "Reports list" table:
-      | Name       | Tags     | Report source |
-      | My users   | Cat, Dog | Users         |
-      | My courses |          | Courses       |
+      | Name       | Tags    | Report source |
+      | My users   | Cat Dog | Users         |
+      | My courses |         | Courses       |
     And I click on "Filters" "button"
     And I set the following fields in the "<filter>" "core_reportbuilder > Filter" to these values:
       | <filter> operator | Is equal to |
@@ -169,8 +169,8 @@ Feature: Manage custom reports
     And I click on "Apply" "button" in the "[data-region='report-filters']" "css_element"
     Then I should see "Filters applied"
     And the following should exist in the "Reports list" table:
-      | Name     | Tags     | Report source |
-      | My users | Cat, Dog | Users         |
+      | Name     | Tags    | Report source |
+      | My users | Cat Dog | Users         |
     And I should not see "My courses" in the "Reports list" "table"
     Examples:
       | filter        | value    |
@@ -285,10 +285,17 @@ Feature: Manage custom reports
       | username  | firstname | lastname | email             | suspended |
       | user1     | User      | 1        | user1@example.com | 1         |
       | user2     | User      | 2        | user2@example.com | 0         |
+    And the following "custom field categories" exist:
+      | name   | component          | area   | itemid |
+      | Newcat | core_reportbuilder | report | 0      |
+    And the following "custom fields" exist:
+      | name        | category | type     | shortname | description | configdata |
+      | Myshorttext | Newcat   | text     | f1        | d1          |            |
     And the following "core_reportbuilder > Report" exists:
-      | name    | My report                                |
-      | source  | core_user\reportbuilder\datasource\users |
-      | default | 1                                        |
+      | name           | My report                                |
+      | source         | core_user\reportbuilder\datasource\users |
+      | default        | 1                                        |
+      | customfield_f1 | My short text                            |
     And the following "core_reportbuilder > Audience" exists:
       | report     | My report                                          |
       | classname  | core_reportbuilder\reportbuilder\audience\allusers |
@@ -317,6 +324,8 @@ Feature: Manage custom reports
     And "All users" "core_reportbuilder > Audience" should exist
     And I click on the "Schedules" dynamic tab
     And I should see "My schedule" in the "Report schedules" "table"
+    And I press "Edit details"
+    And the field "Myshorttext" matches value "My short text"
 
   Scenario: Delete custom report
     Given the following "core_reportbuilder > Reports" exist:

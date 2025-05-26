@@ -207,7 +207,7 @@ class helper {
         static::add_plugin($presetid, 'availability', 'profile', false);
 
         // Blocks: Hide Activities, Blog menu, Blog tags, Comments, Course completion status, Courses, Flickr,
-        // Global search, Latest badges, Learning plans, Logged in user, Login, Main menu, Mentees, Network servers, Online users,
+        // Global search, Latest badges, Learning plans, Logged in user, Login, Main menu, Mentees, Online users,
         // Private files, Recent blog entries, Recently accessed courses, Search forums, Section links, Social activities,
         // Starred courses, Tags, YouTube.
         // Hidden by default: Course/site summary, RSS feeds, Self completion, Feedback.
@@ -226,7 +226,6 @@ class helper {
         static::add_plugin($presetid, 'block', 'login', false);
         static::add_plugin($presetid, 'block', 'site_main_menu', false);
         static::add_plugin($presetid, 'block', 'mentees', false);
-        static::add_plugin($presetid, 'block', 'mnet_hosts', false);
         static::add_plugin($presetid, 'block', 'private_files', false);
         static::add_plugin($presetid, 'block', 'blog_recent', false);
         static::add_plugin($presetid, 'block', 'rss_client', false);
@@ -290,7 +289,7 @@ class helper {
         static::add_item($presetid, 'enablenotes', '1');
         static::add_item($presetid, 'enableblogs', '1');
         static::add_item($presetid, 'enablebadges', '1');
-        static::add_item($presetid, 'enableanalytics', '1');
+        static::add_item($presetid, 'enableanalytics', '0');
         static::add_item($presetid, 'enabled', '1', 'core_competency');
         static::add_item($presetid, 'pushcourseratingstouserplans', '1', 'core_competency');
         static::add_item($presetid, 'showdataretentionsummary', '1', 'tool_dataprivacy');
@@ -313,7 +312,7 @@ class helper {
         static::add_plugin($presetid, 'availability', 'profile', true);
 
         // Blocks: Enable Activities, Blog menu, Blog tags, Comments, Course completion status, Courses, Flickr,
-        // Global search, Latest badges, Learning plans, Logged in user, Login, Main menu, Mentees, Network servers, Online users,
+        // Global search, Latest badges, Learning plans, Logged in user, Login, Main menu, Mentees, Online users,
         // Private files, Recent blog entries, Recently accessed courses, Search forums, Section links, Social activities,
         // Starred courses, Tags, YouTube.
         // Hidden by default: Course/site summary, RSS feeds, Self completion, Feedback.
@@ -331,7 +330,6 @@ class helper {
         static::add_plugin($presetid, 'block', 'login', true);
         static::add_plugin($presetid, 'block', 'site_main_menu', true);
         static::add_plugin($presetid, 'block', 'mentees', true);
-        static::add_plugin($presetid, 'block', 'mnet_hosts', true);
         static::add_plugin($presetid, 'block', 'private_files', true);
         static::add_plugin($presetid, 'block', 'blog_recent', true);
         static::add_plugin($presetid, 'block', 'search_forums', true);

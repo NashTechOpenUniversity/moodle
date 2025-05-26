@@ -33,6 +33,10 @@ if (isset($_SERVER['REMOTE_ADDR'])) {
     die(); // No access from web!.
 }
 
+// It makes no sense to use BEHAT_CLI for this script (the Behat launch scripts expect to start
+// from the normal environment), so in case user has set tne environment variable, disable it.
+putenv('BEHAT_CLI=0');
+
 // Basic functions.
 require_once(__DIR__ . '/../../../../lib/clilib.php');
 require_once(__DIR__ . '/../../../../lib/behat/lib.php');
@@ -117,7 +121,7 @@ define('ABORT_AFTER_CONFIG', true);
 require_once(__DIR__ . '/../../../../config.php');
 
 // Remove error handling overrides done in config.php.
-$CFG->debug = (E_ALL | E_STRICT);
+$CFG->debug = (E_ALL);
 $CFG->debugdisplay = 1;
 error_reporting($CFG->debug);
 ini_set('display_errors', '1');
@@ -264,7 +268,7 @@ exit(0);
  * @param string $featurestepfile feature step file in which steps will be saved.
  * @return int exitcode.
  */
-function print_update_step_output($process, $featurestepfile) {
+function print_update_step_output($process, $featurestepfile): int {
     $printedlength = 0;
 
     echo "Updating steps feature file for parallel behat runs" . PHP_EOL;

@@ -101,7 +101,6 @@ function behat_get_error_string($errtype) {
             break;
         case E_NOTICE:
         case E_USER_NOTICE:
-        case E_STRICT:
             $errnostr = 'Notice';
             break;
         case E_RECOVERABLE_ERROR:
@@ -133,11 +132,11 @@ function behat_error_handler($errno, $errstr, $errfile, $errline) {
         return true;
     }
 
-    // This error handler receives E_ALL | E_STRICT, running the behat test site the debug level is
+    // This error handler receives E_ALL, running the behat test site the debug level is
     // set to DEVELOPER and will always include E_NOTICE,E_USER_NOTICE... as part of E_ALL, if the current
     // error_reporting() value does not include one of those levels is because it has been forced through
     // the moodle code (see fix_utf8() for example) in that cases we respect the forced error level value.
-    $respect = array(E_NOTICE, E_USER_NOTICE, E_STRICT, E_WARNING, E_USER_WARNING, E_DEPRECATED, E_USER_DEPRECATED);
+    $respect = [E_NOTICE, E_USER_NOTICE, E_WARNING, E_USER_WARNING, E_DEPRECATED, E_USER_DEPRECATED];
     foreach ($respect as $respectable) {
 
         // If the current value does not include this kind of errors and the reported error is
@@ -219,7 +218,8 @@ function behat_clean_init_config() {
         'umaskpermissions', 'dbtype', 'dblibrary', 'dbhost', 'dbname', 'dbuser', 'dbpass', 'prefix',
         'dboptions', 'proxyhost', 'proxyport', 'proxytype', 'proxyuser', 'proxypassword',
         'proxybypass', 'pathtogs', 'pathtophp', 'pathtodu', 'aspellpath', 'pathtodot', 'skiplangupgrade',
-        'altcacheconfigpath', 'pathtounoconv', 'alternative_file_system_class', 'pathtopython'
+        'altcacheconfigpath', 'pathtounoconv', 'alternative_file_system_class', 'pathtopython',
+        'routerconfigured',
     ));
 
     // Add extra allowed settings.
@@ -232,6 +232,12 @@ function behat_clean_init_config() {
         if (!isset($allowed[$key]) && strpos($key, 'behat_') !== 0) {
             unset($CFG->{$key});
         }
+    }
+
+    // Allow email catcher settings.
+    if (defined('TEST_EMAILCATCHER_MAIL_SERVER')) {
+        $CFG->noemailever = false;
+        $CFG->smtphosts = TEST_EMAILCATCHER_MAIL_SERVER;
     }
 }
 
@@ -340,6 +346,11 @@ function behat_is_test_site() {
     }
     if (empty($CFG->behat_wwwroot)) {
         return false;
+    }
+    if (defined('CLI_SCRIPT') && CLI_SCRIPT && getenv('BEHAT_CLI')) {
+        // Environment variable makes CLI script run on Behat instance.
+        echo "BEHAT_CLI: This command line script is running on the acceptance testing site.\n\n";
+        return true;
     }
     if (isset($_SERVER['REMOTE_ADDR']) and behat_is_requested_url($CFG->behat_wwwroot)) {
         // Something is accessing the web server like a real browser.

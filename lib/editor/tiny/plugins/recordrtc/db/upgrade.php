@@ -24,7 +24,7 @@
 
 /**
  * Run all Tiny recordrtc upgrade steps between the current DB version and the current version on disk.
- * @param int $oldversion The old version of atto equation in the DB.
+ * @param int $oldversion The old version of the plugin in the DB.
  * @return bool
  */
 function xmldb_tiny_recordrtc_upgrade($oldversion) {
@@ -64,6 +64,9 @@ function xmldb_tiny_recordrtc_upgrade($oldversion) {
 
         upgrade_plugin_savepoint(true, 2024112000, 'tiny', 'recordrtc');
     }
+
+    // Automatically generated Moodle v5.0.0 release upgrade line.
+    // Put any upgrade step following this.
 
     return true;
 }
