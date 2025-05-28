@@ -37,7 +37,7 @@ Feature: Preview a quiz as a teacher
   Scenario: Review the quiz attempt
     When I am on the "Quiz 1" "mod_quiz > View" page logged in as "teacher"
     And I follow "Review"
-    And "Review attempt: status and related information." "table" should exist
+    And "Attempt 1: status and related information." "table" should exist
     Then I should see "25.00 out of 100.00"
     And I should see "v1 (latest)" in the "Question 1" "question"
     And I follow "Finish review"
