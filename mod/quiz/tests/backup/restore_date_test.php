@@ -115,4 +115,38 @@ final class restore_date_test extends \restore_date_testcase {
         // Quiz grade time checks.
         $this->assertEquals($grade->timemodified, $newgrade->timemodified);
     }
+
+    /**
+     * Test restore question in quiz.
+     */
+    public function test_restore_question_in_quiz(): void {
+        global $DB;
+        // Create quiz data.
+        $record = [
+            'timeopen' => 100,
+            'timeclose' => 100,
+            'timemodified' => 100,
+            'timecreated' => 100,
+            'questionsperpage' => 0,
+            'grade' => 100.0,
+            'sumgrades' => 2,
+            'precreateattempts' => 1,
+        ];
+        [$course, $quiz] = $this->create_course_and_module('quiz', $record);
+        $context = \context_module::instance($quiz->cmid);
+        // Create questions.
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $cat = $questiongenerator->create_question_category(['contextid' => $context->id]);
+        $saq = $questiongenerator->create_question('shortanswer', null, ['category' => $cat->id]);
+        // Add to the quiz.
+        quiz_add_quiz_question($saq->id, $quiz);
+
+        // Do backup and restore.
+        $this->backup_and_restore($course);
+        $this->assertEquals(2, $DB->count_records('question', ['name' => $saq->name]));
+        // Delete the old course.
+        delete_course($course, false);
+        // The question that is used in quiz should be deleted.
+        $this->assertEquals(1, $DB->count_records('question', ['name' => $saq->name]));
+    }
 }
