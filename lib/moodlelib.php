@@ -4834,6 +4834,8 @@ function remove_course_contents($courseid, $showfeedback = true, ?array $options
 
             if ($instances) {
                 foreach ($instances as $cm) {
+                    // Warning! there is very similar code in course_delete_module.
+                    // If you are changing this code, you probably need to change that too.
                     if (function_exists($moddelete)) {
                         // This purges all module data in related tables, extra user prefs, settings, etc.
                         $moddelete($cm->modinstance);
@@ -4845,13 +4847,15 @@ function remove_course_contents($courseid, $showfeedback = true, ?array $options
 
                     if ($cm->id) {
                         // Delete activity context questions and question categories.
+                        // We delete the questions after the activity database needed because
+                        // The question may be used by activities in the course.
+                        // So we want to make sure those questions are not used.
                         question_delete_activity($cm, coursedeletion: $coursedeletion);
-                        // Notify the competency subsystem.
-                        \core_competency\api::hook_course_module_deleted($cm);
                         // Delete all tag instances associated with the instance of this module.
                         core_tag_tag::delete_instances("mod_{$modname}", null, context_module::instance($cm->id)->id);
                         core_tag_tag::remove_all_item_tags('core', 'course_modules', $cm->id);
-
+                        // Notify the competency subsystem.
+                        \core_competency\api::hook_course_module_deleted($cm);
                         // Delete cm and its context - orphaned contexts are purged in cron in case of any race condition.
                         context_helper::delete_instance(CONTEXT_MODULE, $cm->id);
                         $DB->delete_records('course_modules_completion', ['coursemoduleid' => $cm->id]);
