@@ -459,14 +459,22 @@ abstract class question_definition {
 
     /** @return the result of applying {@link format_text()} to the question text. */
     public function format_questiontext($qa) {
-        return $this->format_text($this->questiontext, $this->questiontextformat,
-                $qa, 'question', 'questiontext', $this->id);
+        if ($formattext = $this->format_text($this->questiontext,
+                $this->questiontextformat, $qa, 'question', 'questiontext', $this->id)) {
+                return html_writer::tag('div', $formattext, ['class' => 'clearfix']);
+            }
+
+        return "";
     }
 
     /** @return the result of applying {@link format_text()} to the general feedback. */
     public function format_generalfeedback($qa) {
-        return $this->format_text($this->generalfeedback, $this->generalfeedbackformat,
-                $qa, 'question', 'generalfeedback', $this->id);
+        if ($formatext = $this->format_text($this->generalfeedback, $this->generalfeedbackformat,
+                $qa, 'question', 'generalfeedback', $this->id)) {
+            return html_writer::tag('div', $formatext, ['class' => 'clearfix']);
+        }
+
+        return "";
     }
 
     /**
