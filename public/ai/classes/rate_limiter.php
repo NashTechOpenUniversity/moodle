@@ -26,8 +26,6 @@ use Psr\Clock\ClockInterface;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class rate_limiter {
-    /** @var int TIME_WINDOW Time window in seconds (1 hour). */
-    public const TIME_WINDOW = HOURSECS;
 
     /** @var null|rate_limiter Singleton instance of the rate limiter. */
     private static ?rate_limiter $instance = null;
@@ -52,11 +50,12 @@ class rate_limiter {
      *
      * @param string $component Name of the component.
      * @param int $ratelimit Number of requests per time window.
+     * @param int $timelimit Time window in seconds for the rate limit.
      * @return bool True if request is allowed, false otherwise.
      */
-    public function check_global_rate_limit(string $component, int $ratelimit): bool {
+    public function check_global_rate_limit(string $component, int $ratelimit, int $timelimit = HOURSECS): bool {
         $currenttime = $this->clock->now()->getTimestamp();
-        return $this->check_limit("global_{$component}", $ratelimit, $currenttime);
+        return $this->check_limit("global_{$component}", $ratelimit, $currenttime, $timelimit);
     }
 
     /**
@@ -65,13 +64,14 @@ class rate_limiter {
      * @param string $component Name of the component.
      * @param int $ratelimit Number of requests per time window.
      * @param int $userid User ID for user-specific rate limit.
+     * @param int $timelimit Time window in seconds for the rate limit.
      * @return bool True if request is allowed, false otherwise.
      */
-    public function check_user_rate_limit(string $component, int $ratelimit, int $userid): bool {
+    public function check_user_rate_limit(string $component, int $ratelimit, int $userid, $timelimit = HOURSECS): bool {
         $currenttime = $this->clock->now()->getTimestamp();
 
         // Check and update user limit.
-        return $this->check_limit("user_{$component}_{$userid}", $ratelimit, $currenttime);
+        return $this->check_limit("user_{$component}_{$userid}", $ratelimit, $currenttime, $timelimit);
     }
 
     /**
@@ -80,9 +80,10 @@ class rate_limiter {
      * @param string $key Cache key.
      * @param int $ratelimit Number of requests per time window.
      * @param int $currenttime Current timestamp.
+     * @param int $timelimit Time window in seconds for the rate limit.
      * @return bool True if request is allowed, false otherwise.
      */
-    private function check_limit(string $key, int $ratelimit, int $currenttime): bool {
+    private function check_limit(string $key, int $ratelimit, int $currenttime, $timelimit): bool {
         $ratedata = $this->cache->get($key);
 
         if ($ratedata === false) {
@@ -91,7 +92,7 @@ class rate_limiter {
         }
 
         // Remove expired rate data.
-        if ($currenttime - $ratedata['start_time'] > self::TIME_WINDOW) {
+        if ($currenttime - $ratedata['start_time'] > $timelimit) {
             $ratedata['count'] = 0;
             $ratedata['start_time'] = $currenttime;
         }

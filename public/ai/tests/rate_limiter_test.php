@@ -45,14 +45,14 @@ final class rate_limiter_test extends \advanced_testcase {
         $ratelimiter = \core\di::get(rate_limiter::class);
         $component = 'testcomponent';
         $ratelimit = 5;
-
+        $timelimit = HOURSECS;
         // Make 5 requests, all should be allowed.
         for ($i = 0; $i < 5; $i++) {
-            $this->assertTrue($ratelimiter->check_global_rate_limit($component, $ratelimit));
+            $this->assertTrue($ratelimiter->check_global_rate_limit($component, $ratelimit, $timelimit));
         }
 
         // The 6th request should be denied.
-        $this->assertFalse($ratelimiter->check_global_rate_limit($component, $ratelimit));
+        $this->assertFalse($ratelimiter->check_global_rate_limit($component, $ratelimit, $timelimit));
     }
 
     /**
@@ -62,15 +62,16 @@ final class rate_limiter_test extends \advanced_testcase {
         $ratelimiter = \core\di::get(rate_limiter::class);
         $component = 'testcomponent';
         $ratelimit = 3;
+        $timelimit = HOURSECS;
         $userid = 12345;
 
         // Make 3 requests for the user, all should be allowed.
         for ($i = 0; $i < 3; $i++) {
-            $this->assertTrue($ratelimiter->check_user_rate_limit($component, $ratelimit, $userid));
+            $this->assertTrue($ratelimiter->check_user_rate_limit($component, $ratelimit, $userid, $timelimit));
         }
 
         // The 4th request should be denied.
-        $this->assertFalse($ratelimiter->check_user_rate_limit($component, $ratelimit, $userid));
+        $this->assertFalse($ratelimiter->check_user_rate_limit($component, $ratelimit, $userid, $timelimit));
     }
 
     /**
@@ -81,17 +82,18 @@ final class rate_limiter_test extends \advanced_testcase {
         $ratelimiter = \core\di::get(rate_limiter::class);
         $component = 'testcomponent';
         $ratelimit = 3;
+        $timelimit = HOURSECS;
 
         // Make 3 requests, all should be allowed.
         for ($i = 0; $i < 3; $i++) {
-            $this->assertTrue($ratelimiter->check_global_rate_limit($component, $ratelimit));
+            $this->assertTrue($ratelimiter->check_global_rate_limit($component, $ratelimit, $timelimit));
         }
 
         // Simulate moving time forward by TIME_WINDOW to reset the rate limit.
-        $clock->set_to(rate_limiter::TIME_WINDOW + 1);
+        $clock->set_to($timelimit + 1);
 
         // The next request should be allowed again.
-        $this->assertTrue($ratelimiter->check_global_rate_limit($component, $ratelimit));
+        $this->assertTrue($ratelimiter->check_global_rate_limit($component, $ratelimit, $timelimit));
     }
 
     /**
@@ -103,16 +105,17 @@ final class rate_limiter_test extends \advanced_testcase {
         $component = 'testcomponent';
         $ratelimit = 3;
         $userid = 12345;
+        $timelimit = WEEKSECS;
 
         // Make 3 requests for the user, all should be allowed.
         for ($i = 0; $i < 3; $i++) {
-            $this->assertTrue($ratelimiter->check_user_rate_limit($component, $ratelimit, $userid));
+            $this->assertTrue($ratelimiter->check_user_rate_limit($component, $ratelimit, $userid, $timelimit));
         }
 
         // Simulate moving time forward by TIME_WINDOW to reset the rate limit.
-        $clock->set_to(rate_limiter::TIME_WINDOW + 1);
+        $clock->set_to($timelimit + 1);
 
         // The next user request should be allowed again.
-        $this->assertTrue($ratelimiter->check_user_rate_limit($component, $ratelimit, $userid));
+        $this->assertTrue($ratelimiter->check_user_rate_limit($component, $ratelimit, $userid, $timelimit));
     }
 }

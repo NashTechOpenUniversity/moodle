@@ -152,7 +152,8 @@ abstract class provider {
             if (!$ratelimiter->check_user_rate_limit(
                 component: $component,
                 ratelimit: $this->config['userratelimit'],
-                userid: $action->get_configuration('userid')
+                userid: $action->get_configuration('userid'),
+                timelimit: $this->config['userratelimittimeunit'] ?? HOURSECS,
             )) {
                 $errorhandler = new \core_ai\error\ratelimit(get_string('error:429:internaluser', 'core_ai'));
                 return $errorhandler->get_error_details();
@@ -163,7 +164,8 @@ abstract class provider {
         if (isset($this->config['enableglobalratelimit']) && $this->config['enableglobalratelimit']) {
             if (!$ratelimiter->check_global_rate_limit(
                 component: $component,
-                ratelimit: $this->config['globalratelimit']
+                ratelimit: $this->config['globalratelimit'],
+                timelimit: $this->config['globalratelimittimeunit'] ?? HOURSECS,
             )) {
                 $errorhandler = new \core_ai\error\ratelimit(get_string('error:429:internalsitewide', 'core_ai'));
                 return $errorhandler->get_error_details();

@@ -108,17 +108,38 @@ class ai_provider_form extends moodleform {
             get_string('enableglobalratelimit', 'core_ai'),
             get_string('enableglobalratelimit_help', 'core_ai'),
         );
-        // Setting to set how many requests per hour are allowed for the global rate limit.
-        // Should only be enabled when global rate limiting is enabled.
-        $mform->addElement(
+        // Dropdown for time unit.
+        $units = [
+                HOURSECS => get_string('hour'),
+                DAYSECS => get_string('day'),
+                WEEKSECS => get_string('numdays', '', 7),
+                DAYSECS * 30 => get_string('numdays', '', 30),
+        ];
+
+        // Define the form group.
+        $globalratelimitgroup = [];
+        $globalratelimitgroup[] = $mform->createElement(
             'text',
             'globalratelimit',
-            get_string('globalratelimit', 'core_ai'),
+            '',
             'maxlength="10" size="4"',
         );
+        $globalratelimitgroup[] = $mform->createElement(
+            'select',
+            'globalratelimittimeunit',
+            get_string('globalratelimit', 'core_ai'),
+            $units,
+        );
         $mform->setType('globalratelimit', PARAM_INT);
+        $mform->setType('globalratelimittimeunit', PARAM_INT);
+        $mform->addGroup($globalratelimitgroup, 'ratelimitgroup', get_string('globalratelimit', 'core_ai'), '', false);
         $mform->addHelpButton('globalratelimit', 'globalratelimit', 'core_ai');
+        $mform->setDefault('globalratelimit', 100);
+        $mform->setDefault('globalratelimittimeunit', 3600);
+
         $mform->hideIf('globalratelimit', 'enableglobalratelimit', 'notchecked');
+        $mform->hideIf('globalratelimittimeunit', 'enableglobalratelimit', 'notchecked');
+        $mform->hideIf('ratelimitgroup', 'enableglobalratelimit', 'notchecked');
 
         // Setting to enable/disable user rate limiting.
         $mform->addElement(
@@ -127,17 +148,32 @@ class ai_provider_form extends moodleform {
             get_string('enableuserratelimit', 'core_ai'),
             get_string('enableuserratelimit_help', 'core_ai'),
         );
-        // Setting to set how many requests per hour are allowed for the user rate limit.
+
+        $userratelimitgroup = [];
+        // Setting to set how many requests per unit are allowed for the user rate limit.
         // Should only be enabled when user rate limiting is enabled.
-        $mform->addElement(
+        $userratelimitgroup[] = $mform->createElement(
             'text',
             'userratelimit',
             get_string('userratelimit', 'core_ai'),
             'maxlength="10" size="4"',
         );
+        // Define the form group.
+        $userratelimitgroup[] = $mform->createElement(
+            'select',
+            'userratelimittimeunit',
+            get_string('userratelimit', 'core_ai'),
+            $units,
+        );
         $mform->setType('userratelimit', PARAM_INT);
+        $mform->setType('userratelimittimeunit', PARAM_INT);
         $mform->addHelpButton('userratelimit', 'userratelimit', 'core_ai');
+        $mform->addGroup($userratelimitgroup, 'userratelimitgroup', get_string('userratelimit', 'core_ai'), '', false);
+        $mform->setDefault('userratelimit', 100);
+        $mform->setDefault('userratelimittimeunit', 3600);
         $mform->hideIf('userratelimit', 'enableuserratelimit', 'notchecked');
+        $mform->hideIf('userratelimittimeunit', 'enableuserratelimit', 'notchecked');
+        $mform->hideIf('userratelimitgroup', 'enableuserratelimit', 'notchecked');
 
         // Form buttons.
         $buttonarray = [];
