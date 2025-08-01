@@ -467,16 +467,13 @@ abstract class question_definition {
             'questiontext',
             $this->id
         );
-        if ($formattext) {
-            return html_writer::tag('div', $formattext, ['class' => 'clearfix']);
-        }
 
-        return "";
+        return html_writer::nonempty_tag('div', $formattext, ['class' => 'clearfix']);
     }
 
     /** @return the result of applying {@link format_text()} to the general feedback. */
     public function format_generalfeedback($qa) {
-        $formatext = $this->format_text(
+        $formattext  = $this->format_text(
             $this->generalfeedback,
             $this->generalfeedbackformat,
             $qa,
@@ -484,11 +481,8 @@ abstract class question_definition {
             'generalfeedback',
             $this->id
         );
-        if ($formatext) {
-            return html_writer::tag('div', $formatext, ['class' => 'clearfix']);
-        }
 
-        return "";
+        return html_writer::nonempty_tag('div', $formattext, ['class' => 'clearfix']);
     }
 
     /**
