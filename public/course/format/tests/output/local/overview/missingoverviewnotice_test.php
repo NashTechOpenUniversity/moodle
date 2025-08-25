@@ -63,7 +63,7 @@ final class missingoverviewnotice_test extends \advanced_testcase {
     public static function overview_integrations_provider(): array {
         return [
             'assign' => ['modname' => 'assign', 'expectempty' => true],
-            'bigbluebuttonbn' => ['modname' => 'bigbluebuttonbn', 'expectempty' => false],
+            'bigbluebuttonbn' => ['modname' => 'bigbluebuttonbn', 'expectempty' => true],
             'book' => ['modname' => 'book', 'expectempty' => false],
             'choice' => ['modname' => 'choice', 'expectempty' => true],
             'data' => ['modname' => 'data', 'expectempty' => true],
@@ -80,7 +80,7 @@ final class missingoverviewnotice_test extends \advanced_testcase {
             'qbank' => ['modname' => 'qbank', 'expectempty' => false],
             'quiz' => ['modname' => 'quiz', 'expectempty' => false],
             'resource' => ['modname' => 'resource', 'expectempty' => true],
-            'scorm' => ['modname' => 'scorm', 'expectempty' => false],
+            'scorm' => ['modname' => 'scorm', 'expectempty' => true],
             'url' => ['modname' => 'url', 'expectempty' => false],
             'wiki' => ['modname' => 'wiki', 'expectempty' => true],
             'workshop' => ['modname' => 'workshop', 'expectempty' => true],

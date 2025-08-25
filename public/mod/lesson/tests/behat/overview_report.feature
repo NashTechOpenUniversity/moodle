@@ -46,7 +46,7 @@ Feature: Testing overview_report in mod_lesson
       | Lesson 1 | 2 of 3                 | 4                   | Tomorrow        |
       | Lesson 2 | 0 of 3                 | 0                   | -               |
     And I click on "4" "button" in the "Lesson 1" "table_row"
-    And I should see "This Lesson allows students to do multiple attempts."
+    And I should see "This lesson allows students to attempt it more than once."
     And I should see "Average attempts per student: 2"
     And I press the escape key
     And "0" "button" should not exist in the "Lesson 2" "table_row"
@@ -81,17 +81,6 @@ Feature: Testing overview_report in mod_lesson
       | Name     | Due date        |
       | Lesson 1 | Tomorrow        |
       | Lesson 2 | -               |
-
-  Scenario: The lesson index redirect to the activities overview
-    When I log in as "admin"
-    And I am on "Course 1" course homepage with editing mode on
-    And I add the "Activities" block
-    And I click on "Lessons" "link" in the "Activities" "block"
-    Then I should see "An overview of all activities in the course, with dates and other information."
-    And I should see "Name" in the "lesson_overview_collapsible" "region"
-    And I should see "Students who attempted" in the "lesson_overview_collapsible" "region"
-    And I should see "Total attempts" in the "lesson_overview_collapsible" "region"
-    And I should see "Actions" in the "lesson_overview_collapsible" "region"
 
   Scenario: The lesson overview report should generate log events
     Given I am on the "Course 1" "course > activities > lesson" page logged in as "teacher1"

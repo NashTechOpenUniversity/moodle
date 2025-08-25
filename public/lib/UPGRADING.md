@@ -1,6 +1,6 @@
 # core (subsystem) Upgrade notes
 
-## 5.1dev
+## 5.1dev+
 
 ### Added
 
@@ -12,6 +12,9 @@
 - Added a new optional param to adhoc_task_failed and scheduled_task_failed to allow skipping log finalisation when called from a separate task.
 
   For more information see [MDL-84442](https://tracker.moodle.org/browse/MDL-84442)
+- Add a new method has_valid_group in \core\report_helper that will return true or false depending if the user has a valid group. This is mainly false in case the user is not in any group in SEPARATEGROUPS. Used in report_log and report_loglive
+
+  For more information see [MDL-84464](https://tracker.moodle.org/browse/MDL-84464)
 - There is a new `core/page_title` Javascript module for manipulating the current page title
 
   For more information see [MDL-84804](https://tracker.moodle.org/browse/MDL-84804)
@@ -21,6 +24,36 @@
 - Output classes can now implement the core\output\externable interface. This allows these classes to define methods for exporting their data in a format suitable for use in web services.
 
   For more information see [MDL-85509](https://tracker.moodle.org/browse/MDL-85509)
+- The following functions have been replaced with class methods.
+
+   | Old function name               | New method name                       |
+   | ---                             | ---                                   |
+   | `\ajax_capture_output()`        | `\core\ajax::capture_output()`        |
+   | `\ajax_check_captured_output()` | `\core\ajax::check_captured_output()` |
+  It is no longer necessary to include `lib/ajax/ajaxlib.php` in any code.
+
+  For more information see [MDL-86168](https://tracker.moodle.org/browse/MDL-86168)
+- The Behat `::execute()` method now accepts an array-style callable in addition to the string `classname::method` format.
+
+  The following formats are now accepted:
+
+  ```php
+  // String format:
+  $this->execute('behat_general::i_click_on', [...]);
+
+  // Array format:
+  $this->execute([behat_general::class,' i_click_on'], [...]);
+  ```
+
+  For more information see [MDL-86231](https://tracker.moodle.org/browse/MDL-86231)
+- The following classes have been moved into namespaces and now support autoloading:
+
+  | Old class name          | New class name                         |
+  | ---                     | ---                                    |
+  | `\core_xml_parser`      | `\core\xml_parser`                     |
+  | `\xml_format_exception` | `\core\exception\xml_format_exception` |
+
+  For more information see [MDL-86256](https://tracker.moodle.org/browse/MDL-86256)
 
 ### Changed
 
@@ -41,6 +74,15 @@
   ```
 
   For more information see [MDL-85897](https://tracker.moodle.org/browse/MDL-85897)
+- The `\core\output\local\dropdown\dialog` class constructor now accepts a `$definition['autoclose']` parameter to define autoclose behaviour of the element
+
+  For more information see [MDL-86015](https://tracker.moodle.org/browse/MDL-86015)
+- The default PHPUnit configuration now enables the following properties, ensuring PHP warnings will cause test failures (restoring pre-PHPUnit version 10 behaviour):
+
+  * `failOnDeprecation`
+  * `failOnWarning`
+
+  For more information see [MDL-86311](https://tracker.moodle.org/browse/MDL-86311)
 
 ### Deprecated
 
@@ -65,6 +107,12 @@
   The usage of these selectors will continue to be supported until they are removed by final deprecation. In the meantime, a deprecation warning in the JavaScript console will be shown if usage of these selectors is detected.
 
   For more information see [MDL-79756](https://tracker.moodle.org/browse/MDL-79756)
+- The `user_preference_allow_ajax_update()` has been removed. It was deprecated without replacement in Moodle 4.3.
+
+  For more information see [MDL-86168](https://tracker.moodle.org/browse/MDL-86168)
+- The `xmlize()` method from `lib/xmlize.php` has been deprecated, please instead use the `\core\xml_parser` class
+
+  For more information see [MDL-86256](https://tracker.moodle.org/browse/MDL-86256)
 
 ### Removed
 

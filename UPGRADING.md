@@ -6,7 +6,7 @@ More detailed information on key changes can be found in the [Developer update n
 
 The format of this change log follows the advice given at [Keep a CHANGELOG](https://keepachangelog.com).
 
-## 5.1dev
+## 5.1dev+
 
 ### core
 
@@ -20,6 +20,9 @@ The format of this change log follows the advice given at [Keep a CHANGELOG](htt
 - Added a new optional param to adhoc_task_failed and scheduled_task_failed to allow skipping log finalisation when called from a separate task.
 
   For more information see [MDL-84442](https://tracker.moodle.org/browse/MDL-84442)
+- Add a new method has_valid_group in \core\report_helper that will return true or false depending if the user has a valid group. This is mainly false in case the user is not in any group in SEPARATEGROUPS. Used in report_log and report_loglive
+
+  For more information see [MDL-84464](https://tracker.moodle.org/browse/MDL-84464)
 - There is a new `core/page_title` Javascript module for manipulating the current page title
 
   For more information see [MDL-84804](https://tracker.moodle.org/browse/MDL-84804)
@@ -29,6 +32,36 @@ The format of this change log follows the advice given at [Keep a CHANGELOG](htt
 - Output classes can now implement the core\output\externable interface. This allows these classes to define methods for exporting their data in a format suitable for use in web services.
 
   For more information see [MDL-85509](https://tracker.moodle.org/browse/MDL-85509)
+- The following functions have been replaced with class methods.
+
+   | Old function name               | New method name                       |
+   | ---                             | ---                                   |
+   | `\ajax_capture_output()`        | `\core\ajax::capture_output()`        |
+   | `\ajax_check_captured_output()` | `\core\ajax::check_captured_output()` |
+  It is no longer necessary to include `lib/ajax/ajaxlib.php` in any code.
+
+  For more information see [MDL-86168](https://tracker.moodle.org/browse/MDL-86168)
+- The Behat `::execute()` method now accepts an array-style callable in addition to the string `classname::method` format.
+
+  The following formats are now accepted:
+
+  ```php
+  // String format:
+  $this->execute('behat_general::i_click_on', [...]);
+
+  // Array format:
+  $this->execute([behat_general::class,' i_click_on'], [...]);
+  ```
+
+  For more information see [MDL-86231](https://tracker.moodle.org/browse/MDL-86231)
+- The following classes have been moved into namespaces and now support autoloading:
+
+  | Old class name          | New class name                         |
+  | ---                     | ---                                    |
+  | `\core_xml_parser`      | `\core\xml_parser`                     |
+  | `\xml_format_exception` | `\core\exception\xml_format_exception` |
+
+  For more information see [MDL-86256](https://tracker.moodle.org/browse/MDL-86256)
 
 #### Changed
 
@@ -49,6 +82,15 @@ The format of this change log follows the advice given at [Keep a CHANGELOG](htt
   ```
 
   For more information see [MDL-85897](https://tracker.moodle.org/browse/MDL-85897)
+- The `\core\output\local\dropdown\dialog` class constructor now accepts a `$definition['autoclose']` parameter to define autoclose behaviour of the element
+
+  For more information see [MDL-86015](https://tracker.moodle.org/browse/MDL-86015)
+- The default PHPUnit configuration now enables the following properties, ensuring PHP warnings will cause test failures (restoring pre-PHPUnit version 10 behaviour):
+
+  * `failOnDeprecation`
+  * `failOnWarning`
+
+  For more information see [MDL-86311](https://tracker.moodle.org/browse/MDL-86311)
 
 #### Deprecated
 
@@ -73,6 +115,12 @@ The format of this change log follows the advice given at [Keep a CHANGELOG](htt
   The usage of these selectors will continue to be supported until they are removed by final deprecation. In the meantime, a deprecation warning in the JavaScript console will be shown if usage of these selectors is detected.
 
   For more information see [MDL-79756](https://tracker.moodle.org/browse/MDL-79756)
+- The `user_preference_allow_ajax_update()` has been removed. It was deprecated without replacement in Moodle 4.3.
+
+  For more information see [MDL-86168](https://tracker.moodle.org/browse/MDL-86168)
+- The `xmlize()` method from `lib/xmlize.php` has been deprecated, please instead use the `\core\xml_parser` class
+
+  For more information see [MDL-86256](https://tracker.moodle.org/browse/MDL-86256)
 
 #### Removed
 
@@ -142,7 +190,62 @@ The format of this change log follows the advice given at [Keep a CHANGELOG](htt
 
   For more information see [MDL-85433](https://tracker.moodle.org/browse/MDL-85433)
 
+#### Removed
+
+- Removed block_section_links from Moodle 5.1.
+
+  For more information see [MDL-80556](https://tracker.moodle.org/browse/MDL-80556)
+- Removed block_activity_modules from Moodle 5.1.
+
+  For more information see [MDL-83887](https://tracker.moodle.org/browse/MDL-83887)
+
+### core_comment
+
+#### Added
+
+- The following classes have been renamed and now support autoloading.
+        Existing classes are currently unaffected.
+
+        | Old class name       | New class name                    |
+        | ---                  | ---                               |
+        | `\comment`           | `\core_comment\manager`           |
+        | `\comment_exception` | `\core_comment\comment_exception` |
+
+  For more information see [MDL-86254](https://tracker.moodle.org/browse/MDL-86254)
+
+#### Deprecated
+
+- The `public/comment/locallib.php` file and the `comment_manager` class have been deprecated. All related functionality should now be accessed via the `\core_comment\manager` class.
+
+  For more information see [MDL-86254](https://tracker.moodle.org/browse/MDL-86254)
+- The `public/comment/lib.php` file is now empty and will be removed in Moodle 6.0. Please, do not include in your code anymore.
+
+  For more information see [MDL-86254](https://tracker.moodle.org/browse/MDL-86254)
+
 ### core_course
+
+#### Added
+
+- Added new `gradable` property to `core_course\local\entity\content_item`
+
+  For more information see [MDL-86036](https://tracker.moodle.org/browse/MDL-86036)
+- - The following classes have been renamed and now support autoloading.
+    Existing classes are currently unaffected.
+
+    | Old class name    | New class name           |
+    | ---               | ---                      |
+    | `\cm_info`        | `\course\cm_info
+    | `\cached_cm_info` | `\course\cached_cm_info` |
+    | `\section_info`   | `\course\section_info`   |
+    | `\course_modinfo` | `\course\modinfo`        |
+
+  For more information see [MDL-86155](https://tracker.moodle.org/browse/MDL-86155)
+- Removed fictitious `__empty()` magic method.
+
+  The `empty()` method does not make use of any `__empty()` method. It is not a
+  defined magic method.
+
+  For more information see [MDL-86155](https://tracker.moodle.org/browse/MDL-86155)
 
 #### Changed
 
@@ -155,6 +258,15 @@ The format of this change log follows the advice given at [Keep a CHANGELOG](htt
 - The duplicatesection param in course/view.php is deprecated. Use course/format/update.php with action section_duplicate instead.
 
   For more information see [MDL-84216](https://tracker.moodle.org/browse/MDL-84216)
+- The `\course\cm_info::$extra` and `\course\cm_info::$score` properties will now
+  emit appropriate debugging.
+
+  These have been deprecated for a long time, but did not emit any debugging.
+
+  For more information see [MDL-86155](https://tracker.moodle.org/browse/MDL-86155)
+- The `MAX_MODINFO_CACHE_SIZE` constant has been deprecated and replaced with a class constant.
+
+  For more information see [MDL-86155](https://tracker.moodle.org/browse/MDL-86155)
 
 #### Removed
 
@@ -286,6 +398,9 @@ The format of this change log follows the advice given at [Keep a CHANGELOG](htt
 - The `report_action` class now accepts a `pix_icon` to include inside the rendered action element
 
   For more information see [MDL-85216](https://tracker.moodle.org/browse/MDL-85216)
+- The report column class has a new `get_effective_type()` method to determine the returned column type, taking into account applied aggregation method
+
+  For more information see [MDL-86151](https://tracker.moodle.org/browse/MDL-86151)
 
 ### core_user
 
@@ -338,6 +453,14 @@ The format of this change log follows the advice given at [Keep a CHANGELOG](htt
 
   For more information see [MDL-84071](https://tracker.moodle.org/browse/MDL-84071)
 
+### mod_bigbluebuttonbn
+
+#### Added
+
+- Add activity_dates class to BigblueButton module.
+
+  For more information see [MDL-83889](https://tracker.moodle.org/browse/MDL-83889)
+
 ### mod_choice
 
 #### Added
@@ -367,6 +490,14 @@ The format of this change log follows the advice given at [Keep a CHANGELOG](htt
 - The function forum_tp_get_untracked_forums() has been deprecated because it is no longer used.
 
   For more information see [MDL-83893](https://tracker.moodle.org/browse/MDL-83893)
+
+### mod_glossary
+
+#### Added
+
+- Added mod_glossary_get_comments(): a method for retrieving comments linked to a glossary.
+
+  For more information see [MDL-85840](https://tracker.moodle.org/browse/MDL-85840)
 
 ### mod_label
 
@@ -460,6 +591,15 @@ The format of this change log follows the advice given at [Keep a CHANGELOG](htt
 
 ### mod_scorm
 
+#### Added
+
+- Create a manager class to regroup common functionalities for course overview page
+
+  For more information see [MDL-83899](https://tracker.moodle.org/browse/MDL-83899)
+- Add a new generator for scorm attempts to simulate user's attempt.
+
+  For more information see [MDL-83899](https://tracker.moodle.org/browse/MDL-83899)
+
 #### Deprecated
 
 - The method `\mod_scorm\report::generate_master_checkbox()` has been deprecated and should no longer be used. SCORM report plugins calling this method should use `\mod_scorm\report::generate_toggler_checkbox()` instead.
@@ -511,6 +651,12 @@ The format of this change log follows the advice given at [Keep a CHANGELOG](htt
 - Theme can now inherit from their grand-parent and parents.  So if a child theme inherit from a parent theme that declares a new layout, the child theme can use it without redeclaring it. Also inheritance for layout uses the expected grandparent > parent > child with precedence to the child theme.
 
   For more information see [MDL-79319](https://tracker.moodle.org/browse/MDL-79319)
+
+#### Deprecated
+
+- The `core:e/text_highlight` and `core:e/text_highlight_picker` icons are deprecated and will be removed in Moodle 6.0. The UX team recommended this change to reduce visual clutter and improve readability. The icons were removed because they didn't indicate status changes, were repetitive across all notifications, and took up space that could be used for more content.
+
+  For more information see [MDL-85146](https://tracker.moodle.org/browse/MDL-85146)
 
 ## 5.0
 

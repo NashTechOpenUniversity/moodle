@@ -161,9 +161,12 @@ export default class {
         };
         data.details = [
             {
-                icon: 'i/categoryevent',
-                label: allStrings['mod_purposes'],
+                label: allStrings['supports'],
                 value: allStrings[purposeKey] || '',
+            },
+            {
+                label: allStrings['gradable'],
+                value: moduleData.gradable ? allStrings['yes'] : allStrings['no'],
             },
         ];
         return data;
@@ -244,10 +247,13 @@ async function loadNecessaryStrings() {
 
     const stringToLoad = [
         {key: 'all', component: 'core'},
+        {key: 'yes', component: 'core'},
+        {key: 'no', component: 'core'},
         {key: 'favourites', component: 'core'},
         {key: 'recommended', component: 'core'},
+        {key: 'gradable', component: 'core'},
         {key: 'recommended_help', component: 'core_course'},
-        {key: 'mod_purposes', component: 'core_course'},
+        {key: 'supports', component: 'core_course'},
         ...activityCategories.map(
             (key) => ({
                 key: 'mod_purpose_' + key,

@@ -204,12 +204,11 @@ class helper {
         static::add_plugin($presetid, 'availability', 'grouping', false);
         static::add_plugin($presetid, 'availability', 'profile', false);
 
-        // Blocks: Hide Activities, Blog menu, Blog tags, Comments, Course completion status, Courses, Flickr,
+        // Blocks: Hide Blog menu, Blog tags, Comments, Course completion status, Courses, Flickr,
         // Global search, Latest badges, Learning plans, Logged in user, Login, Main menu, Mentees, Online users,
-        // Private files, Recent blog entries, Recently accessed courses, Search forums, Section links, Social activities,
+        // Private files, Recent blog entries, Recently accessed courses, Search forums, Social activities,
         // Starred courses, Tags, YouTube.
         // Hidden by default: Course/site summary, RSS feeds, Self completion, Feedback.
-        static::add_plugin($presetid, 'block', 'activity_modules', false);
         static::add_plugin($presetid, 'block', 'blog_menu', false);
         static::add_plugin($presetid, 'block', 'blog_tags', false);
         static::add_plugin($presetid, 'block', 'comments', false);
@@ -228,7 +227,6 @@ class helper {
         static::add_plugin($presetid, 'block', 'blog_recent', false);
         static::add_plugin($presetid, 'block', 'rss_client', false);
         static::add_plugin($presetid, 'block', 'search_forums', false);
-        static::add_plugin($presetid, 'block', 'section_links', false);
         static::add_plugin($presetid, 'block', 'selfcompletion', false);
         static::add_plugin($presetid, 'block', 'social_activities', false);
         static::add_plugin($presetid, 'block', 'tags', false);
@@ -307,12 +305,11 @@ class helper {
         static::add_plugin($presetid, 'availability', 'grouping', true);
         static::add_plugin($presetid, 'availability', 'profile', true);
 
-        // Blocks: Enable Activities, Blog menu, Blog tags, Comments, Course completion status, Courses, Flickr,
+        // Blocks: Enable Blog menu, Blog tags, Comments, Course completion status, Courses, Flickr,
         // Global search, Latest badges, Learning plans, Logged in user, Login, Main menu, Mentees, Online users,
-        // Private files, Recent blog entries, Recently accessed courses, Search forums, Section links, Social activities,
+        // Private files, Recent blog entries, Recently accessed courses, Search forums, Social activities,
         // Starred courses, Tags, YouTube.
         // Hidden by default: Course/site summary, RSS feeds, Self completion, Feedback.
-        static::add_plugin($presetid, 'block', 'activity_modules', true);
         static::add_plugin($presetid, 'block', 'blog_menu', true);
         static::add_plugin($presetid, 'block', 'blog_tags', true);
         static::add_plugin($presetid, 'block', 'comments', true);
@@ -329,7 +326,6 @@ class helper {
         static::add_plugin($presetid, 'block', 'private_files', true);
         static::add_plugin($presetid, 'block', 'blog_recent', true);
         static::add_plugin($presetid, 'block', 'search_forums', true);
-        static::add_plugin($presetid, 'block', 'section_links', true);
         static::add_plugin($presetid, 'block', 'social_activities', true);
         static::add_plugin($presetid, 'block', 'tags', true);
         static::add_plugin($presetid, 'block', 'online_users', true);

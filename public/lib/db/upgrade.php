@@ -1729,104 +1729,6 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2025051600.02);
     }
 
-    if ($oldversion < 2025053000.01) {
-        // A [name => url] map of new OIDC endpoints to be updated/created.
-        $endpointuris = [
-            'discovery_endpoint' => 'https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration',
-            'token_endpoint' => 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
-            'userinfo_endpoint' => 'https://graph.microsoft.com/oidc/userinfo',
-            'authorization_endpoint' => 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
-            'device_authorization_endpoint' => 'https://login.microsoftonline.com/common/oauth2/v2.0/devicecode',
-            'end_session_endpoint' => 'https://login.microsoftonline.com/common/oauth2/v2.0/logout',
-            'kerberos_endpoint' => 'https://login.microsoftonline.com/common/kerberos',
-        ];
-
-        // A [name] map of endpoints to be deleted.
-        $deletedendpointuris = [
-            'userpicture_endpoint',
-        ];
-
-        // A [internalfield => externalfield] map of new OIDC-based user field mappings to be updated/created.
-        $userfieldmappings = [
-            'idnumber' => 'sub',
-            'firstname' => 'givenname',
-            'lastname' => 'familyname',
-            'email' => 'email',
-            'lang' => 'locale',
-        ];
-
-        $admin = get_admin();
-        $adminid = $admin ? $admin->id : '0';
-
-        $microsoftservices = $DB->get_records('oauth2_issuer', ['servicetype' => 'microsoft']);
-        foreach ($microsoftservices as $microsoftservice) {
-            $time = time();
-
-            // Insert/update the new endpoints.
-            foreach ($endpointuris as $endpointname => $endpointuri) {
-                $endpoint = ['issuerid' => $microsoftservice->id, 'name' => $endpointname];
-                $endpointid = $DB->get_field('oauth2_endpoint', 'id', $endpoint);
-
-                if ($endpointid) {
-                    $endpoint = array_merge($endpoint, [
-                        'id' => $endpointid,
-                        'url' => $endpointuri,
-                        'timemodified' => $time,
-                        'usermodified' => $adminid,
-                    ]);
-                    $DB->update_record('oauth2_endpoint', $endpoint);
-                } else {
-                    $endpoint = array_merge($endpoint, [
-                        'url' => $endpointuri,
-                        'timecreated' => $time,
-                        'timemodified' => $time,
-                        'usermodified' => $adminid,
-                    ]);
-                    $DB->insert_record('oauth2_endpoint', $endpoint);
-                }
-            }
-
-            // Delete the old endpoints.
-            foreach ($deletedendpointuris as $endpointname) {
-                $endpoint = ['issuerid' => $microsoftservice->id, 'name' => $endpointname];
-                $DB->delete_records('oauth2_endpoint', $endpoint);
-            }
-
-            // Insert/update new user field mappings.
-            foreach ($userfieldmappings as $internalfieldname => $externalfieldname) {
-                $fieldmap = ['issuerid' => $microsoftservice->id, 'internalfield' => $internalfieldname];
-                $fieldmapid = $DB->get_field('oauth2_user_field_mapping', 'id', $fieldmap);
-
-                if ($fieldmapid) {
-                    $fieldmap = array_merge($fieldmap, [
-                        'id' => $fieldmapid,
-                        'externalfield' => $externalfieldname,
-                        'timemodified' => $time,
-                        'usermodified' => $adminid,
-                    ]);
-                    $DB->update_record('oauth2_user_field_mapping', $fieldmap);
-                } else {
-                    $fieldmap = array_merge($fieldmap, [
-                        'externalfield' => $externalfieldname,
-                        'timecreated' => $time,
-                        'timemodified' => $time,
-                        'usermodified' => $adminid,
-                    ]);
-                    $DB->insert_record('oauth2_user_field_mapping', $fieldmap);
-                }
-            }
-
-            // Update the baseurl for the issuer.
-            $microsoftservice->baseurl = 'https://login.microsoftonline.com/common/v2.0';
-            $microsoftservice->timemodified = $time;
-            $microsoftservice->usermodified = $adminid;
-            $DB->update_record('oauth2_issuer', $microsoftservice);
-        }
-
-        // Main savepoint reached.
-        upgrade_main_savepoint(true, 2025053000.01);
-    }
-
     if ($oldversion < 2025053000.02) {
 
         // Define field systememail to be added to oauth2_issuer.
@@ -1986,6 +1888,183 @@ function xmldb_main_upgrade($oldversion) {
 
         // Main savepoint reached.
         upgrade_main_savepoint(true, 2025072500.01);
+    }
+
+    if ($oldversion < 2025073100.01) {
+        // A [name => url] map of new OIDC endpoints to be updated/created.
+        $endpointuris = [
+            'discovery_endpoint' => 'https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration',
+            'token_endpoint' => 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+            'userinfo_endpoint' => 'https://graph.microsoft.com/oidc/userinfo',
+            'authorization_endpoint' => 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+            'device_authorization_endpoint' => 'https://login.microsoftonline.com/common/oauth2/v2.0/devicecode',
+            'end_session_endpoint' => 'https://login.microsoftonline.com/common/oauth2/v2.0/logout',
+            'kerberos_endpoint' => 'https://login.microsoftonline.com/common/kerberos',
+        ];
+        // A [name] map of endpoints to be deleted.
+        $deletedendpointuris = [
+            'userpicture_endpoint',
+        ];
+        // A [internalfield => externalfield] map of new OIDC-based user field mappings to be updated/created.
+        $userfieldmappings = [
+            'idnumber' => 'sub',
+            'firstname' => 'givenname',
+            'lastname' => 'familyname',
+            'email' => 'email',
+            'lang' => 'locale',
+        ];
+        $admin = get_admin();
+        $adminid = $admin ? $admin->id : '0';
+        $microsoftservices = $DB->get_records('oauth2_issuer', ['servicetype' => 'microsoft']);
+        foreach ($microsoftservices as $microsoftservice) {
+            $time = time();
+            if (strpos($microsoftservice->baseurl, 'common') !== false) {
+                // Multi-tenant endpoint, proceed with upgrade.
+                // Insert/update the new endpoints.
+                foreach ($endpointuris as $endpointname => $endpointuri) {
+                    $endpoint = ['issuerid' => $microsoftservice->id, 'name' => $endpointname];
+                    $endpointid = $DB->get_field('oauth2_endpoint', 'id', $endpoint);
+                    if ($endpointid) {
+                        $endpoint = array_merge($endpoint, [
+                            'id' => $endpointid,
+                            'url' => $endpointuri,
+                            'timemodified' => $time,
+                            'usermodified' => $adminid,
+                        ]);
+                        $DB->update_record('oauth2_endpoint', $endpoint);
+                    } else {
+                        $endpoint = array_merge($endpoint, [
+                            'url' => $endpointuri,
+                            'timecreated' => $time,
+                            'timemodified' => $time,
+                            'usermodified' => $adminid,
+                        ]);
+                        $DB->insert_record('oauth2_endpoint', $endpoint);
+                    }
+                }
+                // Delete the old endpoints.
+                foreach ($deletedendpointuris as $endpointname) {
+                    $endpoint = ['issuerid' => $microsoftservice->id, 'name' => $endpointname];
+                    $DB->delete_records('oauth2_endpoint', $endpoint);
+                }
+                // Insert/update new user field mappings.
+                foreach ($userfieldmappings as $internalfieldname => $externalfieldname) {
+                    $fieldmap = ['issuerid' => $microsoftservice->id, 'internalfield' => $internalfieldname];
+                    $fieldmapid = $DB->get_field('oauth2_user_field_mapping', 'id', $fieldmap);
+                    if ($fieldmapid) {
+                        $fieldmap = array_merge($fieldmap, [
+                            'id' => $fieldmapid,
+                            'externalfield' => $externalfieldname,
+                            'timemodified' => $time,
+                            'usermodified' => $adminid,
+                        ]);
+                        $DB->update_record('oauth2_user_field_mapping', $fieldmap);
+                    } else {
+                        $fieldmap = array_merge($fieldmap, [
+                            'externalfield' => $externalfieldname,
+                            'timecreated' => $time,
+                            'timemodified' => $time,
+                            'usermodified' => $adminid,
+                        ]);
+                        $DB->insert_record('oauth2_user_field_mapping', $fieldmap);
+                    }
+                }
+                // Update the baseurl for the issuer.
+                $microsoftservice->baseurl = 'https://login.microsoftonline.com/common/v2.0';
+                $microsoftservice->timemodified = $time;
+                $microsoftservice->usermodified = $adminid;
+                $DB->update_record('oauth2_issuer', $microsoftservice);
+            } else {
+                // Single-tenant endpoint, add discovery_endpoint if it doesn't exist.
+                $url = $microsoftservice->baseurl;
+                $url .= (substr($url, -1) === '/') ? '' : '/';
+                $url .= '.well-known/openid-configuration';
+                $endpoint = ['issuerid' => $microsoftservice->id, 'name' => 'discovery_endpoint'];
+                $endpointid = $DB->get_field('oauth2_endpoint', 'id', $endpoint);
+                if (!$endpointid) {
+                    $endpoint = array_merge($endpoint, [
+                        'url' => $url,
+                        'timecreated' => $time,
+                        'timemodified' => $time,
+                        'usermodified' => $adminid,
+                    ]);
+                    $DB->insert_record('oauth2_endpoint', $endpoint);
+                }
+            }
+        }
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025073100.01);
+    }
+
+    if ($oldversion < 2025081900.02) {
+        // Remove activity_modules block.
+
+        if (!file_exists($CFG->dirroot . "/blocks/activity_modules/version.php")) {
+            uninstall_plugin('block', 'activity_modules');
+            // Delete all the admin preset plugin references to activity_modules.
+            $DB->delete_records('adminpresets_plug', ['plugin' => 'block', 'name' => 'activity_modules']);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025081900.02);
+    }
+
+    if ($oldversion < 2025081900.03) {
+        // Remove section_links block.
+
+        if (!file_exists($CFG->dirroot . "/blocks/section_links/version.php")) {
+            uninstall_plugin('block', 'section_links');
+            // Delete all the admin preset plugin references to section_links.
+            $DB->delete_records('adminpresets_plug', ['plugin' => 'block', 'name' => 'section_links']);
+            // Remove the section_links block from the unaddableblocks setting.
+            $settings = $DB->get_records('config_plugins', ['name' => 'unaddableblocks'], '', 'plugin, value');
+            foreach ($settings as $setting) {
+                // Split the value into an array of items and remove 'section_links'.
+                // Using PREG_SPLIT_NO_EMPTY will remove any empty strings resulting from multiple commas.
+                $items = preg_split('/,/', $setting->value, -1, PREG_SPLIT_NO_EMPTY);
+                $newvalue = array_filter($items, function($item) {
+                    return trim($item) !== 'section_links';
+                });
+                set_config(
+                    'unaddableblocks',
+                    implode(',', $newvalue),
+                    $setting->plugin,
+                );
+            }
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025081900.03);
+    }
+
+    if ($oldversion < 2025081900.04) {
+
+        // Define table shortlink to be created.
+        $table = new xmldb_table('shortlink');
+
+        // Adding fields to table shortlink.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null, null);
+        $table->add_field('shortcode', XMLDB_TYPE_CHAR, '12', null, XMLDB_NOTNULL, null, null, 'id');
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null, 'shortcode');
+        $table->add_field('component', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, null, 'userid');
+        $table->add_field('linktype', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, null, 'component');
+        $table->add_field('identifier', XMLDB_TYPE_CHAR, '1333', null, XMLDB_NOTNULL, null, null, 'linktype');
+
+        // Adding keys to table shortlink.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+
+        // Adding indexes to table shortlink.
+        $table->add_index('shortcode_userid', XMLDB_INDEX_UNIQUE, ['userid', 'shortcode']);
+        $table->add_index('shortcode', XMLDB_INDEX_NOTUNIQUE, ['shortcode']);
+
+        // Conditionally launch create table for shortlink.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025081900.04);
     }
 
     return true;

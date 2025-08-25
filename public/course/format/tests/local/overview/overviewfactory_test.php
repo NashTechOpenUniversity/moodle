@@ -92,7 +92,7 @@ final class overviewfactory_test extends \advanced_testcase {
             ],
             'bigbluebuttonbn' => [
                 'resourcetype' => 'bigbluebuttonbn',
-                'expected' => resourceoverview::class,
+                'expected' => \mod_bigbluebuttonbn\courseformat\overview::class,
             ],
             'choice' => [
                 'resourcetype' => 'choice',
@@ -136,7 +136,7 @@ final class overviewfactory_test extends \advanced_testcase {
             ],
             'scorm' => [
                 'resourcetype' => 'scorm',
-                'expected' => resourceoverview::class,
+                'expected' => \mod_scorm\courseformat\overview::class,
             ],
             'wiki' => [
                 'resourcetype' => 'wiki',
@@ -198,7 +198,7 @@ final class overviewfactory_test extends \advanced_testcase {
     public static function activity_has_overview_integration_provider(): array {
         return [
             'assign' => ['modname' => 'assign', 'hasintegration' => true],
-            'bigbluebuttonbn' => ['modname' => 'bigbluebuttonbn', 'hasintegration' => false],
+            'bigbluebuttonbn' => ['modname' => 'bigbluebuttonbn', 'hasintegration' => true],
             'book' => ['modname' => 'book', 'hasintegration' => false],
             'choice' => ['modname' => 'choice', 'hasintegration' => true],
             'data' => ['modname' => 'data', 'hasintegration' => true],
@@ -215,7 +215,7 @@ final class overviewfactory_test extends \advanced_testcase {
             'qbank' => ['modname' => 'qbank', 'hasintegration' => false],
             'quiz' => ['modname' => 'quiz', 'hasintegration' => false],
             'resource' => ['modname' => 'resource', 'hasintegration' => true],
-            'scorm' => ['modname' => 'scorm', 'hasintegration' => false],
+            'scorm' => ['modname' => 'scorm', 'hasintegration' => true],
             'url' => ['modname' => 'url', 'hasintegration' => false],
             'wiki' => ['modname' => 'wiki', 'hasintegration' => true],
             'workshop' => ['modname' => 'workshop', 'hasintegration' => true],

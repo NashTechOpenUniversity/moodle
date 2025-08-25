@@ -26,9 +26,8 @@ use stdClass;
 use theme_config;
 use core_course_category;
 use core_reportbuilder\local\entities\base;
-use core_reportbuilder\local\filters\{category, select, text};
-use core_reportbuilder\local\report\column;
-use core_reportbuilder\local\report\filter;
+use core_reportbuilder\local\filters\{category, number, select, text};
+use core_reportbuilder\local\report\{column, filter};
 
 /**
  * Course category entity
@@ -202,11 +201,11 @@ class course_category extends base {
             ->add_fields("{$tablealias}.theme")
             ->set_is_sortable(true)
             ->add_callback(static function (?string $theme): string {
-                if ((string) $theme === '') {
-                    return '';
-                }
-
-                return get_string('pluginname', "theme_{$theme}");
+                return match ($theme) {
+                    null => '',
+                    '' => get_string('forceno'),
+                    default => get_string('pluginname', "theme_{$theme}"),
+                };
             });
 
         // Course count column.
@@ -273,11 +272,21 @@ class course_category extends base {
             "{$tablealias}.theme",
         ))
             ->set_options_callback(static function(): array {
-                return array_map(
+                return ['' => get_string('forceno')] + array_map(
                     fn(theme_config $theme) => $theme->get_theme_name(),
                     get_list_of_themes(),
                 );
             })
+            ->add_joins($this->get_joins());
+
+        // Course count filter.
+        $filters[] = (new filter(
+            number::class,
+            'coursecount',
+            new lang_string('coursecount', 'core_course'),
+            $this->get_entity_name(),
+            "{$tablealias}.coursecount",
+        ))
             ->add_joins($this->get_joins());
 
         return $filters;

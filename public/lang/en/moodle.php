@@ -929,13 +929,13 @@ $string['force'] = 'Force';
 $string['forcelanguage'] = 'Force language';
 $string['forceno'] = 'Do not force';
 $string['forcepasswordchange'] = 'Force password change';
-$string['forcepasswordchange_help'] = 'If this checkbox is ticked, the user will be prompted to change their password on their next login';
+$string['forcepasswordchange_help'] = 'If ticked, the user will be prompted to change their password when they next log in.';
 $string['forcepasswordchangecheckfull'] = 'Are you absolutely sure you want to force a password change to {$a} ?';
 $string['forcepasswordchangenot'] = 'Could not force a password change to {$a}';
 $string['forcepasswordchangenotice'] = 'You must change your password to proceed.';
 $string['forcepasswordresetfailurenotice'] = 'Your current password no longer passes the set password policy. Please contact your Moodle administrator for assistance.
    {$a}';
-$string['forcepasswordresetnotice'] = 'Your current password no longer passes the set password policy, you must reset your password to login.
+$string['forcepasswordresetnotice'] = 'Your current password no longer passes the password policy. You must reset your password to log in.
    {$a}';
 $string['forcetheme'] = 'Force theme';
 $string['forgotaccount'] = 'Lost password?';
@@ -991,6 +991,7 @@ This program is free software: you can redistribute it and/or modify it under th
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the Moodle License information page for full details: https://moodledev.io/general/license';
+$string['gradable'] = 'Gradable';
 $string['grades'] = 'Grades';
 $string['gradenoun'] = 'Grade';
 $string['gradeverb'] = 'Grade';
@@ -1296,7 +1297,7 @@ $string['maximumgradex'] = 'Maximum grade: {$a}';
 $string['maximumshort'] = 'Max';
 $string['maximumupload'] = 'Maximum upload size';
 $string['maximumupload_help'] = 'The maximum file size allowed for student uploads to the course. Additionally, you can further restrict the maximum upload size for each activity.';
-$string['maxlengthreached'] = 'Maximum character limit of {$a} has been reached';
+$string['maxlengthreached'] = 'Maximum character limit of {$a} has been reached.';
 $string['maxnumberweeks'] = 'Maximum number of sections (deprecated)';
 $string['maxnumberweeks_desc'] = 'The maximum value in the number of sections drop-down menu (applies to certain course formats only). This setting is deprecated and will be removed in a future version of Moodle. Please use the course format settings instead.';
 $string['maxnumcoursesincombo'] = 'Browse <a href="{$a->link}">{$a->numberofcourses} courses</a>.';
@@ -1758,6 +1759,12 @@ $string['privacy:metadata:oauth2_refresh_token:token'] = 'The refresh token for 
 $string['privacy:metadata:oauth2_refresh_token:timecreated'] = 'The time when the token was created';
 $string['privacy:metadata:oauth2_refresh_token:timemodified'] = 'The time when the token was last updated';
 $string['privacy:metadata:oauth2_refresh_token:userid'] = 'The ID of the user to whom the token corresponds';
+$string['privacy:metadata:shortlink'] = 'Shortlink URL details';
+$string['privacy:metadata:shortlink:shortcode'] = 'The shortcode to use for the shortlink';
+$string['privacy:metadata:shortlink:userid'] = 'The ID of the user associated with the shortlink';
+$string['privacy:metadata:shortlink:component'] = 'The component associated with the shortlink';
+$string['privacy:metadata:shortlink:linktype'] = 'The type of link the shortlink can be identified as';
+$string['privacy:metadata:shortlink:identifier'] = 'The unique identifier associated with the shortlink';
 $string['privacy:metadata:task_adhoc'] = 'The status of ad hoc tasks.';
 $string['privacy:metadata:task_adhoc:component'] = 'The component owning the task.';
 $string['privacy:metadata:task_adhoc:nextruntime'] = 'The earliest time to run this task.';
