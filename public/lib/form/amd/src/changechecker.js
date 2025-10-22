@@ -91,6 +91,32 @@ let watchedForms = [];
 let formChangeCheckerDisabled = false;
 
 /**
+ * Get all known TinyMCE editor instances across supported TinyMCE APIs.
+ *
+ * @returns {Array}
+ * @private
+ */
+const getTinyMceEditors = () => {
+    const tinyMCE = window.tinyMCE || window.tinymce;
+    if (!tinyMCE) {
+        return [];
+    }
+
+    if (tinyMCE.EditorManager && typeof tinyMCE.EditorManager.get === 'function') {
+        const managerEditors = tinyMCE.EditorManager.get();
+        if (Array.isArray(managerEditors)) {
+            return managerEditors;
+        }
+    }
+
+    if (tinyMCE.activeEditor) {
+        return [tinyMCE.activeEditor];
+    }
+
+    return [];
+};
+
+/**
  * Get the nearest form element from a child element.
  *
  * @param {HTMLElement} formChild
@@ -273,10 +299,8 @@ export const isAnyWatchedFormDirty = () => {
     // Handle TinyMCE editor instances.
     // TinyMCE forms may not have been initialised at the time that startWatching is called.
     // Check whether any tinyMCE editor is dirty.
-    if (typeof window.tinyMCE !== 'undefined' && window.tinyMCE.editors) {
-        if (window.tinyMCE.editors.some(editor => editor.isDirty())) {
-            return true;
-        }
+    if (getTinyMceEditors().some(editor => editor && typeof editor.isDirty === 'function' && editor.isDirty())) {
+        return true;
     }
 
     // No dirty forms detected.
