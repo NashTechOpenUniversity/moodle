@@ -263,22 +263,41 @@ class question_bank_helper {
         if (empty($plugins)) {
             return [];
         }
-
+        $searchconditions = [];
+        $existconditions = [];
         // Build the joins for all modules of the type requested i.e. those that do or do not share questions.
         foreach ($plugins as $key => $plugin) {
             $moduleid = $DB->get_field('modules', 'id', ['name' => $plugin]);
-            $sql = "JOIN {{$plugin}} p{$key} ON p{$key}.id = cm.instance
+            $sql = "LEFT JOIN {{$plugin}} p{$key} ON p{$key}.id = cm.instance
                     AND cm.module = {$moduleid} AND cm.deletioninprogress = 0";
             if ($plugin === self::get_default_question_bank_activity_name()) {
                 $sql .= " AND p{$key}.type <> '" . self::TYPE_PREVIEW . "'";
             }
+            // Existence condition: plugin row exists.
+            $existconditions[] = "(p{$key}.id IS NOT NULL)";
+            // Optional search condition.
             if (!empty($search)) {
-                $sql .= " AND " . $DB->sql_like("p{$key}.name", ":search{$key}", false);
-                $params["search{$key}"] = "%{$search}%";
+                $paramname = "search{$key}";
+                $params[$paramname] = "%{$search}%";
+                // Require both cm.module matches and plugin name matches.
+                $searchconditions[] = "(cm.module = {$moduleid} AND " .
+                    $DB->sql_like("p{$key}.name", ":{$paramname}", false) . ")";
             }
             $pluginssql[] = $sql;
         }
         $pluginssql = implode(' ', $pluginssql);
+
+        // Build the WHERE existence/search clause.
+        $searchsql = '';
+        if (!empty($search) && !empty($searchconditions)) {
+            // When searching: only include modules whose plugin name matches.
+            $searchsql = "AND (" . implode(' OR ', $searchconditions) . ")";
+        } else {
+            // When not searching: include only modules that have an actual plugin row.
+            if (!empty($existconditions)) {
+                $searchsql = "AND (" . implode(' OR ', $existconditions) . ")";
+            }
+        }
 
         // Build the SQL to filter out any requested course ids.
         if (!empty($notincourseids)) {
@@ -312,7 +331,7 @@ class question_bank_helper {
                 {$pluginssql}
                 {$contextsql}
                 {$catsql}
-                WHERE 1=1 {$notincoursesql} {$incoursesql}
+                WHERE 1=1 {$notincoursesql} {$incoursesql} {$searchsql}
                 GROUP BY cm.id, cm.course {$contextgroupby}
                 {$orderbysql}";
 
