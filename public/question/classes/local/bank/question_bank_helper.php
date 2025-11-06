@@ -267,8 +267,7 @@ class question_bank_helper {
         $pluginfields = [];
         foreach ($plugins as $key => $plugin) {
             $join = "LEFT JOIN {{$plugin}} p{$key} ON p{$key}.id = cm.instance
-                     AND m.name = '{$plugin}'
-                     ";
+                     AND m.name = '{$plugin}'";
             if ($plugin === self::get_default_question_bank_activity_name()) {
                 $join .= " AND p{$key}.type <> '" . self::TYPE_PREVIEW . "'";
             }
@@ -282,11 +281,16 @@ class question_bank_helper {
         $wheremodulesql = "AND m.name $modulenamesql AND cm.deletioninprogress = 0";
         $params = array_merge($params, $modulenameparams);
 
-        // Build the search condition using COALESCE.
+        // Build the search condition using COALESCE only if there are multiple plugin fields.
         $searchsql = '';
         if (!empty($search) && !empty($pluginfields)) {
             $params['search'] = "%{$search}%";
-            $searchsql = "AND " . $DB->sql_like('COALESCE(' . implode(', ', $pluginfields) . ')', ':search', false);
+            if (count($pluginfields) === 1) {
+                $searchfield = $pluginfields[0];
+            } else {
+                $searchfield = 'COALESCE(' . implode(', ', $pluginfields) . ')';
+            }
+            $searchsql = "AND " . $DB->sql_like($searchfield, ':search', false);
         }
 
         // Build the SQL to filter out any requested course ids.
