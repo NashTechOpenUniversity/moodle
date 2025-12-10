@@ -19,14 +19,12 @@ namespace core_backup;
 use backup;
 use core_backup_external;
 use core_external\external_api;
-use externallib_advanced_testcase;
 
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->dirroot . '/backup/util/includes/backup_includes.php');
 require_once($CFG->dirroot . '/backup/util/includes/restore_includes.php');
-require_once($CFG->dirroot . '/webservice/tests/helpers.php');
 require_once($CFG->dirroot . '/backup/externallib.php');
 
 /**
@@ -37,8 +35,7 @@ require_once($CFG->dirroot . '/backup/externallib.php');
  * @author     Matt Porritt <mattp@catalyst-au.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-final class externallib_test extends externallib_advanced_testcase {
-
+final class externallib_test extends \core_external\tests\externallib_testcase {
     /**
      * Set up tasks for all tests.
      */
@@ -157,7 +154,7 @@ final class externallib_test extends externallib_advanced_testcase {
         $formdata->role_3 = 3;
         $formdata->role_5 = 5;
 
-        $urlform = http_build_query($formdata, '', '&'); // Take the form data and url encode it.
+        $urlform = http_build_query($formdata); // Take the form data and url encode it.
         $jsonformdata = json_encode($urlform); // Take form string and JSON encode.
 
         $returnvalue = core_backup_external::submit_copy_form($jsonformdata);

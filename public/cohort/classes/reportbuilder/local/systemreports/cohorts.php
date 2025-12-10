@@ -19,6 +19,7 @@ namespace core_cohort\reportbuilder\local\systemreports;
 use context;
 use context_coursecat;
 use context_system;
+use core_reportbuilder\local\aggregation\count;
 use core_cohort\reportbuilder\local\entities\{cohort, cohort_member};
 use core_reportbuilder\local\helpers\database;
 use core_reportbuilder\local\report\action;
@@ -62,7 +63,8 @@ class cohorts extends system_report {
             "{$entitymainalias}.component, {$entitymainalias}.name");
 
         $this->set_checkbox_toggleall(static function(stdClass $cohort): ?array {
-            if (!has_capability('moodle/cohort:manage', context::instance_by_id($cohort->contextid))) {
+            if (!empty($cohort->component) ||
+                    !has_capability('moodle/cohort:manage', context::instance_by_id($cohort->contextid))) {
                 return null;
             }
 
@@ -162,7 +164,7 @@ class cohorts extends system_report {
         // Member count.
         $this->add_column_from_entity('cohort_member:timeadded')
             ->set_title(new lang_string('memberscount', 'cohort'))
-            ->set_aggregation('count');
+            ->set_aggregation(count::get_class_name());
 
         // Component column. Override the display name of a column.
         $this->add_column_from_entity('cohort:component')

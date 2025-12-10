@@ -23,6 +23,8 @@
  * @package course
  */
 
+use core_courseformat\formatactions;
+
 require("../config.php");
 require_once("lib.php");
 
@@ -76,16 +78,22 @@ require_login();
 //check if we are adding / editing a module that has new forms using formslib
 if (!empty($add)) {
     $id          = required_param('id', PARAM_INT);
-    $section     = required_param('section', PARAM_INT);
+    $sectionid   = optional_param('sectionid', null, PARAM_INT);
     $type        = optional_param('type', '', PARAM_ALPHA);
     $returntomod = optional_param('return', 0, PARAM_BOOL);
     $beforemod   = optional_param('beforemod', 0, PARAM_INT);
+
+    if (empty($sectionid)) {
+        $section = required_param('section', PARAM_INT);
+        $sectioninfo = get_fast_modinfo($id)->get_section_info($section);
+        $sectionid = $sectioninfo?->id;
+    }
 
     $params = [
         'add' => $add,
         'type' => $type,
         'course' => $id,
-        'section' => $section,
+        'sectionid' => $sectionid,
         'return' => $returntomod,
         'beforemod' => $beforemod,
     ];
@@ -185,7 +193,7 @@ if (!empty($add)) {
     }
 
     // Delete the module.
-    course_delete_module($cm->id);
+    \core_courseformat\formatactions::cm($course->id)->delete($cm->id);
 
     redirect($return);
 }
@@ -330,7 +338,7 @@ if ((!empty($movetosection) or !empty($moveto)) and confirm_sesskey()) {
     $modcontext = context_module::instance($cm->id);
     require_capability('moodle/course:manageactivities', $modcontext);
 
-    set_coursemodule_groupmode($cm->id, $groupmode);
+    formatactions::cm($coursecontext->instanceid)->set_groupmode($cm->id, $groupmode);
     \core\event\course_module_updated::create_from_cm($cm, $modcontext)->trigger();
     redirect(course_get_url($course, $cm->sectionnum, $urloptions));
 

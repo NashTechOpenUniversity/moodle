@@ -36,6 +36,7 @@ $string['activitypleasewait'] = 'Activity loading, please wait ...';
 $string['adminsettings'] = 'Admin settings';
 $string['advanced'] = 'Parameters';
 $string['aliasonly'] = 'When selecting an imsmanifest.xml file from a repository you must use an alias/shortcut for this file.';
+$string['allattempts'] = 'All SCORM attempts';
 $string['allowapidebug'] = 'Activate API debug and tracing (set the capture mask with apidebugmask)';
 $string['allowedattemptsstudent'] = 'Allowed attempts per student';
 $string['allowtypeexternal'] = 'Enable external package type';
@@ -59,7 +60,7 @@ $string['attemptsmanagement'] = 'Attempts management';
 $string['attempt1'] = '1 attempt';
 $string['attr_error'] = 'Bad value for attribute ({$a->attr}) in tag {$a->tag}.';
 $string['autocommit'] = 'Auto-commit';
-$string['autocommit_help'] = 'If enabled, SCORM data is automaticaly saved to the database. Useful for SCORM objects which do not save their data regularly.';
+$string['autocommit_help'] = 'If enabled, SCORM data is automatically saved to the database. This is useful for SCORM objects which do not save their data regularly.';
 $string['autocommitdesc'] = 'Automatically save SCORM data if the SCORM package does not save it.';
 $string['autocontinue'] = 'Auto-continue';
 $string['autocontinue_help'] = 'If enabled, subsequent learning objects are launched automatically, otherwise the Continue button must be used.';
@@ -72,6 +73,7 @@ $string['badarchive'] = 'You must provide a valid zip file';
 $string['browse'] = 'Preview';
 $string['browsed'] = 'Browsed';
 $string['browsemode'] = 'Preview mode';
+$string['browsemodewithname'] = 'Preview mode: {$a}';
 $string['browserepository'] = 'Browse repository';
 $string['cachedef_elements'] = 'Element cache';
 $string['calculatedweight'] = 'Calculated weight';
@@ -109,7 +111,7 @@ $string['defaultdisplaysettings'] = 'Default display settings';
 $string['defaultgradesettings'] = 'Default grade settings';
 $string['defaultothersettings'] = 'Other default settings';
 $string['deleteattemptcheck'] = 'Are you absolutely sure you want to completely delete these attempts?';
-$string['deleteallattempts'] = 'All SCORM attempts';
+$string['deleteallattempts'] = 'Delete all SCORM attempts';
 $string['deleteselected'] = 'Delete selected attempts';
 $string['deleteuserattemptcheck'] = 'Are you absolutely sure you want to completely delete all your attempts?';
 $string['details'] = 'Track details';
@@ -275,15 +277,16 @@ $string['missingparam'] = 'A required parameter is missing or wrong';
 $string['missing_tag'] = 'Missing tag {$a->tag}';
 $string['mode'] = 'Mode';
 $string['modulename'] = 'SCORM package';
-$string['modulename_help'] = 'A SCORM package is a collection of files which are packaged according to an agreed standard for learning objects. The SCORM activity module enables SCORM or AICC packages to be uploaded as a zip file and added to a course.
+$string['modulename_help'] = '###### Key features
+- Add SCORM content packages as zip files
+- Track student progress, completion, and grades
 
-Content is usually displayed over several pages, with navigation between the pages. There are various options for displaying content in a pop-up window, with a table of contents, with navigation buttons etc. SCORM activities generally include questions, with grades being recorded in the gradebook.
-
-SCORM activities may be used
-
-* For presenting multimedia content and animations
-* As an assessment tool';
+###### Ways to use it
+- Import a commercial e-learning SCORM module and track student performance
+- Provide an interactive tutorial and track whether students complete it
+- Deliver a simulation packaged in SCORM format';
 $string['modulename_link'] = 'mod/scorm/view';
+$string['modulename_summary'] = 'Upload and display existing SCORM content. SCORM is commonly used with third-party courseware.';
 $string['modulenameplural'] = 'SCORM packages';
 $string['nav'] = 'Show Navigation';
 $string['nav_help'] = 'This setting specifies whether to show or hide the navigation buttons and their position.
@@ -423,6 +426,7 @@ $string['syntax'] = 'Syntax error';
 $string['tag_error'] = 'Unknown tag ({$a->tag}) with this content: {$a->value}';
 $string['time'] = 'Time';
 $string['title'] = 'Title';
+$string['toggletableofcontents'] = 'Toggle table of contents';
 $string['toolbar'] = 'Show the toolbar';
 $string['too_many_attributes'] = 'Tag {$a->tag} has too many attributes';
 $string['too_many_children'] = 'Tag {$a->tag} has too many children';

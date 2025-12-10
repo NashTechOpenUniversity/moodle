@@ -3450,7 +3450,8 @@ final class lib_test extends \advanced_testcase {
                 \core_completion\api::COMPLETION_EVENT_TYPE_DATE_COMPLETION_EXPECTED);
 
         // Set sections 0 as hidden.
-        set_section_visible($course->id, 0, 0);
+        $sectioninfo = get_fast_modinfo($course->id)->get_section_info(0);
+        \core_courseformat\formatactions::section($course->id)->set_visibility($sectioninfo, false);
 
         // Now, log out.
         $CFG->forcelogin = true; // We don't want to be logged in as guest, as guest users might still have some capabilities.
@@ -4284,5 +4285,35 @@ final class lib_test extends \advanced_testcase {
         // Make sure there are no discussions.
         $f3discussionscount = forum_count_discussions($forum3, $forum3cm, $course2);
         $this->assertEquals(0, $f3discussionscount);
+    }
+
+    /**
+     * @covers ::forum_reset_userdata
+     */
+    public function test_forum_reset_userdata(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $now = time();
+
+        $course = $this->getDataGenerator()->create_course();
+        $forum = $this->getDataGenerator()->create_module('forum', [
+            'course' => $course->id,
+            'duedate' => $now + HOURSECS,
+            'cutoffdate' => $now + DAYSECS,
+        ]);
+
+        forum_reset_userdata((object) [
+            'courseid' => $course->id,
+            'timeshift' => DAYSECS * 2,
+        ]);
+
+        // Reload the instance data.
+        $instance = $DB->get_record('forum', ['id' => $forum->id]);
+
+        $this->assertEquals($forum->duedate + (DAYSECS * 2), $instance->duedate);
+        $this->assertEquals($forum->cutoffdate + (DAYSECS * 2), $instance->cutoffdate);
     }
 }

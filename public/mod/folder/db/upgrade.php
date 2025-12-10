@@ -46,12 +46,6 @@ function xmldb_folder_upgrade($oldversion) {
     global $DB;
     $dbman = $DB->get_manager();
 
-    // Automatically generated Moodle v4.2.0 release upgrade line.
-    // Put any upgrade step following this.
-
-    // Automatically generated Moodle v4.3.0 release upgrade line.
-    // Put any upgrade step following this.
-
     // Automatically generated Moodle v4.4.0 release upgrade line.
     // Put any upgrade step following this.
 
@@ -73,6 +67,9 @@ function xmldb_folder_upgrade($oldversion) {
         // Folder savepoint reached.
         upgrade_mod_savepoint(true, 2025041401, 'folder');
     }
+
+    // Automatically generated Moodle v5.1.0 release upgrade line.
+    // Put any upgrade step following this.
 
     return true;
 }

@@ -30,6 +30,16 @@ const placeholderString = 's';
 /** @var {string} The placeholder character used for cleaned strings */
 const placeholderCleanedString = 'c';
 
+/** @var {Function} originalMustacheEscape */
+const originalMustacheEscape = mustache.escape;
+
+// Replicate escaping logic of PHP s() function.
+mustache.escape = function(string) {
+    string = originalMustacheEscape(string);
+    string = string.replace(/&amp;#([0-9]+|x[0-9a-fA-F]+);/g, '&#$1;');
+    return string;
+};
+
 /**
  * Template Renderer Class.
  *
@@ -571,12 +581,14 @@ export default class Renderer {
             Renderer.getLoader().getTemplate(iconTemplate, themeName),
         ]);
 
-        this.addHelpers(context, themeName);
+        // Clone context object to avoid manipulating the original context object.
+        const templateContext = {...context};
+        this.addHelpers(templateContext, themeName);
 
         // Render the template.
         const renderedContent = await mustache.render(
             templateSource,
-            context,
+            templateContext,
             // Note: The third parameter is a function that will be called to process partials.
             (partialName) => Renderer.getLoader().partialHelper(partialName, themeName),
         );

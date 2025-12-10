@@ -120,8 +120,8 @@ export default class ModalForm {
                 'Passing config.modalConfig.type to ModalForm has been deprecated since Moodle 4.3. ' +
                 'Please pass config.modalName instead with the full module name.',
             );
-            return import('core/modal_factory')
-                .then((ModalFactory) => ModalFactory.create(this.config.modalConfig));
+            return import('core/modal')
+                .then((Modal) => Modal.create(this.config.modalConfig));
         } else {
             // New loader for Moodle 4.3 and above.
             const moduleName = this.config.moduleName ?? 'core/modal_save_cancel';
@@ -328,9 +328,13 @@ export default class ModalForm {
         formData = formData + '&' + encodeURIComponent(button.getAttribute('name')) + '=' +
             encodeURIComponent(button.getAttribute('value'));
 
+        this.disableButtons();
+
         const bodyContent = this.getBody(formData);
         this.modal.setBodyContent(bodyContent);
-        bodyContent.catch(Notification.exception);
+        bodyContent
+            .then(() => this.enableButtons())
+            .catch(Notification.exception);
     }
 
     /**
@@ -358,14 +362,16 @@ export default class ModalForm {
      * Disable buttons during form submission
      */
     disableButtons() {
-        this.modal.getFooter().find('[data-action]').attr('disabled', true);
+        this.modal.getModal()[0].querySelectorAll('input[type="submit"], [data-action]')
+            .forEach(el => el.setAttribute('disabled', true));
     }
 
     /**
      * Enable buttons after form submission (on validation error)
      */
     enableButtons() {
-        this.modal.getFooter().find('[data-action]').removeAttr('disabled');
+        this.modal.getModal()[0].querySelectorAll('input[type="submit"], [data-action]')
+            .forEach(el => el.removeAttribute('disabled'));
     }
 
     /**

@@ -1,9 +1,47 @@
 # core_courseformat (subsystem / plugintype) Upgrade notes
 
-## 5.1dev+
+## 5.2dev
 
 ### Added
 
+- Add delete method to the core_courseformat\cmactions
+
+  For more information see [MDL-86856](https://tracker.moodle.org/browse/MDL-86856)
+- Add set_groupmode method to the core_courseformat\cmactions (course format actions)
+
+  For more information see [MDL-86857](https://tracker.moodle.org/browse/MDL-86857)
+- Added `set_marker` and `remove_all_markers` methods to the `core_courseformat\sectionactions` class.
+
+  For more information see [MDL-86860](https://tracker.moodle.org/browse/MDL-86860)
+- Added the `set_visibility` method to the `core_courseformat\sectionactions` class. To optimize performance, this method does not return the list of affected resources, avoiding unnecessary database queries since the return value is unused.
+
+  For more information see [MDL-86861](https://tracker.moodle.org/browse/MDL-86861)
+
+### Changed
+
+- The `$cm` attribute in `activityoverviewbase` has been updated to public visibility, allowing direct access to the course module instance
+
+  For more information see [MDL-86660](https://tracker.moodle.org/browse/MDL-86660)
+- A new `available` attribute has been added to `activityname_exporter` class. It allows the external API to return the activity's availability status relative to the current user.
+
+  For more information see [MDL-86660](https://tracker.moodle.org/browse/MDL-86660)
+- Two new public static methods have been added to the `overviewtable` class: - `is_cm_displayable`: Determines if a course module should be listed in the overview table. - `is_cm_available`: Checks if a course module is accessible to the user (and should therefore be rendered as a link).
+
+  For more information see [MDL-86660](https://tracker.moodle.org/browse/MDL-86660)
+
+### Deprecated
+
+- The `set_section_visible` function has been deprecated and should no longer be used. Please consider using the equivalent method, `set_visibility`, in `core_courseformat\local\sectionactions` instead.
+
+  For more information see [MDL-86861](https://tracker.moodle.org/browse/MDL-86861)
+
+## 5.1
+
+### Added
+
+- From now on, the activity chooser will use core_courseformat_get_section_content_items to get the available modules for a specific section
+
+  For more information see [MDL-80295](https://tracker.moodle.org/browse/MDL-80295)
 - Added new core_courseformat\output\local\overview\overviewdialog output class to create dialog elements in the course overview page. Overview dialog will display a combination of title, description and a list of items (label: value).
 
   For more information see [MDL-83896](https://tracker.moodle.org/browse/MDL-83896)
@@ -22,6 +60,18 @@
 - New optional $nogroupserror parameter has been added to activityname class constructor. A set_nogroupserror() setter to change the value after the constructor has been also added.
 
   For more information see [MDL-85852](https://tracker.moodle.org/browse/MDL-85852)
+- Added new `core_courseformat\output\local\overview\overviewaction` output class to create action buttons that now include a badge right next to the button text. It essentially extends the existing action_link class to add a badge, making important actions stand out more on the course overview. Plus, this new structure also makes these badged action links easier to export this information for web services.
+
+  For more information see [MDL-85981](https://tracker.moodle.org/browse/MDL-85981)
+- Add a new modinfo::get_instance_of() to retrieve an instance of a cm via its name and instance id. Add a new modinfo::sort_cm_array() to sort an array of cms in their order of appearance in the course page. Replaces calls to get_course_and_cm_from_instance() and get_instances_of() whenever it was just used to retrieve a single instance of a cm.
+
+  For more information see [MDL-86021](https://tracker.moodle.org/browse/MDL-86021)
+- The `core_course\output\activitychooserbutton` has been moved to `core_courseformat\output\local\activitychooserbutton` . From now on, format plugins can provide alternative outputs for this element. Also, all the javascript and templates related to the activity chooser are now located inside the core_courseformat subsystem.
+
+  For more information see [MDL-86337](https://tracker.moodle.org/browse/MDL-86337)
+- All activity chooser related code has been moved to the `core_courseformat` subsystem. This includes all templates, javascript, and the main output class. If your theme overrides any of these, you will need to update your code accordingly.
+
+  For more information see [MDL-86337](https://tracker.moodle.org/browse/MDL-86337)
 
 ### Changed
 
@@ -37,6 +87,9 @@
 - The format base method get_max_sections has been deprecated, as the maxsections setting is also deprecated and no longer in use.
 
   For more information see [MDL-84291](https://tracker.moodle.org/browse/MDL-84291)
+- The course format "numsections" option to increment and decrement the number of sections of the course one by one is now deprecated and will be removed in Moodle 6.0.
+
+  For more information see [MDL-85284](https://tracker.moodle.org/browse/MDL-85284)
 
 ## 5.0
 

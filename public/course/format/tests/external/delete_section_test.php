@@ -18,13 +18,8 @@ declare(strict_types=1);
 
 namespace core_courseformat\external;
 
-defined('MOODLE_INTERNAL') || die();
-
 use core_courseformat\stateactions;
 use core_courseformat\stateupdates;
-
-global $CFG;
-require_once($CFG->dirroot . '/webservice/tests/helpers.php');
 
 /**
  * Tests for the delete section test class.
@@ -33,21 +28,19 @@ require_once($CFG->dirroot . '/webservice/tests/helpers.php');
  * @copyright  2025 Laurent David <laurent.david@moodle.com>
  * @category   test
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @coversDefaultClass \core_courseformat\stateactions
  */
-final class delete_section_test extends \externallib_advanced_testcase {
-
+#[\PHPUnit\Framework\Attributes\CoversClass(stateactions::class)]
+final class delete_section_test extends \core_external\tests\externallib_testcase {
     /**
      * Test the webservice can execute the section_delete action.
      *
-     * @covers ::section_delete
-     * @dataProvider section_delete_provider
      * @param int $sectionum
      * @param string $format
      * @param int $expectedsectionum
      *
      * @throws \moodle_exception
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('section_delete_provider')]
     public function test_delete_section(int $sectionum, string $format, int $expectedsectionum): void {
         $this->resetAfterTest();
 
@@ -78,25 +71,23 @@ final class delete_section_test extends \externallib_advanced_testcase {
     /**
      * Data provider for the test_delete_section method.
      *
-     * @return array
+     * @return \Generator
      */
-    public static function section_delete_provider(): array {
-        return [
-            'format topic' => [
-                'sectionum' => 4,
-                'format' => 'topics',
-                'expectedsectionum' => 1,
-            ],
-            'format weeks' => [
-                'sectionum' => 4,
-                'format' => 'weeks',
-                'expectedsectionum' => 1,
-            ],
-            'format social' => [
-                'sectionum' => 4,
-                'format' => 'social',
-                'expectedsectionum' => 5,
-            ],
+    public static function section_delete_provider(): \Generator {
+        yield 'format topic' => [
+            'sectionum' => 4,
+            'format' => 'topics',
+            'expectedsectionum' => 1,
+        ];
+        yield 'format weeks' => [
+            'sectionum' => 4,
+            'format' => 'weeks',
+            'expectedsectionum' => 1,
+        ];
+        yield 'format social' => [
+            'sectionum' => 4,
+            'format' => 'social',
+            'expectedsectionum' => 5,
         ];
     }
 }

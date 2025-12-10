@@ -16,17 +16,16 @@
 
 namespace core_enrol;
 
+use core_courseformat\formatactions;
 use core_enrol_external;
 use core_external\external_api;
 use enrol_user_enrolment_form;
-use externallib_advanced_testcase;
 use stdClass;
 
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 
-require_once($CFG->dirroot . '/webservice/tests/helpers.php');
 require_once($CFG->dirroot . '/enrol/externallib.php');
 
 /**
@@ -38,8 +37,7 @@ require_once($CFG->dirroot . '/enrol/externallib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since Moodle 2.4
  */
-final class externallib_test extends externallib_advanced_testcase {
-
+final class externallib_test extends \core_external\tests\externallib_testcase {
     /**
      * dataProvider for test_get_enrolled_users_visibility().
      */
@@ -1253,7 +1251,7 @@ final class externallib_test extends externallib_advanced_testcase {
         require_once("$CFG->dirroot/enrol/editenrolment_form.php");
         $formdata = enrol_user_enrolment_form::mock_generate_submit_keys($formdata);
 
-        $querystring = http_build_query($formdata, '', '&');
+        $querystring = http_build_query($formdata);
 
         $result = external_api::clean_returnvalue(
                 core_enrol_external::submit_user_enrolment_form_returns(),
@@ -1482,7 +1480,7 @@ final class externallib_test extends externallib_advanced_testcase {
         $this->assertCount(7, $result);
 
         // Now change the group mode to no groups.
-        set_coursemodule_groupmode($forum->cmid, NOGROUPS);
+        formatactions::cm($course->id)->set_groupmode($forum->cmid, NOGROUPS);
         $this->setUser($teacher1);
         $result = core_enrol_external::search_users($course->id, 'user', true, 0, 30, $contextid);
         $this->assertCount(7, $result);

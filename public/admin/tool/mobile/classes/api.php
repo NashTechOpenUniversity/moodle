@@ -214,6 +214,9 @@ class api {
             'supportpage' => $sitesupportavailable ? clean_param($CFG->supportpage, PARAM_URL) : '',
             'supportavailability' => clean_param($CFG->supportavailability, PARAM_INT),
             'showloginform' => (int) get_config('core', 'showloginform'),
+            'tool_mfa_enabled' => clean_param(get_config('tool_mfa', 'enabled'), PARAM_BOOL),
+            'enableloginrecaptcha' => clean_param(login_captcha_enabled(), PARAM_BOOL),
+            'enableforgotpasswordrecaptcha' => clean_param(forgotpassword_captcha_enabled(), PARAM_BOOL),
         );
 
         $typeoflogin = get_config('tool_mobile', 'typeoflogin');
@@ -321,13 +324,16 @@ class api {
             $settings->tool_mobile_disabledfeatures = get_config('tool_mobile', 'disabledfeatures');
             $settings->tool_mobile_filetypeexclusionlist = get_config('tool_mobile', 'filetypeexclusionlist');
             $custommenuitems = get_config('tool_mobile', 'custommenuitems');
+            $customusermenuitems = get_config('tool_mobile', 'customusermenuitems');
             // If filtering of the primary custom menu is enabled, apply only the string filters.
             if (!empty($CFG->navfilter && !empty($CFG->stringfilters))) {
                 // Apply filters that are enabled for Content and Headings.
                 $filtermanager = \filter_manager::instance();
                 $custommenuitems = $filtermanager->filter_string($custommenuitems, \context_system::instance());
+                $customusermenuitems = $filtermanager->filter_string($customusermenuitems, \context_system::instance());
             }
             $settings->tool_mobile_custommenuitems = $custommenuitems;
+            $settings->tool_mobile_customusermenuitems = $customusermenuitems;
             $settings->tool_mobile_apppolicy = get_config('tool_mobile', 'apppolicy');
             // This setting could be not set in some edge cases such as bad upgrade.
             $mintimereq = get_config('tool_mobile', 'autologinmintimebetweenreq');
@@ -525,6 +531,7 @@ class api {
         $availableblocks = core_plugin_manager::instance()->get_plugins_of_type('block');
         $courseblocks = array();
         $appsupportedblocks = array(
+            'activity_modules' => 'CoreBlockDelegate_AddonBlockActivityModules',
             'activity_results' => 'CoreBlockDelegate_AddonBlockActivityResults',
             'site_main_menu' => 'CoreBlockDelegate_AddonBlockSiteMainMenu',
             'myoverview' => 'CoreBlockDelegate_AddonBlockMyOverview',
@@ -612,6 +619,7 @@ class api {
                 '$mmCoursesDelegate_search' => new lang_string('search'),
                 'NoDelegate_CoreCourseDownload' => new lang_string('downloadcourse', 'tool_mobile'),
                 'NoDelegate_CoreCoursesDownload' => new lang_string('downloadcourses', 'tool_mobile'),
+                'CoreCourseOptionsDelegate_CoreCourseOverview' => new lang_string('activitiesoverview', 'tool_mobile'),
             ),
             "$participants" => array(
                 '$mmUserDelegate_mmaGrades:viewGrades' => new lang_string('grades', 'grades'),
@@ -816,7 +824,7 @@ class api {
             $credentials[] = ['type' => 'airnotifieraccesskey', 'value' => $CFG->airnotifieraccesskey];
         }
         if (\core\hub\registration::is_registered()) {
-            $credentials[] = ['type' => 'siteid', 'value' => $CFG->siteidentifier];
+            $credentials[] = ['type' => 'siteid', 'value' => \core\hub\registration::get_secret()];
         }
         // Generate a hash key for validating that the request is coming from this site via WS.
         $key = complex_random_string(32);

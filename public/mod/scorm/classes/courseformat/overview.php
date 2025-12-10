@@ -123,8 +123,10 @@ class overview extends \core_courseformat\activityoverviewbase {
         if (!$this->manager->can_view_reports()) {
             return null;
         }
-        $attemptcount = $this->manager->count_users_who_attempted();
-        $participantscount = $this->manager->count_participants();
+        // Get the number of users who attempted the SCORM activity depending on group mode.
+        $groups = array_map(fn($group) => $group->id, $this->get_groups_for_filtering());
+        $attemptcount = $this->manager->count_users_who_attempted($groups);
+        $participantscount = $this->manager->count_participants($groups);
         $params = [
             'count' => $attemptcount,
             'total' => $participantscount,
@@ -147,14 +149,16 @@ class overview extends \core_courseformat\activityoverviewbase {
         if (!$this->manager->can_view_reports()) {
             return null;
         }
-        $totalattempts = $this->manager->count_users_who_attempted();
-        $userswhocanattempt = $this->manager->count_participants();
+        $groups = array_map(fn($group) => $group->id, $this->get_groups_for_filtering());
         $maxattempts = $this->manager->get_max_attempts();
         if ($maxattempts === 0) {
             $maxattemptstext = get_string('unlimited');
         } else {
             $maxattemptstext = (string) $maxattempts;
         }
+        $totalattempts = $this->manager->count_all_attempts($groups);
+        $attemptedusers = $this->manager->count_users_who_attempted($groups);
+        $averageattempts = $totalattempts ? round($totalattempts / $attemptedusers, 1) : 0;
 
         $content = new overviewdialog(
             buttoncontent: $totalattempts,
@@ -168,10 +172,6 @@ class overview extends \core_courseformat\activityoverviewbase {
         );
 
         $content->add_item(get_string('allowedattemptsstudent', 'mod_scorm'), $maxattemptstext);
-        $averageattempts = 0;
-        if ($userswhocanattempt > 0) {
-            $averageattempts = (int) round($totalattempts / $userswhocanattempt);
-        }
         $content->add_item(get_string('averageattemptperstudent', 'mod_scorm'), $averageattempts);
 
         return new overviewitem(

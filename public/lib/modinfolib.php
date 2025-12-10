@@ -66,7 +66,7 @@ function get_fast_modinfo($courseorid, $userid = 0, $resetonly = false) {
 
     // Function get_fast_modinfo() can never be called during upgrade unless it is used for clearing cache only.
     if (!$resetonly) {
-        upgrade_ensure_not_running();
+        \core\setup::ensure_upgrade_is_not_running();
     }
 
     // Function is called with $reset = true.
@@ -230,11 +230,8 @@ function get_course_and_cm_from_instance($instanceorid, $modulename, $courseorid
 
     // Get cm from get_fast_modinfo.
     $modinfo = get_fast_modinfo($course, $userid);
-    $instances = $modinfo->get_instances_of($modulename);
-    if (!array_key_exists($instanceid, $instances)) {
-        throw new moodle_exception('invalidmoduleid', 'error', '', $instanceid);
-    }
-    return [$course, $instances[$instanceid]];
+    $instance = $modinfo->get_instance_of($modulename, $instanceid, MUST_EXIST);
+    return [$course, $instance];
 }
 
 
@@ -272,7 +269,7 @@ function rebuild_course_cache(int $courseid = 0, bool $clearonly = false, bool $
     }
 
     // Function rebuild_course_cache() can not be called during upgrade unless it's clear only.
-    if (!$clearonly && !upgrade_ensure_not_running(true)) {
+    if (!$clearonly && \core\setup::warn_if_upgrade_is_running()) {
         $clearonly = true;
     }
 

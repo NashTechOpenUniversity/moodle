@@ -647,7 +647,7 @@ abstract class base {
             throw new coding_exception('Invalid sectionid: '. $sectionid);
         }
 
-        $this->singlesection = $sectioninfo->section;
+        $this->singlesection = $sectioninfo->sectionnum;
         $this->singlesectionid = $sectionid;
     }
 
@@ -710,6 +710,21 @@ abstract class base {
      */
     public function get_sectionnum(): ?int {
         return $this->singlesection;
+    }
+
+    /**
+     * Returns the section info for the current single section.
+     *
+     * If the course format is not a single section format, this will return null.
+     *
+     * @return section_info|null
+     */
+    public function get_return_section(): section_info|null {
+        if ($this->singlesectionid === null) {
+            return null;
+        }
+        $modinfo = get_fast_modinfo($this->courseid);
+        return $modinfo->get_section_info_by_id($this->singlesectionid);
     }
 
     /**
@@ -1811,7 +1826,7 @@ abstract class base {
 
         // Remove the marker if it points to this section.
         if ($section->section == $course->marker) {
-            course_set_marker($course->id, 0);
+            \core_courseformat\formatactions::section($course->id)->remove_all_markers();
         }
 
         $lastsection = $DB->get_field_sql('SELECT max(section) from {course_sections}
@@ -1827,7 +1842,7 @@ abstract class base {
 
         // Delete all modules from the section.
         foreach (preg_split('/,/', $section->sequence, -1, PREG_SPLIT_NO_EMPTY) as $cmid) {
-            course_delete_module($cmid);
+            \core_courseformat\formatactions::cm($course->id)->delete($cmid);
         }
 
         // Delete section and it's format options.
@@ -1852,16 +1867,16 @@ abstract class base {
     }
 
     /**
-     * Wrapper for course_delete_module method.
+     * Wrapper for delete method in course format cmactions.
      *
-     * Format plugins can override this method to provide their own implementation of course_delete_module.
+     * Format plugins can override this method to provide their own implementation of cmactions::delete.
      *
      * @param cm_info $cm the course module information
      * @param bool $async whether or not to try to delete the module using an adhoc task. Async also depends on a plugin hook.
      * @throws moodle_exception
      */
     public function delete_module(cm_info $cm, bool $async = false) {
-        course_delete_module($cm->id, $async);
+        \core_courseformat\formatactions::cm($cm->course)->delete($cm->id, $async);
     }
 
     /**

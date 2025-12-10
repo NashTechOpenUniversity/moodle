@@ -67,6 +67,7 @@ $string['afternquestions'] = 'After adding {$a} questions';
 $string['age'] = 'age';
 $string['allattempts'] = 'All attempts';
 $string['allinone'] = 'Unlimited';
+$string['allowedattemptsperstudent'] = 'Allowed attempts per student';
 $string['allowreview'] = 'Allow review';
 $string['alreadysubmitted'] = 'It is likely that you have already submitted this attempt';
 $string['alternativeunits'] = 'Alternative units';
@@ -120,6 +121,7 @@ $string['attempttitle'] = '{$a}';
 $string['attempttitlepaged'] = '{$a->name} (page {$a->currentpage} of {$a->totalpages})';
 $string['autosaveperiod'] = 'Auto-save delay';
 $string['autosaveperiod_desc'] = 'Responses can be saved automatically during quiz attempts. The responses are saved whenever one is changed, and then after this delay. There is a trade-off: a shorter delay increases the server load, but reduces the chance that students lose their work. If you are going to make this delay much shorter, you should change the value gradually and monitor the server load. If the load gets too high, make the delay longer again. Setting the delay to 0 turns off auto-saving.';
+$string['averageattemptsperstudent'] = 'Average attempts per student';
 $string['back'] = 'Back to preview question';
 $string['backtocourse'] = 'Back to the course';
 $string['backtoquestionlist'] = 'Back to question list';
@@ -283,6 +285,7 @@ $string['download'] = 'Click to download the exported category file';
 $string['downloadextra'] = '(file is also stored in the course files in the /backupdata/quiz folder)';
 $string['dragtoafter'] = 'After {$a}';
 $string['dragtostart'] = 'To the start';
+$string['duedate'] = 'Due date';
 $string['duplicateresponse'] = 'This submission has been ignored because you gave an equivalent answer earlier.';
 $string['eachattemptbuildsonthelast'] = 'Each attempt builds on the last';
 $string['eachattemptbuildsonthelast_help'] = 'If multiple attempts are allowed and this setting is enabled, each new quiz attempt will contain the results of the previous attempt. This allows a quiz to be completed over several attempts.';
@@ -474,7 +477,7 @@ $string['gradingdetailspenalty'] = 'This submission attracted a penalty of {$a}.
 $string['gradingdetailszeropenalty'] = 'You were not penalized for this submission.';
 $string['gradingmethod'] = 'Grading method: {$a}';
 $string['groupoverrides'] = 'Group overrides';
-$string['groupsnone'] = 'No groups you can access.';
+$string['groupsnone'] = 'There are no groups in this course.';
 $string['guestsno'] = 'Sorry, guests cannot see or attempt quizzes';
 $string['hidebreaks'] = 'Hide page breaks';
 $string['hidereordertool'] = 'Hide the reordering tool';
@@ -563,22 +566,22 @@ $string['missingcorrectanswer'] = 'Correct answer must be specified';
 $string['missingitemtypename'] = 'Missing name';
 $string['missingquestion'] = 'This question no longer seems to exist';
 $string['modulename'] = 'Quiz';
-$string['modulename_help'] = 'The quiz activity enables a teacher to create quizzes comprising questions of various types, including multiple choice, matching, short-answer and numerical.
+$string['modulename_help'] = '###### Key features
+- Use different question types, such as multiple choice, true/false, matching, essay, and more
+- Grade most question types automatically, with manual grading for essays
+- Make each attempt unique by randomising questions and shuffling answer choices.
+- Set time limits to complete a quiz, and decide when students can see hints, feedback, or correct answers
+- Save and reuse questions across different Quiz activities and courses
+- Create secure online exam environments
 
-The teacher can allow the quiz to be attempted multiple times, with the questions shuffled or randomly selected from the question bank. A time limit may be set.
-
-Each attempt is marked automatically, with the exception of essay questions, and the grade is recorded in the gradebook.
-
-The teacher can choose when and if hints, feedback and correct answers are shown to students.
-
-Quizzes may be used
-
-* As course exams
-* As mini tests for reading assignments or at the end of a topic
-* As exam practice using questions from past exams
-* To deliver immediate feedback about performance
-* For self-assessment';
+###### Ways to use it
+- Deliver a timed exam with automatic grading
+- Provide a practice test with questions randomly drawn from a pool
+- Create a self-assessment with detailed feedback for each answer
+- Run short weekly quizzes to check understanding of topics';
 $string['modulename_link'] = 'mod/quiz/view';
+$string['modulename_summary'] = 'Create a variety of assessments, from simple multiple-choice tests to complex exams with detailed feedback.';
+$string['modulename_tip'] = 'Create your questions in the question bank first to reuse them easily in multiple quizzes.';
 $string['modulenameplural'] = 'Quizzes';
 $string['moveselectedonpage'] = 'Move selected questions to page: {$a}';
 $string['multichoice'] = 'Multiple choice';
@@ -691,8 +694,8 @@ $string['overridemultiplerecordsexist'] = 'Multiple overrides cannot be made for
 $string['overridemustsetuserorgroup'] = 'A user or group must be set.';
 $string['overrides'] = 'Overrides';
 $string['overridesforquiz'] = 'Settings overrides: {$a}';
-$string['overridesnoneforgroups'] = 'No group settings overrides have been created for this quiz.';
-$string['overridesnoneforusers'] = 'No user settings overrides have been created for this quiz.';
+$string['overridesnoneforgroups'] = 'There are no group overrides for this quiz.';
+$string['overridesnoneforusers'] = 'There are no user overrides for this quiz.';
 $string['overridessummary'] = 'Settings overrides exist ({$a})';
 $string['overridessummarythisgroup'] = 'Settings overrides exist ({$a}) for this group';
 $string['overridessummaryyourgroups'] = 'Settings overrides exist ({$a}) for your groups';
@@ -1075,6 +1078,7 @@ $string['stateoverdue'] = 'Overdue';
 $string['stateoverduedetails'] = 'Must be submitted by {$a}';
 $string['statesubmitted'] = 'Submitted';
 $string['status'] = 'Status';
+$string['studentswhoattempted'] = 'Students who attempted';
 $string['stoponerror'] = 'Stop on error';
 $string['submission_confirmation'] = 'Submit all your answers and finish?';
 $string['submission_confirmation_unanswered'] = 'Questions without a response: {$a}';
@@ -1107,6 +1111,7 @@ $string['tofile'] = 'to file';
 $string['tolerance'] = 'Tolerance';
 $string['toomanyrandom'] = 'The number of random questions required is more than are still available in the category!';
 $string['top'] = 'Top';
+$string['totalattempts'] = 'Total attempts';
 $string['totalmarks'] = 'Total of marks';
 $string['totalmarksx'] = 'Total of marks: {$a}';
 $string['totalquestionsinrandomqcategory'] = 'Total of {$a} questions in category.';
@@ -1131,7 +1136,7 @@ $string['upgradingveryoldquizattempts'] = 'Upgrading very old quiz attempts: {$a
 $string['url'] = 'URL';
 $string['usedcategorymoved'] = 'This category has been preserved and moved to the site level because it is a published category still in use by other courses.';
 $string['useroverrides'] = 'User overrides';
-$string['usersnone'] = 'No students have access to this quiz';
+$string['usersnone'] = 'There are no users enrolled in this course.';
 $string['validate'] = 'Validate';
 $string['viewallanswers'] = 'View {$a} quiz attempts';
 $string['viewallreports'] = 'View reports for {$a} attempts';

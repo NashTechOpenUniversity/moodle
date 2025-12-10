@@ -66,11 +66,18 @@ class course_content_item_exporter extends exporter {
             'link' => ['type' => PARAM_URL, 'description' => 'The link to the content item creation page'],
             'icon' => ['type' => PARAM_RAW, 'description' => 'Html containing the icon for the content item'],
             'help' => ['type' => PARAM_RAW, 'description' => 'Html description / help for the content item'],
+            'summary' => ['type' => PARAM_RAW, 'description' => 'Html summary for the content item'],
             'archetype' => ['type' => PARAM_RAW, 'description' => 'The archetype of the module exposing the content item'],
             'componentname' => ['type' => PARAM_TEXT, 'description' => 'The name of the component exposing the content item'],
             'purpose' => ['type' => PARAM_TEXT, 'description' => 'The purpose of the component exposing the content item'],
             'branded' => ['type' => PARAM_BOOL, 'description' => ' Whether this content item is branded or not'],
             'gradable' => ['type' => PARAM_BOOL, 'description' => 'Whether this content item is gradable or not'],
+            'otherpurpose' => [
+                'type' => PARAM_TEXT,
+                'null' => NULL_ALLOWED,
+                'default' => null,
+                'description' => 'The alternative purpose of the component exposing the content item',
+            ],
         ];
     }
 
@@ -134,7 +141,9 @@ class course_content_item_exporter extends exporter {
             'title' => $this->contentitem->get_title()->get_value(),
             'link' => $this->contentitem->get_link()->out(false),
             'icon' => $this->contentitem->get_icon(),
-            'help' => format_text($this->contentitem->get_help(), FORMAT_MARKDOWN),
+            // Help text, summary and tip should not be parsed using course filters.
+            'help' => format_text($this->contentitem->get_help(), FORMAT_MARKDOWN, ['filter' => false]),
+            'summary' => format_text($this->contentitem->get_summary(), FORMAT_MARKDOWN, ['filter' => false]),
             'archetype' => $this->contentitem->get_archetype(),
             'componentname' => $this->contentitem->get_component_name(),
             'favourite' => $favourite,
@@ -143,6 +152,7 @@ class course_content_item_exporter extends exporter {
             'purpose' => $this->contentitem->get_purpose(),
             'branded' => $this->contentitem->is_branded(),
             'gradable' => $this->contentitem->is_gradable(),
+            'otherpurpose' => $this->contentitem->get_other_purpose(),
         ];
 
         return $properties;

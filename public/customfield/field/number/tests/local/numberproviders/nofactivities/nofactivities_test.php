@@ -101,7 +101,7 @@ final class nofactivities_test extends advanced_testcase {
 
         // Delete some assign module.
         $cm = get_coursemodule_from_instance('assign', $assign1->id);
-        course_delete_module($cm->id);
+        \core_courseformat\formatactions::cm($course1->id)->delete((int)$cm->id);
         $providers[0]->recalculate((int)$course1->id);
         $course1customfield = $DB->get_field('customfield_data', 'decvalue', ['instanceid' => $course1->id]);
         // Module is marked as deleted.
@@ -156,7 +156,13 @@ final class nofactivities_test extends advanced_testcase {
             ],
         ]);
         $getdata = fn(\customfield_number\field_controller $field): \customfield_number\data_controller =>
-            \core_customfield\api::get_instance_fields_data([$field->get('id') => $field], (int)$course1->id)[$field->get('id')];
+            \core_customfield\api::get_instance_fields_data(
+                [$field->get('id') => $field],
+                (int)$course1->id,
+                true,
+                'core_course',
+                'course'
+            )[$field->get('id')];
 
         // Recalculate the value of the field and assert it is set to 1 (one activity in the course).
         (new \customfield_number\task\cron())->execute();
@@ -178,8 +184,8 @@ final class nofactivities_test extends advanced_testcase {
         $this->assertSame('2', $data->export_value());
 
         // Delete both modules, recalculate.
-        course_delete_module($assign1->cmid);
-        course_delete_module($assign2->cmid);
+        \core_courseformat\formatactions::cm($course1->id)->delete($assign1->cmid);
+        \core_courseformat\formatactions::cm($course1->id)->delete($assign2->cmid);
         (new \customfield_number\task\cron())->execute();
         // Field1 (displaywhenzero='0') has the value zero.
         $data = $getdata($field1);

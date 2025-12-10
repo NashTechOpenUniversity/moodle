@@ -1,9 +1,98 @@
 # core (subsystem) Upgrade notes
 
-## 5.1dev+
+## 5.2dev
 
 ### Added
 
+- Appending an exclamation mark to template names ignores theme overrides
+
+  For more information see [MDL-77894](https://tracker.moodle.org/browse/MDL-77894)
+- The namespace for the `\core_shutdown_manager` has been moved to `\core\shutdown_manager`. The legacy namespace will continue to work for the moment.
+
+  For more information see [MDL-87046](https://tracker.moodle.org/browse/MDL-87046)
+- Added clean_string() that prevents double escaping in Mustache templates
+
+  For more information see [MDL-87066](https://tracker.moodle.org/browse/MDL-87066)
+- The `upgrade_ensure_not_running()` function has been deprecated and replaced
+  with:
+
+  - `\core\setup::warn_if_upgrade_is_running()`;
+  - `\core\setup::ensure_upgrade_is_not_running()`; and
+  - `\core\setup::is_upgrade_running()`.
+
+  For more information see [MDL-87107](https://tracker.moodle.org/browse/MDL-87107)
+- The CLI script used to terminate user sessions (kill_all_sessions.php) has been improved to make it safer and more flexible.  A new '--run' parameter has been introduced. Without '--run', the script performs a dry run making no changes. The script now supports targeted session termination using '--for-users' parameter.
+
+  For more information see [MDL-87173](https://tracker.moodle.org/browse/MDL-87173)
+
+### Changed
+
+- The `arg_separator.output` has been changed from a default of `amp;` to a default of `&` in line with PHP defaults.
+
+  If you were previously relying on the legacy default when using
+  `http_build_query()` then you should _actively_ specify the value as the third
+  parameter, for example:
+
+  ```
+  http_build_query($formdata, '', '&amp;');
+  ```
+
+  For more information see [MDL-71368](https://tracker.moodle.org/browse/MDL-71368)
+- The `core/drag_handle` template has been modified to use a native HTML button for a more accessible experience and a consistent look with other buttons on the page.
+
+  For more information see [MDL-86846](https://tracker.moodle.org/browse/MDL-86846)
+- The Hook Manager now uses localcache instead of caching via MUC.
+
+  For more information see [MDL-87107](https://tracker.moodle.org/browse/MDL-87107)
+
+### Removed
+
+- The following AMD modules have been removed following the final deprecation process. It is no longer possible or necessary to manually register modal types. See MDL-78324 for further details.
+
+  - `core/modal_registry`
+  - `core/modal_factory`
+
+  For more information see [MDL-79182](https://tracker.moodle.org/browse/MDL-79182)
+- Removed $CFG->wwwrootendsinpublic flag to force users to configure their server accordingly.
+
+  For more information see [MDL-87072](https://tracker.moodle.org/browse/MDL-87072)
+
+### Fixed
+
+- `restore_qtype_plugin::unset_excluded_fields` now returns the modified questiondata structure,
+  in order to support structures that contain arrays.
+  If your qtype plugin overrides `restore_qtype_plugin::remove_excluded_question_data` without
+  calling the parent method, you may need to modify your overridden method to use the returned
+  value.
+
+  For more information see [MDL-85975](https://tracker.moodle.org/browse/MDL-85975)
+- When responding to pcntl signals, call existing signal handlers.
+
+  For more information see [MDL-87079](https://tracker.moodle.org/browse/MDL-87079)
+
+## 5.1
+
+### Added
+
+- The following classes have been renamed and now support autoloading.
+  Existing classes are currently unaffected.
+
+  | Old class name                  | New class name                                  |
+  | ---                             | ---                                             |
+  | `\breadcrumb_navigation_node`   | `\core\navigation\breadcrumb_navigation_node`   |
+  | `\flat_navigation_node`         | `\core\navigation\flat_navigation_node`         |
+  | `\flat_navigation`              | `\core\navigation\flat_navigation_node`         |
+  | `\global_navigation_for_ajax`   | `\core\navigation\global_navigation_for_ajax`   |
+  | `\global_navigation`            | `\core\navigation\global_navigation`            |
+  | `\navbar`                       | `\core\navigation\navbar`                       |
+  | `\navigation_cache`             | `\core\navigation\navigation_cache`             |
+  | `\navigation_json`              | `\core\navigation\navigation_json`              |
+  | `\navigation_node_collection`   | `\core\navigation\navigation_node_collection`   |
+  | `\navigation_node`              | `\core\navigation\navigation_node`              |
+  | `\settings_navigation_for_ajax` | `\core\navigation\settings_navigation_for_ajax` |
+  | `\settings_navigation`          | `\core\navigation\settings_navigation`          |
+
+  For more information see [MDL-82159](https://tracker.moodle.org/browse/MDL-82159)
 - - Added is_site_registered_in_hub method in lib/classes/hub/api.php to
     check if the site is registered or not.
   - Added get_secret method in lib/classes/hub/registration.php to get site's secret.
@@ -54,6 +143,9 @@
   | `\xml_format_exception` | `\core\exception\xml_format_exception` |
 
   For more information see [MDL-86256](https://tracker.moodle.org/browse/MDL-86256)
+- The `\externallib_advanced_testcase` has been replaced by `\core_external\tests\externallib_testcase` and is now autoloadable.
+
+  For more information see [MDL-86283](https://tracker.moodle.org/browse/MDL-86283)
 
 ### Changed
 
@@ -66,6 +158,9 @@
 - The `\core\attribute\deprecated` attribute constructor `$replacement` parameter now defaults to null, and can be omitted
 
   For more information see [MDL-84531](https://tracker.moodle.org/browse/MDL-84531)
+- The `core_plugin_manager::plugintype_name[_plural]` methods now require language strings for plugin types always be defined via `type_<type>` and `type_<type>_plural` language strings
+
+  For more information see [MDL-84948](https://tracker.moodle.org/browse/MDL-84948)
 - Added a new `\core\deprecation::emit_deprecation()` method which should be used in places where a deprecation is known to occur. This method will throw debugging if no deprecation notice was found, for example:
   ```php
   public function deprecated_method(): void {
@@ -107,12 +202,24 @@
   The usage of these selectors will continue to be supported until they are removed by final deprecation. In the meantime, a deprecation warning in the JavaScript console will be shown if usage of these selectors is detected.
 
   For more information see [MDL-79756](https://tracker.moodle.org/browse/MDL-79756)
+- The following global constants have been deprecated in favour of class
+  constants:
+
+   | Old constant                       | New constant                                              |
+   | ---                                | ---                                                       |
+   | `NAVIGATION_CACHE_NAME`            | `\core\navigation\navigation_node::CACHE_NAME`            |
+   | `NAVIGATION_SITE_ADMIN_CACHE_NAME` | `\core\navigation\navigation_node::SITE_ADMIN_CACHE_NAME` |
+
+  For more information see [MDL-82159](https://tracker.moodle.org/browse/MDL-82159)
 - The `user_preference_allow_ajax_update()` has been removed. It was deprecated without replacement in Moodle 4.3.
 
   For more information see [MDL-86168](https://tracker.moodle.org/browse/MDL-86168)
 - The `xmlize()` method from `lib/xmlize.php` has been deprecated, please instead use the `\core\xml_parser` class
 
   For more information see [MDL-86256](https://tracker.moodle.org/browse/MDL-86256)
+- In toggle.mustache `dataattributes` parameter is deprecated. Use `extraattributes` instead
+
+  For more information see [MDL-86990](https://tracker.moodle.org/browse/MDL-86990)
 
 ### Removed
 

@@ -27,14 +27,13 @@ Feature: The module menu replaces the delegated section menu
     Given I click on "Subsection1" "link" in the "region-main" "region"
     And I turn editing mode on
     # Open the action menu.
-    When I click on "Edit" "icon" in the "[data-region='header-actions-container']" "css_element"
+    When I click on "Edit" "button" in the "[data-region='header-actions-container']" "css_element"
     Then I should not see "Move right"
     And I should not see "Assign roles"
     And I should not see "Highlight"
     And I should see "Edit settings"
     And I should not see "Move"
-    # Duplicate is not implemented yet.
-    And I should not see "Duplicate"
+    And I should see "Duplicate"
     And I should see "Hide"
     And I should see "Delete"
     And I should see "Permalink"
@@ -49,8 +48,7 @@ Feature: The module menu replaces the delegated section menu
     And I should see "View"
     And I should see "Edit settings"
     And I should see "Move"
-    # Duplicate is not implemented yet.
-    And I should not see "Duplicate"
+    And I should see "Duplicate"
     And I should see "Hide"
     And I should see "Delete"
 
@@ -65,8 +63,7 @@ Feature: The module menu replaces the delegated section menu
     And I should see "View"
     And I should see "Edit settings"
     And I should see "Move"
-    # Duplicate is not implemented yet.
-    And I should not see "Duplicate"
+    And I should see "Duplicate"
     And I should see "Hide"
     And I should see "Delete"
     And I should see "Permalink"
@@ -80,7 +77,7 @@ Feature: The module menu replaces the delegated section menu
     Then I should see "Subsection1" in the "h1" "css_element"
     And "Section 1" "text" should exist in the ".breadcrumb" "css_element"
     # Open the section header action menu.
-    And I click on "Edit" "icon" in the "[data-region='header-actions-container']" "css_element"
+    And I click on "Edit" "button" in the "[data-region='header-actions-container']" "css_element"
     And "View" "link" should not exist in the "[data-region='header-actions-container']" "css_element"
     And I click on "Section 1" "link" in the ".breadcrumb" "css_element"
     # Section page. Section name should be the title.
@@ -100,7 +97,7 @@ Feature: The module menu replaces the delegated section menu
     And I click on "Cancel" "button"
     And I am on the "C1 > Subsection1" "course > section" page
     # Subsection page. Open the section header action menu.
-    And I click on "Edit" "icon" in the "[data-region='header-actions-container']" "css_element"
+    And I click on "Edit" "button" in the "[data-region='header-actions-container']" "css_element"
     And I choose "Edit settings" in the open action menu
     And the field "Section name" matches value "Subsection1"
     And I click on "Cancel" "button"
@@ -119,7 +116,7 @@ Feature: The module menu replaces the delegated section menu
     And I should see "Text copied to clipboard"
     And I am on the "C1 > Subsection1" "course > section" page
     # Subsection page. Open the section header action menu.
-    And I click on "Edit" "icon" in the "[data-region='header-actions-container']" "css_element"
+    And I click on "Edit" "button" in the "[data-region='header-actions-container']" "css_element"
     And I choose "Permalink" in the open action menu
     And I click on "Copy to clipboard" "link"
     And I should see "Text copied to clipboard"
@@ -152,7 +149,7 @@ Feature: The module menu replaces the delegated section menu
     And "Subsection2" "link" should not exist in the "#region-main-box" "css_element"
     And I am on the "C1 > Subsection3" "course > section" page
     # Subsection page. Open the section header action menu.
-    And I click on "Edit" "icon" in the "[data-region='header-actions-container']" "css_element"
+    And I click on "Edit" "button" in the "[data-region='header-actions-container']" "css_element"
     And I choose "Delete" in the open action menu
     And I click on "Delete" "button" in the "Delete subsection?" "dialogue"
     And I should not see "Subsection3"
@@ -168,7 +165,7 @@ Feature: The module menu replaces the delegated section menu
     Given I am on the "C1 > Subsection1" "course > section" page
     And I should see "Hidden from students"
     # Subsection page. Open the section header action menu.
-    And I click on "Edit" "icon" in the "[data-region='header-actions-container']" "css_element"
+    And I click on "Edit" "button" in the "[data-region='header-actions-container']" "css_element"
     And I choose "Show" in the open action menu
     And I should not see "Hidden from students"
     And I click on "Section 1" "link" in the ".breadcrumb" "css_element"
@@ -235,5 +232,18 @@ Feature: The module menu replaces the delegated section menu
     And I should see "Move"
     # Subsection page. Move option should not exist.
     And I am on the "C1 > Subsection1" "course > section" page
-    And I click on "Edit" "icon" in the "[data-region='header-actions-container']" "css_element"
+    And I click on "Edit" "button" in the "[data-region='header-actions-container']" "css_element"
     And "Move" "link" should not exist in the "[data-region='header-actions-container']" "css_element"
+
+  @javascript
+  Scenario: Duplicate a subsection and its content
+    Given the following "activities" exist:
+      | activity | name            | intro                       | course | idnumber | section     |
+      | assign   | Activity sample | Test assignment description | C1     | sample   | 3 |
+    Given I am on "Course 1" course homepage with editing mode on
+    When I open section "Subsection1" edit menu
+    And I choose "Duplicate" in the open action menu
+    # The duplicated section has section number "Subsection1 (copy)".
+    Then I should see "Subsection1 (copy)" in the "Section 1" "section"
+    And I should see "Activity sample" in the "Subsection1" "section"
+    And I should see "Activity sample" in the "Subsection1 (copy)" "section"

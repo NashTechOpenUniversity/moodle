@@ -26,7 +26,6 @@ defined('MOODLE_INTERNAL') || die;
 
 use core\di;
 use core\hook;
-use core_course\external\course_summary_exporter;
 use core_courseformat\base as course_format;
 use core_courseformat\formatactions;
 use core_courseformat\sectiondelegate;
@@ -422,16 +421,28 @@ function get_module_types_names($plural = false, $resetcache = false) {
  *
  * @param int $courseid course id
  * @param int $marker highlight section with this number, 0 means remove higlightin
- * @return void
+ * @deprecated since Moodle 5.2.
+ * @todo MDL-87238 Final deprecation in Moodle 6.0.
  */
+#[\core\attribute\deprecated(
+    replacement: 'core_courseformat\local\sectionactions::set_marker',
+    since: '5.2',
+    mdl: 'MDL-86860',
+    reason: 'Course activity editing global functions have been moved to format actions',
+)]
 function course_set_marker($courseid, $marker) {
-    global $DB, $COURSE;
-    $DB->set_field("course", "marker", $marker, array('id' => $courseid));
-    if ($COURSE && $COURSE->id == $courseid) {
-        $COURSE->marker = $marker;
+    \core\deprecation::emit_deprecation(__FUNCTION__);
+
+    if ($marker === 0) {
+        formatactions::section($courseid)->remove_all_markers();
+        return;
     }
-    core_courseformat\base::reset_course_cache($courseid);
-    course_modinfo::clear_instance_cache($courseid);
+
+    $sectioninfo = get_fast_modinfo($courseid)->get_section_info($marker);
+    if (!$sectioninfo) {
+        return;
+    }
+    formatactions::section($courseid)->set_marker($sectioninfo, true);
 }
 
 /**
@@ -442,25 +453,36 @@ function course_set_marker($courseid, $marker) {
  * @param int $sectionnumber The section number to adjust
  * @param int $visibility The new visibility
  * @return array A list of resources which were hidden in the section
+ * @deprecated since Moodle 5.2.
+ * @todo MDL-87225 Final deprecation in Moodle 6.0.
  */
+#[\core\attribute\deprecated(
+    replacement: 'core_courseformat\local\sectionactions::set_visibility',
+    since: '5.2',
+    mdl: 'MDL-86861',
+    reason: 'Course activity editing global functions have been moved to format actions',
+)]
 function set_section_visible($courseid, $sectionnumber, $visibility) {
     global $DB;
+    \core\deprecation::emit_deprecation(__FUNCTION__);
 
-    $resourcestotoggle = array();
-    if ($section = $DB->get_record("course_sections", array("course"=>$courseid, "section"=>$sectionnumber))) {
-        course_update_section($courseid, $section, array('visible' => $visibility));
+    $resourcestotoggle = [];
+    $sectioninfo = get_fast_modinfo($courseid)->get_section_info($sectionnumber);
+    if (!$sectioninfo) {
+        return $resourcestotoggle;
+    }
+    formatactions::section($courseid)->set_visibility($sectioninfo, $visibility);
 
-        // Determine which modules are visible for AJAX update
-        $modules = !empty($section->sequence) ? explode(',', $section->sequence) : array();
-        if (!empty($modules)) {
-            list($insql, $params) = $DB->get_in_or_equal($modules);
-            $select = 'id ' . $insql . ' AND visible = ?';
-            array_push($params, $visibility);
-            if (!$visibility) {
-                $select .= ' AND visibleold = 1';
-            }
-            $resourcestotoggle = $DB->get_fieldset_select('course_modules', 'id', $select, $params);
+    // Determine which modules are visible for AJAX update.
+    $modules = !empty($sectioninfo->sequence) ? explode(',', $sectioninfo->sequence) : [];
+    if (!empty($modules)) {
+        [$insql, $params] = $DB->get_in_or_equal($modules);
+        $select = 'id ' . $insql . ' AND visible = ?';
+        array_push($params, $visibility);
+        if (!$visibility) {
+            $select .= ' AND visibleold = 1';
         }
+        $resourcestotoggle = $DB->get_fieldset_select('course_modules', 'id', $select, $params);
     }
     return $resourcestotoggle;
 }
@@ -615,15 +637,17 @@ function course_add_cm_to_section($courseorid, $cmid, $sectionnum, $beforemod = 
  * @param int $groupmode the new groupmode value.
  * @return bool True if the $groupmode was updated.
  */
+#[\core\attribute\deprecated(
+    replacement: 'core_courseformat\local\cmactions',
+    since: '5.2',
+    mdl: 'MDL-86857',
+    reason: 'Replaced by an equivalent in the course format cmactions.',
+)]
 function set_coursemodule_groupmode($id, $groupmode) {
-    global $DB;
-    $cm = $DB->get_record('course_modules', array('id' => $id), 'id,course,groupmode', MUST_EXIST);
-    if ($cm->groupmode != $groupmode) {
-        $DB->set_field('course_modules', 'groupmode', $groupmode, array('id' => $cm->id));
-        \course_modinfo::purge_course_module_cache($cm->course, $cm->id);
-        rebuild_course_cache($cm->course, false, true);
-    }
-    return ($cm->groupmode != $groupmode);
+    \core\deprecation::emit_deprecation(__FUNCTION__);
+
+    $coursecontext = context_module::instance($id)->get_course_context();
+    return formatactions::cm($coursecontext->instanceid)->set_groupmode($id, $groupmode);
 }
 
 function set_coursemodule_idnumber($id, $idnumber) {
@@ -659,10 +683,6 @@ function set_downloadcontent(int $id, bool $downloadcontent): bool {
  *
  * Note: Do not forget to trigger the event \core\event\course_module_updated as it needs
  * to be triggered manually, refer to {@link \core\event\course_module_updated::create_from_cm()}.
- *
- * From 2.4 the parameter $prevstateoverrides has been removed, the logic it triggered
- * has been moved to {@link set_section_visible()} which was the only place from which
- * the parameter was used.
  *
  * If $rebuildcache is set to false, the calling code is responsible for ensuring the cache is purged
  * and rebuilt as appropriate. Consider using this if set_coursemodule_visible is called multiple times
@@ -701,153 +721,20 @@ function set_coursemodule_name($cmid, $name) {
  * @param bool $async whether or not to try to delete the module using an adhoc task. Async also depends on a plugin hook.
  * @throws moodle_exception
  * @since Moodle 2.5
+ * @deprecated since Moodle 5.2.
+ * @todo MDL-86956 Final deprecation in Moodle 6.0.
  */
+#[\core\attribute\deprecated(
+    replacement: 'core_courseformat\local\cmactions::delete',
+    since: '5.2',
+    mdl: 'MDL-86856',
+    reason: 'Course activity editing global functions have been moved to format actions',
+)]
 function course_delete_module($cmid, $async = false) {
-    // Check the 'course_module_background_deletion_recommended' hook first.
-    // Only use asynchronous deletion if at least one plugin returns true and if async deletion has been requested.
-    // Both are checked because plugins should not be allowed to dictate the deletion behaviour, only support/decline it.
-    // It's up to plugins to handle things like whether or not they are enabled.
-    if ($async && $pluginsfunction = get_plugins_with_function('course_module_background_deletion_recommended')) {
-        foreach ($pluginsfunction as $plugintype => $plugins) {
-            foreach ($plugins as $pluginfunction) {
-                if ($pluginfunction()) {
-                    return course_module_flag_for_async_deletion($cmid);
-                }
-            }
-        }
-    }
+    \core\deprecation::emit_deprecation(__FUNCTION__);
 
-    global $CFG, $DB;
-
-    require_once($CFG->libdir.'/gradelib.php');
-    require_once($CFG->libdir.'/questionlib.php');
-    require_once($CFG->dirroot.'/blog/lib.php');
-    require_once($CFG->dirroot.'/calendar/lib.php');
-
-    // Get the course module.
-    if (!$cm = $DB->get_record('course_modules', array('id' => $cmid))) {
-        return true;
-    }
-
-    // Get the module context.
-    $modcontext = context_module::instance($cm->id);
-
-    // Get the course module name.
-    $modulename = $DB->get_field('modules', 'name', array('id' => $cm->module), MUST_EXIST);
-
-    // Get the file location of the delete_instance function for this module.
-    $modlib = "$CFG->dirroot/mod/$modulename/lib.php";
-
-    // Include the file required to call the delete_instance function for this module.
-    if (file_exists($modlib)) {
-        require_once($modlib);
-    } else {
-        throw new moodle_exception('cannotdeletemodulemissinglib', '', '', null,
-            "Cannot delete this module as the file mod/$modulename/lib.php is missing.");
-    }
-
-    // Warning! there is very similar code in remove_course_contents.
-    // If you are changing this code, you probably need to change that too.
-    $deleteinstancefunction = $modulename . '_delete_instance';
-
-    // Ensure the delete_instance function exists for this module.
-    if (!function_exists($deleteinstancefunction)) {
-        throw new moodle_exception('cannotdeletemodulemissingfunc', '', '', null,
-            "Cannot delete this module as the function {$modulename}_delete_instance is missing in mod/$modulename/lib.php.");
-    }
-
-    // Allow plugins to use this course module before we completely delete it.
-    if ($pluginsfunction = get_plugins_with_function('pre_course_module_delete')) {
-        foreach ($pluginsfunction as $plugintype => $plugins) {
-            foreach ($plugins as $pluginfunction) {
-                $pluginfunction($cm);
-            }
-        }
-    }
-
-    if (empty($cm->instance)) {
-        throw new moodle_exception('cannotdeletemodulemissinginstance', '', '', null,
-            "Cannot delete course module with ID $cm->id because it does not have a valid activity instance.");
-    }
-
-    // Call the delete_instance function, if it returns false throw an exception.
-    if (!$deleteinstancefunction($cm->instance)) {
-        throw new moodle_exception('cannotdeletemoduleinstance', '', '', null,
-            "Cannot delete the module $modulename (instance).");
-    }
-
-    // We delete the questions after the activity database is removed,
-    // because questions are referenced via question reference tables
-    // and cannot be deleted while the activities that use them still exist.
-    question_delete_activity($cm);
-
-    // Remove all module files in case modules forget to do that.
-    $fs = get_file_storage();
-    $fs->delete_area_files($modcontext->id);
-
-    // Delete events from calendar.
-    if ($events = $DB->get_records('event', array('instance' => $cm->instance, 'modulename' => $modulename))) {
-        $coursecontext = context_course::instance($cm->course);
-        foreach($events as $event) {
-            $event->context = $coursecontext;
-            $calendarevent = calendar_event::load($event);
-            $calendarevent->delete();
-        }
-    }
-
-    // Delete grade items, outcome items and grades attached to modules.
-    if ($grade_items = grade_item::fetch_all(array('itemtype' => 'mod', 'itemmodule' => $modulename,
-                                                   'iteminstance' => $cm->instance, 'courseid' => $cm->course))) {
-        foreach ($grade_items as $grade_item) {
-            $grade_item->delete('moddelete');
-        }
-    }
-
-    // Delete associated blogs and blog tag instances.
-    blog_remove_associations_for_module($modcontext->id);
-
-    // Delete completion and availability data; it is better to do this even if the
-    // features are not turned on, in case they were turned on previously (these will be
-    // very quick on an empty table).
-    $DB->delete_records('course_modules_completion', array('coursemoduleid' => $cm->id));
-    $DB->delete_records('course_modules_viewed', ['coursemoduleid' => $cm->id]);
-    $DB->delete_records('course_completion_criteria', array('moduleinstance' => $cm->id,
-                                                            'course' => $cm->course,
-                                                            'criteriatype' => COMPLETION_CRITERIA_TYPE_ACTIVITY));
-
-    // Delete all tag instances associated with the instance of this module.
-    core_tag_tag::delete_instances('mod_' . $modulename, null, $modcontext->id);
-    core_tag_tag::remove_all_item_tags('core', 'course_modules', $cm->id);
-
-    // Notify the competency subsystem.
-    \core_competency\api::hook_course_module_deleted($cm);
-
-    // Delete the context.
-    context_helper::delete_instance(CONTEXT_MODULE, $cm->id);
-
-    // Delete the module from the course_modules table.
-    $DB->delete_records('course_modules', array('id' => $cm->id));
-
-    // Delete module from that section.
-    if (!delete_mod_from_section($cm->id, $cm->section)) {
-        throw new moodle_exception('cannotdeletemodulefromsection', '', '', null,
-            "Cannot delete the module $modulename (instance) from section.");
-    }
-
-    // Trigger event for course module delete action.
-    $event = \core\event\course_module_deleted::create(array(
-        'courseid' => $cm->course,
-        'context'  => $modcontext,
-        'objectid' => $cm->id,
-        'other'    => array(
-            'modulename'   => $modulename,
-            'instanceid'   => $cm->instance,
-        )
-    ));
-    $event->add_record_snapshot('course_modules', $cm);
-    $event->trigger();
-    \course_modinfo::purge_course_module_cache($cm->course, $cm->id);
-    rebuild_course_cache($cm->course, false, true);
+    $coursecontext = context_module::instance($cmid)->get_course_context();
+    formatactions::cm($coursecontext->instanceid)->delete($cmid, $async);
 }
 
 /**
@@ -859,61 +746,25 @@ function course_delete_module($cmid, $async = false) {
  * @param int $cmid the course module id.
  * @return ?bool whether the module was successfully scheduled for deletion.
  * @throws \moodle_exception
+ * @deprecated since Moodle 5.2.
+ * @todo MDL-86956 Final deprecation in Moodle 6.0.
  */
+#[\core\attribute\deprecated(
+    replacement: 'core_courseformat\local\cmactions::delete_async',
+    since: '5.2',
+    mdl: 'MDL-86856',
+    reason: 'Course activity editing global functions have been moved to format actions',
+)]
 function course_module_flag_for_async_deletion($cmid) {
-    global $CFG, $DB, $USER;
-    require_once($CFG->libdir.'/gradelib.php');
-    require_once($CFG->libdir.'/questionlib.php');
-    require_once($CFG->dirroot.'/blog/lib.php');
-    require_once($CFG->dirroot.'/calendar/lib.php');
+    \core\deprecation::emit_deprecation(__FUNCTION__);
 
-    // Get the course module.
-    if (!$cm = $DB->get_record('course_modules', array('id' => $cmid))) {
-        return true;
-    }
-
-    // We need to be reasonably certain the deletion is going to succeed before we background the process.
-    // Make the necessary delete_instance checks, etc. before proceeding further. Throw exceptions if required.
-
-    // Get the course module name.
-    $modulename = $DB->get_field('modules', 'name', array('id' => $cm->module), MUST_EXIST);
-
-    // Get the file location of the delete_instance function for this module.
-    $modlib = "$CFG->dirroot/mod/$modulename/lib.php";
-
-    // Include the file required to call the delete_instance function for this module.
-    if (file_exists($modlib)) {
-        require_once($modlib);
-    } else {
-        throw new \moodle_exception('cannotdeletemodulemissinglib', '', '', null,
-            "Cannot delete this module as the file mod/$modulename/lib.php is missing.");
-    }
-
-    $deleteinstancefunction = $modulename . '_delete_instance';
-
-    // Ensure the delete_instance function exists for this module.
-    if (!function_exists($deleteinstancefunction)) {
-        throw new \moodle_exception('cannotdeletemodulemissingfunc', '', '', null,
-            "Cannot delete this module as the function {$modulename}_delete_instance is missing in mod/$modulename/lib.php.");
-    }
-
-    // We are going to defer the deletion as we can't be sure how long the module's pre_delete code will run for.
-    $cm->deletioninprogress = '1';
-    $DB->update_record('course_modules', $cm);
-
-    // Create an adhoc task for the deletion of the course module. The task takes an array of course modules for removal.
-    $removaltask = new \core_course\task\course_delete_modules();
-    $removaltask->set_custom_data(array(
-        'cms' => array($cm),
-        'userid' => $USER->id,
-        'realuserid' => \core\session\manager::get_realuser()->id
-    ));
-
-    // Queue the task for the next run.
-    \core\task\manager::queue_adhoc_task($removaltask);
-
-    // Reset the course cache to hide the module.
-    rebuild_course_cache($cm->course, true);
+    $coursecontext = context_module::instance($cmid)->get_course_context();
+    // The new method is correctly declared as protected to prevent direct use, a visibility modifier that was not possible
+    // in its original location.
+    // To avoid code duplication, as a temporary solution, because this method will be removed in the near future,
+    // it now calls the new protected method using reflection.
+    $method = new ReflectionMethod(\core_courseformat\local\cmactions::class, 'delete_async');
+    $method->invokeArgs(formatactions::cm($coursecontext->instanceid), [$cmid]);
 }
 
 /**
@@ -1128,11 +979,14 @@ function move_section_to($course, $section, $destination, $ignorenumsections = f
     // If we move the highlighted section itself, then just highlight the destination.
     // Adjust the higlighted section location if we move something over it either direction.
     if ($section == $course->marker) {
-        course_set_marker($course->id, $destination);
+        $sectioninfo = get_fast_modinfo($course->id)->get_section_info($destination);
+        formatactions::section($course->id)->set_marker($sectioninfo, true);
     } else if ($section > $course->marker && $course->marker >= $destination) {
-        course_set_marker($course->id, $course->marker+1);
+        $sectioninfo = get_fast_modinfo($course->id)->get_section_info($course->marker + 1);
+        formatactions::section($course->id)->set_marker($sectioninfo, true);
     } else if ($section < $course->marker && $course->marker <= $destination) {
-        course_set_marker($course->id, $course->marker-1);
+        $sectioninfo = get_fast_modinfo($course->id)->get_section_info($course->marker - 1);
+        formatactions::section($course->id)->set_marker($sectioninfo, true);
     }
 
     $transaction->allow_commit();
@@ -2334,424 +2188,6 @@ function average_number_of_courses_modules() {
 }
 
 /**
- * This class pertains to course requests and contains methods associated with
- * create, approving, and removing course requests.
- *
- * Please note we do not allow embedded images here because there is no context
- * to store them with proper access control.
- *
- * @copyright 2009 Sam Hemelryk
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @since Moodle 2.0
- *
- * @property-read int $id
- * @property-read string $fullname
- * @property-read string $shortname
- * @property-read string $summary
- * @property-read int $summaryformat
- * @property-read int $summarytrust
- * @property-read string $reason
- * @property-read int $requester
- */
-class course_request {
-
-    /**
-     * This is the stdClass that stores the properties for the course request
-     * and is externally accessed through the __get magic method
-     * @var stdClass
-     */
-    protected $properties;
-
-    /**
-     * An array of options for the summary editor used by course request forms.
-     * This is initially set by {@link summary_editor_options()}
-     * @var array
-     * @static
-     */
-    protected static $summaryeditoroptions;
-
-    /**
-     * Static function to prepare the summary editor for working with a course
-     * request.
-     *
-     * @static
-     * @param null|stdClass $data Optional, an object containing the default values
-     *                       for the form, these may be modified when preparing the
-     *                       editor so this should be called before creating the form
-     * @return stdClass An object that can be used to set the default values for
-     *                   an mforms form
-     */
-    public static function prepare($data=null) {
-        if ($data === null) {
-            $data = new stdClass;
-        }
-        $data = file_prepare_standard_editor($data, 'summary', self::summary_editor_options());
-        return $data;
-    }
-
-    /**
-     * Static function to create a new course request when passed an array of properties
-     * for it.
-     *
-     * This function also handles saving any files that may have been used in the editor
-     *
-     * @static
-     * @param stdClass $data
-     * @return course_request The newly created course request
-     */
-    public static function create($data) {
-        global $USER, $DB, $CFG;
-        $data->requester = $USER->id;
-
-        // Setting the default category if none set.
-        if (empty($data->category) || !empty($CFG->lockrequestcategory)) {
-            $data->category = $CFG->defaultrequestcategory;
-        }
-
-        // Summary is a required field so copy the text over
-        $data->summary       = $data->summary_editor['text'];
-        $data->summaryformat = $data->summary_editor['format'];
-
-        $data->id = $DB->insert_record('course_request', $data);
-
-        // Create a new course_request object and return it
-        $request = new course_request($data);
-
-        // Notify the admin if required.
-        if ($users = get_users_from_config($CFG->courserequestnotify, 'moodle/site:approvecourse')) {
-
-            $a = new stdClass;
-            $a->link = "$CFG->wwwroot/course/pending.php";
-            $a->user = fullname($USER);
-            $a->shortname = s($data->shortname) ?? '';
-            $a->fullname = s($data->fullname) ?? '';
-            $a->category = s($data->category) ?? '';
-            $a->reason = format_text($data->reason, FORMAT_PLAIN) ?? '';
-            $subject = get_string('courserequest');
-            $message = get_string('courserequestnotifyemail', 'admin', $a);
-            foreach ($users as $user) {
-                $request->notify($user, $USER, 'courserequested', $subject, $message);
-            }
-        }
-
-        return $request;
-    }
-
-    /**
-     * Returns an array of options to use with a summary editor
-     *
-     * @uses course_request::$summaryeditoroptions
-     * @return array An array of options to use with the editor
-     */
-    public static function summary_editor_options() {
-        global $CFG;
-        if (self::$summaryeditoroptions === null) {
-            self::$summaryeditoroptions = array('maxfiles' => 0, 'maxbytes'=>0);
-        }
-        return self::$summaryeditoroptions;
-    }
-
-    /**
-     * Loads the properties for this course request object. Id is required and if
-     * only id is provided then we load the rest of the properties from the database
-     *
-     * @param stdClass|int $properties Either an object containing properties
-     *                      or the course_request id to load
-     */
-    public function __construct($properties) {
-        global $DB;
-        if (empty($properties->id)) {
-            if (empty($properties)) {
-                throw new coding_exception('You must provide a course request id when creating a course_request object');
-            }
-            $id = $properties;
-            $properties = new stdClass;
-            $properties->id = (int)$id;
-            unset($id);
-        }
-        if (empty($properties->requester)) {
-            if (!($this->properties = $DB->get_record('course_request', array('id' => $properties->id)))) {
-                throw new \moodle_exception('unknowncourserequest');
-            }
-        } else {
-            $this->properties = $properties;
-        }
-        $this->properties->collision = null;
-    }
-
-    /**
-     * Returns the requested property
-     *
-     * @param string $key
-     * @return mixed
-     */
-    public function __get($key) {
-        return $this->properties->$key;
-    }
-
-    /**
-     * Override this to ensure empty($request->blah) calls return a reliable answer...
-     *
-     * This is required because we define the __get method
-     *
-     * @param mixed $key
-     * @return bool True is it not empty, false otherwise
-     */
-    public function __isset($key) {
-        return (!empty($this->properties->$key));
-    }
-
-    /**
-     * Returns the user who requested this course
-     *
-     * Uses a static var to cache the results and cut down the number of db queries
-     *
-     * @staticvar array $requesters An array of cached users
-     * @return stdClass The user who requested the course
-     */
-    public function get_requester() {
-        global $DB;
-        static $requesters= array();
-        if (!array_key_exists($this->properties->requester, $requesters)) {
-            $requesters[$this->properties->requester] = $DB->get_record('user', array('id'=>$this->properties->requester));
-        }
-        return $requesters[$this->properties->requester];
-    }
-
-    /**
-     * Checks that the shortname used by the course does not conflict with any other
-     * courses that exist
-     *
-     * @param string|null $shortnamemark The string to append to the requests shortname
-     *                     should a conflict be found
-     * @return bool true is there is a conflict, false otherwise
-     */
-    public function check_shortname_collision($shortnamemark = '[*]') {
-        global $DB;
-
-        if ($this->properties->collision !== null) {
-            return $this->properties->collision;
-        }
-
-        if (empty($this->properties->shortname)) {
-            debugging('Attempting to check a course request shortname before it has been set', DEBUG_DEVELOPER);
-            $this->properties->collision = false;
-        } else if ($DB->record_exists('course', array('shortname' => $this->properties->shortname))) {
-            if (!empty($shortnamemark)) {
-                $this->properties->shortname .= ' '.$shortnamemark;
-            }
-            $this->properties->collision = true;
-        } else {
-            $this->properties->collision = false;
-        }
-        return $this->properties->collision;
-    }
-
-    /**
-     * Checks user capability to approve a requested course
-     *
-     * If course was requested without category for some reason (might happen if $CFG->defaultrequestcategory is
-     * misconfigured), we check capabilities 'moodle/site:approvecourse' and 'moodle/course:changecategory'.
-     *
-     * @return bool
-     */
-    public function can_approve() {
-        global $CFG;
-        $category = null;
-        if ($this->properties->category) {
-            $category = core_course_category::get($this->properties->category, IGNORE_MISSING);
-        } else if ($CFG->defaultrequestcategory) {
-            $category = core_course_category::get($CFG->defaultrequestcategory, IGNORE_MISSING);
-        }
-        if ($category) {
-            return has_capability('moodle/site:approvecourse', $category->get_context());
-        }
-
-        // We can not determine the context where the course should be created. The approver should have
-        // both capabilities to approve courses and change course category in the system context.
-        return has_all_capabilities(['moodle/site:approvecourse', 'moodle/course:changecategory'], context_system::instance());
-    }
-
-    /**
-     * Returns the category where this course request should be created
-     *
-     * Note that we don't check here that user has a capability to view
-     * hidden categories if he has capabilities 'moodle/site:approvecourse' and
-     * 'moodle/course:changecategory'
-     *
-     * @return core_course_category
-     */
-    public function get_category() {
-        global $CFG;
-        if ($this->properties->category && ($category = core_course_category::get($this->properties->category, IGNORE_MISSING))) {
-            return $category;
-        } else if ($CFG->defaultrequestcategory &&
-                ($category = core_course_category::get($CFG->defaultrequestcategory, IGNORE_MISSING))) {
-            return $category;
-        } else {
-            return core_course_category::get_default();
-        }
-    }
-
-    /**
-     * This function approves the request turning it into a course
-     *
-     * This function converts the course request into a course, at the same time
-     * transferring any files used in the summary to the new course and then removing
-     * the course request and the files associated with it.
-     *
-     * @return int The id of the course that was created from this request
-     */
-    public function approve() {
-        global $CFG, $DB, $USER;
-
-        require_once($CFG->dirroot . '/backup/util/includes/restore_includes.php');
-
-        $user = $DB->get_record('user', array('id' => $this->properties->requester, 'deleted'=>0), '*', MUST_EXIST);
-
-        $courseconfig = get_config('moodlecourse');
-
-        // Transfer appropriate settings
-        $data = clone($this->properties);
-        unset($data->id);
-        unset($data->reason);
-        unset($data->requester);
-
-        // Set category
-        $category = $this->get_category();
-        $data->category = $category->id;
-        // Set misc settings
-        $data->requested = 1;
-
-        // Apply course default settings
-        $data->format             = $courseconfig->format;
-        $data->newsitems          = $courseconfig->newsitems;
-        $data->showgrades         = $courseconfig->showgrades;
-        $data->showreports        = $courseconfig->showreports;
-        $data->maxbytes           = $courseconfig->maxbytes;
-        $data->groupmode          = $courseconfig->groupmode;
-        $data->groupmodeforce     = $courseconfig->groupmodeforce;
-        $data->visible            = $courseconfig->visible;
-        $data->visibleold         = $data->visible;
-        $data->lang               = $courseconfig->lang;
-        $data->enablecompletion   = $courseconfig->enablecompletion;
-        $data->numsections        = $courseconfig->numsections;
-        $data->startdate          = usergetmidnight(time());
-        if ($courseconfig->courseenddateenabled) {
-            $data->enddate        = usergetmidnight(time()) + $courseconfig->courseduration;
-        }
-
-        list($data->fullname, $data->shortname) = restore_dbops::calculate_course_names(0, $data->fullname, $data->shortname);
-
-        $course = create_course($data);
-        $context = context_course::instance($course->id, MUST_EXIST);
-
-        // add enrol instances
-        if (!$DB->record_exists('enrol', array('courseid'=>$course->id, 'enrol'=>'manual'))) {
-            if ($manual = enrol_get_plugin('manual')) {
-                $manual->add_default_instance($course);
-            }
-        }
-
-        // enrol the requester as teacher if necessary
-        if (!empty($CFG->creatornewroleid) and !is_viewing($context, $user, 'moodle/role:assign') and !is_enrolled($context, $user, 'moodle/role:assign')) {
-            enrol_try_internal_enrol($course->id, $user->id, $CFG->creatornewroleid);
-        }
-
-        $this->delete();
-
-        $a = new stdClass();
-        $a->name = format_string($course->fullname, true, ['context' => $context]);
-        $a->url = course_get_url($course);
-
-        $usernameplaceholders = \core\user::get_name_placeholders($user);
-        foreach ($usernameplaceholders as $field => $value) {
-            $a->{$field} = $value;
-        }
-
-        $this->notify($user, $USER, 'courserequestapproved', get_string('courseapprovedsubject'), get_string('courseapprovedemail2', 'moodle', $a), $course->id);
-
-        return $course->id;
-    }
-
-    /**
-     * Reject a course request
-     *
-     * This function rejects a course request, emailing the requesting user the
-     * provided notice and then removing the request from the database
-     *
-     * @param string $notice The message to display to the user
-     */
-    public function reject($notice) {
-        global $USER, $DB;
-        $user = $DB->get_record('user', array('id' => $this->properties->requester), '*', MUST_EXIST);
-        $this->notify($user, $USER, 'courserequestrejected', get_string('courserejectsubject'), get_string('courserejectemail', 'moodle', $notice));
-        $this->delete();
-    }
-
-    /**
-     * Deletes the course request and any associated files
-     */
-    public function delete() {
-        global $DB;
-        $DB->delete_records('course_request', array('id' => $this->properties->id));
-    }
-
-    /**
-     * Send a message from one user to another using events_trigger
-     *
-     * @param object $touser
-     * @param object $fromuser
-     * @param string $name
-     * @param string $subject
-     * @param string $message
-     * @param int|null $courseid
-     */
-    protected function notify($touser, $fromuser, $name, $subject, $message, $courseid = null) {
-        $eventdata = new \core\message\message();
-        $eventdata->courseid          = empty($courseid) ? SITEID : $courseid;
-        $eventdata->component         = 'moodle';
-        $eventdata->name              = $name;
-        $eventdata->userfrom          = $fromuser;
-        $eventdata->userto            = $touser;
-        $eventdata->subject           = $subject;
-        $eventdata->fullmessage       = $message;
-        $eventdata->fullmessageformat = FORMAT_PLAIN;
-        $eventdata->fullmessagehtml   = '';
-        $eventdata->smallmessage      = '';
-        $eventdata->notification      = 1;
-        message_send($eventdata);
-    }
-
-    /**
-     * Checks if current user can request a course in this context
-     *
-     * @param context $context
-     * @return bool
-     */
-    public static function can_request(context $context) {
-        global $CFG;
-        if (empty($CFG->enablecourserequests)) {
-            return false;
-        }
-        if (has_capability('moodle/course:create', $context)) {
-            return false;
-        }
-
-        if ($context instanceof context_system) {
-            $defaultcontext = context_coursecat::instance($CFG->defaultrequestcategory, IGNORE_MISSING);
-            return $defaultcontext &&
-                has_capability('moodle/course:request', $defaultcontext);
-        } else if ($context instanceof context_coursecat) {
-            if (!$CFG->lockrequestcategory || $CFG->defaultrequestcategory == $context->instanceid) {
-                return has_capability('moodle/course:request', $context);
-            }
-        }
-        return false;
-    }
-}
-
-/**
  * Return a list of page types
  * @param string $pagetype current page type
  * @param context $parentcontext Block's parent context
@@ -2997,7 +2433,7 @@ function get_sorted_course_formats($enabledonly = false) {
  * @param array $options options for view URL. At the moment core uses:
  *     'navigation' (bool) if true and section has no separate page, the function returns null
  *     'sr' (int) used by multipage formats to specify to which section to return
- * @return moodle_url The url of course
+ * @return moodle_url|null The url of course
  */
 function course_get_url($courseorid, $section = null, $options = array()) {
     return course_get_format($courseorid)->get_view_url($section, $options);
@@ -4841,6 +4277,8 @@ function course_output_fragment_new_base_form($args) {
  *
  * @param array $args the fragment arguments
  * @return string the course overview fragment
+ *
+ * @throws require_login_exception
  */
 function course_output_fragment_course_overview($args) {
     global $PAGE;
@@ -4850,7 +4288,10 @@ function course_output_fragment_course_overview($args) {
     $modname = $args['modname'];
     $course = get_course($args['courseid']);
     $context = context_course::instance($course->id, MUST_EXIST);
-    can_access_course($course);
+
+    if (!can_access_course($course, null, '', true)) {
+        throw new require_login_exception('Course is not available');
+    }
 
     // Some plugins may have a list view event.
     $eventclassname = 'mod_' . $modname . '\\event\\course_module_instance_list_viewed';

@@ -471,8 +471,8 @@ function get_docs_url($path = null) {
  * @return string formatted backtrace, ready for output.
  */
 function format_backtrace($callers, $plaintext = false) {
-    // do not use $CFG->dirroot because it might not be available in destructors
-    $dirroot = dirname(__DIR__);
+    // Do not use $CFG->dirroot because it might not be available in destructors.
+    $dirroot = dirname(__DIR__, 2);
 
     if (empty($callers)) {
         return '';
@@ -481,21 +481,25 @@ function format_backtrace($callers, $plaintext = false) {
     $from = $plaintext ? '' : '<ul style="text-align: left" data-rel="backtrace">';
     foreach ($callers as $caller) {
         if (!isset($caller['line'])) {
-            $caller['line'] = '?'; // probably call_user_func()
+            $caller['line'] = '?'; // Probably call_user_func().
         }
         if (!isset($caller['file'])) {
-            $caller['file'] = 'unknownfile'; // probably call_user_func()
+            $caller['file'] = 'unknownfile'; // Probably call_user_func().
         }
         $line = $plaintext ? '* ' : '<li>';
-        $line .= 'line ' . $caller['line'] . ' of ' . str_replace($dirroot, '', $caller['file']);
+        $line .= sprintf(
+            'line %d of %s',
+            $caller['line'],
+            str_replace($dirroot, '', $caller['file']),
+        );
         if (isset($caller['function'])) {
             $line .= ': call to ';
             if (isset($caller['class'])) {
                 $line .= $caller['class'] . $caller['type'];
             }
-            $line .= $caller['function'] . '()';
+            $line .= "{$caller['function']}()";
         } else if (isset($caller['exception'])) {
-            $line .= ': '.$caller['exception'].' thrown';
+            $line .= ": {$caller['exception']} thrown";
         }
 
         // Remove any non printable chars.
@@ -634,10 +638,10 @@ function hash_local_config_cache() {
 function initialise_fullme() {
     global $CFG, $FULLME, $ME, $SCRIPT, $FULLSCRIPT;
 
-    // Detect common config error.
-    if (substr($CFG->wwwroot, -1) == '/') {
-        throw new \moodle_exception('wwwrootslash', 'error');
-    }
+    $setuphelper = \core\di::get(\core\setup::class);
+
+    // Detect common config errors in the wwwroot.
+    $setuphelper->validate_wwwroot();
 
     if (CLI_SCRIPT) {
         initialise_fullme_cli();
@@ -793,24 +797,25 @@ function setup_get_remote_url() {
         $rurl['fullpath'] = $_SERVER['REQUEST_URI'];
 
         // Fixing a known issue with:
-        // - Apache versions lesser than 2.4.11
+        // - Apache
         // - PHP deployed in Apache as PHP-FPM via mod_proxy_fcgi
-        // - PHP versions lesser than 5.6.3 and 5.5.18.
+        // - PHP versions lesser than 8.1.18 or 8.2.5.
         if (isset($_SERVER['PATH_INFO']) && (php_sapi_name() === 'fpm-fcgi') && isset($_SERVER['SCRIPT_NAME'])) {
-            $pathinfodec = rawurldecode($_SERVER['PATH_INFO']);
-            $lenneedle = strlen($pathinfodec);
-            // Checks whether SCRIPT_NAME ends with PATH_INFO, URL-decoded.
-            if (substr($_SERVER['SCRIPT_NAME'], -$lenneedle) === $pathinfodec) {
-                // This is the "Apache 2.4.10- running PHP-FPM via mod_proxy_fcgi" fingerprint,
-                // at least on CentOS 7 (Apache/2.4.6 PHP/5.4.16) and Ubuntu 14.04 (Apache/2.4.7 PHP/5.5.9)
-                // => SCRIPT_NAME contains 'slash arguments' data too, which is wrongly exposed via PATH_INFO as URL-encoded.
-                // Fix both $_SERVER['PATH_INFO'] and $_SERVER['SCRIPT_NAME'].
-                $lenhaystack = strlen($_SERVER['SCRIPT_NAME']);
-                $pos = $lenhaystack - $lenneedle;
-                // Here $pos is greater than 0 but let's double check it.
-                if ($pos > 0) {
-                    $_SERVER['PATH_INFO'] = $pathinfodec;
-                    $_SERVER['SCRIPT_NAME'] = substr($_SERVER['SCRIPT_NAME'], 0, $pos);
+            $_SERVER['PATH_INFO'] = rawurldecode($_SERVER['PATH_INFO']);
+            if (PHP_VERSION_ID < 80118 || (PHP_VERSION_ID >= 80200 && PHP_VERSION_ID < 80205)) {
+                $lenneedle = strlen($_SERVER['PATH_INFO']);
+                // Checks whether SCRIPT_NAME ends with PATH_INFO, URL-decoded.
+                if (substr($_SERVER['SCRIPT_NAME'], -$lenneedle) === $_SERVER['PATH_INFO']) {
+                    // This is the "Apache running PHP-FPM via mod_proxy_fcgi with PHP < 8.1.18 or PHP < 8.2.5" fingerprint,
+                    // at least on CentOS 7 (Apache/2.4.6 PHP/8.0.30)
+                    // => SCRIPT_NAME contains 'slash arguments' data too, which is wrongly exposed via PATH_INFO as URL-encoded.
+                    // Fix $_SERVER['SCRIPT_NAME'].
+                    $lenhaystack = strlen($_SERVER['SCRIPT_NAME']);
+                    $pos = $lenhaystack - $lenneedle;
+                    // Here $pos is greater than 0 but let's double check it.
+                    if ($pos > 0) {
+                        $_SERVER['SCRIPT_NAME'] = substr($_SERVER['SCRIPT_NAME'], 0, $pos);
+                    }
                 }
             }
         }
@@ -1202,17 +1207,18 @@ function redirect_if_major_upgrade_required() {
  * @param bool $warningonly if true displays a warning instead of throwing an exception
  * @return bool true if executed from outside of upgrade process, false if from inside upgrade process and function is used for warning only
  */
+#[\core\attribute\deprecated(
+    replacement: 'Use \core\setup::ensure_upgrade_is_not_running() or \core\setup::warn_if_upgrade_is_running() instead.',
+    mdl: 'MDL-87107',
+    since: '5.2',
+)]
 function upgrade_ensure_not_running($warningonly = false) {
-    global $CFG;
-    if (!empty($CFG->upgraderunning)) {
-        if (!$warningonly) {
-            throw new moodle_exception('cannotexecduringupgrade');
-        } else {
-            debugging(get_string('cannotexecduringupgrade', 'error'), DEBUG_DEVELOPER);
-            return false;
-        }
+    \core\deprecation::emit_deprecation(__FUNCTION__);
+    if ($warningonly) {
+        return !\core\setup::warn_if_upgrade_is_running();
+    } else {
+        return !\core\setup::ensure_upgrade_is_not_running();
     }
-    return true;
 }
 
 /**
@@ -1415,7 +1421,7 @@ function get_request_storage_directory($exceptiononerror = true, bool $forcecrea
 
         if ($dir = make_unique_writable_directory($basedir, $exceptiononerror)) {
             // Register a shutdown handler to remove the directory.
-            \core_shutdown_manager::register_function('remove_dir', [$dir]);
+            \core\shutdown_manager::register_function('remove_dir', [$dir]);
         }
 
         $requestdir = $dir;

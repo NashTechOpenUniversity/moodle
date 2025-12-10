@@ -56,11 +56,17 @@ if (!empty($showonly)) {
 }
 
 if (!empty($add)) {
-    $section = required_param('section', PARAM_INT);
     $course  = required_param('course', PARAM_INT);
 
+    $sectionid = optional_param('sectionid', null, PARAM_INT);
+    if (empty($sectionid)) {
+        $sectionnum = required_param('section', PARAM_INT);
+    } else {
+        $sectionnum = get_fast_modinfo($course)->get_section_info_by_id($sectionid, MUST_EXIST)->sectionnum;
+    }
+
     $url->param('add', $add);
-    $url->param('section', $section);
+    $url->param('section', $sectionnum);
     $url->param('course', $course);
     $PAGE->set_url($url);
 
@@ -70,9 +76,9 @@ if (!empty($add)) {
     // There is no page for this in the navigation. The closest we'll have is the course section.
     // If the course section isn't displayed on the navigation this will fall back to the course which
     // will be the closest match we have.
-    navigation_node::override_active_url(course_get_url($course, $section));
+    navigation_node::override_active_url(course_get_url($course, $sectionnum));
 
-    list($module, $context, $cw, $cm, $data) = prepare_new_moduleinfo_data($course, $add, $section);
+    [$module, $context, $cw, $cm, $data] = prepare_new_moduleinfo_data($course, $add, $sectionnum);
     $data->return = 0;
     if (!is_null($sectionreturn)) {
         $data->sr = $sectionreturn;
@@ -166,7 +172,15 @@ if ($mform->is_cancelled()) {
         if (!is_null($sectionreturn)) {
             $options['sr'] = $sectionreturn;
         }
-        redirect(course_get_url($course, $cw->section, $options));
+        $url = course_get_url($course, $cw->section, $options);
+        if (!empty($cm->id)) {
+            $url->set_anchor('module-' . $cm->id);
+        } else if (!empty($data->beforemod)) {
+            $url->set_anchor('module-' . $data->beforemod);
+        } else {
+            $url->set_anchor('section-' . $cw->section);
+        }
+        redirect($url);
     }
 } else if ($fromform = $mform->get_data()) {
     // Mark that this is happening in the front-end UI. This is used to indicate that we are able to
@@ -193,8 +207,10 @@ if ($mform->is_cancelled()) {
             $options['sr'] = $sectionreturn;
         }
         $url = course_get_url($course, $cw->section, $options);
+        if (!empty($fromform->coursemodule)) {
+            $url->set_anchor('module-' . $fromform->coursemodule);
+        }
     }
-
     redirect($url);
     exit;
 

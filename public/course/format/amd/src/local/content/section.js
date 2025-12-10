@@ -73,15 +73,25 @@ export default class extends DndSection {
             const sectionItem = this.getElement(this.selectors.SECTION_ITEM);
             if (sectionItem) {
                 // Init the inner dragable element.
-                const headerComponent = new Header({
-                    ...this,
-                    element: sectionItem,
-                    fullregion: this.element,
-                });
+                const headerComponent = this._newHeader(sectionItem);
                 this.configDragDrop(headerComponent);
             }
         }
         this._openSectionIfNecessary();
+    }
+
+    /**
+     * Create a new Header object.
+     *
+     * @param {Element} sectionItem the Header's element
+     * @return {Header} the new object
+     */
+    _newHeader(sectionItem) {
+        return new Header({
+            ...this,
+            element: sectionItem,
+            fullregion: this.element,
+        });
     }
 
     /**
@@ -120,7 +130,7 @@ export default class extends DndSection {
      */
     validateDropData(dropdata) {
         // If the format uses one section per page sections dropping in the content is ignored.
-        if (dropdata?.type === 'section' && this.reactive.sectionReturn !== null) {
+        if (dropdata?.type === 'section' && (this.reactive?.sectionReturn ?? this.reactive?.pageSectionId) !== null) {
             return false;
         }
         return super.validateDropData(dropdata);

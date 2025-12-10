@@ -75,7 +75,7 @@ abstract class activityoverviewbase {
      */
     public function __construct(
         /** @var cm_info The course module. */
-        protected readonly cm_info $cm,
+        public readonly cm_info $cm,
     ) {
         $this->context = $cm->context;
         $this->course = $cm->get_course();
@@ -267,16 +267,14 @@ abstract class activityoverviewbase {
             }
 
             $gradegrade = grade_grade::fetch(['itemid' => $item->id, 'userid' => $USER->id]);
-
-            if (
-                !$gradegrade
-                || ($gradegrade->is_hidden() && !has_capability('moodle/grade:viewhidden', $this->context))
-            ) {
-                $result[] = new overviewitem(
-                    name: $itemnames[$item->id],
-                    value: '-',
-                    content: '-',
-                );
+            if ((!$gradegrade || ($gradegrade->is_hidden() && !has_capability('moodle/grade:viewhidden', $this->context)))) {
+                if ($item->is_gradable()) {
+                    $result[] = new overviewitem(
+                        name: $itemnames[$item->id],
+                        value: '-',
+                        content: '-',
+                    );
+                }
                 continue;
             }
 

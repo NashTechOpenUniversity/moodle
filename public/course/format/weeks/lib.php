@@ -124,7 +124,7 @@ class format_weeks extends core_courseformat\base {
      * @param array $options options for view URL. At the moment core uses:
      *     'navigation' (bool) if true and section not empty, the function returns section page; otherwise, it returns course page.
      *     'sr' (int) used by course formats to specify to which section to return
-     * @return null|moodle_url
+     * @return moodle_url
      */
     public function get_view_url($section, $options = array()) {
         $course = $this->get_course();
@@ -263,38 +263,50 @@ class format_weeks extends core_courseformat\base {
             );
         }
         if ($foreditform && !isset($courseformatoptions['coursedisplay']['label'])) {
-            $courseformatoptionsedit = array(
-                'hiddensections' => array(
+            $hiddensectionslist = new core\output\choicelist();
+            $hiddensectionslist->set_allow_empty(false);
+            $hiddensectionslist->add_option(
+                1,
+                new lang_string('hiddensectionsinvisible'),
+                [
+                    'description' => new lang_string('hiddensectionsinvisible_description'),
+                ],
+            );
+            $hiddensectionslist->add_option(
+                0,
+                new lang_string('hiddensectionscollapsed'),
+                [
+                    'description' => new lang_string('hiddensectionscollapsed_description'),
+                ],
+            );
+
+            $courseformatoptionsedit = [
+                'hiddensections' => [
                     'label' => new lang_string('hiddensections'),
-                    'help' => 'hiddensections',
-                    'help_component' => 'moodle',
-                    'element_type' => 'select',
-                    'element_attributes' => array(
-                        array(
-                            0 => new lang_string('hiddensectionscollapsed'),
-                            1 => new lang_string('hiddensectionsinvisible')
-                        )
-                    ),
-                ),
-                'coursedisplay' => array(
+                    'element_type' => 'choicedropdown',
+                    'element_attributes' => [
+                        $hiddensectionslist,
+                    ],
+                ],
+                'coursedisplay' => [
                     'label' => new lang_string('coursedisplay'),
                     'element_type' => 'select',
-                    'element_attributes' => array(
-                        array(
+                    'element_attributes' => [
+                        [
                             COURSE_DISPLAY_SINGLEPAGE => new lang_string('coursedisplay_single'),
-                            COURSE_DISPLAY_MULTIPAGE => new lang_string('coursedisplay_multi')
-                        )
-                    ),
+                            COURSE_DISPLAY_MULTIPAGE => new lang_string('coursedisplay_multi'),
+                        ],
+                    ],
                     'help' => 'coursedisplay',
                     'help_component' => 'moodle',
-                ),
-                'automaticenddate' => array(
+                ],
+                'automaticenddate' => [
                     'label' => new lang_string('automaticenddate', 'format_weeks'),
                     'help' => 'automaticenddate',
                     'help_component' => 'format_weeks',
                     'element_type' => 'advcheckbox',
-                )
-            );
+                ],
+            ];
             $courseformatoptions = array_merge_recursive($courseformatoptions, $courseformatoptionsedit);
         }
         return $courseformatoptions;

@@ -484,6 +484,8 @@ define('MOD_ARCHETYPE_SYSTEM', 3);
 
 /** Type of module */
 define('FEATURE_MOD_PURPOSE', 'mod_purpose');
+/** Type of module alternative purpose */
+define('FEATURE_MOD_OTHERPURPOSE', 'mod_otherpurpose');
 /** Module purpose administration */
 define('MOD_PURPOSE_ADMINISTRATION', 'administration');
 /** Module purpose assessment */
@@ -932,14 +934,23 @@ function html_is_blank($string) {
  * @param string|int|bool|null $value the value to set (without magic quotes),
  *               null to unset the value
  * @param string $plugin (optional) the plugin scope, default null
+ * @param boolean $log (optional) should this emit to the config log
  * @return bool true or exception
  */
-function set_config($name, $value, $plugin = null) {
+function set_config($name, $value, $plugin = null, bool $log = false) {
     global $CFG, $DB;
 
     // Redirect to appropriate handler when value is null.
     if ($value === null) {
-        return unset_config($name, $plugin);
+        return unset_config($name, $plugin, $log);
+    }
+
+    if ($log) {
+        $prev = get_config($plugin, $name);
+        if ($prev === false) {
+            $prev = null;
+        }
+        add_to_config_log($name, $prev, $value, $plugin);
     }
 
     // Set variables determining conditions and where to store the new config.
@@ -1097,10 +1108,19 @@ function get_config($plugin, $name = null) {
  *
  * @param string $name the key to set
  * @param string $plugin (optional) the plugin scope
+ * @param boolean $log (optional) should this emit to the config log
  * @return boolean whether the operation succeeded.
  */
-function unset_config($name, $plugin=null) {
+function unset_config($name, $plugin = null, bool $log = false) {
     global $CFG, $DB;
+
+    if ($log) {
+        $prev = get_config($plugin, $name);
+        if ($prev === false) {
+            $prev = null;
+        }
+        add_to_config_log($name, $prev, null, $plugin);
+    }
 
     if (empty($plugin)) {
         unset($CFG->$name);
@@ -4833,7 +4853,7 @@ function remove_course_contents($courseid, $showfeedback = true, ?array $options
 
             if ($instances) {
                 foreach ($instances as $cm) {
-                    // Warning! there is very similar code in course_delete_module.
+                    // Warning! there is very similar code in cmactions::delete.
                     // If you are changing this code, you probably need to change that too.
                     if (function_exists($moddelete)) {
                         // This purges all module data in related tables, extra user prefs, settings, etc.
@@ -5875,7 +5895,12 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml = '', 
                 $attachment = $CFG->dataroot . '/' . $attachment;
             }
 
-            $mail->addAttachment($attachment, $attachname, 'base64', $mimetype);
+            if ($mimetype == 'text/calendar') {
+                $icalcontent = file_get_contents($attachment);
+                $mail->Ical = $icalcontent;
+            } else {
+                $mail->addAttachment($attachment, $attachname, 'base64', $mimetype);
+            }
         }
     }
 

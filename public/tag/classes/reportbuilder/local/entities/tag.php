@@ -23,6 +23,7 @@ use core_tag_tag;
 use stdClass;
 use core\lang_string;
 use core\output\html_writer;
+use core_reportbuilder\local\aggregation\{groupconcat, groupconcatdistinct};
 use core_reportbuilder\local\entities\base;
 use core_reportbuilder\local\filters\{boolean_select, date, number, tags};
 use core_reportbuilder\local\helpers\format;
@@ -59,33 +60,11 @@ class tag extends base {
     }
 
     /**
-     * Initialise the entity
-     *
-     * @return base
-     */
-    public function initialise(): base {
-        $columns = $this->get_all_columns();
-        foreach ($columns as $column) {
-            $this->add_column($column);
-        }
-
-        // All the filters defined by the entity can also be used as conditions.
-        $filters = $this->get_all_filters();
-        foreach ($filters as $filter) {
-            $this
-                ->add_filter($filter)
-                ->add_condition($filter);
-        }
-
-        return $this;
-    }
-
-    /**
      * Returns list of all available columns
      *
      * @return column[]
      */
-    protected function get_all_columns(): array {
+    protected function get_available_columns(): array {
         $tagalias = $this->get_table_alias('tag');
 
         // Name.
@@ -113,8 +92,8 @@ class tag extends base {
             ->add_joins($this->get_joins())
             ->add_fields("{$tagalias}.rawname, {$tagalias}.name, {$tagalias}.flag, {$tagalias}.isstandard")
             ->set_is_sortable(true)
-            ->set_aggregation_options('groupconcat', ['separator' => ' '])
-            ->set_aggregation_options('groupconcatdistinct', ['separator' => ' '])
+            ->set_aggregation_options(groupconcat::get_class_name(), ['separator' => ' '])
+            ->set_aggregation_options(groupconcatdistinct::get_class_name(), ['separator' => ' '])
             ->add_callback(static function($rawname, stdClass $tag): string {
                 if ($rawname === null) {
                     return '';
@@ -230,7 +209,7 @@ class tag extends base {
      *
      * @return filter[]
      */
-    protected function get_all_filters(): array {
+    protected function get_available_filters(): array {
         $tagalias = $this->get_table_alias('tag');
 
         // Name.

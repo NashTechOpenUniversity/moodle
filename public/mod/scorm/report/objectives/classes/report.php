@@ -45,8 +45,6 @@ class report extends \mod_scorm\report {
         global $CFG, $DB, $OUTPUT, $PAGE;
 
         $contextmodule = \context_module::instance($cm->id);
-        $action = optional_param('action', '', PARAM_ALPHA);
-        $attemptids = optional_param_array('attemptid', array(), PARAM_RAW);
         $attemptsmode = optional_param('attemptsmode', SCORM_REPORT_ATTEMPTS_ALL_STUDENTS, PARAM_INT);
         $PAGE->set_url(new \moodle_url($PAGE->url, array('attemptsmode' => $attemptsmode)));
 
@@ -57,11 +55,6 @@ class report extends \mod_scorm\report {
             echo $renderer->report_actionbar($actionbar);
         }
 
-        if ($action == 'delete' && has_capability('mod/scorm:deleteresponses', $contextmodule) && confirm_sesskey()) {
-            if (scorm_delete_responses($attemptids, $scorm)) { // Delete responses.
-                echo $OUTPUT->notification(get_string('scormresponsedeleted', 'scorm'), 'notifysuccess');
-            }
-        }
         // Find out current groups mode.
         $currentgroup = groups_get_activity_group($cm, true);
 
@@ -577,7 +570,7 @@ class report extends \mod_scorm\report {
                 if (!$download) {
                     $table->finish_output();
                     if ($candelete) {
-                        echo \html_writer::start_tag('table', array('id' => 'commands'));
+                        echo \html_writer::start_tag('table', ['id' => 'commands', 'class' => 'table-reboot']);
                         echo \html_writer::start_tag('tr').\html_writer::start_tag('td');
                         echo $this->generate_delete_selected_button();
                         echo \html_writer::end_tag('td').\html_writer::end_tag('tr').\html_writer::end_tag('table');

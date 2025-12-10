@@ -29,7 +29,6 @@ defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 
-require_once($CFG->dirroot . '/webservice/tests/helpers.php');
 require_once($CFG->dirroot . '/mod/choice/lib.php');
 
 /**
@@ -41,8 +40,7 @@ require_once($CFG->dirroot . '/mod/choice/lib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @since      Moodle 3.0
  */
-final class lib_test extends \externallib_advanced_testcase {
-
+final class lib_test extends \core_external\tests\externallib_testcase {
     /**
      * Test choice_view
      * @return void
@@ -329,7 +327,8 @@ final class lib_test extends \externallib_advanced_testcase {
         $event = $this->create_action_event($course->id, $choice->id, CHOICE_EVENT_TYPE_OPEN);
 
         // Set sections 0 as hidden.
-        set_section_visible($course->id, 0, 0);
+        $sectioninfo = get_fast_modinfo($course->id)->get_section_info(0);
+        \core_courseformat\formatactions::section($course->id)->set_visibility($sectioninfo, false);
 
         // Now, log out.
         $CFG->forcelogin = true; // We don't want to be logged in as guest, as guest users might still have some capabilities.

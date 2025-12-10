@@ -21,12 +21,12 @@ use core_courseformat\local\overview\overviewfactory;
 /**
  * Tests for SCORM activity overview
  *
- * @covers     \mod_scorm\courseformat\overview
  * @package    mod_scorm
  * @category   test
  * @copyright  2025 Laurent David <laurent.david@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(overview::class)]
 final class overview_test extends \advanced_testcase {
     /**
      * Test get_actions_overview.
@@ -51,9 +51,8 @@ final class overview_test extends \advanced_testcase {
      * Test get_due_date_overview method.
      *
      * @param int|null $timeincrement
-     *
-     * @dataProvider get_due_date_overview_data
      */
+    #[\PHPUnit\Framework\Attributes\DataProvider('get_due_date_overview_data')]
     public function test_get_due_date_overview(?int $timeincrement = null): void {
         $this->resetAfterTest();
         $this->setAdminUser();
@@ -78,22 +77,20 @@ final class overview_test extends \advanced_testcase {
     /**
      * Data provider for test_get_due_date_overview.
      *
-     * @return array
+     * @return \Generator
      */
-    public static function get_due_date_overview_data(): array {
-        return [
-            'tomorrow' => [
-                'timeincrement' => DAYSECS,
-            ],
-            'yesterday' => [
-                'timeincrement' => -1 * DAYSECS,
-            ],
-            'today' => [
-                'timeincrement' => 0,
-            ],
-            'No date' => [
-                'timeincrement' => null,
-            ],
+    public static function get_due_date_overview_data(): \Generator {
+        yield 'tomorrow' => [
+            'timeincrement' => DAYSECS,
+        ];
+        yield 'yesterday' => [
+            'timeincrement' => -1 * DAYSECS,
+        ];
+        yield 'today' => [
+            'timeincrement' => 0,
+        ];
+        yield 'No date' => [
+            'timeincrement' => null,
         ];
     }
 
@@ -102,43 +99,51 @@ final class overview_test extends \advanced_testcase {
      *
      * @param string $username
      * @param int $groupmode
+     * @param string $activity the activity name to run this test with (there is one created with attemts ('withattempts') and one
+     * created without attempts ('withoutattempts')).
      * @param array $expected
-     *
-     * @dataProvider get_extra_overview_items_data
      */
-    public function test_get_extra_totalattempts_overview(string $username, int $groupmode, array $expected): void {
+    #[\PHPUnit\Framework\Attributes\DataProvider('get_extra_overview_items_data')]
+    public function test_get_extra_totalattempts_overview(
+        string $username,
+        string $activity,
+        int $groupmode,
+        array $expected,
+    ): void {
         global $PAGE;
         $this->resetAfterTest();
         ['users' => $users, 'course' => $course, 'instances' => $instances] = $this->setup_users_and_activity($groupmode);
+        $instance = $instances[$activity];
 
-        foreach ($expected as $instancekey => $expectedvalues) {
-            $instance = $instances[$instancekey];
-            $cm = get_fast_modinfo($course)->get_cm($instance->cmid);
-            $this->setUser($users[$username]);
-            $items = overviewfactory::create($cm)->get_extra_overview_items();
-            if (!isset($expectedvalues['totalattempts'])) {
-                $this->assertArrayNotHasKey('totalattempts', $items);
-                return;
-            }
+        $cm = get_fast_modinfo($course)->get_cm($instance->cmid);
+        $this->setUser($users[$username]);
+        $overview = overviewfactory::create($cm);
+        $reflection = new \ReflectionClass($overview);
+        $method = $reflection->getMethod('get_extra_totalattempts_overview');
+        $method->setAccessible(true);
+        $item = $method->invoke($overview);
+        if (!isset($expected['totalattempts'])) {
+            $this->assertNull($item);
+            return;
+        }
+        $this->assertEquals(
+            $expected['totalattempts']['value'],
+            $item->get_value(),
+            "Failed for instance: $activity"
+        );
+        $content = $item->get_content()->export_for_template($PAGE->get_renderer('core'));
+        $contentitems = $content['items'] ?? [];
+        $this->assertCount(
+            count($expected['totalattempts']['items']),
+            $contentitems,
+        );
+        foreach ($expected['totalattempts']['items'] as $item) {
+            $currentitem = array_shift($contentitems);
             $this->assertEquals(
-                $expectedvalues['totalattempts']['value'],
-                $items['totalattempts']->get_value(),
-                "Failed for instance: $instancekey"
+                (object) $item,
+                $currentitem,
+                "Failed for instance: $activity"
             );
-            $content = $items['totalattempts']->get_content()->export_for_template($PAGE->get_renderer('core'));
-            $contentitems = $content['items'] ?? [];
-            $this->assertCount(
-                count($expectedvalues['totalattempts']['items']),
-                $contentitems,
-            );
-            foreach ($expectedvalues['totalattempts']['items'] as $item) {
-                $currentitem = array_shift($contentitems);
-                $this->assertEquals(
-                    (object) $item,
-                    $currentitem,
-                    "Failed for instance: $instancekey"
-                );
-            }
         }
     }
 
@@ -147,34 +152,41 @@ final class overview_test extends \advanced_testcase {
      *
      * @param string $username
      * @param int $groupmode
+     * @param string $activity the activity name to run this test with (there is one created with attemts ('withattempts') and one
+     *  created without attempts ('withoutattempts')).
      * @param array $expected
-     *
-     * @dataProvider get_extra_overview_items_data
      */
-    public function test_get_extra_studentsattempted_overview(string $username, int $groupmode, array $expected): void {
+    #[\PHPUnit\Framework\Attributes\DataProvider('get_extra_overview_items_data')]
+    public function test_get_extra_studentsattempted_overview(
+        string $username,
+        string $activity,
+        int $groupmode,
+        array $expected
+    ): void {
         $this->resetAfterTest();
         ['users' => $users, 'course' => $course, 'instances' => $instances] = $this->setup_users_and_activity($groupmode);
-
-        foreach ($expected as $instancekey => $expectedvalues) {
-            $instance = $instances[$instancekey];
-            $cm = get_fast_modinfo($course)->get_cm($instance->cmid);
-            $this->setUser($users[$username]);
-            $items = overviewfactory::create($cm)->get_extra_overview_items();
-            if (!isset($expectedvalues['attempted'])) {
-                $this->assertArrayNotHasKey('attempted', $items);
-                return;
-            }
-            $this->assertEquals(
-                $expectedvalues['attempted']['value'],
-                $items['attempted']->get_value(),
-                "Failed for instance: $instancekey"
-            );
-            $this->assertEquals(
-                $expectedvalues['attempted']['content'],
-                $items['attempted']->get_content(),
-                "Failed for instance: $instancekey"
-            );
+        $instance = $instances[$activity];
+        $cm = get_fast_modinfo($course)->get_cm($instance->cmid);
+        $this->setUser($users[$username]);
+        $overview = overviewfactory::create($cm);
+        $reflection = new \ReflectionClass($overview);
+        $method = $reflection->getMethod('get_extra_studentsattempted_overview');
+        $method->setAccessible(true);
+        $item = $method->invoke($overview);
+        if (!isset($expected['attempted'])) {
+            $this->assertNull($item);
+            return;
         }
+        $this->assertEquals(
+            $expected['attempted']['value'],
+            $item->get_value(),
+            "Failed for instance: $activity"
+        );
+        $this->assertEquals(
+            $expected['attempted']['content'],
+            $item->get_content(),
+            "Failed for instance: $activity"
+        );
     }
 
     /**
@@ -234,112 +246,177 @@ final class overview_test extends \advanced_testcase {
     /**
      * Data provider for test_get_extra_studentsattempted_overview and test_get_extra_totalattempts_overview
      *
-     * @return array
+     * @return \Generator
      */
-    public static function get_extra_overview_items_data(): array {
+    public static function get_extra_overview_items_data(): \Generator {
         // Here we intentionally just test the case where course mode is set to NOGROUPS as groups are is not
         // yet supported by the overview page for SCORM module. This will be followed up in a future issue (MDL-85852).
-        return [
-            'teacher 1 - no groups' => [
-                'username' => 't1',
-                'groupmode' => NOGROUPS,
-                'expected' => [
-                    'withattempts' => [
-                        'attempted' => [
-                            'value' => 2,
-                            'content' => '<strong>2</strong> of 4',
+        yield 'teacher 1 - no groups with attempts' => [
+            'username' => 't1',
+            'activity' => 'withattempts',
+            'groupmode' => NOGROUPS,
+            'expected' => [
+                'attempted' => [
+                    'value' => 2,
+                    'content' => '<strong>2</strong> of 4',
+                ],
+                'totalattempts' => [
+                    'value' => 3,
+                    'items' => [
+                        [
+                            'label' => 'Grading method',
+                            'value' => 'Highest attempt',
                         ],
-                        'totalattempts' => [
-                            'value' => 2,
-                            'items' => [
-                                [
-                                    'label' => 'Grading method',
-                                    'value' => 'Highest attempt',
-                                ],
-                                [
-                                    'label' => 'Allowed attempts per student',
-                                    'value' => 'Unlimited',
-                                ],
-                                [
-                                    'label' => 'Average attempts per student',
-                                    'value' => '1',
-                                ],
-                            ],
+                        [
+                            'label' => 'Allowed attempts per student',
+                            'value' => 'Unlimited',
                         ],
-                    ],
-                    'withoutattempts' => [
-                        'attempted' => [
-                            'value' => 0,
-                            'content' => '<strong>0</strong> of 4',
-                        ],
-                        'totalattempts' => [
-                            'value' => 0,
-                            'items' => [
-                                [
-                                    'label' => 'Grading method',
-                                    'value' => 'Highest attempt',
-                                ],
-                                [
-                                    'label' => 'Allowed attempts per student',
-                                    'value' => 'Unlimited',
-                                ],
-                                [
-                                    'label' => 'Average attempts per student',
-                                    'value' => '0',
-                                ],
-                            ],
+                        [
+                            'label' => 'Average attempts per student',
+                            'value' => '1.5',
                         ],
                     ],
                 ],
             ],
-            'teacher 2 - no groups' => [
-                'username' => 't2',
-                'groupmode' => NOGROUPS,
-                'expected' => [
-                    'withattempts' => [
-                        'attempted' => [
-                            'value' => 2,
-                            'content' => '<strong>2</strong> of 4',
+        ];
+        yield 'teacher 1 - no groups without attempts' => [
+            'username' => 't1',
+            'activity' => 'withoutattempts',
+            'groupmode' => NOGROUPS,
+            'expected' => [
+                'attempted' => [
+                    'value' => 0,
+                    'content' => '<strong>0</strong> of 4',
+                ],
+                'totalattempts' => [
+                    'value' => 0,
+                    'items' => [
+                        [
+                            'label' => 'Grading method',
+                            'value' => 'Highest attempt',
                         ],
-                        'totalattempts' => [
-                            'value' => 2,
-                            'items' => [
-                                [
-                                    'label' => 'Grading method',
-                                    'value' => 'Highest attempt',
-                                ],
-                                [
-                                    'label' => 'Allowed attempts per student',
-                                    'value' => 'Unlimited',
-                                ],
-                                [
-                                    'label' => 'Average attempts per student',
-                                    'value' => '1',
-                                ],
-                            ],
+                        [
+                            'label' => 'Allowed attempts per student',
+                            'value' => 'Unlimited',
+                        ],
+                        [
+                            'label' => 'Average attempts per student',
+                            'value' => '0',
                         ],
                     ],
-                    'withoutattempts' => [
-                        'attempted' => [
-                            'value' => 0,
-                            'content' => '<strong>0</strong> of 4',
+                ],
+
+            ],
+        ];
+        yield 'teacher 2 - no groups' => [
+            'username' => 't2',
+            'activity' => 'withattempts',
+            'groupmode' => NOGROUPS,
+            'expected' => [
+                'attempted' => [
+                    'value' => 2,
+                    'content' => '<strong>2</strong> of 4',
+                ],
+                'totalattempts' => [
+                    'value' => 3,
+                    'items' => [
+                        [
+                            'label' => 'Grading method',
+                            'value' => 'Highest attempt',
                         ],
-                        'totalattempts' => [
-                            'value' => 0,
-                            'items' => [
-                                [
-                                    'label' => 'Grading method',
-                                    'value' => 'Highest attempt',
-                                ],
-                                [
-                                    'label' => 'Allowed attempts per student',
-                                    'value' => 'Unlimited',
-                                ],
-                                [
-                                    'label' => 'Average attempts per student',
-                                    'value' => '0',
-                                ],
-                            ],
+                        [
+                            'label' => 'Allowed attempts per student',
+                            'value' => 'Unlimited',
+                        ],
+                        [
+                            'label' => 'Average attempts per student',
+                            'value' => '1.5',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        yield 'teacher 1 - separate group' => [
+            'username' => 't1',
+            'activity' => 'withattempts',
+            'groupmode' => SEPARATEGROUPS,
+            'expected' => [
+                'attempted' => [
+                    'value' => 1,
+                    'content' => '<strong>1</strong> of 2', // Teacher can also attempt, so s1 and t1 are counted.
+                ],
+                'totalattempts' => [
+                    'value' => 2, // Attempt from s1 only.
+                    'items' => [
+                        [
+                            'label' => 'Grading method',
+                            'value' => 'Highest attempt',
+                        ],
+                        [
+                            'label' => 'Allowed attempts per student',
+                            'value' => 'Unlimited',
+                        ],
+                        [
+                            'label' => 'Average attempts per student',
+                            'value' => '2', // Only student 1 in this group attempted twice.
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        // Teacher 2 is not in any group, so no attempt can be counted and the overview will return an error.
+        // But still the attempts can be counted if we call directly the manager methods, so we just skip the test here.
+        yield 'teacher 1 - visible group' => [
+            'username' => 't1',
+            'activity' => 'withattempts',
+            'groupmode' => VISIBLEGROUPS,
+            'expected' => [
+                'attempted' => [
+                    'value' => 2,
+                    'content' => '<strong>2</strong> of 4',
+                ],
+                'totalattempts' => [
+                    'value' => 3,
+                    'items' => [
+                        [
+                            'label' => 'Grading method',
+                            'value' => 'Highest attempt',
+                        ],
+                        [
+                            'label' => 'Allowed attempts per student',
+                            'value' => 'Unlimited',
+                        ],
+                        [
+                            'label' => 'Average attempts per student',
+                            'value' => '1.5',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        yield 'teacher 2 - visible group' => [
+            'username' => 't2',
+            'activity' => 'withattempts',
+            'groupmode' => VISIBLEGROUPS,
+            'expected' => [
+                'attempted' => [
+                    'value' => 2,
+                    'content' => '<strong>2</strong> of 4',
+                ],
+                'totalattempts' => [
+                    'value' => 3,
+                    'items' => [
+                        [
+                            'label' => 'Grading method',
+                            'value' => 'Highest attempt',
+                        ],
+                        [
+                            'label' => 'Allowed attempts per student',
+                            'value' => 'Unlimited',
+                        ],
+                        [
+                            'label' => 'Average attempts per student',
+                            'value' => '1.5',
                         ],
                     ],
                 ],
@@ -383,17 +460,17 @@ final class overview_test extends \advanced_testcase {
                 't1' => ['role' => 'teacher', 'groups' => ['g1']],
                 't2' => ['role' => 'teacher', 'groups' => []],
             ];
-            // Enrol users in the course.
+            $groups = [];
             foreach ($data as $username => $userinfo) {
-                ['role' => $role, 'groups' => $groups] = $userinfo;
+                ['role' => $role, 'groups' => $groupstoassign] = $userinfo;
                 $users[$username] = $generator->create_and_enrol($course, $role, ['username' => $username]);
-                foreach ($groups as $group) {
-                    if (!isset($groups[$group])) {
+                foreach ($groupstoassign as $grouptoassign) {
+                    if (!isset($groups[$grouptoassign])) {
                         // Create the group if it does not exist.
-                        $groups[$group] = $generator->create_group(['courseid' => $course->id, 'name' => $group]);
+                        $groups[$grouptoassign] = $generator->create_group(['courseid' => $course->id, 'name' => $grouptoassign]);
                     }
                     // Add the user to the group.
-                    groups_add_member($groups[$group], $users[$username]->id);
+                    groups_add_member($groups[$grouptoassign], $users[$username]->id);
                 }
             }
         }
@@ -410,8 +487,7 @@ final class overview_test extends \advanced_testcase {
         // attempt for testing purposes.
         if ($createattempt && $createusers) {
             $scormgenerator = $this->getDataGenerator()->get_plugin_generator('mod_scorm');
-            // Create attempts for the students.
-            // Two attempts for the first student, one for the second.
+            // Create an attempt for each student, and two attempts for the student s1.
             foreach ($data as $username => $userinfo) {
                 $record = [
                     'userid' => $users[$username]->id,
@@ -421,8 +497,11 @@ final class overview_test extends \advanced_testcase {
                     $record['element'] = 'cmi.core.score.raw';
                     $record['value'] = $grades[$username];
                 }
-                // Create an attempt for each student.
+                // Create two attempts for the first student.
                 if ($userinfo['role'] === 'student') {
+                    if ($username === 's1') {
+                        $scormgenerator->create_attempt($record);
+                    }
                     $scormgenerator->create_attempt($record);
                 }
             }

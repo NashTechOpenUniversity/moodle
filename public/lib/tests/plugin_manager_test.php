@@ -247,6 +247,16 @@ final class plugin_manager_test extends \advanced_testcase {
         $this->assertSame(get_string('type_editor_plural', 'core_plugin'), $name);
     }
 
+    public function test_plugintype_name_core(): void {
+        $name = core_plugin_manager::instance()->plugintype_name('core');
+        $this->assertSame(get_string('type_core', 'core_plugin'), $name);
+    }
+
+    public function test_plugintype_name_core_plural(): void {
+        $name = core_plugin_manager::instance()->plugintype_name_plural('core');
+        $this->assertSame(get_string('type_core_plural', 'core_plugin'), $name);
+    }
+
     public function test_get_plugin_info(): void {
         global $CFG;
 
@@ -847,9 +857,13 @@ final class plugin_manager_test extends \advanced_testcase {
         $this->assertEquals('fake_fullfeatured', $uninstallurl->param('uninstall'));
 
         // Strings are supported for deprecated plugins.
+        $stringmanager = $this->get_mocked_string_manager();
+        $stringmanager->mock_string('type_fake', 'core_plugin', 'Fake');
+        $stringmanager->mock_string('type_fake_plural', 'core_plugin', 'Fakes');
+
         $this->assertEquals('Fake full featured plugin', $pluginman->plugin_name('fake_fullfeatured'));
-        $this->assertEquals('fake', $pluginman->plugintype_name('fake'));
-        $this->assertEquals('fake', $pluginman->plugintype_name_plural('fake'));
+        $this->assertEquals('Fake', $pluginman->plugintype_name('fake'));
+        $this->assertEquals('Fakes', $pluginman->plugintype_name_plural('fake'));
     }
 
     /**
@@ -920,6 +934,13 @@ final class plugin_manager_test extends \advanced_testcase {
         $uninstallurl = $pluginman->get_uninstall_url('fulldeprecatedsubtype_test');
         $this->assertInstanceOf(\moodle_url::class, $uninstallurl);
         $this->assertEquals('fulldeprecatedsubtype_test', $uninstallurl->param('uninstall'));
+
+        // Strings are supported for deprecated subplugins.
+        $this->assertEquals('Fake full featured plugin / Full Sub Fake', $pluginman->plugintype_name('fulldeprecatedsubtype'));
+        $this->assertEquals(
+            'Fake full featured plugin / Full Sub Fakes',
+            $pluginman->plugintype_name_plural('fulldeprecatedsubtype'),
+        );
     }
 
     /**
@@ -980,8 +1001,10 @@ final class plugin_manager_test extends \advanced_testcase {
         // Without string support, the type name defaults to the plugin type,
         // while plugin name is set in \core\plugininfo\base::init_is_deprecated().
         $this->assertEquals('fullfeatured', $pluginman->plugin_name('fake_fullfeatured'));
-        $this->assertEquals('fake', $pluginman->plugintype_name('fake'));
-        $this->assertEquals('fake', $pluginman->plugintype_name_plural('fake'));
+        $this->assertEquals('[[type_fake]]', $pluginman->plugintype_name('fake'));
+        $this->assertDebuggingCalled();
+        $this->assertEquals('[[type_fake_plural]]', $pluginman->plugintype_name_plural('fake'));
+        $this->assertDebuggingCalled();
     }
 
     /**
@@ -1056,7 +1079,15 @@ final class plugin_manager_test extends \advanced_testcase {
         // Without string support, the type name defaults to the plugin type,
         // while plugin name is set in \core\plugininfo\base::init_is_deprecated().
         $this->assertEquals('demo', $pluginman->plugin_name('fulldeletedsubtype_demo'));
-        $this->assertEquals('fulldeletedsubtype', $pluginman->plugintype_name('fulldeletedsubtype'));
-        $this->assertEquals('fulldeletedsubtype', $pluginman->plugintype_name_plural('fulldeletedsubtype'));
+        $this->assertEquals(
+            'Fake full featured plugin / [[subplugintype_fulldeletedsubtype]]',
+            $pluginman->plugintype_name('fulldeletedsubtype'),
+        );
+        $this->assertDebuggingCalled();
+        $this->assertEquals(
+            'Fake full featured plugin / [[subplugintype_fulldeletedsubtype_plural]]',
+            $pluginman->plugintype_name_plural('fulldeletedsubtype'),
+        );
+        $this->assertDebuggingCalled();
     }
 }

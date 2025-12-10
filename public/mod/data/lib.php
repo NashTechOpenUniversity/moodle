@@ -1677,7 +1677,7 @@ function data_rating_validate($params) {
  * @throws rating_exception
  */
 function mod_data_rating_can_see_item_ratings($params) {
-    global $DB;
+    global $DB, $USER;
 
     // Check the component is mod_data.
     if (!isset($params['component']) || $params['component'] != 'mod_data') {
@@ -1693,7 +1693,7 @@ function mod_data_rating_can_see_item_ratings($params) {
         throw new rating_exception('invaliditemid');
     }
 
-    $datasql = "SELECT d.id as dataid, d.course, r.groupid
+    $datasql = "SELECT d.id as dataid, d.course, r.userid, r.groupid
                   FROM {data_records} r
                   JOIN {data} d ON r.dataid = d.id
                  WHERE r.id = :itemid";
@@ -1703,13 +1703,22 @@ function mod_data_rating_can_see_item_ratings($params) {
         throw new rating_exception('invaliditemid');
     }
 
+    $course = $DB->get_record('course', array('id' => $info->course), '*', MUST_EXIST);
+    $cm = get_coursemodule_from_instance('data', $info->dataid, $course->id, false, MUST_EXIST);
+    $context = context_module::instance($cm->id);
+
+    if (!empty($info->userid)) {
+        $ratingpermissions = data_rating_permissions($context->id, 'mod_data', 'entry');
+        $requiredpermission = ($info->userid != $USER->id) ? 'viewall' : 'view';
+        if (!$ratingpermissions[$requiredpermission]) {
+            return false;
+        }
+    }
+
     // User can see ratings of all participants.
     if ($info->groupid == 0) {
         return true;
     }
-
-    $course = $DB->get_record('course', array('id' => $info->course), '*', MUST_EXIST);
-    $cm = get_coursemodule_from_instance('data', $info->dataid, $course->id, false, MUST_EXIST);
 
     // Make sure groups allow this user to see the item they're rating.
     return groups_group_visible($info->groupid, $course, $cm);
@@ -1830,7 +1839,7 @@ function data_print_preference_form($data, $perpage, $search, $sort='', $order='
 
     echo '<br />';
     echo '<div class="' . $advancedsearchclass . '" id="data_adv_form">';
-    echo '<table class="boxaligncenter">';
+    echo '<table class="table-reboot">';
 
     // print ASC or DESC
     echo '<tr><td colspan="2">&nbsp;</td></tr>';
@@ -2600,22 +2609,21 @@ function data_get_extra_capabilities() {
  * @return mixed True if module supports feature, false if not, null if doesn't know or string for the module purpose.
  */
 function data_supports($feature) {
-    switch($feature) {
-        case FEATURE_GROUPS:                  return true;
-        case FEATURE_GROUPINGS:               return true;
-        case FEATURE_MOD_INTRO:               return true;
-        case FEATURE_COMPLETION_TRACKS_VIEWS: return true;
-        case FEATURE_COMPLETION_HAS_RULES:    return true;
-        case FEATURE_GRADE_HAS_GRADE:         return true;
-        case FEATURE_GRADE_OUTCOMES:          return true;
-        case FEATURE_RATE:                    return true;
-        case FEATURE_BACKUP_MOODLE2:          return true;
-        case FEATURE_SHOW_DESCRIPTION:        return true;
-        case FEATURE_COMMENT:                 return true;
-        case FEATURE_MOD_PURPOSE:             return MOD_PURPOSE_COLLABORATION;
-
-        default: return null;
-    }
+    return match ($feature) {
+        FEATURE_GROUPS => true,
+        FEATURE_GROUPINGS => true,
+        FEATURE_MOD_INTRO => true,
+        FEATURE_COMPLETION_TRACKS_VIEWS => true,
+        FEATURE_COMPLETION_HAS_RULES => true,
+        FEATURE_GRADE_HAS_GRADE => true,
+        FEATURE_GRADE_OUTCOMES => true,
+        FEATURE_RATE => true,
+        FEATURE_BACKUP_MOODLE2 => true,
+        FEATURE_SHOW_DESCRIPTION => true,
+        FEATURE_COMMENT => true,
+        FEATURE_MOD_PURPOSE => MOD_PURPOSE_COLLABORATION,
+        default => null,
+    };
 }
 
 ////////////////////////////////////////////////////////////////////////////////

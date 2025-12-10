@@ -26,7 +26,7 @@ namespace core\task;
 
 use core\lock\lock;
 use core\lock\lock_factory;
-use core_shutdown_manager;
+use core\shutdown_manager;
 
 define('CORE_TASK_TASKS_FILENAME', 'db/tasks.php');
 /**
@@ -1120,7 +1120,7 @@ class manager {
 
         // Add \core\task\manager::fail_running_task to shutdown manager, so we can ensure running tasks fail on shutdown.
         if (!self::$registeredshutdownhandler) {
-            core_shutdown_manager::register_function('\core\task\manager::fail_running_task');
+            shutdown_manager::register_function('\core\task\manager::fail_running_task');
 
             self::$registeredshutdownhandler = true;
         }
@@ -1473,6 +1473,9 @@ class manager {
                     $task = self::scheduled_task_from_record($taskrecord);
                     $task->set_lock($lock);
 
+                    $displayname = $task->get_name() . ' (' . get_class($task) . ')';
+                    mtrace("Marking orphaned scheduled task as failed: $displayname");
+
                     // We have to skip log finalisation when failing the task as the finalise_log method from
                     // the log manager is only aware of the current running task (i.e., the cleanup task).
                     self::scheduled_task_failed($task, false);
@@ -1487,6 +1490,9 @@ class manager {
 
                     $task = self::adhoc_task_from_record($taskrecord);
                     $task->set_lock($lock);
+
+                    $displayname = get_class($task) . ' (adhoc task id ' . $task->get_id() . ')';
+                    mtrace("Marking orphaned adhoc task as failed: $displayname");
 
                     // We have to skip log finalisation when failing the task as the finalise_log method from
                     // the log manager is only aware of the current running task (i.e., the cleanup task).

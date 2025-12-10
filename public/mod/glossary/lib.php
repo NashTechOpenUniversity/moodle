@@ -1359,7 +1359,7 @@ function glossary_print_entry_lower_section($course, $cm, $glossary, $entry, $mo
         $icons   = glossary_print_entry_icons($course, $cm, $glossary, $entry, $mode, $hook,'html');
     }
     if ($aliases || $icons || !empty($entry->rating)) {
-        echo '<table>';
+        echo '<table class="table-reboot">';
         if ( $aliases ) {
             $id = "keyword-{$entry->id}";
             echo '<tr valign="top"><td class="aliases hstack gap-2">' .
@@ -1420,7 +1420,7 @@ function  glossary_print_entry_approval($cm, $entry, $mode, $align="right", $ins
 
     if ($mode == 'approval' and !$entry->approved) {
         if ($insidetable) {
-            echo '<table class="glossaryapproval" align="'.$align.'"><tr><td align="'.$align.'">';
+            echo '<table class="glossaryapproval table-reboot" align="' . $align . '"><tr><td align="' . $align . '">';
         }
         echo $OUTPUT->action_icon(
             new moodle_url('approve.php', array('eid' => $entry->id, 'mode' => $mode, 'sesskey' => sesskey())),
@@ -1914,7 +1914,7 @@ function glossary_print_categories_menu($cm, $glossary, $hook, $category) {
     $fmtoptions = array(
         'context' => $context);
 
-     echo '<table border="0" width="100%">';
+     echo '<table class="table-reboot" border="0" width="100%">';
      echo '<tr>';
 
      echo '<td align="center" style="width:20%">';
@@ -2192,7 +2192,7 @@ function glossary_print_dynaentry($courseid, $entries, $displayformat = -1) {
     global $USER, $CFG, $DB;
 
     echo '<div class="boxaligncenter">';
-    echo '<table class="glossarypopup" cellspacing="0"><tr>';
+    echo '<table class="glossarypopup table-reboot" cellspacing="0"><tr>';
     echo '<td>';
     if ( $entries ) {
         foreach ( $entries as $entry ) {
@@ -3120,22 +3120,22 @@ function glossary_get_extra_capabilities() {
  * @return mixed True if module supports feature, false if not, null if doesn't know or string for the module purpose.
  */
 function glossary_supports($feature) {
-    switch($feature) {
-        case FEATURE_GROUPS:                  return false;
-        case FEATURE_GROUPINGS:               return false;
-        case FEATURE_MOD_INTRO:               return true;
-        case FEATURE_COMPLETION_TRACKS_VIEWS: return true;
-        case FEATURE_COMPLETION_HAS_RULES:    return true;
-        case FEATURE_GRADE_HAS_GRADE:         return true;
-        case FEATURE_GRADE_OUTCOMES:          return true;
-        case FEATURE_RATE:                    return true;
-        case FEATURE_BACKUP_MOODLE2:          return true;
-        case FEATURE_SHOW_DESCRIPTION:        return true;
-        case FEATURE_COMMENT:                 return true;
-        case FEATURE_MOD_PURPOSE:             return MOD_PURPOSE_COLLABORATION;
-
-        default: return null;
-    }
+    return match ($feature) {
+        FEATURE_GROUPS => false,
+        FEATURE_GROUPINGS => false,
+        FEATURE_MOD_INTRO => true,
+        FEATURE_COMPLETION_TRACKS_VIEWS => true,
+        FEATURE_COMPLETION_HAS_RULES => true,
+        FEATURE_GRADE_HAS_GRADE => true,
+        FEATURE_GRADE_OUTCOMES => true,
+        FEATURE_RATE => true,
+        FEATURE_BACKUP_MOODLE2 => true,
+        FEATURE_SHOW_DESCRIPTION => true,
+        FEATURE_COMMENT => true,
+        FEATURE_MOD_PURPOSE => MOD_PURPOSE_COLLABORATION,
+        FEATURE_MOD_OTHERPURPOSE => MOD_PURPOSE_CONTENT,
+        default => null,
+    };
 }
 
 function glossary_extend_navigation($navigation, $course, $module, $cm) {
@@ -4725,4 +4725,53 @@ function mod_glossary_get_comments(cm_info $cm): array {
     }
 
     return $comments;
+}
+
+/**
+ * Checks whether the current user can see ratings for a given itemid.
+ *
+ * @param array $params submitted data
+ *            contextid => int contextid [required]
+ *            component => The component for this module - should always be mod_glossary [required]
+ *            ratingarea => Should always be entry (the only rating area in glossary) [required]
+ *            itemid => int the ID of the entry being rated [required]
+ * @return bool
+ */
+function mod_glossary_rating_can_see_item_ratings(array $params): bool {
+    global $DB, $USER;
+
+    if (!isset($params['component']) || $params['component'] != 'mod_glossary') {
+        throw new rating_exception('invalidcomponent');
+    }
+
+    if (!isset($params['ratingarea']) || $params['ratingarea'] != 'entry') {
+        throw new rating_exception('invalidratingarea');
+    }
+
+    if (!isset($params['itemid'])) {
+        throw new rating_exception('invaliditemid');
+    }
+
+    $entry = $DB->get_record('glossary_entries', ['id' => $params['itemid']], '*', MUST_EXIST);
+    $glossary = $DB->get_record('glossary', ['id' => $entry->glossaryid], '*', MUST_EXIST);
+    $cm = get_coursemodule_from_instance('glossary', $glossary->id, $glossary->course, false, MUST_EXIST);
+    $cminfo = get_fast_modinfo($glossary->course)->instances['glossary'][$cm->instance];
+
+    if ($cminfo->context->id != $params['contextid']) {
+        throw new rating_exception('invalidcontext');
+    }
+
+    $context = context::instance_by_id($params['contextid']);
+
+    $ratingpermissions = glossary_rating_permissions($context->id, 'mod_glossary', 'entry');
+    $requiredpermission = ($entry->userid != $USER->id) ? 'viewall' : 'view';
+    if (!$ratingpermissions[$requiredpermission]) {
+        return false;
+    }
+
+    if (!glossary_can_view_entry($entry, $cminfo)) {
+        return false;
+    }
+
+    return true;
 }

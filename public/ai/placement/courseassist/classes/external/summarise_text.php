@@ -78,7 +78,9 @@ class summarise_text extends external_api {
 
         // Check the user has permission to use the AI service.
         self::validate_context($context);
-        if (!utils::is_course_assist_available($context)) {
+
+        // Check if AI Placement course assist is available.
+        if (!utils::is_course_assist_available()) {
             throw new \moodle_exception('nocourseassist', 'aiplacement_courseassist');
         }
 
@@ -92,10 +94,11 @@ class summarise_text extends external_api {
         // Send the action to the AI manager.
         $manager = \core\di::get(\core_ai\manager::class);
         $response = $manager->process_action($action);
+        $generatedcontent = $response->get_response_data()['generatedcontent'] ?? '';
         // Return the response.
         return [
             'success' => $response->get_success(),
-            'generatedcontent' => $response->get_response_data()['generatedcontent'] ?? '',
+            'generatedcontent' => \core_external\util::format_text($generatedcontent, FORMAT_PLAIN, $contextid)[0],
             'finishreason' => $response->get_response_data()['finishreason'] ?? '',
             'errorcode' => $response->get_errorcode(),
             'error' => $response->get_error(),

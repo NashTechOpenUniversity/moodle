@@ -24,11 +24,6 @@
 
 function xmldb_enrol_database_upgrade($oldversion) {
     global $DB;
-    // Automatically generated Moodle v4.2.0 release upgrade line.
-    // Put any upgrade step following this.
-
-    // Automatically generated Moodle v4.3.0 release upgrade line.
-    // Put any upgrade step following this.
 
     // Automatically generated Moodle v4.4.0 release upgrade line.
     // Put any upgrade step following this.
@@ -98,6 +93,9 @@ function xmldb_enrol_database_upgrade($oldversion) {
         $transaction->allow_commit();
         upgrade_plugin_savepoint(true, 2025070501, 'enrol', 'database');
     }
+
+    // Automatically generated Moodle v5.1.0 release upgrade line.
+    // Put any upgrade step following this.
 
     return true;
 }

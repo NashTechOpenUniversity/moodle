@@ -1,5 +1,21 @@
 # mod_feedback Upgrade notes
 
+## 5.2dev
+
+### Deprecated
+
+- The method `feedback_init_feedback_session()` has been deprecated, along with all other direct access to `$SESSION` from the module
+
+  For more information see [MDL-86607](https://tracker.moodle.org/browse/MDL-86607)
+
+## 5.1
+
+### Added
+
+- Two new methods, `feedback_get_completeds` and `feedback_get_completeds_count`, have been added to the feedback API. These methods allow you to retrieve completed items based on multiple groups.
+
+  For more information see [MDL-85850](https://tracker.moodle.org/browse/MDL-85850)
+
 ## 5.0
 
 ### Added

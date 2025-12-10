@@ -107,7 +107,7 @@ class format_topics extends core_courseformat\base {
      * @param array $options options for view URL. At the moment core uses:
      *     'navigation' (bool) if true and section not empty, the function returns section page; otherwise, it returns course page.
      *     'sr' (int) used by course formats to specify to which section to return
-     * @return null|moodle_url
+     * @return moodle_url
      */
     public function get_view_url($section, $options = []) {
         $course = $this->get_course();
@@ -240,17 +240,29 @@ class format_topics extends core_courseformat\base {
             ];
         }
         if ($foreditform && !isset($courseformatoptions['coursedisplay']['label'])) {
+            $hiddensectionslist = new core\output\choicelist();
+            $hiddensectionslist->set_allow_empty(false);
+            $hiddensectionslist->add_option(
+                1,
+                new lang_string('hiddensectionsinvisible'),
+                [
+                    'description' => new lang_string('hiddensectionsinvisible_description'),
+                ],
+            );
+            $hiddensectionslist->add_option(
+                0,
+                new lang_string('hiddensectionscollapsed'),
+                [
+                    'description' => new lang_string('hiddensectionscollapsed_description'),
+                ],
+            );
+
             $courseformatoptionsedit = [
                 'hiddensections' => [
                     'label' => new lang_string('hiddensections'),
-                    'help' => 'hiddensections',
-                    'help_component' => 'moodle',
-                    'element_type' => 'select',
+                    'element_type' => 'choicedropdown',
                     'element_attributes' => [
-                        [
-                            0 => new lang_string('hiddensectionscollapsed'),
-                            1 => new lang_string('hiddensectionsinvisible')
-                        ],
+                        $hiddensectionslist,
                     ],
                 ],
                 'coursedisplay' => [
@@ -376,7 +388,12 @@ class format_topics extends core_courseformat\base {
         if ($section->section && ($action === 'setmarker' || $action === 'removemarker')) {
             // Format 'topics' allows to set and remove markers in addition to common section actions.
             require_capability('moodle/course:setcurrentsection', context_course::instance($this->courseid));
-            course_set_marker($this->courseid, ($action === 'setmarker') ? $section->section : 0);
+            if ($action === 'setmarker') {
+                $sectioninfo = get_fast_modinfo($this->courseid)->get_section_info($section->section);
+                \core_courseformat\formatactions::section($this->courseid)->set_marker($sectioninfo, true);
+            } else {
+                \core_courseformat\formatactions::section($this->courseid)->remove_all_markers();
+            }
             return null;
         }
 

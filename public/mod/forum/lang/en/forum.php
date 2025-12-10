@@ -36,7 +36,7 @@ $string['advancedsearch'] = 'Advanced search';
 $string['alldiscussions'] = 'All discussions';
 $string['allforums'] = 'All forums';
 $string['allowdiscussions'] = 'Can a {$a} post to this forum?';
-$string['allowsallsubscribe'] = 'This forum allows everyone to choose whether to subscribe or not';
+$string['allowsallsubscribe'] = 'This forum allows everyone to choose whether to subscribe or not.';
 $string['allowsdiscussions'] = 'This forum allows each person to start one discussion topic.';
 $string['allsubscribe'] = 'Subscribe to all forums';
 $string['allunsubscribe'] = 'Unsubscribe from all forums';
@@ -102,6 +102,7 @@ $string['cannotuseseperategroupsandsingletopic'] = 'Separate groups can\'t be us
 $string['cannotusesingletopicandseperategroups'] = 'A single simple discussion can\'t be used with separate groups.';
 $string['cannotviewpostyet'] = 'You can\'t read other students\' posts in this discussion yet because you haven\'t posted.';
 $string['cannotviewusersposts'] = 'There are no posts made by this user that you are able to view.';
+$string['charactercount'] = 'Character count';
 $string['cleanreadtime'] = 'Mark old posts as read hour';
 $string['clicktolockdiscussion'] = 'Click to lock this discussion';
 $string['clicktounlockdiscussion'] = 'Click to unlock this discussion';
@@ -293,7 +294,7 @@ $string['favouriteupdated'] = 'Your star option has been updated.';
 $string['forcedreadtracking'] = 'Allow forced read tracking';
 $string['forcedreadtracking_desc'] = 'Allows forums to be set to forced read tracking. Will result in decreased performance for some users, particularly on courses with many forums and posts. When off, any forums previously set to Forced are treated as optional.';
 $string['forcesubscribed_help'] = 'This forum has been configured so that you cannot unsubscribe from discussions.';
-$string['forcesubscribed'] = 'This forum forces everyone to be subscribed';
+$string['forcesubscribed'] = 'This forum forces everyone to be subscribed.';
 $string['forum'] = 'Forum';
 $string['forum:addinstance'] = 'Add a new forum';
 $string['forum:addnews'] = 'Add announcements';
@@ -420,7 +421,7 @@ $string['messageinboundfilecountexceeded'] = 'Unable to post your reply, since i
 $string['messageinboundfilesizeexceeded'] = 'Unable to post your reply, since the total attachment size ({$a->filesize}) is greater than the maximum size allowed for the forum ({$a->maxbytes}).';
 $string['messageinboundforumhidden'] = 'Unable to post your reply, since the forum is currently unavailable.';
 $string['messageinboundnopostforum'] = 'Unable to post your reply, since you do not have permission to post in the {$a->forum->name} forum.';
-$string['messageinboundthresholdhit'] = 'Unable to post your reply.  You have exceeded the posting threshold set for this forum';
+$string['messageinboundthresholdhit'] = 'Unable to post your reply. You have exceeded the posting threshold set for this forum.';
 $string['messageprovider:digests'] = 'Subscribed forum digests';
 $string['messageprovider:posts'] = 'Subscribed forum posts';
 $string['missingsearchterms'] = 'The following search terms occur only in the HTML markup of this message:';
@@ -430,25 +431,18 @@ $string['modenested'] = 'Display replies in nested form';
 $string['modenestedv2'] = 'Display replies in experimental nested form';
 $string['modethreaded'] = 'Display replies in threaded form';
 $string['modulename'] = 'Forum';
-$string['modulename_help'] = 'The forum activity module enables participants to have asynchronous discussions i.e. discussions that take place over an extended period of time.
+$string['modulename_help'] = '###### Key features
+- Include text, images, or files in forum posts
+- Allow participants to subscribe to forums so they receive notifications of new posts
+- Grade a student\'s overall participation across the forum, or grade individual posts separately
 
-There are several forum types to choose from, such as a standard forum where anyone can start a new discussion at any time; a forum where each student can post exactly one discussion; or a question and answer forum where students must first post before being able to view other students\' posts. A teacher can allow files to be attached to forum posts. Attached images are displayed in the forum post.
-
-Participants can subscribe to a forum to receive notifications of new forum posts. A teacher can set the subscription mode to optional, forced or auto, or prevent subscription completely. If required, students can be blocked from posting more than a given number of posts in a given time period; this can prevent individuals from dominating discussions.
-
-Forum posts can be rated by teachers or students (peer evaluation). Ratings can be aggregated to form a final grade which is recorded in the gradebook.
-
-Forums have many uses, such as
-
-* A social space for students to get to know each other
-* For course announcements (using a news forum with forced subscription)
-* For discussing course content or reading materials
-* For continuing online an issue raised previously in a face-to-face session
-* For teacher-only discussions (using a hidden forum)
-* A help centre where tutors and students can give advice
-* A one-on-one support area for private student-teacher communications (using a forum with separate groups and with one student per group)
-* For extension activities, for example ‘brain teasers’ for students to ponder and suggest solutions to';
+###### Ways to use it
+- Run a Q&A board where students ask and answer each other\'s questions
+- Host discussions linked to course readings
+- Create a social space where students get to know each other
+- Continue a class debate after a face-to-face session';
 $string['modulename_link'] = 'mod/forum/view';
+$string['modulename_summary'] = 'Create online discussions where participants can post and reply.';
 $string['modulenameplural'] = 'Forums';
 $string['more'] = 'more';
 $string['movedmarker'] = '(Moved)';
@@ -466,7 +460,7 @@ $string['nextdiscussiona'] = 'Next discussion: {$a}';
 $string['nextuser'] = 'Save changes and proceed to the next user';
 $string['newforumposts'] = 'New forum posts';
 $string['noattachments'] = 'There are no attachments to this post';
-$string['nodiscussions'] = 'There are no discussion topics yet in this forum';
+$string['nodiscussions'] = 'There are no discussion topics yet in this forum.';
 $string['nodiscussionsstartedby'] = '{$a} has not started any discussions';
 $string['nodiscussionsstartedbyyou'] = 'You haven\'t started any discussions yet';
 $string['noguestpost'] = 'Only logged in users can post to this forum.';
@@ -478,21 +472,21 @@ $string['nonews'] = 'No announcements have been posted yet.';
 $string['noonecansubscribenow'] = 'Subscriptions are now disallowed';
 $string['nopermissiontosubscribe'] = 'You do not have the permission to view forum subscribers';
 $string['nopermissiontoview'] = 'You do not have permissions to view this post';
-$string['nopostforum'] = 'Sorry, you are not allowed to post to this forum';
+$string['nopostforum'] = 'You are not allowed to post to this forum.';
 $string['noposts'] = 'No posts';
 $string['nopostsmadebyuser'] = '{$a} has made no posts';
 $string['nopostsmadebyyou'] = 'You haven\'t made any posts';
-$string['noquestions'] = 'There are no questions yet in this forum';
-$string['nosubscribers'] = 'There are no subscribers yet for this forum';
+$string['noquestions'] = 'There are no questions yet in this forum.';
+$string['nosubscribers'] = 'There are no subscribers yet for this forum.';
 $string['notsubscribed'] = 'Subscribe';
 $string['notexists'] = 'Discussion no longer exists';
 $string['nothingnew'] = 'Nothing new for {$a}';
-$string['notingroup'] = 'Sorry, but you need to be part of a group to see this forum.';
+$string['notingroup'] = 'You need to be part of a group to see this forum.';
 $string['notinstalled'] = 'The forum module is not installed';
 $string['notlocked'] = 'Lock';
 $string['notpartofdiscussion'] = 'This post is not part of a discussion!';
 $string['notrackforum'] = 'Don\'t track unread posts';
-$string['noviewdiscussionspermission'] = 'You do not have the permission to view discussions in this forum';
+$string['noviewdiscussionspermission'] = 'You do not have permission to view discussions in this forum.';
 $string['nowallsubscribed'] = 'You are now subscribed to all forums in {$a}.';
 $string['nowallunsubscribed'] = 'You are now unsubscribed from all forums in {$a}.';
 $string['nownotsubscribed'] = '{$a->name} will NOT be notified of new posts in \'{$a->forum}\'';
@@ -520,6 +514,7 @@ $string['posttomygroups_help'] = 'Posts a copy of this message to all groups you
 $string['prevdiscussiona'] = 'Previous discussion: {$a}';
 $string['pluginadministration'] = 'Forum administration';
 $string['pluginname'] = 'Forum';
+$string['post'] = 'Post';
 $string['postadded'] = '<p>Your post was successfully added.</p> <p>You have {$a} to edit it if you want to make any changes.</p>';
 $string['postaddedsuccess'] = 'Your post was successfully added.';
 $string['postaddedtimeleft'] = 'You have {$a} to edit it if you want to make any changes.';
@@ -675,6 +670,8 @@ $string['subject'] = 'Subject';
 $string['subplugintype_forumreport'] = 'Forum report';
 $string['subplugintype_forumreport_plural'] = 'Forum reports';
 $string['subscribe'] = 'Subscribe to forum';
+$string['subscribedtoforum'] = 'Subscribed to {$a}';
+$string['subscribetoforum'] = 'Subscribe to forum {$a}';
 $string['subscribediscussion'] = 'Subscribe to this discussion';
 $string['subscribeall'] = 'Subscribe everyone to this forum';
 $string['subscribeenrolledonly'] = 'Sorry, only enrolled users are allowed to subscribe to forum post notifications.';
@@ -713,6 +710,8 @@ $string['timestartenderror'] = 'Display end date cannot be earlier than the star
 $string['togglediscussionmenu'] = 'Toggle the discussion menu';
 $string['togglefullscreen'] = 'Toggle full screen';
 $string['togglesettingsdrawer'] = 'Toggle settings drawer';
+$string['trackedforforum'] = 'Tracking on for {$a}';
+$string['trackforforum'] = 'Track new posts for forum {$a}';
 $string['trackforum'] = 'Track unread posts';
 $string['trackreadposts_header'] = 'Forum tracking';
 $string['tracking'] = 'Track';
@@ -732,6 +731,7 @@ $string['unreadposts'] = 'Unread posts';
 $string['unreadpostsnumber'] = '{$a} unread posts';
 $string['unreadpostsone'] = '1 unread post';
 $string['unsubscribe'] = 'Unsubscribe from forum';
+$string['unsubscribefromforum'] = 'Unsubscribe from forum {$a}';
 $string['unsubscribelink'] = 'Unsubscribe from this forum: {$a}';
 $string['unsubscribediscussion'] = 'Unsubscribe from this discussion';
 $string['unsubscribediscussionlink'] = 'Unsubscribe from this discussion: {$a}';
@@ -742,7 +742,10 @@ $string['unsubscribeallconfirmdiscussions'] = 'You are currently subscribed to {
 $string['unsubscribealldone'] = 'All optional forum subscriptions were removed. You will still receive notifications from forums with forced subscription. To manage forum notifications go to Messaging in My Profile Settings.';
 $string['unsubscribeallempty'] = 'You are not subscribed to any forums. To disable all notifications from this server go to Messaging in My Profile Settings.';
 $string['unsubscribed'] = 'Unsubscribed';
+$string['unsubscribedfromforum'] = 'Unsubscribed from {$a}';
 $string['unsubscribeshort'] = 'Unsubscribe';
+$string['untrackedforforum'] = 'Tracking off for {$a}';
+$string['untrackforforum'] = 'Do not track new posts for forum {$a}';
 $string['useexperimentalui'] = 'Use experimental nested discussion view';
 $string['usermarksread'] = 'Manual message read marking';
 $string['usernavigation'] = 'User navigation';
@@ -754,6 +757,7 @@ $string['viewthediscussion'] = 'View the discussion';
 $string['warnafter'] = 'Post threshold for warning';
 $string['warnafter_help'] = 'Students can be warned as they approach the maximum number of posts allowed in a given period. This setting specifies after how many posts they are warned. Users with the capability mod/forum:postwithoutthrottling are exempt from post limits.';
 $string['warnformorepost'] = 'Warning! There is more than one discussion in this forum - using the most recent';
+$string['wordcount'] = 'Word count';
 $string['yournewquestion'] = 'Your new question';
 $string['yournewtopic'] = 'Your new discussion topic';
 $string['yourreply'] = 'Your reply';

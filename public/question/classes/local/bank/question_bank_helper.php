@@ -19,6 +19,7 @@ namespace core_question\local\bank;
 use cm_info;
 use context;
 use context_course;
+use core\context_helper;
 use core\task\manager;
 use moodle_url;
 use stdClass;
@@ -224,8 +225,17 @@ class question_bank_helper {
     ): array {
         global $DB;
 
-        $pluginssql = [];
         $params = [];
+
+        if ($getcategories || !empty($havingcap)) {
+            $contextselect = ', ' . context_helper::get_preload_record_columns_sql('c');
+            $contextsql = ' JOIN {context} c ON c.instanceid = cm.id AND c.contextlevel = ' . CONTEXT_MODULE . ' ';
+            $contextgroupby = ', ' . implode(', ', array_keys(context_helper::get_preload_record_columns('c')));
+        } else {
+            $contextselect = '';
+            $contextsql = '';
+            $contextgroupby = '';
+        }
 
         // Build the SELECT portion of the SQL and include question category joins as required.
         if ($getcategories) {
@@ -237,8 +247,7 @@ class question_bank_helper {
             );
             $groupconcat = $DB->sql_group_concat($concat, self::CATEGORY_SEPARATOR);
             $select = "SELECT cm.id, cm.course, {$groupconcat} AS cats";
-            $catsql = ' JOIN {context} c ON c.instanceid = cm.id AND c.contextlevel = ' . CONTEXT_MODULE .
-                ' JOIN {question_categories} qc ON qc.contextid = c.id AND qc.parent <> 0';
+            $catsql = ' JOIN {question_categories} qc ON qc.contextid = c.id AND qc.parent <> 0';
         } else {
             $select = 'SELECT cm.id, cm.course';
             $catsql = '';
@@ -253,22 +262,36 @@ class question_bank_helper {
         if (empty($plugins)) {
             return [];
         }
-
-        // Build the joins for all modules of the type requested i.e. those that do or do not share questions.
+        // Build the left joins for all modules of the type requested i.e. those that do or do not share questions.
+        $pluginjoins = [];
+        $pluginfields = [];
         foreach ($plugins as $key => $plugin) {
-            $moduleid = $DB->get_field('modules', 'id', ['name' => $plugin]);
-            $sql = "JOIN {{$plugin}} p{$key} ON p{$key}.id = cm.instance
-                    AND cm.module = {$moduleid} AND cm.deletioninprogress = 0";
+            $join = "LEFT JOIN {{$plugin}} p{$key} ON p{$key}.id = cm.instance
+                     AND m.name = '{$plugin}'";
             if ($plugin === self::get_default_question_bank_activity_name()) {
-                $sql .= " AND p{$key}.type <> '" . self::TYPE_PREVIEW . "'";
+                $join .= " AND p{$key}.type <> '" . self::TYPE_PREVIEW . "'";
             }
-            if (!empty($search)) {
-                $sql .= " AND " . $DB->sql_like("p{$key}.name", ":search{$key}", false);
-                $params["search{$key}"] = "%{$search}%";
-            }
-            $pluginssql[] = $sql;
+            $pluginjoins[] = $join;
+            $pluginfields[] = "p{$key}.name";
         }
-        $pluginssql = implode(' ', $pluginssql);
+        $pluginjoinsql = implode(' ', $pluginjoins);
+
+        // Build the SQL to filter by module name and exclude deleted course modules.
+        [$modulenamesql, $modulenameparams] = $DB->get_in_or_equal($plugins, SQL_PARAMS_NAMED, 'modname');
+        $wheremodulesql = "AND m.name $modulenamesql AND cm.deletioninprogress = 0";
+        $params = array_merge($params, $modulenameparams);
+
+        // Build the search condition using COALESCE only if there are multiple plugin fields.
+        $searchsql = '';
+        if (!empty($search) && !empty($pluginfields)) {
+            $params['search'] = "%{$search}%";
+            if (count($pluginfields) === 1) {
+                $searchfield = $pluginfields[0];
+            } else {
+                $searchfield = 'COALESCE(' . implode(', ', $pluginfields) . ')';
+            }
+            $searchsql = "AND " . $DB->sql_like($searchfield, ':search', false);
+        }
 
         // Build the SQL to filter out any requested course ids.
         if (!empty($notincourseids)) {
@@ -296,22 +319,27 @@ class question_bank_helper {
             $orderbysql = '';
         }
 
-        $sql = "{$select}
+        $sql = "{$select} {$contextselect}
                 FROM {course_modules} cm
                 JOIN {modules} m ON m.id = cm.module
-                {$pluginssql}
+                {$pluginjoinsql}
+                {$contextsql}
                 {$catsql}
-                WHERE 1=1 {$notincoursesql} {$incoursesql}
-                GROUP BY cm.id, cm.course
+                WHERE 1=1 {$wheremodulesql} {$notincoursesql} {$incoursesql} {$searchsql}
+                GROUP BY cm.id, cm.course {$contextgroupby}
                 {$orderbysql}";
 
-        $rs = $DB->get_recordset_sql($sql, $params, limitnum: $limit);
+        $limitforsql = $limit !== 0 && !empty($havingcap) ? 0 : $limit;
+        $rs = $DB->get_recordset_sql($sql, $params, limitnum: $limitforsql);
         $banks = [];
 
         foreach ($rs as $cm) {
             // If capabilities have been supplied as a method argument then ensure the viewing user has at least one of those
             // capabilities on the module itself.
             if (!empty($havingcap)) {
+                // We can preload because we made sure that in case of capabilities being passed we have the context joined in the
+                // SQL.
+                context_helper::preload_from_record($cm);
                 $context = \context_module::instance($cm->id);
                 if (!(new question_edit_contexts($context))->have_one_cap($havingcap)) {
                     continue;
@@ -319,6 +347,9 @@ class question_bank_helper {
             }
             // Populate the raw record.
             $banks[] = self::get_formatted_bank($cm, $currentbankid, filtercontext: $filtercontext);
+            if (!empty($limit) && count($banks) === $limit) {
+                break;
+            }
         }
         $rs->close();
 
@@ -595,6 +626,12 @@ class question_bank_helper {
             );
         }
 
+        if ($bankname === '') {
+            throw new \coding_exception(
+                'The provided bankname is empty. You must provide a name for the question bank.',
+            );
+        }
+
         $data = new stdClass();
         $data->section = 0;
         $data->visible = 0;
@@ -611,6 +648,9 @@ class question_bank_helper {
         $data->name = $bankname;
         $data->type = in_array($type, self::SHARED_TYPES) ? $type : self::TYPE_STANDARD;
         $data->showdescription = $type === self::TYPE_STANDARD ? 0 : 1;
+        // Don't create the default category if this is being created by the system as part of a migration or restore,
+        // existing categories will be migrated to the new context.
+        $data->skipdefaultcategory = $type === self::TYPE_SYSTEM;
 
         $mod = add_moduleinfo($data, $course);
 

@@ -1,9 +1,43 @@
 # core_course (subsystem) Upgrade notes
 
-## 5.1dev+
+## 5.2dev
 
 ### Added
 
+- The external function `core_course_get_course_contents` now includes the `candisplay` property for each returned module. If this is false, the module should not be displayed on the course page (for example, for question banks).
+
+  For more information see [MDL-85405](https://tracker.moodle.org/browse/MDL-85405)
+- Two optional new strings, `modulename_summary` and `modulename_tip`, have been added to modules and will be displayed in the activity chooser interface when defined.
+
+  For more information see [MDL-87117](https://tracker.moodle.org/browse/MDL-87117)
+
+### Deprecated
+
+- The following methods have been deprecated and should no longer be used: - `course_delete_module` - `course_module_flag_for_async_deletion` Please consider using the equivalent methods, delete and delete_async, in `core_courseformat\local\cmactions` instead.
+
+  For more information see [MDL-86856](https://tracker.moodle.org/browse/MDL-86856)
+- Deprecates set_coursemodule_groupmode in favor of core_courseformat\cmactions::set_groupmode
+
+  For more information see [MDL-86857](https://tracker.moodle.org/browse/MDL-86857)
+- The `course_set_marker` function has been deprecated and should no longer be used. Please consider using the equivalent methods, `set_marker` or `remove_all_markers`, in `core_courseformat\local\sectionactions` instead.
+
+  For more information see [MDL-86860](https://tracker.moodle.org/browse/MDL-86860)
+
+## 5.1
+
+### Added
+
+- The following classes have been renamed and now support autoloading.
+  Existing classes are currently unaffected.
+
+   | Old class name    | New class name                |
+   | ---               | ---                           |
+   | `\course_request` | `\core_course\course_request` |
+
+  For more information see [MDL-82322](https://tracker.moodle.org/browse/MDL-82322)
+- Activities can now specify an additional purpose in their PLUGINNAME_supports function by using the new FEATURE_MOD_OTHERPURPOSE feature.
+
+  For more information see [MDL-85598](https://tracker.moodle.org/browse/MDL-85598)
 - Added new `gradable` property to `core_course\local\entity\content_item`
 
   For more information see [MDL-86036](https://tracker.moodle.org/browse/MDL-86036)
@@ -33,9 +67,24 @@
 
 ### Deprecated
 
+- The core_course_get_course_content_items is now deprecated. Use core_courseformat_get_section_content_items instead.
+
+  For more information see [MDL-80295](https://tracker.moodle.org/browse/MDL-80295)
+- The course_section_add_cm_control course renderer method is deprecated. Use section_add_cm_controls instead.
+
+  For more information see [MDL-80295](https://tracker.moodle.org/browse/MDL-80295)
+- Passing the section number (integer) to the core_course\output\activitychooserbutton is deprecated. You must use a core_course\section_info instead.
+
+  For more information see [MDL-80295](https://tracker.moodle.org/browse/MDL-80295)
+- The getModulesData and activityModules methods from core_course/local/activitychooser/repository are deprecated. Use getSectionModulesData and sectionActivityModules instead
+
+  For more information see [MDL-80295](https://tracker.moodle.org/browse/MDL-80295)
 - The duplicatesection param in course/view.php is deprecated. Use course/format/update.php with action section_duplicate instead.
 
   For more information see [MDL-84216](https://tracker.moodle.org/browse/MDL-84216)
+- The changenumsections.php script is deprecated. Please use course/format/update.php instead.
+
+  For more information see [MDL-85284](https://tracker.moodle.org/browse/MDL-85284)
 - The `\course\cm_info::$extra` and `\course\cm_info::$score` properties will now
   emit appropriate debugging.
 
@@ -45,6 +94,9 @@
 - The `MAX_MODINFO_CACHE_SIZE` constant has been deprecated and replaced with a class constant.
 
   For more information see [MDL-86155](https://tracker.moodle.org/browse/MDL-86155)
+- The course renderer method course_activitychooser is now deprecated. Its logic is not part of the new section_renderer::add_cm_controls method.
+
+  For more information see [MDL-86337](https://tracker.moodle.org/browse/MDL-86337)
 
 ### Removed
 

@@ -17,6 +17,7 @@
 namespace core;
 
 use core\tests\fake_plugins_test_trait;
+use function PHPUnit\Framework\assertEquals;
 
 /**
  * Unit tests for (some of) ../moodlelib.php.
@@ -3572,6 +3573,53 @@ EOF;
     }
 
     /**
+     * Test sending calendar (ICS) file attachments with email_to_user
+     *
+     * @covers ::email_to_user
+     */
+    public function test_email_to_user_calendar_attachment(): void {
+        global $CFG;
+
+        // Create a test calendar file in temp directory.
+        $temp = make_request_directory();
+        $filepath = $temp . '/test_calendar.ics';
+        $icalcontent = "BEGIN:VCALENDAR\r\n" .
+                       "VERSION:2.0\r\n" .
+                       "METHOD:REQUEST\r\n" .
+                       "BEGIN:VEVENT\r\n" .
+                       "SUMMARY:Test Event\r\n" .
+                       "DTSTART:20250704T140000\r\n" .
+                       "DTEND:20250704T150000\r\n" .
+                       "END:VEVENT\r\n" .
+                       "END:VCALENDAR";
+        file_put_contents($filepath, $icalcontent);
+
+        $user = \core_user::get_support_user();
+        $message = 'Test calendar attachment';
+
+        // Create sink to catch all sent e-mails.
+        $sink = $this->redirectEmails();
+
+        $filename = basename($filepath);
+        email_to_user($user, $user, $message, $message, $message, $filepath, $filename);
+
+        $messages = $sink->get_messages();
+        $sink->close();
+
+        $this->assertCount(1, $messages);
+
+        // Verify calendar content in message body.
+        $messagebody = reset($messages)->body;
+        // Check that it's not attached as a regular attachment.
+        $this->assertStringNotContainsString(
+            'Content-Disposition: attachment; filename=' . $filename,
+            $messagebody
+        );
+        // Check that it's included as iCal content.
+        $this->assertStringContainsString('Content-Type: text/calendar; method=REQUEST', $messagebody);
+    }
+
+    /**
      * Test setnew_password_and_mail.
      */
     public function test_setnew_password_and_mail(): void {
@@ -5805,5 +5853,155 @@ EOT;
         $this->assertArrayNotHasKey('fake', $plugins);
         $pluginlist = get_plugin_list_with_function('fake', 'test_callback');
         $this->assertArrayNotHasKey('fake_fullfeatured', $pluginlist);
+    }
+
+    /**
+     * Test that plugin_supports returns the correct purpose values for activity plugins.
+     *
+     * @dataProvider provider_plugin_supports_purpose
+     * @param string $modname
+     * @param string $purpose
+     * @param string|null $otherpurpose
+     * @return void
+     */
+    public function test_plugin_supports_purpose(
+        string $modname,
+        string $purpose,
+        ?string $otherpurpose
+    ): void {
+        $this->assertEquals(
+            $purpose,
+            plugin_supports('mod', $modname, FEATURE_MOD_PURPOSE),
+        );
+
+        $this->assertEquals(
+            $otherpurpose,
+            plugin_supports('mod', $modname, FEATURE_MOD_OTHERPURPOSE),
+        );
+    }
+
+    /**
+     * Data provider for plugin_supports_purpose tests.
+     *
+     * @return array
+     */
+    public static function provider_plugin_supports_purpose(): array {
+        return [
+            'assign' => [
+                'modname' => 'assign',
+                'purpose' => MOD_PURPOSE_ASSESSMENT,
+                'otherpurpose' => null,
+            ],
+            'bigbluebuttonbn' => [
+                'modname' => 'bigbluebuttonbn',
+                'purpose' => MOD_PURPOSE_COMMUNICATION,
+                'otherpurpose' => null,
+            ],
+            'book' => [
+                'modname' => 'book',
+                'purpose' => MOD_PURPOSE_CONTENT,
+                'otherpurpose' => null,
+            ],
+            'choice' => [
+                'modname' => 'choice',
+                'purpose' => MOD_PURPOSE_COMMUNICATION,
+                'otherpurpose' => MOD_PURPOSE_COLLABORATION,
+            ],
+            'data' => [
+                'modname' => 'data',
+                'purpose' => MOD_PURPOSE_COLLABORATION,
+                'otherpurpose' => null,
+            ],
+            'feedback' => [
+                'modname' => 'feedback',
+                'purpose' => MOD_PURPOSE_COMMUNICATION,
+                'otherpurpose' => null,
+            ],
+            'folder' => [
+                'modname' => 'folder',
+                'purpose' => MOD_PURPOSE_CONTENT,
+                'otherpurpose' => null,
+            ],
+            'forum' => [
+                'modname' => 'forum',
+                'purpose' => MOD_PURPOSE_COLLABORATION,
+                'otherpurpose' => MOD_PURPOSE_COMMUNICATION,
+            ],
+            'glossary' => [
+                'modname' => 'glossary',
+                'purpose' => MOD_PURPOSE_COLLABORATION,
+                'otherpurpose' => MOD_PURPOSE_CONTENT,
+            ],
+            'h5pactivity' => [
+                'modname' => 'h5pactivity',
+                'purpose' => MOD_PURPOSE_INTERACTIVECONTENT,
+                'otherpurpose' => MOD_PURPOSE_ASSESSMENT,
+            ],
+            'imscp' => [
+                'modname' => 'imscp',
+                'purpose' => MOD_PURPOSE_INTERACTIVECONTENT,
+                'otherpurpose' => MOD_PURPOSE_CONTENT,
+            ],
+            'label' => [
+                'modname' => 'label',
+                'purpose' => MOD_PURPOSE_CONTENT,
+                'otherpurpose' => null,
+            ],
+            'lesson' => [
+                'modname' => 'lesson',
+                'purpose' => MOD_PURPOSE_INTERACTIVECONTENT,
+                'otherpurpose' => MOD_PURPOSE_ASSESSMENT,
+            ],
+            'lti' => [
+                'modname' => 'lti',
+                'purpose' => MOD_PURPOSE_OTHER,
+                'otherpurpose' => null,
+            ],
+            'page' => [
+                'modname' => 'page',
+                'purpose' => MOD_PURPOSE_CONTENT,
+                'otherpurpose' => null,
+            ],
+            'qbank' => [
+                'modname' => 'qbank',
+                'purpose' => MOD_PURPOSE_CONTENT,
+                'otherpurpose' => null,
+            ],
+            'quiz' => [
+                'modname' => 'quiz',
+                'purpose' => MOD_PURPOSE_ASSESSMENT,
+                'otherpurpose' => null,
+            ],
+            'resource' => [
+                'modname' => 'resource',
+                'purpose' => MOD_PURPOSE_CONTENT,
+                'otherpurpose' => null,
+            ],
+            'scorm' => [
+                'modname' => 'scorm',
+                'purpose' => MOD_PURPOSE_INTERACTIVECONTENT,
+                'otherpurpose' => MOD_PURPOSE_CONTENT,
+            ],
+            'subsection' => [
+                'modname' => 'subsection',
+                'purpose' => MOD_PURPOSE_CONTENT,
+                'otherpurpose' => null,
+            ],
+            'url' => [
+                'modname' => 'url',
+                'purpose' => MOD_PURPOSE_CONTENT,
+                'otherpurpose' => null,
+            ],
+            'wiki' => [
+                'modname' => 'wiki',
+                'purpose' => MOD_PURPOSE_COLLABORATION,
+                'otherpurpose' => null,
+            ],
+            'workshop' => [
+                'modname' => 'workshop',
+                'purpose' => MOD_PURPOSE_ASSESSMENT,
+                'otherpurpose' => MOD_PURPOSE_COLLABORATION,
+            ],
+        ];
     }
 }

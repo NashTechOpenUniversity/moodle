@@ -52,6 +52,8 @@ export const init = reportId => {
         'newschedule',
         'schedulecreated',
         'scheduledeleted',
+        'scheduledisabled',
+        'scheduleenabled',
         'schedulesent',
         'scheduleupdated',
         'sendschedule',
@@ -75,7 +77,10 @@ export const init = reportId => {
         if (scheduleCreate) {
             event.preventDefault();
 
-            const scheduleModal = createScheduleModal(event.target, getString('newschedule', 'core_reportbuilder'), reportId);
+            const {scheduleClass} = scheduleCreate.dataset;
+
+            const scheduleModal = createScheduleModal(event.target, getString('newschedule', 'core_reportbuilder'), reportId, 0,
+                scheduleClass);
             scheduleModal.addEventListener(scheduleModal.events.FORM_SUBMITTED, () => {
                 getString('schedulecreated', 'core_reportbuilder')
                     .then(addToast)
@@ -109,8 +114,12 @@ export const init = reportId => {
                 .then(toggleLabel => {
                     const labelContainer = scheduleToggle.parentElement.querySelector(`label[for="${scheduleToggle.id}"] > span`);
                     labelContainer.innerHTML = toggleLabel;
-                    return pendingPromise.resolve();
+
+                    const toastKey = scheduleStateToggle ? 'scheduleenabled' : 'scheduledisabled';
+                    return getString(toastKey, 'core_reportbuilder');
                 })
+                .then(addToast)
+                .then(() => pendingPromise.resolve())
                 .catch(Notification.exception);
         }
 

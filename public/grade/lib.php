@@ -1599,9 +1599,11 @@ class grade_structure {
 
         if ($menuitems) {
             $menu = new action_menu($menuitems);
-            $icon = $OUTPUT->pix_icon('i/moremenu', get_string('actions'));
+            $label = get_string('actions');
+            $icon = $OUTPUT->pix_icon('i/moremenu', '') . \core\output\html_writer::span($label, 'visually-hidden d-inline-block');
             $extraclasses = 'btn btn-link btn-icon d-flex no-caret';
             $menu->set_menu_trigger($icon, $extraclasses);
+            $menu->triggerattributes['title'] = $label;
             $menu->set_menu_left();
 
             return $OUTPUT->render($menu);
@@ -2502,6 +2504,7 @@ class grade_tree extends grade_structure {
         $this->courseid   = $courseid;
         $this->levels     = array();
         $this->context    = context_course::instance($courseid);
+        $this->items      = [];
 
         if (!empty($COURSE->id) && $COURSE->id == $this->courseid) {
             $course = $COURSE;
@@ -3604,15 +3607,14 @@ abstract class grade_helper {
 
                 $iscourse   = $element['object']->is_course_item();
                 $iscategory = $element['object']->is_category_item();
-                $isscale    = $element['object']->gradetype == GRADE_TYPE_SCALE;
-                $isvalue    = $element['object']->gradetype == GRADE_TYPE_VALUE;
+                $gradetype  = $element['object']->gradetype;
                 $isoutcome  = !empty($element['object']->outcomeid);
 
                 if ($element['object']->is_calculated()) {
                     $icon->pix = 'i/calc';
                     $icon->title = s(get_string('calculatedgrade', 'grades'));
 
-                } else if (($iscourse || $iscategory) && ($isscale || $isvalue)) {
+                } else if (($iscourse || $iscategory) && $gradetype != GRADE_TYPE_NONE) {
                     if ($category = $element['object']->get_item_category()) {
                         $aggrstrings = self::get_aggregation_strings();
                         $stragg = $aggrstrings[$category->aggregation];
@@ -3659,6 +3661,9 @@ abstract class grade_helper {
                         $icon->pix = 'i/manual_item';
                         $icon->title = s(get_string('manualitem', 'grades'));
                     }
+                } else {
+                    // No matching icon.
+                    $none = true;
                 }
                 break;
 

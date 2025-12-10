@@ -282,9 +282,6 @@ class mod_feedback_complete_form extends moodleform {
      */
     protected function get_suggested_class($item) {
         $class = "feedback_itemlist feedback-item-{$item->typ}";
-        if ($item->dependitem) {
-            $class .= " feedback_is_dependent";
-        }
         if ($item->typ !== 'pagebreak') {
             $itemobj = feedback_get_item_class($item->typ);
             if ($itemobj->get_hasvalue()) {
@@ -348,7 +345,13 @@ class mod_feedback_complete_form extends moodleform {
 
         // Add red asterisks on required fields.
         if ($item->required) {
-            $required = $OUTPUT->pix_icon('req', get_string('requiredelement', 'form'), 'moodle', ['class' => 'ms-2']);
+            $requiredlabel = get_string('requiredelement', 'form');
+            $pixparams = [
+                'class' => 'ms-2',
+                'title' => $requiredlabel,
+            ];
+            $required = $OUTPUT->pix_icon('req', '', 'moodle', $pixparams)
+                . \core\output\html_writer::span("($requiredlabel)", 'visually-hidden');
             $element->setLabel($element->getLabel() . $required);
             $this->hasrequired = true;
         }

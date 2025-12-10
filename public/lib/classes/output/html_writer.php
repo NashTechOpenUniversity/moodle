@@ -561,7 +561,7 @@ class html_writer {
             }
         }
         if (empty($table->attributes['class'])) {
-            $table->attributes['class'] = 'generaltable table';
+            $table->attributes['class'] = 'generaltable table table-hover';
         }
         if (!empty($table->tablealign)) {
             $table->attributes['class'] .= ' boxalign' . $table->tablealign;
@@ -584,7 +584,7 @@ class html_writer {
         if (!empty($table->caption)) {
             $captionattributes = [];
             if ($table->captionhide) {
-                $captionattributes['class'] = 'accesshide';
+                $captionattributes['class'] = 'visually-hidden';
             }
             $output .= self::tag(
                 'caption',

@@ -1082,8 +1082,8 @@ function question_get_default_category($contextid, bool $createifnotexists = fal
         // We don't have one, so we need to make one.
         $defaultcat = new stdClass();
         $contextname = $context->get_context_name(false, true);
-        // Max length of name field is 255.
-        $defaultcat->name = shorten_text(get_string('defaultfor', 'question', $contextname), 255);
+        // Max length of name field is 1333.
+        $defaultcat->name = shorten_text(get_string('defaultfor', 'question', $contextname), 1333);
         $defaultcat->info = get_string('defaultinfofor', 'question', $contextname);
         $defaultcat->contextid = $context->id;
         $defaultcat->parent = $topcategory->id;
@@ -1416,8 +1416,14 @@ function question_extend_settings_navigation(navigation_node $navigationnode, $c
 
     $iscourse = $context->contextlevel === CONTEXT_COURSE;
 
-    if ($iscourse) {
-        $params = ['courseid' => $context->instanceid];
+    if ($iscourse && has_capability('moodle/course:manageactivities', $context)) {
+        return $navigationnode->add(
+            get_string('questionbank_plural', 'question'),
+            new moodle_url($baseurl, ['courseid' => $context->instanceid]),
+            navigation_node::TYPE_CONTAINER,
+            null,
+            'questionbank'
+        );
     } else if ($context->contextlevel == CONTEXT_MODULE) {
         $params = ['cmid' => $context->instanceid];
     } else {
@@ -1428,8 +1434,13 @@ function question_extend_settings_navigation(navigation_node $navigationnode, $c
         $params['cat'] = $cat;
     }
 
-    $questionnode = $navigationnode->add(get_string($iscourse ? 'questionbank_plural' : 'questionbank', 'question'),
-            new moodle_url($baseurl, $params), navigation_node::TYPE_CONTAINER, null, 'questionbank');
+    $questionnode = $navigationnode->add(
+        get_string('questionbank', 'question'),
+        new moodle_url($baseurl, $params),
+        navigation_node::TYPE_CONTAINER,
+        null,
+        'questionbank'
+    );
 
     $corenavigations = [
             'questions' => [
@@ -1814,7 +1825,7 @@ function question_page_type_list($pagetype, $parentcontext, $currentcontext): ar
         'question-export' => get_string('page-question-export', 'question'),
         'question-import' => get_string('page-question-import', 'question')
     ];
-    if ($currentcontext->contextlevel == CONTEXT_COURSE) {
+    if ($currentcontext && $currentcontext->contextlevel == CONTEXT_COURSE) {
         require_once($CFG->dirroot . '/course/lib.php');
         return array_merge(course_page_type_list($pagetype, $parentcontext, $currentcontext), $types);
     } else {

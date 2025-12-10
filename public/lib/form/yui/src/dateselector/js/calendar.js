@@ -32,7 +32,7 @@ CALENDAR.prototype = {
         }, this);
 
         // Loop through the input fields.
-        var inputs = this.get('node').all('input, a');
+        var inputs = this.get('node').all('input, button');
         inputs.each(function(node) {
             // Check if the current node is a calendar image field.
             if (node.get('name').match(/\[calendar\]/)) {
@@ -172,11 +172,11 @@ CALENDAR.prototype = {
     },
     toggle_calendar_image: function() {
         // If the enable checkbox is not checked, disable the calendar image and prevent focus.
-        if (!this.enablecheckbox.get('checked')) {
-            this.calendarimage.addClass('disabled');
+        if (!this.enablecheckbox.get('checked') || this.enablecheckbox.get('disabled')) {
+            this.calendarimage.setAttribute('disabled');
             this.release_calendar();
         } else {
-            this.calendarimage.removeClass('disabled');
+            this.calendarimage.removeAttribute('disabled');
         }
     }
 };

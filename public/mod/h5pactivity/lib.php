@@ -45,30 +45,20 @@ use mod_h5pactivity\xapi\handler;
  * @return mixed True if module supports feature, false if not, null if doesn't know or string for the module purpose.
  */
 function h5pactivity_supports(string $feature) {
-    switch($feature) {
-        case FEATURE_GROUPS:
-            return true;
-        case FEATURE_GROUPINGS:
-            return true;
-        case FEATURE_MOD_INTRO:
-            return true;
-        case FEATURE_SHOW_DESCRIPTION:
-            return true;
-        case FEATURE_COMPLETION_TRACKS_VIEWS:
-            return true;
-        case FEATURE_MODEDIT_DEFAULT_COMPLETION:
-            return true;
-        case FEATURE_GRADE_HAS_GRADE:
-            return true;
-        case FEATURE_GRADE_OUTCOMES:
-            return true;
-        case FEATURE_BACKUP_MOODLE2:
-            return true;
-        case FEATURE_MOD_PURPOSE:
-            return MOD_PURPOSE_INTERACTIVECONTENT;
-        default:
-            return null;
-    }
+    return match ($feature) {
+        FEATURE_GROUPS => true,
+        FEATURE_GROUPINGS => true,
+        FEATURE_MOD_INTRO => true,
+        FEATURE_SHOW_DESCRIPTION => true,
+        FEATURE_COMPLETION_TRACKS_VIEWS => true,
+        FEATURE_MODEDIT_DEFAULT_COMPLETION => true,
+        FEATURE_GRADE_HAS_GRADE => true,
+        FEATURE_GRADE_OUTCOMES => true,
+        FEATURE_BACKUP_MOODLE2 => true,
+        FEATURE_MOD_PURPOSE => MOD_PURPOSE_INTERACTIVECONTENT,
+        FEATURE_MOD_OTHERPURPOSE => MOD_PURPOSE_ASSESSMENT,
+        default => null,
+    };
 }
 
 /**
@@ -334,11 +324,11 @@ function h5pactivity_reset_gradebook(int $courseid, string $type=''): void {
  * Return a list of page types
  *
  * @param string $pagetype current page type
- * @param stdClass|null $parentcontext Block's parent context
- * @param stdClass $currentcontext Current context of block
+ * @param context|null $parentcontext Block's parent context
+ * @param context|null $currentcontext Current context of block
  * @return array array of page types and it's names
  */
-function h5pactivity_page_type_list(string $pagetype, ?stdClass $parentcontext, stdClass $currentcontext): array {
+function h5pactivity_page_type_list(string $pagetype, ?context $parentcontext, ?context $currentcontext): array {
     $modulepagetype = [
         'mod-h5pactivity-*' => get_string('page-mod-h5pactivity-x', 'h5pactivity'),
     ];
