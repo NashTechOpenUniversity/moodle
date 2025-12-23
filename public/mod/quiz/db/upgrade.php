@@ -51,7 +51,6 @@ function xmldb_quiz_upgrade($oldversion) {
     // Put any upgrade step following this.
 
     if ($oldversion < 2023112300) {
-
         // Set the value for all existing rows to match the previous behaviour,
         // but only where users have not already set another value.
         $DB->set_field('quiz', 'reviewmaxmarks', 0x11110, ['reviewmaxmarks' => 0]);
@@ -61,7 +60,6 @@ function xmldb_quiz_upgrade($oldversion) {
     }
 
     if ($oldversion < 2023112400) {
-
         // Define table quiz_grade_items to be created.
         $table = new xmldb_table('quiz_grade_items');
 
@@ -88,7 +86,6 @@ function xmldb_quiz_upgrade($oldversion) {
     }
 
     if ($oldversion < 2023112401) {
-
         // Define field quizgradeitemid to be added to quiz_slots.
         $table = new xmldb_table('quiz_slots');
         $field = new xmldb_field('quizgradeitemid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'maxmark');
@@ -103,7 +100,6 @@ function xmldb_quiz_upgrade($oldversion) {
     }
 
     if ($oldversion < 2023112402) {
-
         // Define key quizgradeitemid (foreign) to be added to quiz_slots.
         $table = new xmldb_table('quiz_slots');
         $key = new xmldb_key('quizgradeitemid', XMLDB_KEY_FOREIGN, ['quizgradeitemid'], 'quiz_grade_items', ['id']);
@@ -114,37 +110,6 @@ function xmldb_quiz_upgrade($oldversion) {
         // Quiz savepoint reached.
         upgrade_mod_savepoint(true, 2023112402, 'quiz');
     }
-
-    if ($oldversion < 2025022300) {
-
-        // Define table quiz_grade_item_feedbacks to be created.
-        $table = new xmldb_table('quiz_grade_item_feedbacks');
-
-        // Adding fields to table quiz_grade_item_feedbacks.
-        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('quizid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('gradeitemid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('feedbacktext', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
-        $table->add_field('feedbacktextformat', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0');
-        $table->add_field('mingrade', XMLDB_TYPE_NUMBER, '10, 5', null, XMLDB_NOTNULL, null, '0');
-        $table->add_field('maxgrade', XMLDB_TYPE_NUMBER, '10, 5', null, XMLDB_NOTNULL, null, '0');
-
-        // Adding keys to table quiz_grade_item_feedbacks.
-        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
-        $table->add_key('gradeitemid', XMLDB_KEY_FOREIGN, ['gradeitemid'], 'quiz_grade_items', ['id']);
-        $table->add_key('quizid', XMLDB_KEY_FOREIGN, ['quizid'], 'quiz', ['id']);
-
-        // Conditionally launch create table for quiz_grade_item_feedbacks.
-        if (!$dbman->table_exists($table)) {
-            $dbman->create_table($table);
-        }
-
-        // Quiz savepoint reached.
-        upgrade_mod_savepoint(true, 2025022300, 'quiz');
-    }
-
-    // Automatically generated Moodle v4.4.0 release upgrade line.
-    // Put any upgrade step following this.
 
     // Automatically generated Moodle v4.5.0 release upgrade line.
     // Put any upgrade step following this.
@@ -179,6 +144,33 @@ function xmldb_quiz_upgrade($oldversion) {
 
     // Automatically generated Moodle v5.1.0 release upgrade line.
     // Put any upgrade step following this.
+
+    if ($oldversion < 2025122300) {
+        // Define table quiz_grade_item_feedbacks to be created.
+        $table = new xmldb_table('quiz_grade_item_feedbacks');
+
+        // Adding fields to table quiz_grade_item_feedbacks.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('quizid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('gradeitemid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('feedbacktext', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('feedbacktextformat', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('mingrade', XMLDB_TYPE_NUMBER, '10, 5', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('maxgrade', XMLDB_TYPE_NUMBER, '10, 5', null, XMLDB_NOTNULL, null, '0');
+
+        // Adding keys to table quiz_grade_item_feedbacks.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('gradeitemid', XMLDB_KEY_FOREIGN, ['gradeitemid'], 'quiz_grade_items', ['id']);
+        $table->add_key('quizid', XMLDB_KEY_FOREIGN, ['quizid'], 'quiz', ['id']);
+
+        // Conditionally launch create table for quiz_grade_item_feedbacks.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Quiz savepoint reached.
+        upgrade_mod_savepoint(true, 2025122300, 'quiz');
+    }
 
     return true;
 }

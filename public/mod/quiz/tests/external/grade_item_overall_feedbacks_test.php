@@ -39,7 +39,6 @@ use stdClass;
  * @covers \mod_quiz\external\save_overall_feedback_per_grade_item
  */
 final class grade_item_overall_feedbacks_test extends externallib_advanced_testcase {
-
     /**
      * Test service save_overall_feedback_per_grade_item for valid data.
      * @dataProvider save_value_provider

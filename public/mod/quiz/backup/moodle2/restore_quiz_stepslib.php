@@ -62,8 +62,10 @@ class restore_quiz_activity_structure_step extends restore_questions_activity_st
         $this->add_subplugin_structure('quizaccess', $quiz);
 
         $paths[] = new restore_path_element('quiz_grade_item', '/activity/quiz/quiz_grade_items/quiz_grade_item');
-        $paths[] = new restore_path_element('quiz_grade_item_feedback',
-            '/activity/quiz/quiz_grade_item_feedbacks/quiz_grade_item_feedback');
+        $paths[] = new restore_path_element(
+            'quiz_grade_item_feedback',
+            '/activity/quiz/quiz_grade_item_feedbacks/quiz_grade_item_feedback'
+        );
         $quizquestioninstance = new restore_path_element('quiz_question_instance',
             '/activity/quiz/question_instances/question_instance');
         $paths[] = $quizquestioninstance;

@@ -33,7 +33,6 @@ use stdClass;
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class save_overall_feedback_per_grade_item extends external_api {
-
     /**
      * Declare the method parameters.
      *
@@ -138,12 +137,25 @@ class save_overall_feedback_per_grade_item extends external_api {
             $feedback->mingrade = isset($formdata[$index]) ? $formdata[$index]->boundary : 0;
             $feedback->maxgrade = $data->boundary;
             $feedback->id = $DB->insert_record('quiz_grade_item_feedbacks', $feedback);
-            $feedbacktext = file_save_draft_area_files((int) $data->feedback->itemid,
-                $context->id, 'mod_quiz', 'grade_item_feedback', $feedback->id,
-                ['subdirs' => false, 'maxfiles' => -1, 'maxbytes' => 0],
-                $data->feedback->text);
-            $DB->set_field('quiz_grade_item_feedbacks', 'feedbacktext', $feedbacktext,
-                ['id' => $feedback->id]);
+            $feedbacktext = file_save_draft_area_files(
+                (int) $data->feedback->itemid,
+                $context->id,
+                'mod_quiz',
+                'grade_item_feedback',
+                $feedback->id,
+                [
+                    'subdirs' => false,
+                    'maxfiles' => -1,
+                    'maxbytes' => 0,
+                ],
+                $data->feedback->text
+            );
+            $DB->set_field(
+                'quiz_grade_item_feedbacks',
+                'feedbacktext',
+                $feedbacktext,
+                ['id' => $feedback->id]
+            );
             $total++;
         }
         $result->total = $total;

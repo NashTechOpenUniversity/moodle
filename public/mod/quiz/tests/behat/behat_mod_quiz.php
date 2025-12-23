@@ -356,8 +356,11 @@ class behat_mod_quiz extends behat_question_base {
      * @param string $boundary The boundary data.
      * @param string $name The grade item name.
      */
-    public function i_set_the_value_as_the_feedback_for_the_boundary_in_the_grade_item(string $feedback,
-            string $boundary, string $name) {
+    public function i_set_the_value_as_the_feedback_for_the_boundary_in_the_grade_item(
+        string $feedback,
+        string $boundary,
+        string $name
+    ) {
         // Find the wrapper element by the grade item name.
         $xpathgradeitem = "//table[@id='mod_quiz-grade-item-list']" .
             "//tr[.//span[contains(@class, 'displayvalue') and contains(text(), '$name')]]";

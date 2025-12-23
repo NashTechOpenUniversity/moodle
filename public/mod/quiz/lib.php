@@ -2703,8 +2703,14 @@ function mod_quiz_output_fragment_load_overall_feedback_data(array $args): strin
     $gradeitemid = clean_param($args['gradeItemId'], PARAM_INT);
     $quizobj = quiz_settings::create($quizid)->get_quiz();
 
-    $overallfeedbacks = $DB->get_records('quiz_grade_item_feedbacks',
-        ['quizid' => $quizid, 'gradeitemid' => $gradeitemid], 'maxgrade DESC');
+    $overallfeedbacks = $DB->get_records(
+        'quiz_grade_item_feedbacks',
+        [
+            'quizid' => $quizid,
+            'gradeitemid' => $gradeitemid,
+        ],
+        'maxgrade DESC'
+    );
     $args['feedbacks'] = $overallfeedbacks;
     $args['grade'] = $quizobj->grade;
     $form = new overallfeedback_form(null, $args);
@@ -2732,8 +2738,14 @@ function mod_quiz_output_fragment_load_overall_feedback_detail(array $args): str
     $quizid = clean_param($args['quizId'], PARAM_INT);
     $gradeitemid = clean_param($args['gradeItemId'], PARAM_INT);
 
-    $overallfeedbacks = $DB->get_records('quiz_grade_item_feedbacks',
-        ['quizid' => $quizid, 'gradeitemid' => $gradeitemid], 'maxgrade DESC');
+    $overallfeedbacks = $DB->get_records(
+        'quiz_grade_item_feedbacks',
+        [
+            'quizid' => $quizid,
+            'gradeitemid' => $gradeitemid,
+        ],
+        'maxgrade DESC'
+    );
     $structure = quiz_settings::create($quizid)->get_structure();
     $data = $structure->generate_overallfeedback_detail_data($gradeitemid, $overallfeedbacks);
 

@@ -26,7 +26,7 @@ namespace mod_quiz\form;
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->dirroot.'/lib/formslib.php');
+require_once($CFG->dirroot . '/lib/formslib.php');
 
 /**
  * Class overallfeedback_form.
@@ -36,7 +36,6 @@ require_once($CFG->dirroot.'/lib/formslib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class overallfeedback_form extends \moodleform {
-
     /**
      * Form definiton.
      */
@@ -50,19 +49,56 @@ class overallfeedback_form extends \moodleform {
         $mform->addElement('static', 'boundary_header', get_string('gradeboundary', 'quiz'));
         // Add the feedback form for the 100% boundary separately, as its UI differs from that of other feedback forms.
         // The others will be rendered later.
-        $mform->addElement('static', 'gradeboundarystatic1',
-            get_string('overallfeedback_lessthanequal', 'quiz'), '100%');
+        $mform->addElement(
+            'static',
+            'gradeboundarystatic1',
+            get_string(
+                'overallfeedback_lessthanequal',
+                'quiz'
+            ),
+            '100%'
+        );
         $elements = [];
-        $elements[] = $mform->createElement('editor',
-            "feedbacktext[0][$gradeitemid]", get_string('feedback', 'quiz'), ['rows' => 3],
-            ['maxfiles' => EDITOR_UNLIMITED_FILES, 'noclean' => true,
-                'context' => $context]);
+        $elements[] = $mform->createElement(
+            'editor',
+            "feedbacktext[0][$gradeitemid]",
+            get_string(
+                'feedback',
+                'quiz'
+            ),
+            ['rows' => 3],
+            [
+                'maxfiles' => EDITOR_UNLIMITED_FILES,
+                'noclean' => true,
+                'context' => $context,
+            ]
+        );
         // Add a delete button, but keep it disabled and hidden for placeholder purposes only.
-        $elements[] = $mform->createElement('button', 'delete-feedback',
-            $OUTPUT->pix_icon('t/delete', get_string('delete'), 'core'),
-            ['class' => 'invisible', 'disabled' => true]);
-        $mform->addGroup($elements, 'gradeitem-feedback',
-            get_string('feedback', 'quiz'), ' ', false);
+        $elements[] = $mform->createElement(
+            'button',
+            'delete-feedback',
+            $OUTPUT->pix_icon(
+                't/delete',
+                get_string(
+                    'delete'
+                ),
+                'core'
+            ),
+            [
+                'class' => 'invisible',
+                'disabled' => true,
+            ]
+        );
+        $mform->addGroup(
+            $elements,
+            'gradeitem-feedback',
+            get_string(
+                'feedback',
+                'quiz'
+            ),
+            ' ',
+            false
+        );
 
         $dividertemplate = $OUTPUT->render_from_template('mod_quiz/divider_feedback', ['afterindex' => 0]);
         $mform->addElement('html', $dividertemplate);
@@ -74,16 +110,40 @@ class overallfeedback_form extends \moodleform {
             if ($feedback->maxgrade > 1) {
                 continue;
             }
-            $mform->addElement('text', "feedbackboundaries[$index]",
-                get_string('overallfeedback_lessthan', 'quiz'), ['size' => 10]);
+            $mform->addElement(
+                'text',
+                "feedbackboundaries[$index]",
+                get_string(
+                    'overallfeedback_lessthan',
+                    'quiz'
+                ),
+                [
+                    'size' => 10,
+                ]
+            );
             $elements = [];
-            $elements[] = $mform->createElement('editor',
+            $elements[] = $mform->createElement(
+                'editor',
                 'feedbacktext[' . ($index + 1) . '][' . $gradeitemid . ']',
-                get_string('feedback', 'quiz'), ['rows' => 3],
-                ['maxfiles' => EDITOR_UNLIMITED_FILES, 'noclean' => true,
-                    'context' => $context]);
-            $elements[] = $mform->createElement('button', 'delete-feedback',
-                $OUTPUT->pix_icon('t/delete', get_string('delete'), 'core'));
+                get_string('feedback', 'quiz'),
+                [
+                    'rows' => 3,
+                ],
+                [
+                    'maxfiles' => EDITOR_UNLIMITED_FILES,
+                    'noclean' => true,
+                    'context' => $context,
+                ]
+            );
+            $elements[] = $mform->createElement(
+                'button',
+                'delete-feedback',
+                $OUTPUT->pix_icon(
+                    't/delete',
+                    get_string('delete'),
+                    'core'
+                )
+            );
             $mform->addGroup($elements, 'gradeitem-feedback', get_string('feedback', 'quiz'), ' ', false);
             $dividertemplate = $OUTPUT->render_from_template('mod_quiz/divider_feedback', ['afterindex' => $index + 1]);
             $mform->addElement('html', $dividertemplate);
@@ -148,7 +208,7 @@ class overallfeedback_form extends \moodleform {
                     // representing the percentage boundaries.
                     // For example, a 50% boundary is stored as 0.5. Here, we will convert these values
                     // from 0.5 to 50% for display purposes.
-                    $toform['feedbackboundaries['.$key.']'] =
+                    $toform['feedbackboundaries[' . $key . ']'] =
                         round(100.0 * $feedback->mingrade, 6) . '%';
                 }
                 $key++;

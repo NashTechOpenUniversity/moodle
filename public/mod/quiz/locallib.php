@@ -660,8 +660,16 @@ function quiz_feedback_record_for_gradeitem(float $grade, int $gradeitemid, stdC
     // any feedback. Therefore, we replace -ve grades with 0.
     $grade = max($grade, 0);
 
-    $feedback = $DB->get_record_select('quiz_grade_item_feedbacks',
-        'quizid = ? AND gradeitemid = ? AND mingrade <= ? AND ? < maxgrade', [$quiz->id, $gradeitemid, $grade, $grade]);
+    $feedback = $DB->get_record_select(
+        'quiz_grade_item_feedbacks',
+        'quizid = ? AND gradeitemid = ? AND mingrade <= ? AND ? < maxgrade',
+        [
+            $quiz->id,
+            $gradeitemid,
+            $grade,
+            $grade,
+        ]
+    );
 
     return $feedback;
 }
@@ -722,8 +730,14 @@ function quiz_feedback_for_gradeitem(float $grade, int $gradeitemid, stdClass $q
     // Clean the text, ready for display.
     $formatoptions = new stdClass();
     $formatoptions->noclean = true;
-    $feedbacktext = file_rewrite_pluginfile_urls($feedback->feedbacktext, 'pluginfile.php',
-        $context->id, 'mod_quiz', 'grade_item_feedback', $feedback->id);
+    $feedbacktext = file_rewrite_pluginfile_urls(
+        $feedback->feedbacktext,
+        'pluginfile.php',
+        $context->id,
+        'mod_quiz',
+        'grade_item_feedback',
+        $feedback->id
+    );
     $feedbacktext = format_text($feedbacktext, $feedback->feedbacktextformat, $formatoptions);
 
     return $feedbacktext;

@@ -772,8 +772,10 @@ class structure {
      */
     protected function populate_grade_item_feedbacks() {
         global $DB;
-        $records = $DB->get_records('quiz_grade_item_feedbacks',
-            ['quizid' => $this->get_quizid()]);
+        $records = $DB->get_records(
+            'quiz_grade_item_feedbacks',
+            ['quizid' => $this->get_quizid()]
+        );
         // Group it by grade item id.
         $gradeitemfeedbacks = [];
         foreach ($records as $record) {
@@ -1582,8 +1584,14 @@ class structure {
         foreach ($gradeitemsfeedback as $feedback) {
             $feedbackdata = new \stdClass();
             // Load the full feedback text.
-            $feedbacktext = file_rewrite_pluginfile_urls($feedback->feedbacktext, 'pluginfile.php',
-                $contextid, 'mod_quiz', 'grade_item_feedback', $feedback->id);
+            $feedbacktext = file_rewrite_pluginfile_urls(
+                $feedback->feedbacktext,
+                'pluginfile.php',
+                $contextid,
+                'mod_quiz',
+                'grade_item_feedback',
+                $feedback->id
+            );
             $feedbacktext = format_text($feedbacktext, $feedback->feedbacktextformat, $formatoptions);
             $feedbackdata->feedbacktext = $feedbacktext;
             // Return a suitable label based on the maximum grade of the feedback.

@@ -683,8 +683,12 @@ class quiz_attempt {
      * @return string the feedback text.
      */
     public function get_overall_feedback_for_grade_item(int $gradeitemid, float $grade): string {
-        return quiz_feedback_for_gradeitem($grade, $gradeitemid, $this->get_quiz(),
-            $this->quizobj->get_context());
+        return quiz_feedback_for_gradeitem(
+            $grade,
+            $gradeitemid,
+            $this->get_quiz(),
+            $this->quizobj->get_context()
+        );
     }
 
     /**

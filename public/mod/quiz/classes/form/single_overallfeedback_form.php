@@ -26,7 +26,7 @@ namespace mod_quiz\form;
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->dirroot.'/lib/formslib.php');
+require_once($CFG->dirroot . '/lib/formslib.php');
 
 /**
  * Class single_overallfeedback_form.
@@ -36,7 +36,6 @@ require_once($CFG->dirroot.'/lib/formslib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class single_overallfeedback_form extends \moodleform {
-
     /**
      * Form definiton.
      */
@@ -49,19 +48,47 @@ class single_overallfeedback_form extends \moodleform {
         $editornumber = $customdata['editorno'];
         $gradeitemid = $customdata['gradeitemid'];
 
-        $mform->addElement('text', "feedbackboundaries[$after]",
-            get_string('overallfeedback_lessthan', 'quiz'), ['size' => 10]);
+        $mform->addElement(
+            'text',
+            "feedbackboundaries[$after]",
+            get_string(
+                'overallfeedback_lessthan',
+                'quiz'
+            ),
+            [
+                'size' => 10,
+            ]
+        );
         $elements = [];
         // We need to create a unique ID for the text editor because it is necessary for the editor
         // JavaScript to set events based on that ID.
         // Since the ID of the editor is attached to JavaScript, we cannot change it.
-        $elements[] = $mform->createElement('editor',
-                'feedbacktext[' . $editornumber . '][' . $gradeitemid . ']', get_string('feedback', 'quiz'),
-                ['rows' => 3, 'data-position' => $after],
-                ['maxfiles' => EDITOR_UNLIMITED_FILES, 'noclean' => true,
-                    'context' => $context]);
-        $elements[] = $mform->createElement('button', 'delete-feedback',
-            $OUTPUT->pix_icon('t/delete', get_string('delete'), 'core'));
+        $elements[] = $mform->createElement(
+            'editor',
+            'feedbacktext[' . $editornumber . '][' . $gradeitemid . ']',
+            get_string(
+                'feedback',
+                'quiz'
+            ),
+            [
+                'rows' => 3,
+                'data-position' => $after,
+            ],
+            [
+                'maxfiles' => EDITOR_UNLIMITED_FILES,
+                'noclean' => true,
+                'context' => $context,
+            ]
+        );
+        $elements[] = $mform->createElement(
+            'button',
+            'delete-feedback',
+            $OUTPUT->pix_icon(
+                't/delete',
+                get_string('delete'),
+                'core'
+            )
+        );
         $mform->addGroup($elements, 'gradeitem-feedback', get_string('feedback', 'quiz'), ' ', false);
         $dividertemplate = $OUTPUT->render_from_template('mod_quiz/divider_feedback', ['afterindex' => $after]);
         $mform->addElement('html', $dividertemplate);

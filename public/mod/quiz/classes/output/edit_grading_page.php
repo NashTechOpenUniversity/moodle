@@ -73,14 +73,30 @@ class edit_grading_page implements renderable, templatable {
             $contextmenu->datatype = 'grading';
             $gradeitemsfeedback = $gradeitemsfeedbacks[$gradeitem->id] ?? [];
             // Load the feedback detail data for each grade item.
-            $gradeitem->overallfeedbacks = $this->structure->generate_overallfeedback_detail_data($gradeitem->id,
-                $gradeitemsfeedback);
+            $gradeitem->overallfeedbacks = $this->structure->generate_overallfeedback_detail_data(
+                $gradeitem->id,
+                $gradeitemsfeedback
+            );
 
             if (!$gradeitem->isused) {
-                $gradeitem->deletegradeitemurl = \html_writer::link($url,
-                    $OUTPUT->pix_icon('t/delete', get_string('delete'), 'core') . get_string('delete'),
-                    ['class' => 'dropdown-item', 'aria-label' => get_string('gradeitemdelete', 'quiz',
-                        $gradeitem->name), 'role' => 'menuitem', 'data-action-delete' => 1]);
+                $gradeitem->deletegradeitemurl = \html_writer::link(
+                    $url,
+                    $OUTPUT->pix_icon(
+                        't/delete',
+                        get_string('delete'),
+                        'core'
+                    ) . get_string('delete'),
+                    [
+                        'class' => 'dropdown-item',
+                        'aria-label' => get_string(
+                            'gradeitemdelete',
+                            'quiz',
+                            $gradeitem->name
+                        ),
+                        'role' => 'menuitem',
+                        'data-action-delete' => 1,
+                    ]
+                );
             }
 
             if (count($gradeitemsfeedback) > 0) {
@@ -97,11 +113,20 @@ class edit_grading_page implements renderable, templatable {
                     get_string('addoverallfeedback', 'quiz');
             }
 
-            $gradeitem->overallfeedbackurl = \html_writer::link($url,
+            $gradeitem->overallfeedbackurl = \html_writer::link(
+                $url,
                 $overallfeedbacklabel,
-                ['class' => 'dropdown-item', 'aria-label' => get_string('addoverallfeedback', 'quiz'),
-                    'role' => 'menuitem', 'data-contextid' => $this->structure->get_context()->id,
-                    'data-action-add-feedback' => 1]);
+                [
+                    'class' => 'dropdown-item',
+                    'aria-label' => get_string(
+                        'addoverallfeedback',
+                        'quiz'
+                    ),
+                    'role' => 'menuitem',
+                    'data-contextid' => $this->structure->get_context()->id,
+                    'data-action-add-feedback' => 1,
+                ]
+            );
 
             $gradeitems[] = $gradeitem;
 
