@@ -818,9 +818,13 @@ class structure {
      */
     public function get_version_choices_for_slot(int $slotnumber): array {
         $slot = $this->get_slot_by_number($slotnumber);
+        $questionid = $slot->questionid;
+        if ($slot->qtype === 'missingtype') {
+            $questionid = is_numeric($slot->questionid) ? (int) $slot->questionid : 0;
+        }
 
         // Get all the versions which exist.
-        $versions = version_options::get_version_menu_options($slot->questionid);
+        $versions = version_options::get_version_menu_options($questionid);
         $versioninfo = [];
 
         // Loop through them and set which one is selected.
