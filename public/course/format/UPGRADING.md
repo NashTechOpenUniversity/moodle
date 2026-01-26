@@ -4,6 +4,9 @@
 
 ### Added
 
+- Add core_courseformat\cmactions::move_before that will allow to move a coursemodule to a position before another coursemodule. Add core_courseformat\cmactions::move_end_section that will allow to move a coursemodule the end of a section.
+
+  For more information see [MDL-86854](https://tracker.moodle.org/browse/MDL-86854)
 - Add delete method to the core_courseformat\cmactions
 
   For more information see [MDL-86856](https://tracker.moodle.org/browse/MDL-86856)
@@ -28,6 +31,9 @@
 - Two new public static methods have been added to the `overviewtable` class: - `is_cm_displayable`: Determines if a course module should be listed in the overview table. - `is_cm_available`: Checks if a course module is accessible to the user (and should therefore be rendered as a link).
 
   For more information see [MDL-86660](https://tracker.moodle.org/browse/MDL-86660)
+- Subsections are now always displayed inline within their respective sections (the separate subsection page is no longer used). Descriptions are no longer shown for delegated sections.
+
+  For more information see [MDL-87276](https://tracker.moodle.org/browse/MDL-87276)
 
 ### Deprecated
 

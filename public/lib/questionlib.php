@@ -1416,14 +1416,33 @@ function question_extend_settings_navigation(navigation_node $navigationnode, $c
 
     $iscourse = $context->contextlevel === CONTEXT_COURSE;
 
-    if ($iscourse && has_capability('moodle/course:manageactivities', $context)) {
-        return $navigationnode->add(
-            get_string('questionbank_plural', 'question'),
-            new moodle_url($baseurl, ['courseid' => $context->instanceid]),
-            navigation_node::TYPE_CONTAINER,
-            null,
-            'questionbank'
-        );
+    if ($iscourse) {
+        $viewquestionbanks = has_capability('moodle/course:manageactivities', $context);
+        if (!$viewquestionbanks) {
+            // If the user can view any activities with shared questions, display the Question banks node.
+            // If they can access activities with private questions (such as quiz) they can be accessed elsewhere on the course.
+            $modtypes = \core_question\local\bank\question_bank_helper::get_activity_types_with_shareable_questions();
+            $modinfo = get_fast_modinfo($context->instanceid);
+            foreach ($modtypes as $modtype) {
+                foreach ($modinfo->get_instances_of($modtype) as $mod) {
+                    if (has_capability("mod/{$modtype}:view", $mod->context)) {
+                        $viewquestionbanks = true;
+                        break 2;
+                    }
+                }
+            }
+        }
+        if ($viewquestionbanks) {
+            return $navigationnode->add(
+                get_string('questionbank_plural', 'question'),
+                new moodle_url($baseurl, ['courseid' => $context->instanceid]),
+                navigation_node::TYPE_CONTAINER,
+                null,
+                'questionbank',
+            );
+        } else {
+            return;
+        }
     } else if ($context->contextlevel == CONTEXT_MODULE) {
         $params = ['cmid' => $context->instanceid];
     } else {
@@ -1935,21 +1954,14 @@ function get_question_version($questionid): array {
  * @return int next version number.
  * @throws dml_exception
  */
+#[\core\attribute\deprecated(
+    '\core_question\versions::get_next_version()',
+    '5.2',
+    'The next version is now an incrementing number stored in the database, to prevent duplicate version numbers',
+    'MDL-86798',
+)]
 function get_next_version(int $questionbankentryid): int {
-    global $DB;
-
-    $sql = "SELECT MAX(qv.version)
-              FROM {question_versions} qv
-              JOIN {question_bank_entries} qbe ON qbe.id = qv.questionbankentryid
-             WHERE qbe.id = :id";
-
-    $nextversion = $DB->get_field_sql($sql, ['id' => $questionbankentryid]);
-
-    if ($nextversion) {
-        return (int)$nextversion + 1;
-    }
-
-    return 1;
+    return \core_question\versions::get_next_version($questionbankentryid);
 }
 
 /**
