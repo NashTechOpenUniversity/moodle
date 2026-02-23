@@ -35,7 +35,6 @@ use mod_quiz\quiz_settings;
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class move_slot extends external_api {
-
     /**
      * Declare the method parameters.
      *
@@ -61,8 +60,13 @@ class move_slot extends external_api {
      * @param int $page The page number.
      * @return array An array to know is it visible.
      */
-    public static function execute(int $quizid, int $id = 0, int $previousid = 0, int $sectionid = 0,
-            int $page = 0): array {
+    public static function execute(
+        int $quizid,
+        int $id = 0,
+        int $previousid = 0,
+        int $sectionid = 0,
+        int $page = 0
+    ): array {
         $quizobj = quiz_settings::create($quizid);
         require_capability('mod/quiz:manage', $quizobj->get_context());
         self::validate_context($quizobj->get_context());

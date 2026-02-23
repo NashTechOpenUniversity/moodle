@@ -35,7 +35,6 @@ use mod_quiz\quiz_settings;
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class delete_multiple extends external_api {
-
     /**
      * Declare the method parameters.
      *
@@ -64,8 +63,12 @@ class delete_multiple extends external_api {
         $structure = $quizobj->get_structure();
         $ids = explode(',', $ids);
         foreach ($ids as $id) {
-            $slot = $DB->get_record('quiz_slots', ['quizid' => $quiz->id, 'id' => $id],
-                '*', MUST_EXIST);
+            $slot = $DB->get_record(
+                'quiz_slots',
+                ['quizid' => $quiz->id, 'id' => $id],
+                '*',
+                MUST_EXIST
+            );
             if ($structure->has_use_capability($slot->slot)) {
                 $structure->remove_slot($slot->slot);
             }

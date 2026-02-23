@@ -35,7 +35,6 @@ use mod_quiz\quiz_settings;
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class get_max_mark extends external_api {
-
     /**
      * Declare the method parameters.
      *
@@ -63,7 +62,6 @@ class get_max_mark extends external_api {
         self::validate_context($quizobj->get_context());
         $slot = $DB->get_record('quiz_slots', ['id' => $id], '*', MUST_EXIST);
         return ['instancemaxmark' => quiz_format_question_grade($quiz, $slot->maxmark)];
-
     }
 
     /**

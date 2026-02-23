@@ -89,21 +89,28 @@ switch($requestmethod) {
                 $section = $structure->get_section_by_id($id);
                 switch ($field) {
                     case 'getsectiontitle':
-                        debugging('getsectiontitle is deprecated. Please use mod_quiz\external\get_section_title() instead.',
-                            DEBUG_DEVELOPER);
+                        debugging(
+                            'getsectiontitle is deprecated. Please use mod_quiz\external\get_section_title() instead.',
+                            DEBUG_DEVELOPER
+                        );
                         require_capability('mod/quiz:manage', $modcontext);
                         $result = ['instancesection' => $section->heading];
                         break;
                     case 'updatesectiontitle':
-                        debugging('updatesectiontitle is deprecated. Please use mod_quiz\external\update_section_title() instead.',
-                            DEBUG_DEVELOPER);
+                        debugging(
+                            'updatesectiontitle is deprecated. Please use mod_quiz\external\update_section_title() instead.',
+                            DEBUG_DEVELOPER
+                        );
                         require_capability('mod/quiz:manage', $modcontext);
                         $structure->set_section_heading($id, $newheading);
                         $result = ['instancesection' => format_string($newheading)];
                         break;
                     case 'updateshufflequestions':
-                        debugging('updateshufflequestions is deprecated.
-                         Please use mod_quiz\external\update_shuffle_questions() instead.', DEBUG_DEVELOPER);
+                        debugging(
+                            'updateshufflequestions is deprecated.' .
+                            'Please use mod_quiz\external\update_shuffle_questions() instead.',
+                            DEBUG_DEVELOPER
+                        );
                         require_capability('mod/quiz:manage', $modcontext);
                         $structure->set_section_shuffle($id, $shuffle);
                         $result = ['instanceshuffle' => $section->shufflequestions];
@@ -114,7 +121,10 @@ switch($requestmethod) {
             case 'resource':
                 switch ($field) {
                     case 'move':
-                        debugging('move is deprecated. Please use mod_quiz\external\move_slot() instead.', DEBUG_DEVELOPER);
+                        debugging(
+                            'move is deprecated. Please use mod_quiz\external\move_slot() instead.',
+                            DEBUG_DEVELOPER
+                        );
                         require_capability('mod/quiz:manage', $modcontext);
                         if (!$previousid) {
                             $section = $structure->get_section_by_id($sectionid);
@@ -129,16 +139,20 @@ switch($requestmethod) {
                         break;
 
                     case 'getmaxmark':
-                        debugging('getmaxmark is deprecated. Please use mod_quiz\external\get_max_mark() instead.',
-                            DEBUG_DEVELOPER);
+                        debugging(
+                            'getmaxmark is deprecated. Please use mod_quiz\external\get_max_mark() instead.',
+                            DEBUG_DEVELOPER
+                        );
                         require_capability('mod/quiz:manage', $modcontext);
                         $slot = $DB->get_record('quiz_slots', ['id' => $id], '*', MUST_EXIST);
                         $result = ['instancemaxmark' => quiz_format_question_grade($quiz, $slot->maxmark)];
                         break;
 
                     case 'updatemaxmark':
-                        debugging('updatemaxmark is deprecated. Please use mod_quiz\external\update_max_mark() instead.',
-                            DEBUG_DEVELOPER);
+                        debugging(
+                            'updatemaxmark is deprecated. Please use mod_quiz\external\update_max_mark() instead.',
+                            DEBUG_DEVELOPER
+                        );
                         require_capability('mod/quiz:manage', $modcontext);
                         $slot = $structure->get_slot_by_id($id);
                         if ($structure->update_slot_maxmark($slot, $maxmark)) {
@@ -154,8 +168,10 @@ switch($requestmethod) {
                         break;
 
                     case 'updatepagebreak':
-                        debugging('updatepagebreak is deprecated. Please use mod_quiz\external\update_page_break() instead.',
-                            DEBUG_DEVELOPER);
+                        debugging(
+                            'updatepagebreak is deprecated. Please use mod_quiz\external\update_page_break() instead.',
+                            DEBUG_DEVELOPER
+                        );
                         require_capability('mod/quiz:manage', $modcontext);
                         $slots = $structure->update_page_break($id, $value);
                         $json = [];
@@ -168,8 +184,10 @@ switch($requestmethod) {
                         break;
 
                     case 'deletemultiple':
-                        debugging('deletemultiple is deprecated. Please use mod_quiz\external\delete_multiple() instead.',
-                            DEBUG_DEVELOPER);
+                        debugging(
+                            'deletemultiple is deprecated. Please use mod_quiz\external\delete_multiple() instead.',
+                            DEBUG_DEVELOPER
+                        );
                         require_capability('mod/quiz:manage', $modcontext);
 
                         $ids = explode(',', $ids);
@@ -188,8 +206,10 @@ switch($requestmethod) {
                         break;
 
                     case 'updatedependency':
-                        debugging('updatedependency is deprecated. Please use mod_quiz\external\update_question_dependency()
-                         instead.', DEBUG_DEVELOPER);
+                        debugging(
+                            'updatedependency is deprecated. Please use mod_quiz\external\update_question_dependency() instead.',
+                            DEBUG_DEVELOPER
+                        );
                         require_capability('mod/quiz:manage', $modcontext);
                         $slot = $structure->get_slot_by_id($id);
                         $value = (bool) $value;
@@ -204,14 +224,20 @@ switch($requestmethod) {
     case 'DELETE':
         switch ($class) {
             case 'section':
-                debugging('section is deprecated. Please use mod_quiz\external\delete_section() instead.', DEBUG_DEVELOPER);
+                debugging(
+                    'section is deprecated. Please use mod_quiz\external\delete_section() instead.',
+                    DEBUG_DEVELOPER
+                );
                 require_capability('mod/quiz:manage', $modcontext);
                 $structure->remove_section_heading($id);
                 $result = ['deleted' => true];
                 break;
 
             case 'resource':
-                debugging('resource is deprecated. Please use mod_quiz\external\delete_resource() instead.', DEBUG_DEVELOPER);
+                debugging(
+                    'resource is deprecated. Please use mod_quiz\external\delete_resource() instead.',
+                    DEBUG_DEVELOPER
+                );
                 require_capability('mod/quiz:manage', $modcontext);
                 if (!$slot = $DB->get_record('quiz_slots', ['quizid' => $quiz->id, 'id' => $id])) {
                     throw new moodle_exception('AJAX commands.php: Bad slot ID '.$id);

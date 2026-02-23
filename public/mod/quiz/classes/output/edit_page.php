@@ -30,7 +30,6 @@ use templatable;
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class edit_page implements renderable, templatable {
-
     /**
      * Constructor.
      *
@@ -134,8 +133,10 @@ class edit_page implements renderable, templatable {
             if (!$this->structure->is_first_section($section) && $this->structure->can_be_edited()) {
                 $sectiondata['removeicon'] = true;
                 $sectiondata['removeicontitle'] = get_string('sectionheadingremove', 'quiz', format_string($section->heading));
-                $sectiondata['removeiconurl'] = new \moodle_url('/mod/quiz/edit.php',
-                    ['sesskey' => sesskey(), 'removesection' => '1', 'sectionid' => $section->id]);
+                $sectiondata['removeiconurl'] = new \moodle_url(
+                    '/mod/quiz/edit.php',
+                    ['sesskey' => sesskey(), 'removesection' => '1', 'sectionid' => $section->id]
+                );
             }
             $sectiondata['sectionid'] = $section->id;
 
@@ -145,16 +146,26 @@ class edit_page implements renderable, templatable {
             // Add questions to sections.
             $sectiondata['questions'] = '';
             foreach ($this->structure->get_slots_in_section($section->id) as $slot) {
-                $sectiondata['questions'] .= $editrenderer->question_row($this->structure, $slot, $this->contexts,
-                    $this->pagevars, $this->pageurl);
+                $sectiondata['questions'] .= $editrenderer->question_row(
+                    $this->structure,
+                    $slot,
+                    $this->contexts,
+                    $this->pagevars,
+                    $this->pageurl
+                );
             }
 
             // Add last section.
             $sectiondata['lastsection'] = false;
             if ($this->structure->is_last_section($section)) {
                 $sectiondata['lastsection'] = true;
-                $sectiondata['lastsectionmenu'] = $editrenderer->add_menu_actions($this->structure, 0,
-                    $this->pageurl, $this->contexts, $this->pagevars);
+                $sectiondata['lastsectionmenu'] = $editrenderer->add_menu_actions(
+                    $this->structure,
+                    0,
+                    $this->pageurl,
+                    $this->contexts,
+                    $this->pagevars
+                );
             }
 
             $sections[] = $sectiondata;
@@ -190,8 +201,12 @@ class edit_page implements renderable, templatable {
         // thus avoiding warning messages due to passing too much data through JavaScript.
         $config = new \stdClass();
         $config->questiondecimalpoints = $this->structure->get_decimal_places_for_question_marks();
-        $config->pagehtml = $editrenderer->new_page_template($this->structure, $this->contexts, $this->pagevars,
-            $this->pageurl);
+        $config->pagehtml = $editrenderer->new_page_template(
+            $this->structure,
+            $this->contexts,
+            $this->pagevars,
+            $this->pageurl
+        );
         $config->addpageiconhtml = $editrenderer->add_page_icon_template($this->structure);
         $data['configdata'] = json_encode($config);
         $data['langstring'] = json_encode([

@@ -36,7 +36,6 @@ use mod_quiz\quiz_settings;
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class delete_resource extends external_api {
-
     /**
      * Declare the method parameters.
      *
@@ -64,13 +63,17 @@ class delete_resource extends external_api {
         $quiz = $quizobj->get_quiz();
         $structure = $quizobj->get_structure();
         if (!$slot = $DB->get_record('quiz_slots', ['quizid' => $quiz->id, 'id' => $id])) {
-            throw new moodle_exception('AJAX commands.php: Bad slot ID '.$id);
+            throw new \moodle_exception('AJAX commands.php: Bad slot ID ' . $id);
         }
         if (!$structure->has_use_capability($slot->slot)) {
             $slotdetail = $structure->get_slot_by_id($slot->id);
-            $context = context::instance_by_id($slotdetail->contextid);
-            throw new required_capability_exception($context,
-                'moodle/question:useall', 'nopermissions', '');
+            $context = \context::instance_by_id($slotdetail->contextid);
+            throw new \required_capability_exception(
+                $context,
+                'moodle/question:useall',
+                'nopermissions',
+                ''
+            );
         }
         $structure->remove_slot($slot->slot);
         quiz_delete_previews($quiz);

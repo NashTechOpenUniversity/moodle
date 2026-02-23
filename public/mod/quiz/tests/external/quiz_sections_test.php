@@ -37,7 +37,6 @@ use mod_quiz\quiz_settings;
  * @covers \mod_quiz\external\delete_section
  */
 final class quiz_sections_test extends externallib_advanced_testcase {
-
     /**
      * Test the behavior of get section title.
      */
@@ -53,7 +52,6 @@ final class quiz_sections_test extends externallib_advanced_testcase {
         $structure->set_section_heading($defaultsection->id, 'Updated');
         $result = get_section_title::execute($quizobj->get_quizid(), $defaultsection->id);
         $this->assertEquals('Updated', $result['instancesection']);
-
     }
 
     /**
@@ -65,7 +63,6 @@ final class quiz_sections_test extends externallib_advanced_testcase {
         $defaultsection = array_values($structure->get_sections())[0];
         $result = update_section_title::execute($quizobj->get_quizid(), $defaultsection->id, 'New Heading');
         $this->assertEquals('New Heading', $result['instancesection']);
-
     }
 
     /**

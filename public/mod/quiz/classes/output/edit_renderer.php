@@ -57,10 +57,10 @@ class edit_renderer extends \plugin_renderer_base {
      * @return string HTML to output.
      */
     #[\core\attribute\deprecated(
-    replacement: '\mod_quiz\output\edit_page',
-    since: '5.1',
-    reason: 'No longer required',
-    mdl: 'MDL-76643',
+        replacement: '\mod_quiz\output\edit_page',
+        since: '5.1',
+        reason: 'No longer required',
+        mdl: 'MDL-76643',
     )]
     public function edit_page(
         \mod_quiz\quiz_settings $quizobj,
@@ -572,13 +572,18 @@ class edit_renderer extends \plugin_renderer_base {
         $qtype = $structure->get_question_type_for_slot($slot);
         $questionclasses = 'activity ' . $qtype . ' qtype_' . $qtype . ' slot';
 
-        $output .= html_writer::tag('li', $questionhtml . $joinhtml,
-                ['class' => $questionclasses, 'id' => 'slot-' . $structure->get_slot_id_for_slot($slot),
-                        'data-canfinish' => $structure->can_finish_during_the_attempt($slot),
-                        'data-for' => 'question',
-                        'data-slotorder' => $slot,
-                        'data-page' => $structure->get_page_number_for_slot($slot),
-                ]);
+        $output .= html_writer::tag(
+            'li',
+            $questionhtml . $joinhtml,
+            [
+                'class' => $questionclasses,
+                'id' => 'slot-' . $structure->get_slot_id_for_slot($slot),
+                'data-canfinish' => $structure->can_finish_during_the_attempt($slot),
+                'data-for' => 'question',
+                'data-slotorder' => $slot,
+                'data-page' => $structure->get_page_number_for_slot($slot),
+            ]
+        );
 
         return $output;
     }
@@ -612,8 +617,15 @@ class edit_renderer extends \plugin_renderer_base {
             $addquestionform = $this->add_question_form($structure,
                     $pagenumber, $pageurl, $pagevars);
 
-            $output .= html_writer::tag('li', $page . $addmenu . $addquestionform,
-                    ['class' => 'pagenumber activity page', 'data-for' => 'page', 'id' => 'page-' . $pagenumber]);
+            $output .= html_writer::tag(
+                'li',
+                $page . $addmenu . $addquestionform,
+                [
+                    'class' => 'pagenumber activity page',
+                    'data-for' => 'page',
+                    'id' => 'page-' . $pagenumber,
+                ]
+            );
         }
 
         return $output;
@@ -797,8 +809,12 @@ class edit_renderer extends \plugin_renderer_base {
         }
 
         if ($structure->can_display_number_be_customised($slot)) {
-            $questionnumber = $this->output->render($structure->make_slot_display_number_in_place_editable(
-                    $slotid, $structure->get_context()));
+            $questionnumber = $this->output->render(
+                $structure->make_slot_display_number_in_place_editable(
+                    $slotid,
+                    $structure->get_context()
+                )
+            );
         } else {
             $questionnumber = $structure->get_displayed_number_for_slot($slot);
         }
@@ -807,8 +823,11 @@ class edit_renderer extends \plugin_renderer_base {
             'slotid' => $slotid,
             'canbeedited' => $structure->can_be_edited(),
             'checkbox' => $this->get_checkbox_render($structure, $slot),
-            'questionnumber' => $this->question_number($questionnumber, $structure->get_slot_by_number($slot)->defaultnumber,
-                $structure->get_slot_by_id($slotid)->displaynumber),
+            'questionnumber' => $this->question_number(
+                $questionnumber,
+                $structure->get_slot_by_number($slot)->defaultnumber,
+                $structure->get_slot_by_id($slotid)->displaynumber
+            ),
             'questionname' => $this->get_question_name_for_slot($structure, $slot, $pageurl),
             'questionicons' => $this->get_action_icon($structure, $slot, $pageurl),
             'questiondependencyicon' => ($structure->can_be_edited() ? $this->question_dependency_icon($structure, $slot) : ''),
@@ -910,7 +929,7 @@ class edit_renderer extends \plugin_renderer_base {
         $slotnumber = $structure->get_displayed_number_for_slot($slot);
         return html_writer::link(
             new \moodle_url('#'),
-            $this->pix_icon('i/dragdrop', '', 'moodle', ['class' => 'iconsmall']),
+            $this->pix_icon('i/dragdrop', '', 'moodle', ['class' => 'iconsmall', 'title' => '']),
             [
                 'class' => 'editing_move',
                 'data-action' => 'move',
@@ -1285,17 +1304,32 @@ class edit_renderer extends \plugin_renderer_base {
      */
     public function initialise_editing_javascript(structure $structure) {
 
-        $this->page->requires->js_call_amd('mod_quiz/quiz_toolboxes', 'initResourceToolbox', [
-            'courseid' => $structure->get_courseid(),
-            'quizid' => $structure->get_quizid(),
-        ]);
-        $this->page->requires->js_call_amd('mod_quiz/quiz_toolboxes', 'initSectionToolbox', [
-            'courseid' => $structure->get_courseid(),
-            'quizid' => $structure->get_quizid(),
-        ]);
+        $this->page->requires->js_call_amd(
+            'mod_quiz/quiz_toolboxes',
+            'initResourceToolbox',
+            [
+                'courseid' => $structure->get_courseid(),
+                'quizid' => $structure->get_quizid(),
+            ]
+        );
+        $this->page->requires->js_call_amd(
+            'mod_quiz/quiz_toolboxes',
+            'initSectionToolbox',
+            [
+                'courseid' => $structure->get_courseid(),
+                'quizid' => $structure->get_quizid(),
+            ]
+        );
 
-        $this->page->requires->js_call_amd('mod_quiz/dragdrop/main', 'initDragDrop',
-            [$this->page->bodyid, $structure->get_quizid(), $structure->get_courseid()]);
+        $this->page->requires->js_call_amd(
+            'mod_quiz/dragdrop/main',
+            'initDragDrop',
+            [
+                $this->page->bodyid,
+                $structure->get_quizid(),
+                $structure->get_courseid(),
+            ]
+        );
 
         // Require various strings for the command toolbox.
         $this->page->requires->strings_for_js([
@@ -1352,8 +1386,12 @@ class edit_renderer extends \plugin_renderer_base {
      * @param \moodle_url $pageurl the canonical URL of this page.
      * @return string HTML for a new page.
      */
-    public function new_page_template(structure $structure,
-            \core_question\local\bank\question_edit_contexts $contexts, array $pagevars, \moodle_url $pageurl) {
+    public function new_page_template(
+        structure $structure,
+        \core_question\local\bank\question_edit_contexts $contexts,
+        array $pagevars,
+        \moodle_url $pageurl
+    ): string {
         if (!$structure->has_questions()) {
             return '';
         }

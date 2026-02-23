@@ -239,7 +239,10 @@ final class structure_test extends \advanced_testcase {
      * @covers ::move_slot
      */
     public function test_move_slot_to_another_page_in_another_heading(): void {
-        $quizobj = $this->create_test_quiz([
+        $this->resetAfterTest();
+
+        $quizgenerator = $this->getDataGenerator()->get_plugin_generator('mod_quiz');
+        $quizobj = $quizgenerator->create_test_quiz([
             'Heading 1*',
             ['TF1', 1, 'truefalse'],
             ['TF2', 2, 'truefalse'],

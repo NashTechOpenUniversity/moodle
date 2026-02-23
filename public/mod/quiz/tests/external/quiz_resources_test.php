@@ -40,8 +40,6 @@ use mod_quiz\quiz_settings;
  * @covers \mod_quiz\external\delete_resource
  */
 final class quiz_resources_test extends externallib_advanced_testcase {
-
-
     /**
      * Test the behavior of get max mark.
      */
@@ -103,8 +101,13 @@ final class quiz_resources_test extends externallib_advanced_testcase {
         $defaultsection = array_values($structure->get_sections())[0];
 
         // Move question slot 1 to page 2.
-        $result = move_slot::execute($quizobj->get_quizid(), $structure->get_slot_id_for_slot(1),
-            $structure->get_slot_id_for_slot(2), $defaultsection->id, 2);
+        $result = move_slot::execute(
+            $quizobj->get_quizid(),
+            $structure->get_slot_id_for_slot(1),
+            $structure->get_slot_id_for_slot(2),
+            $defaultsection->id,
+            2
+        );
         $this->assertTrue($result['visible']);
     }
 

@@ -35,7 +35,6 @@ use mod_quiz\quiz_settings;
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class get_section_title extends external_api {
-
     /**
      * Declare the method parameters.
      *
