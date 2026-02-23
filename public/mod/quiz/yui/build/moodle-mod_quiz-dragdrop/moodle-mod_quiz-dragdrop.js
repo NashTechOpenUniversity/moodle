@@ -5,7 +5,9 @@ YUI.add('moodle-mod_quiz-dragdrop', function (Y, NAME) {
  * Drag and Drop for Quiz sections and slots.
  *
  * @module moodle-mod-quiz-dragdrop
+ * @deprecated since Moodle 4.5
  */
+
 
 var CSS = {
     ACTIONAREA: '.actions',
@@ -37,11 +39,14 @@ SELECTOR = {
 };
 /**
  * Section drag and drop.
+ * @deprecated since Moodle 4.5
  *
  * @class M.mod_quiz.dragdrop.section
  * @constructor
  * @extends M.core.dragdrop
  */
+
+
 var DRAGSECTION = function() {
     DRAGSECTION.superclass.constructor.apply(this, arguments);
 };
@@ -295,11 +300,14 @@ M.mod_quiz.init_section_dragdrop = function(params) {
 };
 /**
  * Resource drag and drop.
+ * @deprecated since Moodle 4.5
  *
  * @class M.course.dragdrop.resource
  * @constructor
  * @extends M.core.dragdrop
  */
+
+
 var DRAGRESOURCE = function() {
     DRAGRESOURCE.superclass.constructor.apply(this, arguments);
 };

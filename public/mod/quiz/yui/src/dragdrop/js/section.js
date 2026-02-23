@@ -1,10 +1,15 @@
 /**
  * Section drag and drop.
+ * @deprecated since Moodle 4.5
  *
  * @class M.mod_quiz.dragdrop.section
  * @constructor
  * @extends M.core.dragdrop
  */
+
+Y.log("The quiz-dragdrop-section has been deprecated. " +
+    "Please use mod_quiz/dragdrop instead.", 'moodle-core-notification', 'warn');
+
 var DRAGSECTION = function() {
     DRAGSECTION.superclass.constructor.apply(this, arguments);
 };
