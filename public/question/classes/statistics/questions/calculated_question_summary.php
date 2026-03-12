@@ -67,6 +67,36 @@ class calculated_question_summary extends calculated {
     }
 
     /**
+     * Returns whether the stats being summarised are for multiple versions of the question with variants.
+     *
+     * @return bool
+     */
+    public function is_multiple_version_with_variants(): bool {
+        $questionids = array_column($this->subqstats, 'questionid');
+        if (count($questionids) > 1) {
+            foreach ($this->subqstats as $subqstat) {
+                if ($subqstat->variantstats) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns whether the stats being summarised are for multiple versions of the question instead of subquestions.
+     *
+     * @return bool
+     */
+    public function is_multiple_versions(): bool {
+        $questionids = array_column($this->subqstats, 'questionid');
+        if (count($questionids) > 1) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * This is a summary stat so never breakdown by variant.
      *
      * @return bool

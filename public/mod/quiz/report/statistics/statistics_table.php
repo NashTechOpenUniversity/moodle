@@ -160,6 +160,7 @@ class quiz_statistics_table extends flexible_table {
      * @return string contents of this table cell.
      */
     protected function col_number($questionstat) {
+
         if ($this->is_calculated_question_summary($questionstat)) {
             return '';
         }
@@ -255,6 +256,7 @@ class quiz_statistics_table extends flexible_table {
                                                                                    $questionstat->variant)]);
             }
         } else {
+            $israndomquestion = !empty($questionstat->question->random) ?? false;
             if ($questionstat->subquestion && !$questionstat->get_variants()) {
                 // Sub question without variants.
                 $url = new moodle_url($baseurl, ['qid' => $questionstat->questionid]);
@@ -263,9 +265,7 @@ class quiz_statistics_table extends flexible_table {
                 // Question in a slot, we are not on a page showing structural analysis of one slot,
                 // we don't want linking on those pages.
                 $number = $questionstat->question->number;
-                $israndomquestion = $questionstat->question->random;
                 $url = new moodle_url($baseurl, ['slot' => $questionstat->slot]);
-
                 if ($this->is_calculated_question_summary($questionstat)) {
                     // Only make the random question summary row name link to the slot structure
                     // analysis page with specific text to clearly indicate the link to the user.
@@ -287,7 +287,13 @@ class quiz_statistics_table extends flexible_table {
         }
 
         if ($this->is_calculated_question_summary($questionstat)) {
-            $name .= html_writer::link($url, get_string('viewanalysis', 'quiz_statistics'));
+            if ($questionstat->is_multiple_versions()) {
+                $url = new moodle_url($baseurl, ['qid' => $questionstat->questionid, 'slot' => $questionstat->slot,
+                    'ismultipleversion' => true]);
+                $name .= html_writer::link($url, get_string('viewanalysis', 'quiz_statistics'));
+            } else {
+                $name .= html_writer::link($url, get_string('viewanalysis', 'quiz_statistics'));
+            }
         } else if (!empty($questionstat->minmedianmaxnotice)) {
             $name = get_string($questionstat->minmedianmaxnotice, 'quiz_statistics') . '<br />' . $name;
         }
