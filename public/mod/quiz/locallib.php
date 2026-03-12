@@ -1039,7 +1039,7 @@ function quiz_attempt_state_name($state) {
  */
 function quiz_question_action_icons($quiz, $cmid, $question, $returnurl, $variant = null) {
     $html = '';
-    if (!$question->random) {
+    if (isset($question->random) && !$question->random) {
         $html = quiz_question_preview_button($quiz, $question, false, $variant);
     }
     $html .= quiz_question_edit_button($cmid, $question, $returnurl);

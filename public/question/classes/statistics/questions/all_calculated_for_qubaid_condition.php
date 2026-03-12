@@ -314,7 +314,7 @@ class all_calculated_for_qubaid_condition {
      * @return calculated|calculated_for_subquestion[] stats to display
      */
     public function structure_analysis_for_one_slot($slot, $limitvariants = false) {
-        return array_merge(array($this->for_slot($slot)), $this->all_subq_and_variant_stats_for_slot($slot, $limitvariants));
+        return array_merge([$this->for_slot($slot)], $this->all_subq_and_variant_stats_for_slot($slot, $limitvariants));
     }
 
     /**
@@ -397,6 +397,7 @@ class all_calculated_for_qubaid_condition {
      */
     protected function all_subq_and_variant_stats_for_slot($slot, $limited) {
         // Random question in this slot?
+        // Multiple version for this slot?
         if ($this->for_slot($slot)->get_sub_question_ids()) {
             $toreturn = array();
 

@@ -20,6 +20,9 @@ use question_attempt;
 use question_bank;
 use question_finder;
 use quiz_statistics_report;
+use mod_quiz\quiz_attempt;
+use mod_quiz\quiz_settings;
+use mod_quiz\tests\question_helper_test_trait;
 
 /**
  * Quiz attempt walk through using data from csv file.
@@ -39,6 +42,8 @@ use quiz_statistics_report;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class stats_from_steps_walkthrough_test extends \mod_quiz\tests\attempt_walkthrough_testcase {
+    use question_helper_test_trait;
+
     /**
      * @var quiz_statistics_report object to do stats calculations.
      */
@@ -298,7 +303,7 @@ final class stats_from_steps_walkthrough_test extends \mod_quiz\tests\attempt_wa
                 continue;
             }
             $responesstats = new \core_question\statistics\responses\analyser($question);
-            $this->assertTimeCurrent($responesstats->get_last_analysed_time($qubaids, $whichtries));
+            $this->assertTimeCurrent($responesstats->get_last_analysed_time($qubaids, $whichtries, [$question->id])[0]);
             $analysis = $responesstats->load_cached($qubaids, $whichtries);
             $variantsnos = $analysis->get_variant_nos();
             if (isset($expectedvariantcounts[$slot])) {
@@ -432,5 +437,209 @@ final class stats_from_steps_walkthrough_test extends \mod_quiz\tests\attempt_wa
             return [$questions, $quizstats, $questionstats, $qubaids];
         }
         return [$questions, $quizstats, $questionstats, $qubaids];
+    }
+    /**
+     * Data provider for quiz statistics with multiple versions of questions.
+     *
+     * @return array
+     */
+    public static function quiz_statistics_provider(): array {
+        return [
+            'truefalse_two_versions' => [
+                'config' => [
+                    'qtype' => 'truefalse',
+                    'which' => null,
+                    'slots' => 2,
+                    'versions' => 2,
+                    'users' => 2,
+                    'answers' => [
+                        1 => [
+                            1 => 'True',
+                            2 => 'True',
+                        ],
+                        2 => [
+                            1 => 'False',
+                            2 => 'False',
+                        ],
+                    ],
+                    'whichtries' => question_attempt::ALL_TRIES,
+                    'whichattempts' => QUIZ_GRADEAVERAGE,
+                ],
+                'expected' => [
+                    1 => [
+                        'slot' => 1,
+                        's' => 4,
+                        'facility' => 0.5,
+                        'sd' => 0.5773502691896257,
+                        'effectiveweight' => 50.0,
+                        'discriminationindex' => 100.0,
+                        'positions' => 1,
+                        'randomguessscore' => 0.5,
+                        'markaverage' => 0.5,
+                    ],
+                    2 => [
+                        'slot' => 2,
+                        's' => 4,
+                        'facility' => 0.5,
+                        'sd' => 0.5773502691896257,
+                        'effectiveweight' => 50.0,
+                        'discriminationindex' => 100.0,
+                        'positions' => 2,
+                        'randomguessscore' => 0.5,
+                        'markaverage' => 0.5,
+                    ],
+                ],
+            ],
+            'calculatedsimple_two_versions' => [
+                'config' => [
+                    'qtype' => 'calculatedsimple',
+                    'which' => 'sumwithvariants',
+                    'slots' => 1,
+                    'versions' => 2,
+                    'users' => 2,
+                    'answers' => [
+                        1 => [
+                            1 => '10',
+                        ],
+                        2 => [
+                            1 => '999',
+                        ],
+                    ],
+                    'whichtries' => question_attempt::ALL_TRIES,
+                    'whichattempts' => QUIZ_GRADEAVERAGE,
+                ],
+                'expected' => [
+                    1 => [
+                        'slot' => 1,
+                        's' => 4,
+                        'facility' => 0.0,
+                        'sd' => 0.0,
+                        'effectiveweight' => null,
+                        'discriminationindex' => null,
+                        'positions' => 1,
+                        'randomguessscore' => 0,
+                        'markaverage' => 0.0,
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Test quiz statistics with multiple versions of questions.
+     *
+     * @covers ::get_all_stats_and_analysis
+     * @param array $config
+     * @param array $expected
+     * @dataProvider quiz_statistics_provider
+     */
+    public function test_quiz_statistics_with_multiple_version(array $config, array $expected): void {
+        $this->resetAfterTest();
+
+        [$this->quiz] = $this->build_quiz_with_versions($config);
+        $this->report = new quiz_statistics_report();
+        $questions = $this->report->load_and_initialise_questions_for_calculations($this->quiz);
+        $groupstudentsjoins = new \core\dml\sql_join();
+        [$quizstats, $questionstats] = $this->report->get_all_stats_and_analysis(
+            $this->quiz,
+            $config['whichattempts'],
+            $config['whichtries'],
+            $groupstudentsjoins,
+            $questions
+        );
+        foreach ($expected as $slot => $exp) {
+            $stat = $questionstats->questionstats[$slot];
+            $this->assertEquals($exp['slot'], $stat->slot);
+            $this->assertEquals($exp['s'], $stat->s);
+            $this->assertEqualsWithDelta($exp['facility'], $stat->facility, 0.0001);
+            $this->assertEqualsWithDelta($exp['sd'], $stat->sd, 0.0001);
+            $this->assertEqualsWithDelta($exp['effectiveweight'], $stat->effectiveweight, 0.0001);
+            $this->assertEqualsWithDelta($exp['discriminationindex'], $stat->discriminationindex, 0.0001);
+            $this->assertEquals($exp['positions'], $stat->positions);
+            $this->assertEquals($exp['randomguessscore'], $stat->randomguessscore);
+            $this->assertEqualsWithDelta($exp['markaverage'], $stat->markaverage, 0.0001);
+            if ($stat->variantstats) {
+                $variants = $stat->variantstats;
+                $sum = 0;
+                foreach ($variants as $variant) {
+                    $sum += $variant->s;
+                }
+                $this->assertEquals($stat->s, $sum);
+            }
+        }
+    }
+
+    /**
+     * Build a quiz with multiple versions of questions and simulate attempts.
+     *
+     * @param array $config
+     * @return array [$quiz]
+     */
+    protected function build_quiz_with_versions(array $config): array {
+        /** @var \mod_quiz_generator $quizgenerator */
+        $quizgenerator = $this->getDataGenerator()->get_plugin_generator('mod_quiz');
+        /** @var \core_question_generator $questiongenerator */
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        // Users.
+        $users = [];
+        for ($u = 0; $u < $config['users']; $u++) {
+            $users[] = $this->getDataGenerator()->create_user();
+        }
+        $this->course = $this->getDataGenerator()->create_course();
+        $coursecontext = \context_course::instance($this->course->id);
+        $cat = $questiongenerator->create_question_category([
+            'name' => 'Test category',
+            'context' => $coursecontext->id,
+        ]);
+        // Create base questions (version 1).
+        $questions = [];
+        for ($slot = 1; $slot <= $config['slots']; $slot++) {
+            $q = $questiongenerator->create_question(
+                $config['qtype'],
+                $config['which'],
+                ['category' => $cat->id]
+            );
+            $questions[$slot] = $q;
+        }
+
+        $quiz = $quizgenerator->create_instance([
+            'course' => $this->course->id,
+            'grade' => 100,
+            'sumgrades' => $config['slots'],
+            'preferredbehaviour' => 'immediatefeedback',
+        ]);
+
+        foreach ($questions as $q) {
+            quiz_add_quiz_question($q->id, $quiz);
+        }
+
+        // Chronological version loop.
+        for ($version = 1; $version <= $config['versions']; $version++) {
+            foreach ($users as $user) {
+                $this->setUser($user);
+                $quizobj = quiz_settings::create($quiz->id);
+                $attemptnumber = quiz_get_user_attempts($quiz->id, $user->id, 'all', true);
+                $attemptnumber = count($attemptnumber) + 1;
+                $attempt = quiz_prepare_and_start_new_attempt($quizobj, $attemptnumber, null);
+                $attemptobj = quiz_attempt::create($attempt->id);
+                $postdata = $questiongenerator
+                    ->get_simulated_post_data_for_questions_in_usage(
+                        $attemptobj->get_question_usage(),
+                        $config['answers'][$version],
+                        true
+                    );
+                $timenow = time();
+                $attemptobj->process_submitted_actions($timenow, false, $postdata);
+                $attemptobj->process_submit($timenow, false);
+                $attemptobj->process_grade_submission($timenow);
+            }
+            // Create next version.
+            if ($version < $config['versions']) {
+                foreach ($questions as $q) {
+                    $questiongenerator->update_question($q, $config['which']);
+                }
+            }
+        }
+        return [$quiz];
     }
 }

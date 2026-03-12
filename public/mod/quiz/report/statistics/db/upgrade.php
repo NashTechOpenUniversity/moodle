@@ -55,6 +55,19 @@ function xmldb_quiz_statistics_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025100601, 'quiz', 'statistics');
     }
 
+    if ($oldversion < 2026031800) {
+        // Get all quiz IDs.
+        $rs = $DB->get_recordset('quiz', null, '', 'id');
+        foreach ($rs as $quiz) {
+            // Create and queue the recalculate adhoc task for each quiz.
+            $task = \quiz_statistics\task\recalculate::instance($quiz->id);
+            \core\task\manager::queue_adhoc_task($task, true);
+        }
+        $rs->close();
+        // Upgrade savepoint.
+        upgrade_plugin_savepoint(true, 2026031800, 'quiz', 'statistics');
+    }
+
     // Automatically generated Moodle v5.2.0 release upgrade line.
     // Put any upgrade step following this.
 

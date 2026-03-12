@@ -80,7 +80,7 @@ class quiz_statistics_report extends report_base {
         $variantno = optional_param('variant', null, PARAM_INT);
         $whichattempts = optional_param('whichattempts', $quiz->grademethod, PARAM_INT);
         $whichtries = optional_param('whichtries', question_attempt::LAST_TRY, PARAM_ALPHA);
-
+        $ismultipleversion = optional_param('ismultipleversion', 0, PARAM_BOOL);
         $pageoptions = [];
         $pageoptions['id'] = $cm->id;
         $pageoptions['mode'] = 'statistics';
@@ -209,6 +209,19 @@ class quiz_statistics_report extends report_base {
 
             $this->table->export_class_instance()->finish_document();
 
+        } else if ($slot && $qid && $ismultipleversion) {
+            // Report on an individual sub-question indexed by slot and questionid.
+            if (!isset($questions[$slot]) && !$questionstats->has_subq($qid, $variantno)) {
+                throw new \moodle_exception('questiondoesnotexist', 'question');
+            }
+            $this->table->define_baseurl(new moodle_url($reporturl, ['qid' => $qid]));
+            $this->table->format_and_add_array_of_rows($questionstats->structure_analysis_for_one_slot($slot));
+            // Back to overview link.
+            echo $OUTPUT->box(
+                '<a href="' . $reporturl->out() . '">' .
+                get_string('backtoquizreport', 'quiz_statistics') . '</a>',
+                'boxaligncenter generalbox boxwidthnormal mdl-align'
+            );
         } else if ($qid) {
             // Report on an individual sub-question indexed questionid.
             if (!$questionstats->has_subq($qid, $variantno)) {
@@ -216,12 +229,15 @@ class quiz_statistics_report extends report_base {
             }
 
             $this->output_individual_question_data($quiz, $questionstats->for_subq($qid, $variantno));
-            $this->output_individual_question_response_analysis($questionstats->for_subq($qid, $variantno)->question,
-                                                                $variantno,
-                                                                $questionstats->for_subq($qid, $variantno)->s,
-                                                                $reporturl,
-                                                                $qubaids,
-                                                                $whichtries);
+            $this->output_individual_question_response_analysis(
+                $questionstats->for_subq($qid, $variantno)->question,
+                $variantno,
+                $questionstats->for_subq($qid, $variantno)->s,
+                $reporturl,
+                $qubaids,
+                $whichtries,
+                $qid
+            );
             // Back to overview link.
             echo $OUTPUT->box('<a href="' . $reporturl->out() . '">' .
                               get_string('backtoquizreport', 'quiz_statistics') . '</a>',
@@ -382,9 +398,19 @@ class quiz_statistics_report extends report_base {
      * @param moodle_url       $reporturl the URL to redisplay this report.
      * @param qubaid_condition $qubaids
      * @param string           $whichtries
+     * @param int|null        $specificquestionid if specified,
+     *                         only analyse responses to this question id (used when reporting on a sub-question).
      */
-    protected function output_individual_question_response_analysis($question, $variantno, $s, $reporturl, $qubaids,
-                                                                    $whichtries = question_attempt::LAST_TRY) {
+    protected function output_individual_question_response_analysis(
+        $question,
+        $variantno,
+        $s,
+        $reporturl,
+        $qubaids,
+        $whichtries = question_attempt::LAST_TRY,
+        $specificquestionid = null
+    ) {
+
         global $OUTPUT;
 
         if (!question_bank::get_qtype($question->qtype, false)->can_analyse_responses()) {
@@ -426,8 +452,7 @@ class quiz_statistics_report extends report_base {
         }
 
         $responesanalyser = new analyser($question, $whichtries);
-        $responseanalysis = $responesanalyser->load_cached($qubaids, $whichtries);
-
+        $responseanalysis = $responesanalyser->load_cached($qubaids, $whichtries, $specificquestionid);
         $qtable->question_setup($reporturl, $question, $s, $responseanalysis);
         if ($this->table->is_downloading()) {
             $exportclass->output_headers($qtable->headers);
@@ -466,7 +491,21 @@ class quiz_statistics_report extends report_base {
             if (is_null($structureanalysis)) {
                 $this->table->add_separator();
             } else {
-                foreach ($structureanalysis as $row) {
+                // Select only the summary column (index 0) and the latest column (largest index).
+                // The summary column provides overall statistics; the latest column shows the most recent data.
+                // This keeps the report concise and focused on the most relevant information.
+                if (!empty($structureanalysis)) {
+                    $keys = array_keys($structureanalysis);
+                    $maxkey = max($keys);
+                    $targetkeys = ($maxkey === 0) ? [0] : [0, $maxkey];
+                } else {
+                    $targetkeys = [];
+                }
+
+                foreach ($structureanalysis as $key => $row) {
+                    if (!in_array($key, $targetkeys, true)) {
+                        continue;
+                    }
                     $bgcssclass = '';
                     // The only way to identify in this point of the report if a row is a summary row
                     // is checking if it's a instance of calculated_question_summary class.
