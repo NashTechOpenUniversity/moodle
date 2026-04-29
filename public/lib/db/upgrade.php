@@ -1043,7 +1043,7 @@ function xmldb_main_upgrade($oldversion) {
                 // Handle custom params.
                 if (isset($action['settings']['modelextraparams'])) {
                     $modelsettings['custom']['modelextraparams'] = $action['settings']['modelextraparams'] ?? '';
-                // Handle known models and their keys.
+                    // Handle known models and their keys.
                 } else if (isset($affectedkeys[$model])) {
                     foreach ($affectedkeys[$model] as $key) {
                         $modelsettings[$model][$key] = $action['settings'][$key] ?? '';
@@ -1445,7 +1445,7 @@ function xmldb_main_upgrade($oldversion) {
             $dbman->add_field($table, $field);
         }
 
-         // Define field area to be added to customfield_data.
+        // Define field area to be added to customfield_data.
         $table = new xmldb_table('customfield_data');
         $field = new xmldb_field('area', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, null, 'component');
 
@@ -1621,7 +1621,7 @@ function xmldb_main_upgrade($oldversion) {
     }
 
     if ($oldversion < 2025121900.01) {
-            // Define field nextversion to be added to question_bank_entries.
+        // Define field nextversion to be added to question_bank_entries.
         $table = new xmldb_table('question_bank_entries');
         $field = new xmldb_field('nextversion', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'ownerid');
 
@@ -1648,14 +1648,225 @@ function xmldb_main_upgrade($oldversion) {
         // Delete any remaining instances of qtype_random questions.
         // At this point, such questions were created during a restore, but never used by anything (otherwise they would have
         // been converted to question set references and deleted already), so they are all safe to delete.
-        $questions = $DB->get_records('question', ['qtype' => 'random']);
-        foreach ($questions as $question) {
-            question_delete_question($question->id);
-        }
+
+        // Process the questions in batches, to avoid running out of memory.
+        $batchsize = 50000;
+        $lastid = 0;
+        do {
+            $questions = $DB->get_records_sql(
+                "SELECT id FROM {question} WHERE qtype = 'random' AND id > :lastid ORDER BY id",
+                ['lastid' => $lastid],
+                0,
+                $batchsize,
+            );
+            $recordcount = 0;
+            foreach ($questions as $question) {
+                $lastid = $question->id;
+                question_delete_question($question->id);
+                $recordcount++;
+            }
+            // Reset timeout after each batch to avoid timeouts on large sites.
+            upgrade_set_timeout();
+        } while ($recordcount === $batchsize);
         // Finally, uninstall qtype_random as it's been removed.
         uninstall_plugin('qtype', 'random');
         upgrade_main_savepoint(true, 2026010900.02);
     }
+
+    if ($oldversion < 2026011600.01) {
+        // Remove activity_modules block.
+
+        if (!file_exists($CFG->dirroot . "/blocks/activity_modules/version.php")) {
+            uninstall_plugin('block', 'activity_modules');
+            // Delete all the admin preset plugin references to activity_modules.
+            $DB->delete_records('adminpresets_plug', ['plugin' => 'block', 'name' => 'activity_modules']);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2026011600.01);
+    }
+
+    if ($oldversion < 2026013000.01) {
+        // Define index nextruntime_classname (not unique) to be added to task_adhoc.
+        $table = new xmldb_table('task_adhoc');
+        $index = new xmldb_index('nextruntime_classname', XMLDB_INDEX_NOTUNIQUE, ['nextruntime', 'classname']);
+
+        // Conditionally launch add index nextruntime_classname.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2026013000.01);
+    }
+
+    if ($oldversion < 2026013000.02) {
+        // Define index lastruntime_nextruntime (not unique) to be added to task_scheduled.
+        $table = new xmldb_table('task_scheduled');
+        $index = new xmldb_index('lastruntime_nextruntime', XMLDB_INDEX_NOTUNIQUE, ['lastruntime', 'nextruntime']);
+
+        // Conditionally launch add index lastruntime_nextruntime.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2026013000.02);
+    }
+
+    if ($oldversion < 2026013000.03) {
+        core_question\versions::resolve_unique_version_violations();
+
+        // Define index questionbankentryid-version (unique) to be added to question_versions.
+        $table = new xmldb_table('question_versions');
+        $index = new xmldb_index('questionbankentryid-version', XMLDB_INDEX_UNIQUE, ['questionbankentryid', 'version']);
+
+        // Conditionally launch add index questionbankentryid-version.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+        upgrade_main_savepoint(true, 2026013000.03);
+    }
+
+    if ($oldversion < 2026013000.04) {
+        \core_question\category_manager::fix_restored_category_parents();
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2026013000.04);
+    }
+
+    if ($oldversion < 2026021000.01) {
+        $table = new xmldb_table('customfield_data');
+
+        // Define index fieldid-decvalue (not unique) to be dropped form customfield_data.
+        $index = new xmldb_index('fieldid-decvalue', XMLDB_INDEX_NOTUNIQUE, ['fieldid', 'decvalue']);
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+
+        // Changing precision of field decvalue on table customfield_data to (15, 5).
+        $field = new xmldb_field('decvalue', XMLDB_TYPE_NUMBER, '15, 5', null, null, null, null, 'intvalue');
+        $dbman->change_field_precision($table, $field);
+
+        // Conditionally launch add index fieldid-decvalue.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2026021000.01);
+    }
+
+    if ($oldversion < 2026022700.01) {
+        // For existing sites, enable My Home by default to maintain current behavior.
+        // New installs will have it disabled (default 0 in settings).
+        $enablemyhome = get_config('core', 'enablemyhome');
+        if ($enablemyhome === false) {
+            set_config('enablemyhome', 1);
+        }
+
+        upgrade_main_savepoint(true, 2026022700.01);
+    }
+
+    if ($oldversion < 2026022700.02) {
+        $orphanedquestions = core_question\category_manager::cleanup_questions_without_categories();
+        if ($orphanedquestions > 0) {
+            upgrade_log(UPGRADE_LOG_NORMAL, null, "Cleaned up {$orphanedquestions} questions left over from restores.");
+        }
+
+        upgrade_main_savepoint(true, 2026022700.02);
+    }
+
+    if ($oldversion < 2026030600.01) {
+        // For existing sites, enable My Courses by default to maintain current behavior.
+        // New installs will have it disabled (default 0 in settings).
+        $enablemycourses = get_config('core', 'enablemycourses');
+        if ($enablemycourses === false) {
+            set_config('enablemycourses', 1);
+        }
+
+        upgrade_main_savepoint(true, 2026030600.01);
+    }
+
+    if ($oldversion < 2026030600.02) {
+        // Remove MoodleNet outbound sharing functionality.
+
+        // Drop the moodlenet_share_progress table if it exists.
+        $table = new xmldb_table('moodlenet_share_progress');
+        if ($dbman->table_exists($table)) {
+            $dbman->drop_table($table);
+        }
+
+        // Remove the enablesharingtomoodlenet config setting.
+        unset_config('enablesharingtomoodlenet');
+
+        // Remove MoodleNet outbound OAuth2 configuration.
+        unset_config('oauthservice', 'moodlenet');
+        $issuerids = $DB->get_fieldset_select('oauth2_issuer', 'id', "servicetype = ?", ['moodlenet']);
+        if (!empty($issuerids)) {
+            $DB->delete_records_list('oauth2_endpoint', 'issuerid', $issuerids);
+            $DB->delete_records_list('oauth2_access_token', 'issuerid', $issuerids);
+            $DB->delete_records_list('oauth2_refresh_token', 'issuerid', $issuerids);
+            $DB->delete_records_list('oauth2_system_account', 'issuerid', $issuerids);
+            $DB->delete_records_list('oauth2_user_field_mapping', 'issuerid', $issuerids);
+            $DB->delete_records_list('oauth2_issuer', 'id', $issuerids);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2026030600.02);
+    }
+
+    if ($oldversion < 2026030600.03) {
+        require_once($CFG->dirroot . '/lib/db/upgradelib.php');
+
+        // Check if the moodlenetprofile column exists in the user table.
+        $table = new xmldb_table('user');
+        $field = new xmldb_field('moodlenetprofile');
+
+        if ($dbman->field_exists($table, $field)) {
+            // Move the MoodleNet profile.
+            moodlenet_migrate_profile_field();
+
+            // Remove the moodlenetprofile column from the user table.
+            $dbman->drop_field($table, $field);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2026030600.03);
+    }
+
+    if ($oldversion < 2026030600.04) {
+        // Remove tool_moodlenet if no longer present.
+        if (!file_exists($CFG->dirroot . '/admin/tool/moodlenet/version.php')) {
+            // Reset activity chooser footer if set to tool_moodlenet.
+            if (get_config('core', 'activitychooseractivefooter') === 'tool_moodlenet') {
+                set_config('activitychooseractivefooter', 'hidden');
+            }
+
+            // Uninstall the plugin.
+            uninstall_plugin('tool', 'moodlenet');
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2026030600.04);
+    }
+
+    if ($oldversion < 2026032700.01) {
+        // If h5plib_v127 is no longer present, remove it.
+        if (!file_exists($CFG->dirroot . '/h5p/h5plib/v127/version.php')) {
+            // Clean config.
+            uninstall_plugin('h5plib', 'v127');
+        }
+
+        // If h5plib_v128 is present, set it as the default one.
+        if (file_exists($CFG->dirroot . '/h5p/h5plib/v128/version.php')) {
+            set_config('h5plibraryhandler', 'h5plib_v128');
+        }
+
+        upgrade_main_savepoint(true, 2026032700.01);
+    }
+
+    // Automatically generated Moodle v5.2.0 release upgrade line.
+    // Put any upgrade step following this.
 
     return true;
 }

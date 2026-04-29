@@ -1,6 +1,6 @@
 # core_courseformat (subsystem / plugintype) Upgrade notes
 
-## 5.2dev
+## 5.2
 
 ### Added
 
@@ -13,12 +13,27 @@
 - Add set_groupmode method to the core_courseformat\cmactions (course format actions)
 
   For more information see [MDL-86857](https://tracker.moodle.org/browse/MDL-86857)
+- Create a new core_courseformat\cmactions::duplicate aiming to replace the course/lib.php version
+
+  For more information see [MDL-86858](https://tracker.moodle.org/browse/MDL-86858)
 - Added `set_marker` and `remove_all_markers` methods to the `core_courseformat\sectionactions` class.
 
   For more information see [MDL-86860](https://tracker.moodle.org/browse/MDL-86860)
 - Added the `set_visibility` method to the `core_courseformat\sectionactions` class. To optimize performance, this method does not return the list of affected resources, avoiding unnecessary database queries since the return value is unused.
 
   For more information see [MDL-86861](https://tracker.moodle.org/browse/MDL-86861)
+- Add a new core_courseformat\sectionactions::move_after to replace the current move_section_to logic.
+
+  For more information see [MDL-86862](https://tracker.moodle.org/browse/MDL-86862)
+- Add sectionactions::move_at to move a section at a given position.
+
+  For more information see [MDL-86862](https://tracker.moodle.org/browse/MDL-86862)
+- A new restricted page has been created using routing for users to access the activity information. Only the activities with visible restrictions will be available.
+
+  For more information see [MDL-87283](https://tracker.moodle.org/browse/MDL-87283)
+- Public course_section_cm_unavailable_error_message() function has been changed to return the same message for all restricted activities.
+
+  For more information see [MDL-87283](https://tracker.moodle.org/browse/MDL-87283)
 
 ### Changed
 
@@ -28,7 +43,10 @@
 - A new `available` attribute has been added to `activityname_exporter` class. It allows the external API to return the activity's availability status relative to the current user.
 
   For more information see [MDL-86660](https://tracker.moodle.org/browse/MDL-86660)
-- Two new public static methods have been added to the `overviewtable` class: - `is_cm_displayable`: Determines if a course module should be listed in the overview table. - `is_cm_available`: Checks if a course module is accessible to the user (and should therefore be rendered as a link).
+- Two new public static methods have been added to the `overviewtable`
+  class:
+  - `is_cm_displayable`: Determines if a course module should be listed in the overview table.
+  - `is_cm_available`: Checks if a course module is accessible to the user (and should therefore be rendered as a link).
 
   For more information see [MDL-86660](https://tracker.moodle.org/browse/MDL-86660)
 - Subsections are now always displayed inline within their respective sections (the separate subsection page is no longer used). Descriptions are no longer shown for delegated sections.
@@ -40,6 +58,21 @@
 - The `set_section_visible` function has been deprecated and should no longer be used. Please consider using the equivalent method, `set_visibility`, in `core_courseformat\local\sectionactions` instead.
 
   For more information see [MDL-86861](https://tracker.moodle.org/browse/MDL-86861)
+- Deprecates the move_section_to logic
+
+  For more information see [MDL-86862](https://tracker.moodle.org/browse/MDL-86862)
+- Deprecates and remove all usages of reorder_sections that is used only internally.
+
+  For more information see [MDL-86862](https://tracker.moodle.org/browse/MDL-86862)
+
+### Removed
+
+- - The `\core_courseformat\output\local\content\section\availability::availability_info()` has been removed from `public/course/format/classes/output/local/content/section/availability.php`.
+  - The `\core_courseformat\base::get_section_number()` has been removed from `public/course/format/classes/base.php`.
+  - The `\core_courseformat\stateactions::section_move()` has been removed from `public/course/format/classes/stateactions.php`.
+  - The `\core_courseformat\output\section_renderer\core_course_renderer::render_activity_information()` has been removed from `public/course/renderer.php`.
+
+  For more information see [MDL-87425](https://tracker.moodle.org/browse/MDL-87425)
 
 ## 5.1
 

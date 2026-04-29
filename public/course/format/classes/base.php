@@ -81,6 +81,8 @@ abstract class base {
     protected $singlesection = null;
     /** @var int|null the sectionid when a single section is selected, null when multiple sections are displayed. */
     protected $singlesectionid = null;
+    /** @var bool Whether restrictions should be expanded. */
+    protected $showrestrictionsexpanded = false;
     /** @var course_modinfo the current course modinfo, please use course_format::get_modinfo() */
     private $modinfo = null;
     /** @var array cached instances */
@@ -665,6 +667,24 @@ abstract class base {
     }
 
     /**
+     * Set whether restrictions should be expanded.
+     *
+     * @param bool $expanded True if restrictions should be expanded, false otherwise.
+     */
+    public function set_show_restrictions_expanded(bool $expanded): void {
+        $this->showrestrictionsexpanded = $expanded;
+    }
+
+    /**
+     * Get whether restrictions should be expanded.
+     *
+     * @return bool True if restrictions should be expanded, false otherwise.
+     */
+    public function get_show_restrictions_expanded(): bool {
+        return $this->showrestrictionsexpanded;
+    }
+
+    /**
      * Set the current section number to display.
      * Some formats has the hability to swith from one section to multiple sections per page.
      *
@@ -901,32 +921,32 @@ abstract class base {
      *     'expanded' (bool) if true the section will be shown expanded, true by default
      * @return null|moodle_url
      */
-    public function get_view_url($section, $options = array()) {
+    public function get_view_url($section, $options = []) {
         $course = $this->get_course();
-        $url = new moodle_url('/course/view.php', ['id' => $course->id]);
+        $section = (is_object($section) || is_null($section)) ? $section : $this->get_section($section, IGNORE_MISSING);
 
+        // Determine page.
         if (array_key_exists('sr', $options)) {
-            $sectionno = $options['sr'];
-        } else if (is_object($section)) {
-            $sectionno = $section->section;
+            $pagesection = !is_null($options['sr']) ? $this->get_section($options['sr'], IGNORE_MISSING) : null;
+        } else if ($options['navigation'] ?? false) {
+            $pagesection = $section;
         } else {
-            $sectionno = $section;
+            $pagesection = null;
         }
-        if ((!empty($options['navigation']) || array_key_exists('sr', $options)) && $sectionno !== null) {
-            // Display section on separate page.
-            $sectioninfo = $this->get_section($sectionno);
-            return new moodle_url('/course/section.php', ['id' => $sectioninfo->id]);
+
+        // Base URL.
+        if (is_null($pagesection)) {
+            $url = new moodle_url('/course/view.php', ['id' => $course->id]);
+        } else {
+            $url = new moodle_url('/course/section.php', ['id' => $pagesection->id]);
         }
-        if ($this->uses_sections() && $sectionno !== null) {
-            // The url includes the parameter to expand the section by default.
-            if (!array_key_exists('expanded', $options)) {
-                $options['expanded'] = true;
+
+        // Add details.
+        if ($this->uses_sections() && $section && ($section->id != $pagesection?->id)) {
+            if ($options['expanded'] ?? true) {
+                $url->param('expandsection', $section->section);
             }
-            if ($options['expanded']) {
-                // This parameter is being set by default.
-                $url->param('expandsection', $sectionno);
-            }
-            $url->set_anchor('section-'.$sectionno);
+            $url->set_anchor('section-' . $section->section);
         }
 
         return $url;
@@ -1285,6 +1305,11 @@ abstract class base {
         $elements = array();
         if ($forsection) {
             $options = $this->section_format_options(true);
+            // Add the component field, so course formats can hide other fields as appropriate.
+            $options = array_merge(
+                ['component' => ['default' => '', 'type' => PARAM_TEXT, 'label' => '', 'element_type' => 'hidden']],
+                $options,
+            );
         } else {
             $options = $this->course_format_options(true);
         }
@@ -1811,7 +1836,10 @@ abstract class base {
         $decreasenumsections = $courseformathasnumsections && ($section->section <= $course->numsections);
 
         // Move the section to the end.
-        move_section_to($course, $section->section, $lastsection, true);
+        $sectionactions = \core_courseformat\formatactions::section($course);
+        $modinfo = get_fast_modinfo($course);
+        $sectioninfo = $modinfo->get_section_info($section->section);
+        $sectionactions->move_at($sectioninfo, $lastsection);
 
         // Delete all modules from the section.
         foreach (preg_split('/,/', $section->sequence, -1, PREG_SPLIT_NO_EMPTY) as $cmid) {
@@ -1863,18 +1891,8 @@ abstract class base {
         if ($section->section == $destination->section || $section->section == $destination->section + 1) {
             return true;
         }
-        // The move_section_to moves relative to the section to move. However, this
-        // method will move the target section always after the destination.
-        if ($section->section > $destination->section) {
-            $newsectionnumber = $destination->section + 1;
-        } else {
-            $newsectionnumber = $destination->section;
-        }
-        return move_section_to(
-            $this->get_course(),
-            $section->section,
-            $newsectionnumber
-        );
+        $sectionactions = \core_courseformat\formatactions::section($this->get_course());
+        return $sectionactions->move_after($section, $destination);
     }
 
     /**
@@ -2189,7 +2207,12 @@ abstract class base {
                     continue;
                 }
                 if (!$originalcm->deletioninprogress) {
-                    duplicate_module($course, $originalcm, $newsection->id, false);
+                    $cmaction = \core_courseformat\formatactions::cm($course->id);
+                    $cmaction->duplicate(
+                        cmid: $originalcm->id,
+                        targetsectionid: $newsection->id,
+                        newname: $originalcm->name  // Do not change name.
+                    );
                 }
             }
         }

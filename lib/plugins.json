@@ -5,8 +5,10 @@
             "editor"
         ],
         "aiprovider": [
+            "awsbedrock",
             "azureai",
             "deepseek",
+            "gemini",
             "ollama",
             "openai"
         ],
@@ -46,7 +48,6 @@
         ],
         "block": [
             "accessreview",
-            "activity_modules",
             "activity_results",
             "admin_bookmarks",
             "badges",
@@ -239,7 +240,7 @@
             "rubric"
         ],
         "h5plib": [
-            "v127"
+            "v128"
         ],
         "local": [],
         "logstore": [
@@ -496,7 +497,6 @@
             "mfa",
             "mobile",
             "monitor",
-            "moodlenet",
             "multilangupgrade",
             "oauth2",
             "phpunit",
@@ -584,6 +584,7 @@
             "radius"
         ],
         "block": [
+            "activity_modules",
             "community",
             "course_overview",
             "messages",
@@ -611,7 +612,8 @@
         ],
         "h5plib": [
             "v124",
-            "v126"
+            "v126",
+            "v127"
         ],
         "logstore": [
             "legacy"
@@ -700,6 +702,7 @@
             "bloglevelupgrade",
             "health",
             "innodb",
+            "moodlenet",
             "qeupgradehelper",
             "timezoneimport"
         ],

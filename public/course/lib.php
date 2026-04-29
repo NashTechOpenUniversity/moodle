@@ -935,64 +935,33 @@ function course_module_calendar_event_update_process($instance, $cm): void {
  * @param int $destination
  * @param bool $ignorenumsections
  * @return bool Result
+ * @todo see MDL-87419 for the final deprecation in Moodle 6.0.
  */
+#[\core\attribute\deprecated(
+    replacement: 'core_courseformat\local\sectionactions',
+    since: '5.2',
+    mdl: 'MDL-86862',
+    reason: 'Replaced by sectionactions::move_after.',
+)]
 function move_section_to($course, $section, $destination, $ignorenumsections = false) {
-/// Moves a whole course section up and down within the course
-    global $USER, $DB;
+    \core\deprecation::emit_deprecation(__FUNCTION__);
 
     if (!$destination && $destination != 0) {
         return true;
     }
-
-    // compartibility with course formats using field 'numsections'
     $courseformatoptions = course_get_format($course)->get_format_options();
     if ((!$ignorenumsections && array_key_exists('numsections', $courseformatoptions) &&
             ($destination > $courseformatoptions['numsections'])) || ($destination < 1)) {
         return false;
     }
 
-    // Get all sections for this course and re-order them (2 of them should now share the same section number)
-    if (!$sections = $DB->get_records_menu('course_sections', array('course' => $course->id),
-            'section ASC, id ASC', 'id, section')) {
+    $sectionactions = formatactions::section($course);
+    $modinfo = get_fast_modinfo($course);
+    $sectioninfo = $modinfo->get_section_info($section);
+    if (!$sectioninfo) {
         return false;
     }
-
-    $movedsections = reorder_sections($sections, $section, $destination);
-
-    // Update all sections. Do this in 2 steps to avoid breaking database
-    // uniqueness constraint
-    $transaction = $DB->start_delegated_transaction();
-    foreach ($movedsections as $id => $position) {
-        if ((int) $sections[$id] !== $position) {
-            $DB->set_field('course_sections', 'section', -$position, ['id' => $id]);
-            // Invalidate the section cache by given section id.
-            course_modinfo::purge_course_section_cache_by_id($course->id, $id);
-        }
-    }
-    foreach ($movedsections as $id => $position) {
-        if ((int) $sections[$id] !== $position) {
-            $DB->set_field('course_sections', 'section', $position, ['id' => $id]);
-            // Invalidate the section cache by given section id.
-            course_modinfo::purge_course_section_cache_by_id($course->id, $id);
-        }
-    }
-
-    // If we move the highlighted section itself, then just highlight the destination.
-    // Adjust the higlighted section location if we move something over it either direction.
-    if ($section == $course->marker) {
-        $sectioninfo = get_fast_modinfo($course->id)->get_section_info($destination);
-        formatactions::section($course->id)->set_marker($sectioninfo, true);
-    } else if ($section > $course->marker && $course->marker >= $destination) {
-        $sectioninfo = get_fast_modinfo($course->id)->get_section_info($course->marker + 1);
-        formatactions::section($course->id)->set_marker($sectioninfo, true);
-    } else if ($section < $course->marker && $course->marker <= $destination) {
-        $sectioninfo = get_fast_modinfo($course->id)->get_section_info($course->marker - 1);
-        formatactions::section($course->id)->set_marker($sectioninfo, true);
-    }
-
-    $transaction->allow_commit();
-    rebuild_course_cache($course->id, true, true);
-    return true;
+    return $sectionactions->move_at($sectioninfo, $destination);
 }
 
 /**
@@ -1107,7 +1076,13 @@ function course_can_delete_section($course, $section) {
  * @param int $target_position
  * @return array|false
  */
+#[\core\attribute\deprecated(
+    since: '5.2',
+    reason: 'Unused after refactoring the move_after function.',
+    mdl: 'MDL-86862',
+)]
 function reorder_sections($sections, $origin_position, $target_position) {
+    \core\deprecation::emit_deprecation(__FUNCTION__);
     if (!is_array($sections)) {
         return false;
     }
@@ -1506,6 +1481,10 @@ function course_allowed_module($course, $modname, ?\stdClass $user = null) {
     if (is_numeric($modname)) {
         throw new coding_exception('Function course_allowed_module no longer
                 supports numeric module ids. Please update your code to pass the module name.');
+    }
+
+    if (!\core\plugininfo\mod::get_enabled_plugin($modname)) {
+        return false;
     }
 
     $capability = 'mod/' . $modname . ':addinstance';
@@ -2530,8 +2509,8 @@ function update_module($moduleinfo) {
  */
 function mod_duplicate_activity($course, $cm, $sr = null) {
     global $PAGE;
-
-    $newcm = duplicate_module($course, $cm);
+    $cmaction = \core_courseformat\formatactions::cm($course->id);
+    $newcm = $cmaction->duplicate($cm->id);
 
     $resp = new stdClass();
     if ($newcm) {
@@ -2568,136 +2547,21 @@ function mod_duplicate_activity($course, $cm, $sr = null) {
  *
  * @return cm_info|null cminfo object if we sucessfully duplicated the mod and found the new cm.
  */
+#[\core\attribute\deprecated(
+    replacement: 'core_courseformat\local\cmactions',
+    since: '5.2',
+    mdl: 'MDL-86858',
+    reason: 'Replaced by an cmactions::duplicate.',
+)]
 function duplicate_module($course, $cm, ?int $sectionid = null, bool $changename = true): ?cm_info {
-    global $CFG, $DB, $USER;
-    require_once($CFG->dirroot . '/backup/util/includes/backup_includes.php');
-    require_once($CFG->dirroot . '/backup/util/includes/restore_includes.php');
-    require_once($CFG->libdir . '/filelib.php');
-
-    // Plugins with this feature flag set to false must ALWAYS be in section 0.
-    if (!course_modinfo::is_mod_type_visible_on_course($cm->modname)) {
-        if (get_fast_modinfo($course)->get_section_info(0, MUST_EXIST)->id != $sectionid) {
-            throw new coding_exception('Modules with FEATURE_CAN_DISPLAY set to false can not be moved from section 0');
-        }
-    }
-
-    $a          = new stdClass();
-    $a->modtype = get_string('modulename', $cm->modname);
-    $a->modname = format_string($cm->name);
-
-    if (!plugin_supports('mod', $cm->modname, FEATURE_BACKUP_MOODLE2)) {
-        throw new moodle_exception('duplicatenosupport', 'error', '', $a);
-    }
-
-    // Backup the activity.
-
-    $bc = new backup_controller(backup::TYPE_1ACTIVITY, $cm->id, backup::FORMAT_MOODLE,
-            backup::INTERACTIVE_NO, backup::MODE_IMPORT, $USER->id);
-
-    $backupid       = $bc->get_backupid();
-    $backupbasepath = $bc->get_plan()->get_basepath();
-
-    $bc->execute_plan();
-
-    $bc->destroy();
-
-    // Restore the backup immediately.
-
-    $rc = new restore_controller($backupid, $course->id,
-            backup::INTERACTIVE_NO, backup::MODE_IMPORT, $USER->id, backup::TARGET_CURRENT_ADDING);
-
-    // Make sure that the restore_general_groups setting is always enabled when duplicating an activity.
-    $plan = $rc->get_plan();
-    $groupsetting = $plan->get_setting('groups');
-    if (empty($groupsetting->get_value())) {
-        $groupsetting->set_value(true);
-    }
-
-    $cmcontext = context_module::instance($cm->id);
-    if (!$rc->execute_precheck()) {
-        $precheckresults = $rc->get_precheck_results();
-        if (is_array($precheckresults) && !empty($precheckresults['errors'])) {
-            if (empty($CFG->keeptempdirectoriesonbackup)) {
-                fulldelete($backupbasepath);
-            }
-        }
-    }
-
-    $rc->execute_plan();
-
-    // Now a bit hacky part follows - we try to get the cmid of the newly
-    // restored copy of the module.
-    $newcmid = null;
-    $tasks = $rc->get_plan()->get_tasks();
-    foreach ($tasks as $task) {
-        if (is_subclass_of($task, 'restore_activity_task')) {
-            if ($task->get_old_contextid() == $cmcontext->id) {
-                $newcmid = $task->get_moduleid();
-                break;
-            }
-        }
-    }
-
-    $rc->destroy();
-
-    if (empty($CFG->keeptempdirectoriesonbackup)) {
-        fulldelete($backupbasepath);
-    }
-
-    // If we know the cmid of the new course module, let us move it
-    // right below the original one. otherwise it will stay at the
-    // end of the section.
-    if ($newcmid) {
-        // Proceed with activity renaming before everything else. We don't use APIs here to avoid
-        // triggering a lot of create/update duplicated events.
-        $newcm = get_coursemodule_from_id($cm->modname, $newcmid, $cm->course);
-        if ($changename) {
-            // Add ' (copy)' language string postfix to duplicated module.
-            $newname = get_string('duplicatedmodule', 'moodle', $newcm->name);
-            set_coursemodule_name($newcm->id, $newname);
-        }
-
-        $section = get_fast_modinfo($course)->get_section_info_by_id($sectionid ?? $cm->section);
-        $action = formatactions::cm($course);
-        if (isset($sectionid)) {
-            $action->move_end_section($newcm->id, $section->id);
-        } else {
-            $modarray = explode(",", trim($section->sequence));
-            $cmindex = array_search($cm->id, $modarray);
-            if ($cmindex !== false && $cmindex < count($modarray) - 1) {
-                $beforecmid = $modarray[$cmindex + 1];
-                $action->move_before($newcm->id, $beforecmid);
-            }
-        }
-
-        // Update calendar events with the duplicated module.
-        // The following line is to be removed in MDL-58906.
-        course_module_update_calendar_events($newcm->modname, null, $newcm);
-
-        // Copy permission overrides to new course module.
-        $newcmcontext = context_module::instance($newcm->id);
-        $overrides = $DB->get_records('role_capabilities', ['contextid' => $cmcontext->id]);
-        foreach ($overrides as $override) {
-            $override->contextid = $newcmcontext->id;
-            unset($override->id);
-            $DB->insert_record('role_capabilities', $override);
-        }
-
-        // Copy locally assigned roles to new course module.
-        $overrides = $DB->get_records('role_assignments', ['contextid' => $cmcontext->id]);
-        foreach ($overrides as $override) {
-            $override->contextid = $newcmcontext->id;
-            unset($override->id);
-            $DB->insert_record('role_assignments', $override);
-        }
-
-        // Trigger course module created event. We can trigger the event only if we know the newcmid.
-        $newcm = get_fast_modinfo($cm->course)->get_cm($newcmid);
-        $event = \core\event\course_module_created::create_from_cm($newcm);
-        $event->trigger();
-    }
-
-    return isset($newcm) ? $newcm : null;
+    \core\deprecation::emit_deprecation(__FUNCTION__);
+    $modinfo = get_fast_modinfo($course);
+    $cm = $modinfo->get_cm($cm->id);
+    return formatactions::cm($course->id)->duplicate(
+        cmid: $cm->id,
+        targetsectionid: $sectionid,
+        newname: $changename ? null : $cm->name, // This is the opposite of changename, if we provide null the name is changed.
+    );
 }
 
 /**
@@ -4395,15 +4259,20 @@ function course_update_communication_instance_data(stdClass $data): void {
  *
  * @param context_course $context course context object
  * @param int $sectionid section number
+ * @param bool $restricted Whether the section is restricted for the user or not.
  * @since Moodle 4.4.
  */
-function course_section_view(context_course $context, int $sectionid): void {
+function course_section_view(context_course $context, int $sectionid, bool $restricted = false): void {
 
     $eventdata = [
         'objectid' => $sectionid,
         'context' => $context,
     ];
-    $event = \core\event\section_viewed::create($eventdata);
+    if ($restricted) {
+        $event = \core\event\restricted_section_viewed::create($eventdata);
+    } else {
+        $event = \core\event\section_viewed::create($eventdata);
+    }
     $event->trigger();
 
     user_accesstime_log($context->instanceid);

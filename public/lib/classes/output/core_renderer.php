@@ -568,7 +568,17 @@ class core_renderer extends renderer_base {
         // for now. This will be replaced with the real content in {@see core_renderer::footer()}.
         $output = '';
         if ($this->page->pagelayout !== 'embedded' && !empty($CFG->additionalhtmlfooter)) {
-            $output .= "\n" . $CFG->additionalhtmlfooter;
+            // The additional HTML footer content needs to also support JS so it supports things like analytics or other tooling.
+            // It is controlled via config so is considered trusted for this.
+            // We use format_text rather than injecting directly, to support features like multi-lang.
+            $formatoptions = [
+                'trusted' => true,
+                'clean' => false,
+                'context' => $this->page->context,
+                'para' => false,
+                'allowid' => true,
+            ];
+            $output .= "\n" . format_text($CFG->additionalhtmlfooter, FORMAT_HTML, $formatoptions);
         }
         $output .= $this->unique_end_html_token;
         return $output;
@@ -1676,23 +1686,35 @@ class core_renderer extends renderer_base {
         return $this->action_link($url, $text . $icon, $action, $attributes);
     }
 
-   /**
-    * Print a message along with button choices for Continue/Cancel
-    *
-    * If a string or moodle_url is given instead of a single_button, method defaults to post.
-    *
-    * @param string $message The question to ask the user
-    * @param single_button|moodle_url|string $continue The single_button component representing the Continue answer. Can also be a moodle_url or string URL
-    * @param single_button|moodle_url|string $cancel The single_button component representing the Cancel answer. Can also be a moodle_url or string URL
-    * @param array $displayoptions optional extra display options
-    * @return string HTML fragment
-    */
+    /**
+     * Print a message along with button choices for Continue/Cancel
+     *
+     * If a string or moodle_url is given instead of a single_button, method defaults to post.
+     *
+     * @param string $message The question to ask the user
+     * @param single_button|moodle_url|string $continue The single_button component representing the Continue answer.
+     *      Can also be a moodle_url or string URL
+     * @param single_button|moodle_url|string $cancel The single_button component representing the Cancel answer.
+     *      Can also be a moodle_url or string URL
+     * @param array $displayoptions Display options (Optional).
+     *      Possible options:
+     *      - confirmtitle: The title to display above the message
+     *      - continuestr: The label to use for the continue button (if $continue is not a single_button)
+     *      - cancelstr: The label to use for the cancel button (if $cancel is not a single_button)
+     *      - headinglevel: The heading level to use for the title (1-6). Default is 4.
+     *      - type: The button type to use for the continue button (if $continue is not a single_button). Default is BUTTON_PRIMARY.
+     * @return string HTML fragment
+     */
     public function confirm($message, $continue, $cancel, array $displayoptions = []) {
 
         // Check existing displayoptions.
         $displayoptions['confirmtitle'] = $displayoptions['confirmtitle'] ?? get_string('confirm');
         $displayoptions['continuestr'] = $displayoptions['continuestr'] ?? get_string('continue');
         $displayoptions['cancelstr'] = $displayoptions['cancelstr'] ?? get_string('cancel');
+        $headinglevel = $displayoptions['headinglevel'] ?? 4;
+        if ($headinglevel < 1 || $headinglevel > 6) {
+            throw new coding_exception('The headinglevel option to $OUTPUT->confirm() must be between 1 and 6.');
+        }
 
         if ($continue instanceof single_button) {
             // Continue button should be primary if set to secondary type as it is the fefault.
@@ -1737,7 +1759,7 @@ class core_renderer extends renderer_base {
         $output = $this->box_start('generalbox modal modal-dialog modal-in-page show', 'notice', $attributes);
         $output .= $this->box_start('modal-content', 'modal-content');
         $output .= $this->box_start('modal-header px-3', 'modal-header');
-        $output .= html_writer::tag('h4', $displayoptions['confirmtitle']);
+        $output .= html_writer::tag('h' . $headinglevel, $displayoptions['confirmtitle'], ['class' => 'h4']);
         $output .= $this->box_end();
         $attributes = [
             'role' => 'alert',
@@ -2372,7 +2394,18 @@ class core_renderer extends renderer_base {
             $this->add_action_handler(new popup_action('click', $url), $id);
         }
 
-        return html_writer::tag('a', $output, $attributes);
+        $output = html_writer::tag('a', $output, $attributes);
+
+        // Show suspended label if needed.
+        if ($userpicture->showsuspended && property_exists($user, 'suspended') && $user->suspended) {
+            $output .= html_writer::tag(
+                'span',
+                get_string('suspended', 'auth'),
+                ['class' => 'badge text-bg-warning ms-1']
+            );
+        }
+        return $output;
+
     }
 
     /**
@@ -3990,6 +4023,21 @@ EOD;
     }
 
     /**
+     * Returns the telemetry trace id for the current page, if available.
+     *
+     * This can be used to correlate logs and telemetry data with specific page views.
+     * It is typically presented in the footer or somewhere inconspicious so that user's experiencing difficulties
+     * may be asked for it.
+     *
+     * The value is also passed in the Response header if required.
+     *
+     * @return string|null
+     */
+    public function telemetry_traceid(): ?string {
+        return \core\telemetry::get_page_id();
+    }
+
+    /**
      * Returns the communication link, complete with html.
      *
      * @return string
@@ -4176,7 +4224,7 @@ EOD;
                                     $contacttitle = 'waitingforcontactaccept';
                                 }
                                 $linkattributes = array_merge($linkattributes, [
-                                    'class' => 'disabled',
+                                    'class' => 'disabled border-0',
                                     'tabindex' => '-1',
                                 ]);
                             } else {
@@ -4290,6 +4338,7 @@ EOD;
         $header->pageheadingbutton = $this->page_heading_button();
         $header->courseheader = $this->course_header();
         $header->headeractions = $this->page->get_header_actions();
+        $header->headerextras = $this->page->get_header_extras();
         if (!empty($pagetype) && !empty($homepagetype) && $pagetype == $homepagetype) {
             $header->welcomemessage = \core_user::welcome_message();
         }
@@ -4471,6 +4520,10 @@ EOD;
      * @return string
      */
     public function region_main_settings_menu() {
+        if ($this->page->hide_settings()) {
+            return '';
+        }
+
         $context = $this->page->context;
         $menu = new action_menu();
 
@@ -4483,7 +4536,7 @@ EOD;
                 $buildmenu = true;
             } else if (
                 !empty($node) && ($node->type == navigation_node::TYPE_ACTIVITY ||
-                            $node->type == navigation_node::TYPE_RESOURCE)
+                    $node->type == navigation_node::TYPE_RESOURCE)
             ) {
                 $items = $this->page->navbar->get_items();
                 $navbarnode = end($items);
@@ -4629,6 +4682,7 @@ EOD;
             true,
             ['context' => context_course::instance(SITEID), "escape" => false]
         );
+        $context->hasauthinstructions = !empty($CFG->auth_instructions);
 
         return $this->render_from_template('core/loginform', $context);
     }

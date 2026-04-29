@@ -50,11 +50,17 @@ if (!empty($CFG->forceloginforprofiles)) {
     require_login();
     if (isguestuser()) {
         $PAGE->set_context(context_system::instance());
-        $PAGE->set_title(get_string('user'));
+        $PAGE->set_title(get_string('loginrequired'));
         echo $OUTPUT->header();
-        echo $OUTPUT->confirm(get_string('guestcantaccessprofiles', 'error'),
-                              get_login_url(),
-                              $CFG->wwwroot);
+        echo $OUTPUT->confirm(
+            get_string('guestcantaccessprofiles', 'error'),
+            get_login_url(),
+            $CFG->wwwroot,
+            [
+                'headinglevel' => 1,
+                'confirmtitle' => get_string('loginrequired'),
+            ],
+        );
         echo $OUTPUT->footer();
         die;
     }
@@ -218,6 +224,15 @@ profile_view($user, $usercontext);
 
 // TODO WORK OUT WHERE THE NAV BAR IS!
 echo $OUTPUT->header();
+
+if ($user->suspended) {
+    echo $OUTPUT->notification(
+        html_writer::tag('h2', get_string('suspended', 'auth'), ['class' => 'alert-heading h4']) .
+        get_string('suspended_help', 'auth'),
+        \core\output\notification::NOTIFY_WARNING
+    );
+}
+
 echo '<div class="userprofile">';
 
 $hiddenfields = [];

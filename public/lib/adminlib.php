@@ -3583,26 +3583,7 @@ class admin_setting_configselect extends admin_setting {
     }
 
     /**
-     * Returns XHTML select field
-     *
-     * Ensure the options are loaded, and generate the XHTML for the select
-     * element and any warning message. Separating this out from output_html
-     * makes it easier to subclass this class.
-     *
-     * @param string $data the option to show as selected.
-     * @param string $current the currently selected option in the database, null if none.
-     * @param string $default the default selected option.
-     * @return array the HTML for the select element, and a warning message.
-     * @deprecated since Moodle 3.2
-     */
-    public function output_select_html($data, $current, $default, $extraname = '') {
-        debugging('The method admin_setting_configselect::output_select_html is depreacted, do not use any more.', DEBUG_DEVELOPER);
-    }
-
-    /**
      * Returns XHTML select field and wrapping div(s)
-     *
-     * @see output_select_html()
      *
      * @param string $data the option to show as selected
      * @param string $query
@@ -3726,11 +3707,14 @@ class admin_setting_configmultiselect extends admin_setting_configselect {
         if (!is_array($data)) {
             return ''; //ignore it
         }
-        if (!$this->load_choices() or empty($this->choices)) {
-            return '';
-        }
 
         unset($data['xxxxx']);
+
+        // Only reject when the caller actually supplied a value
+        // and there is no valid choices to validate against.
+        if (!empty($data) && (!$this->load_choices() || empty($this->choices))) {
+            return '';
+        }
 
         $save = array();
         foreach ($data as $value) {
@@ -5951,8 +5935,6 @@ class admin_setting_configselect_autocomplete extends admin_setting_configselect
 
     /**
      * Returns XHTML select field and wrapping div(s)
-     *
-     * @see output_select_html()
      *
      * @param string $data the option to show as selected
      * @param string $query
@@ -10633,13 +10615,13 @@ class admin_setting_configcolourpicker extends admin_setting {
             return $data;
         } else if (in_array(strtolower($data), $colornames)) {
             return $data;
-        } else if (preg_match('/rgb\(\d{0,3}%?\, ?\d{0,3}%?, ?\d{0,3}%?\)/i', $data)) {
+        } else if (preg_match('/^rgb\(\d{0,3}%?\, ?\d{0,3}%?, ?\d{0,3}%?\)$/i', $data)) {
             return $data;
-        } else if (preg_match('/rgba\(\d{0,3}%?\, ?\d{0,3}%?, ?\d{0,3}%?\, ?\d(\.\d)?\)/i', $data)) {
+        } else if (preg_match('/^rgba\(\d{0,3}%?\, ?\d{0,3}%?, ?\d{0,3}%?\, ?\d(\.\d)?\)$/i', $data)) {
             return $data;
-        } else if (preg_match('/hsl\(\d{0,3}\, ?\d{0,3}%, ?\d{0,3}%\)/i', $data)) {
+        } else if (preg_match('/^hsl\(\d{0,3}\, ?\d{0,3}%, ?\d{0,3}%\)$/i', $data)) {
             return $data;
-        } else if (preg_match('/hsla\(\d{0,3}\, ?\d{0,3}%,\d{0,3}%\, ?\d(\.\d)?\)/i', $data)) {
+        } else if (preg_match('/^hsla\(\d{0,3}\, ?\d{0,3}%, ?\d{0,3}%\, ?\d(\.\d)?\)$/i', $data)) {
             return $data;
         } else if (($data == 'transparent') || ($data == 'currentColor') || ($data == 'inherit')) {
             return $data;
