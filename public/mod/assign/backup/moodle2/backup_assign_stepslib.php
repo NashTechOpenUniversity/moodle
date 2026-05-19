@@ -80,6 +80,7 @@ class backup_assign_activity_structure_step extends backup_activity_structure_st
                                                   'grade',
                                                   'timemodified',
                                                   'completionsubmit',
+                                                  'completionresultviewed',
                                                   'requiresubmissionstatement',
                                                   'teamsubmission',
                                                   'requireallteammemberssubmit',
@@ -149,7 +150,9 @@ class backup_assign_activity_structure_step extends backup_activity_structure_st
                                                  'grader',
                                                  'grade',
                                                  'penalty',
-                                                 'attemptnumber'));
+                                                 'attemptnumber',
+                                                 'resultviewed')
+        );
 
         $marks = new backup_nested_element('marks');
 

@@ -479,7 +479,7 @@ function assign_get_coursemodule_info($coursemodule) {
 
     $dbparams = array('id'=>$coursemodule->instance);
     $fields = 'id, name, alwaysshowdescription, allowsubmissionsfromdate, intro, introformat, completionsubmit,
-        duedate, cutoffdate, allowsubmissionsfromdate';
+        completionresultviewed, duedate, cutoffdate, allowsubmissionsfromdate';
     if (! $assignment = $DB->get_record('assign', $dbparams, $fields)) {
         return false;
     }
@@ -497,6 +497,7 @@ function assign_get_coursemodule_info($coursemodule) {
     // Populate the custom completion rules as key => value pairs, but only if the completion mode is 'automatic'.
     if ($coursemodule->completion == COMPLETION_TRACKING_AUTOMATIC) {
         $result->customdata['customcompletionrules']['completionsubmit'] = $assignment->completionsubmit;
+        $result->customdata['customcompletionrules']['completionresultviewed'] = $assignment->completionresultviewed;
     }
 
     // Populate some other values that can be used in calendar or on dashboard.
@@ -604,6 +605,11 @@ function mod_assign_get_completion_active_rule_descriptions($cm) {
             case 'completionsubmit':
                 if (!empty($val)) {
                     $descriptions[] = get_string('completionsubmit', 'assign');
+                }
+                break;
+            case 'completionresultviewed':
+                if (!empty($val)) {
+                    $descriptions[] = get_string('completionresultviewed', 'assign');
                 }
                 break;
             default:

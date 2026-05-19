@@ -144,8 +144,83 @@ final class custom_completion_test extends advanced_testcase {
      */
     public function test_get_defined_custom_rules(): void {
         $rules = custom_completion::get_defined_custom_rules();
-        $this->assertCount(1, $rules);
-        $this->assertEquals('completionsubmit', reset($rules));
+        $this->assertCount(2, $rules);
+        $this->assertContains('completionsubmit', $rules);
+        $this->assertContains('completionresultviewed', $rules);
+    }
+
+    /**
+     * Test get_state() for completionresultviewed rule.
+     *
+     * Verifies three states:
+     * - No grade exists -> COMPLETION_INCOMPLETE
+     * - Grade exists but resultviewed=0 -> COMPLETION_INCOMPLETE
+     * - resultviewed timestamp set -> COMPLETION_COMPLETE
+     *
+     * @covers \mod_assign\completion\custom_completion::get_state
+     */
+    public function test_get_state_result_viewed(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);
+        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
+        $teacher = $this->getDataGenerator()->create_and_enrol($course, 'editingteacher');
+
+        $assign = $this->create_instance($course, [
+            'completion' => COMPLETION_TRACKING_AUTOMATIC,
+            'completionresultviewed' => COMPLETION_ENABLED,
+            'grade' => 100,
+        ]);
+
+        $cm = cm_info::create($assign->get_course_module());
+
+        // No grade exists yet - should be incomplete.
+        $customcompletion = new custom_completion($cm, (int) $student->id);
+        $this->assertEquals(COMPLETION_INCOMPLETE, $customcompletion->get_state('completionresultviewed'));
+
+        // Teacher grades the student.
+        $this->setUser($teacher);
+        $this->add_submission($student, $assign);
+        $this->submit_for_grading($student, $assign);
+        $this->mark_submission($teacher, $assign, $student, 75.0);
+        $this->resetDebugging(); // The grade snapshot may not include the new resultviewed field yet.
+
+        // Grade exists but resultviewed is 0 - should be incomplete.
+        $cm = cm_info::create(get_coursemodule_from_instance('assign', $assign->get_instance()->id));
+        $customcompletion = new custom_completion($cm, (int) $student->id);
+        $this->assertEquals(COMPLETION_INCOMPLETE, $customcompletion->get_state('completionresultviewed'));
+
+        // Simulate result viewed - set resultviewed timestamp on the grade record.
+        $grade = $assign->get_user_grade($student->id, false);
+        $DB->set_field('assign_grades', 'resultviewed', time(), ['id' => $grade->id]);
+
+        // Now should be complete.
+        $cm = cm_info::create(get_coursemodule_from_instance('assign', $assign->get_instance()->id));
+        $customcompletion = new custom_completion($cm, (int) $student->id);
+        $this->assertEquals(COMPLETION_COMPLETE, $customcompletion->get_state('completionresultviewed'));
+    }
+
+    /**
+     * Test get_state() for completionresultviewed when the rule is disabled.
+     *
+     * Should throw a moodle_exception.
+     * @covers \mod_assign\completion\custom_completion::get_state
+     */
+    public function test_get_state_result_viewed_not_available(): void {
+        $this->resetAfterTest();
+        $this->expectException(moodle_exception::class);
+
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);
+        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
+        $assign = $this->create_instance($course, [
+            'completion' => COMPLETION_TRACKING_AUTOMATIC,
+            'completionresultviewed' => COMPLETION_DISABLED,
+        ]);
+
+        $cm = cm_info::create($assign->get_course_module());
+        $customcompletion = new custom_completion($cm, (int) $student->id);
+        $this->assertFalse($customcompletion->get_state('completionresultviewed'));
     }
 
     /**
@@ -203,10 +278,20 @@ final class custom_completion_test extends advanced_testcase {
     public static function get_available_custom_rules_provider(): array {
         return [
             'Completion submit available' => [
-                COMPLETION_ENABLED, ['completionsubmit']
+                COMPLETION_ENABLED, ['completionsubmit'], [
+                    'completion' => COMPLETION_TRACKING_AUTOMATIC,
+                    'completionsubmit' => 1,
+                ],
             ],
             'Completion submit not available' => [
-                COMPLETION_DISABLED, []
+                COMPLETION_DISABLED, [], [],
+            ],
+            'Both completionsubmit and completionresultviewed available' => [
+                COMPLETION_ENABLED, ['completionsubmit', 'completionresultviewed'], [
+                    'completion' => COMPLETION_TRACKING_AUTOMATIC,
+                    'completionsubmit' => 1,
+                    'completionresultviewed' => 1,
+                ],
             ],
         ];
     }
@@ -217,18 +302,11 @@ final class custom_completion_test extends advanced_testcase {
      * @dataProvider get_available_custom_rules_provider
      * @param int $status
      * @param array $expected
+     * @covers \mod_assign\completion\custom_completion::get_available_custom_rules
      */
-    public function test_get_available_custom_rules(int $status, array $expected): void {
+    public function test_get_available_custom_rules(int $status, array $expected, array $params = []): void {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course(['enablecompletion' => $status]);
-
-        $params = [];
-        if ($status == COMPLETION_ENABLED ) {
-            $params = [
-                'completion' => COMPLETION_TRACKING_AUTOMATIC,
-                'completionsubmit' => 1
-            ];
-        }
 
         $assign = $this->create_instance($course, $params);
         $cm = cm_info::create($assign->get_course_module());

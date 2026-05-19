@@ -242,5 +242,46 @@ function xmldb_assign_upgrade($oldversion) {
     // Automatically generated Moodle v5.2.0 release upgrade line.
     // Put any upgrade step following this.
 
+    if ($oldversion < 2026051900) {
+        // Define field completionresultviewed to be added to assign.
+        $table = new xmldb_table('assign');
+        $field = new xmldb_field(
+            'completionresultviewed',
+            XMLDB_TYPE_INTEGER,
+            '2',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'completionsubmit'
+        );
+
+        // Conditionally launch add field completionresultviewed.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define field resultviewed to be added to assign_grades.
+        $table = new xmldb_table('assign_grades');
+        $field = new xmldb_field(
+            'resultviewed',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'attemptnumber'
+        );
+
+        // Conditionally launch add field resultviewed.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Assign savepoint reached.
+        upgrade_mod_savepoint(true, 2026051900, 'assign');
+    }
+
     return true;
 }

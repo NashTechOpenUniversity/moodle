@@ -796,6 +796,7 @@ class assign {
         $update->allowsubmissionsfromdate = $formdata->allowsubmissionsfromdate;
         $update->grade = $formdata->grade;
         $update->completionsubmit = !empty($formdata->completionsubmit);
+        $update->completionresultviewed = !empty($formdata->completionresultviewed);
         $update->teamsubmission = $formdata->teamsubmission;
         $update->requireallteammemberssubmit = $formdata->requireallteammemberssubmit;
         if (isset($formdata->teamsubmissiongroupingid)) {
@@ -1608,6 +1609,7 @@ class assign {
         $update->grade = $formdata->grade;
         if (!empty($formdata->completionunlocked)) {
             $update->completionsubmit = !empty($formdata->completionsubmit);
+            $update->completionresultviewed = !empty($formdata->completionresultviewed);
         }
         $update->teamsubmission = $formdata->teamsubmission;
         $update->requireallteammemberssubmit = $formdata->requireallteammemberssubmit;
@@ -3236,8 +3238,10 @@ class assign {
                     $reopenattempt);
             if ($isreopened) {
                 $completion = new completion_info($this->get_course());
-                if ($completion->is_enabled($this->get_course_module()) &&
-                    $this->get_instance()->completionsubmit) {
+                if (
+                    $completion->is_enabled($this->get_course_module())
+                    && ($this->get_instance()->completionsubmit || $this->get_instance()->completionresultviewed)
+                ) {
                     $completion->update_state($this->get_course_module(), COMPLETION_INCOMPLETE, $grade->userid);
                 }
             }
@@ -5755,7 +5759,7 @@ class assign {
      * @return assign_feedback_status renderable object
      */
     public function get_assign_feedback_status_renderable($user) {
-        global $CFG, $DB, $PAGE;
+        global $CFG, $DB, $PAGE, $USER;
 
         require_once($CFG->libdir.'/gradelib.php');
         require_once($CFG->dirroot.'/grade/grading/lib.php');
@@ -5863,6 +5867,27 @@ class assign {
 
             if ($grade) {
                 \mod_assign\event\feedback_viewed::create_from_grade($this, $grade)->trigger();
+
+                // Record first result view for completion tracking.
+                if (
+                    empty($grade->resultviewed)
+                    && $user->id == $USER->id
+                ) {
+                    $grade->resultviewed = \core\di::get(\core\clock::class)->time();
+                    $DB->set_field(
+                        'assign_grades',
+                        'resultviewed',
+                        $grade->resultviewed,
+                        ['id' => $grade->id]
+                    );
+                    // Update completion state if the resultviewed rule is enabled.
+                    if ($this->get_instance()->completionresultviewed) {
+                        $completion = new completion_info($this->get_course());
+                        if ($completion->is_enabled($this->get_course_module())) {
+                            $completion->update_state($this->get_course_module(), COMPLETION_COMPLETE, $user->id);
+                        }
+                    }
+                }
             }
             $feedbackstatus = new assign_feedback_status(
                 $gradefordisplay,

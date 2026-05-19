@@ -412,6 +412,22 @@ class mod_assign_mod_form extends moodleform_mod {
         [$assignment] = $this->get_assign();
         $errors = array_merge($errors, $assignment->plugin_settings_validation($data, $files));
 
+        $suffix = $this->get_suffix();
+        if (!empty($data['completionresultviewed' . $suffix])) {
+            // Require at least one feedback type OR grade type != None.
+            $hasgrade = !empty($data['grade']);
+            $hasfeedback = false;
+            foreach ($data as $key => $value) {
+                if (preg_match('/^assignfeedback_\w+_enabled$/', $key) && !empty($value)) {
+                    $hasfeedback = true;
+                    break;
+                }
+            }
+            if (!$hasgrade && !$hasfeedback) {
+                $errors['completionresultviewed' . $suffix] = get_string('completionresultviewedrequiresgradeorfeedback', 'assign');
+            }
+        }
+
         return $errors;
     }
 
@@ -456,7 +472,15 @@ class mod_assign_mod_form extends moodleform_mod {
         // Enable this completion rule by default.
         $mform->setDefault($completionsubmitel, 1);
 
-        return [$completionsubmitel];
+        $completionresultviewedel = 'completionresultviewed' . $suffix;
+        $mform->addElement(
+            'advcheckbox',
+            $completionresultviewedel,
+            '',
+            get_string('completionresultviewed', 'assign')
+        );
+
+        return [$completionsubmitel, $completionresultviewedel];
     }
 
     /**
@@ -467,7 +491,8 @@ class mod_assign_mod_form extends moodleform_mod {
      */
     public function completion_rule_enabled($data) {
         $suffix = $this->get_suffix();
-        return !empty($data['completionsubmit' . $suffix]);
+        return !empty($data['completionsubmit' . $suffix]) ||
+               !empty($data['completionresultviewed' . $suffix]);
     }
 
     /**
