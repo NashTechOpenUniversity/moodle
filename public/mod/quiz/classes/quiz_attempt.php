@@ -1090,6 +1090,23 @@ class quiz_attempt {
     }
 
     /**
+     * Return the validation error for a given slot within the current attempt, if any.
+     *
+     * @param int $slot the number used to identify this question within this attempt.
+     * @return string the validation error, or an empty string
+     *                if there is no error or the question does not support validation errors.
+     */
+    public function get_question_validation_errors($slot): string {
+        $question = $this->quba->get_question($slot);
+        $qa = $this->quba->get_question_attempt($slot);
+        if (method_exists($question, 'get_validation_error') && $qa->get_state() == question_state::$invalid) {
+            $step = $qa->get_last_step_with_qt_var('answer');
+            return $question->get_validation_error($step->get_qt_data());
+        }
+        return '';
+    }
+
+    /**
      * Get the time remaining for an in-progress attempt, if the time is short
      * enough that it would be worth showing a timer.
      *
