@@ -32,6 +32,9 @@ $string['attachedfiles'] = 'Attachments: {$a}';
 $string['attachmentsoptional'] = 'Attachments are optional';
 $string['attachmentsrequired'] = 'Require attachments';
 $string['attachmentsrequired_help'] = 'This option specifies the minimum number of attachments required for a response to be considered gradable.';
+$string['attachmentsrequiredmin'] = 'Minimum number of files: {$a->required}; maximum: {$a->max}';
+$string['attachmentsrequiredminonly'] = 'Minimum number of files: {$a->required}';
+$string['err_notenoughattachments'] = 'Expected files: {$a->required}; actual files: {$a->count}';
 $string['err_maxminmismatch'] = 'Maximum word limit must be greater than minimum word limit';
 $string['err_maxwordlimit'] = 'Maximum word limit is enabled but is not set';
 $string['err_maxwordlimitnegative'] = 'Maximum word limit cannot be a negative number';
@@ -82,3 +85,4 @@ $string['responsetemplate_help'] = 'Any text entered here will be displayed in t
 $string['wordcount'] = 'Word count: {$a}';
 $string['wordcounttoofew'] = 'Word count: {$a->count}, less than the required {$a->limit} words.';
 $string['wordcounttoomuch'] = 'Word count: {$a->count}, more than the limit of {$a->limit} words.';
+

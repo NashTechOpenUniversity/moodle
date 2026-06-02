@@ -810,13 +810,19 @@ class renderer extends plugin_renderer_base {
                 $flag = html_writer::empty_tag('img', ['src' => $this->image_url('i/flagged'),
                     'alt' => get_string('flagged', 'question'), 'class' => 'questionflag icon ms-2']);
             }
+            $validationerrors = $attemptobj->get_question_validation_errors($slot);
+            $validationerrors = $validationerrors ? '. ' . $validationerrors : '';
             if ($attemptobj->can_navigate_to($slot)) {
-                $row = [html_writer::link($attemptobj->attempt_url($slot),
-                        $attemptobj->get_question_number($slot) . $flag),
-                        $attemptobj->get_question_status($slot, $displayoptions->correctness)];
+                $row = [
+                    html_writer::link(
+                        $attemptobj->attempt_url($slot),
+                        $attemptobj->get_question_number($slot) . $flag
+                    ),
+                    $attemptobj->get_question_status($slot, $displayoptions->correctness) . $validationerrors,
+                ];
             } else {
                 $row = [$attemptobj->get_question_number($slot) . $flag,
-                        $attemptobj->get_question_status($slot, $displayoptions->correctness)];
+                        $attemptobj->get_question_status($slot, $displayoptions->correctness) . $validationerrors];
             }
             if ($markscolumn) {
                 $row[] = $attemptobj->get_question_mark($slot);

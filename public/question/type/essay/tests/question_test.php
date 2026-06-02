@@ -521,4 +521,137 @@ final class question_test extends \advanced_testcase {
         }
         return $attachments;
     }
+
+    /**
+     * Provide test cases for test_get_validation_attachment_error().
+     *
+     * @return array
+     */
+    public static function get_validation_attachment_testcase(): array {
+        return [
+            'attachment error only' => [
+                [
+                    'attachmentsrequired' => 2,
+                    'attachments' => 3,
+                    'responserequired' => 1,
+                    'responseformat' => 'editor',
+                ],
+                [
+                    'answer' => 'Some answer text',
+                    'answerformat' => FORMAT_HTML,
+                ],
+                true,
+                [
+                    get_string('err_notenoughattachments', 'qtype_essay', (object) [
+                        'required' => 2,
+                        'count' => 0,
+                    ]),
+                ],
+            ],
+            'no validation errors' => [
+                [
+                    'attachmentsrequired' => 0,
+                    'attachments' => 3,
+                    'responserequired' => 0,
+                    'responseformat' => 'editor',
+                ],
+                [
+                    'answer' => 'Some answer text',
+                    'answerformat' => FORMAT_HTML,
+                ],
+                false,
+                [],
+            ],
+            'noinline attachment error' => [
+                [
+                    'attachmentsrequired' => 1,
+                    'attachments' => 2,
+                    'responserequired' => 0,
+                    'responseformat' => 'noinline',
+                ],
+                [],
+                true,
+                [
+                    get_string('err_notenoughattachments', 'qtype_essay', (object) [
+                        'required' => 1,
+                        'count' => 0,
+                    ]),
+                ],
+            ],
+            'word count error only' => [
+                [
+                    'attachmentsrequired' => 0,
+                    'attachments' => 1,
+                    'responserequired' => 1,
+                    'responseformat' => 'plain',
+                    'minwordlimit' => 10,
+                ],
+                [
+                    'answer' => 'short',
+                    'answerformat' => FORMAT_PLAIN,
+                ],
+                true,
+                [
+                    get_string('minwordlimitboundary', 'qtype_essay', ['count' => 1, 'limit' => 10]),
+                ],
+            ],
+            'attachment and word count errors' => [
+                [
+                    'attachmentsrequired' => 2,
+                    'attachments' => 3,
+                    'responserequired' => 1,
+                    'responseformat' => 'plain',
+                    'minwordlimit' => 10,
+                ],
+                [
+                    'answer' => 'short',
+                    'answerformat' => FORMAT_PLAIN,
+                ],
+                true,
+                [
+                    get_string('err_notenoughattachments', 'qtype_essay', (object) [
+                        'required' => 2,
+                        'count' => 0,
+                    ]),
+                    get_string('minwordlimitboundary', 'qtype_essay', ['count' => 1, 'limit' => 10]),
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Test get_validation_error().
+     *
+     * @dataProvider get_validation_attachment_testcase
+     * @covers \qtype_essay_question::get_validation_error
+     * @param array $config the question configuration to set up the question under test.
+     * @param array $response the response to validate.
+     * @param bool $shouldhaveerror whether we expect validation errors to be returned.
+     * @param array $expectedmessages the expected error messages to be included in the validation error string
+     *                                (if $shouldhaveerror is true).
+     */
+    public function test_get_validation_attachment_error(
+        array $config,
+        array $response,
+        bool $shouldhaveerror,
+        array $expectedmessages
+    ): void {
+        $essay = \test_question_maker::make_an_essay_question();
+
+        foreach ($config as $property => $value) {
+            $essay->$property = $value;
+        }
+
+        $error = $essay->get_validation_error($response);
+
+        if ($shouldhaveerror) {
+            $this->assertNotEmpty($error);
+
+            foreach ($expectedmessages as $message) {
+                $this->assertStringContainsString($message, $error);
+            }
+        } else {
+            $this->assertSame('', $error);
+        }
+    }
 }
