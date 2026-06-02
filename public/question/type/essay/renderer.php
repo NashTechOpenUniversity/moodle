@@ -77,8 +77,8 @@ class qtype_essay_renderer extends qtype_renderer {
         if ($question->attachments) {
             if (empty($options->readonly)) {
                 $files = $this->files_input($qa, $question->attachments, $options);
-
             } else {
+                $answer .= html_writer::nonempty_tag('p', $question->get_attachment_count_for_review($step->get_qt_data()));
                 $files = $this->files_read_only($qa, $options);
             }
         }
@@ -90,12 +90,15 @@ class qtype_essay_renderer extends qtype_renderer {
         $result .= html_writer::start_tag('div', array('class' => 'ablock'));
         $result .= html_writer::tag('div', $answer, array('class' => 'answer'));
 
-        // If there is a response and min/max word limit is set in the form then check the response word count.
+        $result .= html_writer::tag('div', $files, ['class' => 'attachments']);
+        // If there is a validation error, display it here.
         if ($qa->get_state() == question_state::$invalid) {
-            $result .= html_writer::nonempty_tag('div',
-                $question->get_validation_error($step->get_qt_data()), ['class' => 'validationerror']);
+            $result .= html_writer::nonempty_tag(
+                'div',
+                $question->get_validation_error($step->get_qt_data()),
+                ['class' => 'validationerror']
+            );
         }
-        $result .= html_writer::tag('div', $files, array('class' => 'attachments'));
         $result .= html_writer::end_tag('div');
 
         return $result;
@@ -186,6 +189,7 @@ class qtype_essay_renderer extends qtype_renderer {
             $text .= $this->render_from_template('core_form/filetypes-descriptions', $filetypedescriptions);
         }
 
+        $question = $qa->get_question();
         $output = html_writer::start_tag('fieldset');
         $fileslabel = $options->add_question_identifier_to_label(get_string('answerfiles', 'qtype_essay'));
         $output .= html_writer::tag('legend', $fileslabel, ['class' => 'visually-hidden']);
@@ -196,6 +200,20 @@ class qtype_essay_renderer extends qtype_renderer {
             'value' => $pickeroptions->itemid,
         ]);
         $output .= $text;
+
+        // Add minimum attachment count hint if required.
+        if ($question->attachmentsrequired > 0) {
+            if ($numallowed == -1) {
+                // Unlimited maximum — show minimum only.
+                $hintparams = (object)['required' => $question->attachmentsrequired];
+                $hint = get_string('attachmentsrequiredminonly', 'qtype_essay', $hintparams);
+            } else {
+                // Finite maximum — show minimum and maximum.
+                $hintparams = (object)['required' => $question->attachmentsrequired, 'max' => $numallowed];
+                $hint = get_string('attachmentsrequiredmin', 'qtype_essay', $hintparams);
+            }
+            $output .= html_writer::tag('div', $hint, ['class' => 'attachments-count-hint']);
+        }
         $output .= html_writer::end_tag('fieldset');
 
         return $output;
