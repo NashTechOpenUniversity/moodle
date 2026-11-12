@@ -49,14 +49,27 @@ class custom_completion extends activity_custom_completion {
         require_once($CFG->dirroot . '/mod/assign/locallib.php');
 
         $assign = new \assign(null, $cm, $cm->get_course());
-        if ($assign->get_instance()->teamsubmission) {
-            $submission = $assign->get_group_submission($userid, 0, false);
-        } else {
-            $submission = $assign->get_user_submission($userid, false);
-        }
-        $status = $submission && $submission->status == ASSIGN_SUBMISSION_STATUS_SUBMITTED;
 
-        return $status ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;
+        switch ($rule) {
+            case 'completionsubmit':
+                if ($assign->get_instance()->teamsubmission) {
+                    $submission = $assign->get_group_submission($userid, 0, false);
+                } else {
+                    $submission = $assign->get_user_submission($userid, false);
+                }
+                $status = $submission && $submission->status == ASSIGN_SUBMISSION_STATUS_SUBMITTED;
+                return $status ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;
+
+            case 'completionresultviewed':
+                $grade = $assign->get_user_grade($userid, false);
+                if (!$grade) {
+                    return COMPLETION_INCOMPLETE;
+                }
+                return !empty($grade->resultviewed) ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;
+
+            default:
+                return COMPLETION_INCOMPLETE;
+        }
     }
 
     /**
@@ -65,7 +78,7 @@ class custom_completion extends activity_custom_completion {
      * @return array
      */
     public static function get_defined_custom_rules(): array {
-        return ['completionsubmit'];
+        return ['completionsubmit', 'completionresultviewed'];
     }
 
     /**
@@ -75,7 +88,8 @@ class custom_completion extends activity_custom_completion {
      */
     public function get_custom_rule_descriptions(): array {
         return [
-            'completionsubmit' => get_string('completiondetail:submit', 'assign')
+            'completionsubmit' => get_string('completiondetail:submit', 'assign'),
+            'completionresultviewed' => get_string('completiondetail:resultviewed', 'assign'),
         ];
     }
 
@@ -90,6 +104,7 @@ class custom_completion extends activity_custom_completion {
             'completionsubmit',
             'completionusegrade',
             'completionpassgrade',
+            'completionresultviewed',
         ];
     }
 }

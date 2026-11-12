@@ -358,6 +358,7 @@ class mod_assign_external extends \mod_assign\external\external_api {
                      'm.gradepenalty, ' .
                      'm.timemodified, '.
                      'm.completionsubmit, ' .
+                     'm.completionresultviewed, ' .
                      'm.cutoffdate, ' .
                      'm.gradingduedate, ' .
                      'm.teamsubmission, ' .
@@ -451,6 +452,7 @@ class mod_assign_external extends \mod_assign\external\external_api {
                     $assignment['gradepenalty'] = $module->gradepenalty;
                     $assignment['timemodified'] = $module->timemodified;
                     $assignment['completionsubmit'] = $module->completionsubmit;
+                    $assignment['completionresultviewed'] = $module->completionresultviewed;
                     $assignment['cutoffdate'] = $assign->get_instance()->cutoffdate;
                     $assignment['gradingduedate'] = $assigninstance->gradingduedate;
                     $assignment['teamsubmission'] = $module->teamsubmission;
@@ -567,6 +569,10 @@ class mod_assign_external extends \mod_assign\external\external_api {
                     'completionsubmit' => new external_value(
                         PARAM_INT,
                         'if enabled, set activity as complete following submission',
+                    ),
+                    'completionresultviewed' => new external_value(
+                        PARAM_INT,
+                        'if enabled, set activity as complete following feedback or result view',
                     ),
                     'cutoffdate' => new external_value(
                         PARAM_INT,
