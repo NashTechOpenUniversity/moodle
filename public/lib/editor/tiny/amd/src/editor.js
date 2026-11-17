@@ -598,8 +598,17 @@ export const setupForTarget = async(target, options = {}) => {
     }
 
     // Save the editor content to the textarea when the editor is blurred.
+    let lastClickedElement = null;
+    document.addEventListener('mousedown', (e) => {
+        lastClickedElement = e.target;
+    });
     editor.on('blur', () => {
+        if (lastClickedElement && lastClickedElement.tagName === 'A') {
+            // Do not save if a link was clicked.
+            return;
+        }
         editor.save();
+        lastClickedElement = null;
     });
 
     // If the editor is in a modal, we need to hide the modal whenever TinyMCE opens one of its own
